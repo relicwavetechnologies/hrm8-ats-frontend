@@ -1,0 +1,265 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Production builds
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# TypeScript
+*.tsbuildinfo
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Package manager lock files (keep only one)
+# Uncomment the ones you don't use
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local IDE config
+*.iml
+.project
+.classpath
+.settings/
+.loadpath
+.recommenders
+
+# Storybook
+storybook-static/
+
+# Turbo
+.turbo
+
+# Next.js (if used)
+.next/
+out/
+
+# Nuxt.js (if used)
+.nuxt/
+dist/
+
+# Gatsby files
+.cache/
+public/
+
+# SvelteKit
+.svelte-kit/
+
+# VuePress
+.vuepress/dist
+
+# Docusaurus
+.docusaurus/
+build/
+
+# Serverless
+.serverless/
+
+# FuseBox
+.fusebox/
+
+# DynamoDB Local
+.dynamodb/
+
+# TernJS
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Miscellaneous
+*.seed
+*.pid.lock
+*.tgz
+
+# Mac bundle stuff
+*.dmg
+*.app
+
+# Backup files
+*.bak
+*.backup
+
+# Documentation builds (if generated)
+docs/_build/
+site/
+
+# Python (if any Python tools are used)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.code-workspace
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Database files
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# Generated files
+TAGS
+tags
+
+# Local configuration
+config.local.js
+config.local.ts
+
+# API keys and secrets (additional safety)
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+credentials.json
+
+# Large media files (optional - uncomment if needed)
+# *.mp4
+# *.avi
+# *.mov
+# *.mp3
+# *.wav
+
+# Test reports
+test-results/
+playwright-report/
+e2e-results/
+
+# Bundle analysis
+stats.html
+bundle-stats.json
+
+# Sentry
+.sentryclirc
