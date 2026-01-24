@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { jobTemplateService, JobTemplate } from "@/shared/lib/api/jobTemplateService";
+import { jobTemplateService, JobTemplate } from "@/shared/lib/jobTemplateService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 

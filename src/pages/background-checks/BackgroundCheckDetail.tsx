@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { ArrowLeft, Download, Calendar, CheckCircle, XCircle, Clock, AlertTriangle, User, FileText, Shield, Mail, Edit, Eye, Users, History } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -22,15 +22,15 @@ import type { ConsentRequest } from '@/shared/types/consent';
 import type { RefereeDetails } from '@/shared/types/referee';
 import type { EditableReport } from '@/shared/types/aiReferenceReport';
 import type { AIReferenceCheckSession } from '@/shared/types/aiReferenceCheck';
-import BackgroundCheckTimeline from '@/components/backgroundChecks/BackgroundCheckTimeline';
-import ConsentStatusSection from '@/components/backgroundChecks/ConsentStatusSection';
-import RefereeResponsesSection from '@/components/backgroundChecks/RefereeResponsesSection';
-import CheckResultsSection from '@/components/backgroundChecks/CheckResultsSection';
-import { AIReportEditor } from '@/components/backgroundChecks/ai-interview/AIReportEditor';
-import { EmailReportDialog } from '@/components/backgroundChecks/ai-interview/EmailReportDialog';
-import RefereeComparison from '@/components/backgroundChecks/ai-interview/RefereeComparison';
-import { StatusHistoryTimeline } from '@/components/backgroundChecks/StatusHistoryTimeline';
-import { SLAIndicator } from '@/components/backgroundChecks/SLAIndicator';
+import BackgroundCheckTimeline from '@/modules/background-checks/components/BackgroundCheckTimeline';
+import ConsentStatusSection from '@/modules/background-checks/components/ConsentStatusSection';
+import RefereeResponsesSection from '@/modules/background-checks/components/RefereeResponsesSection';
+import CheckResultsSection from '@/modules/background-checks/components/CheckResultsSection';
+import { AIReportEditor } from '@/modules/background-checks/components/ai-interview/AIReportEditor';
+import { EmailReportDialog } from '@/modules/background-checks/components/ai-interview/EmailReportDialog';
+import RefereeComparison from '@/modules/background-checks/components/ai-interview/RefereeComparison';
+import { StatusHistoryTimeline } from '@/modules/background-checks/components/StatusHistoryTimeline';
+import { SLAIndicator } from '@/modules/background-checks/components/SLAIndicator';
 
 export default function BackgroundCheckDetail() {
   const { id } = useParams<{ id: string }>();

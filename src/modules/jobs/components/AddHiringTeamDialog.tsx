@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { HiringTeamMember } from "@/shared/types/job";
-import { userService, CompanyUser } from "@/shared/lib/api/userService";
-import { hiringTeamService } from "@/shared/lib/api/hiringTeamService";
+import { userService, CompanyUser } from "@/shared/lib/userService";
+import { hiringTeamService } from "@/shared/lib/hiringTeamService";
 import { toast } from "@/shared/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { extractEmailDomain, doDomainsBelongToSameOrg } from "@/shared/lib/utils/domain";
 import {
   Dialog,

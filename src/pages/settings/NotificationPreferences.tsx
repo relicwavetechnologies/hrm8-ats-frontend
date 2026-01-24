@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Switch } from '@/shared/components/ui/switch';
@@ -31,7 +31,7 @@ import {
 } from '@/shared/components/ui/tooltip';
 import { Bell, Plus, Trash2, Save, Settings2, Moon, Mail, Smartphone, MessageSquare, Loader2 } from 'lucide-react';
 import type { AlertRule, NotificationEventType, NotificationChannel } from '@/shared/types/notificationPreferences';
-import { userNotificationPreferencesService, type CreateAlertRuleData } from '@/shared/lib/api/userNotificationPreferencesService';
+import { userNotificationPreferencesService, type CreateAlertRuleData } from '@/shared/lib/userNotificationPreferencesService';
 import { toast } from 'sonner';
 
 // Event labels for display

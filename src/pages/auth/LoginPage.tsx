@@ -8,7 +8,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';

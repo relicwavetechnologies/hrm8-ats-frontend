@@ -3,7 +3,7 @@
  * Maps backend job data to frontend format
  */
 
-import { Job as BackendJob } from '@/shared/lib/api/jobService';
+import { Job as BackendJob } from '@/shared/lib/jobService';
 import { Job, JobFormData } from '@/shared/types/job';
 
 /**

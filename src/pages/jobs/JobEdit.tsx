@@ -1,8 +1,8 @@
 import { useParams, Link, Navigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { JobWizard } from "@/components/jobs/JobWizard";
+import { JobWizard } from "@/modules/jobs/components/JobWizard";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 
 export default function JobEdit() {

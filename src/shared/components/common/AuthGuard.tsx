@@ -5,7 +5,7 @@
 
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 interface AuthGuardProps {

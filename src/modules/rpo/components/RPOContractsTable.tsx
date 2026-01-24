@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DataTable } from '@/components/tables/DataTable';
+import { DataTable } from '@/shared/components/tables/DataTable';
 import { createRPOContractsColumns } from './RPOContractsTableColumns';
 import { RPOContractsFilterBar } from './RPOContractsFilterBar';
 import { ServiceProject } from '@/shared/types/recruitmentService';

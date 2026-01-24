@@ -30,14 +30,14 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
-import { InterviewScheduler } from "@/components/interviews/InterviewScheduler";
-import { OfferForm } from "@/components/offers/OfferForm";
+import { InterviewScheduler } from "@/modules/interviews/components/InterviewScheduler";
+import { OfferForm } from "@/modules/offers/components/OfferForm";
 import { getTemplateById } from "@/shared/lib/mockTemplateStorage";
-import { offerService } from "@/shared/lib/api/offerService";
-import { jobService } from "@/shared/lib/api/jobService";
+import { offerService } from "@/shared/lib/offerService";
+import { jobService } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
-import { ApplicationEmailHistory } from "@/components/email/ApplicationEmailHistory";
+import { ApplicationEmailHistory } from "@/modules/email/components/ApplicationEmailHistory";
 
 interface ApplicationDetailPanelProps {
   application: Application | null;

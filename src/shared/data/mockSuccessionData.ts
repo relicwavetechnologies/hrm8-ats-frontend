@@ -1,4 +1,4 @@
-import { SuccessionPlan, NineBoxPosition, LeadershipPipeline, DevelopmentPath } from '@/types/performance';
+import { SuccessionPlan, NineBoxPosition, LeadershipPipeline, DevelopmentPath } from '@/shared/types/performance';
 
 export const mockSuccessionPlans: SuccessionPlan[] = [
   {

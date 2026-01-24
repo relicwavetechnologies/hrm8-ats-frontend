@@ -16,10 +16,10 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Check, Sparkles, Loader2 } from "lucide-react";
-import { walletService } from "@/services/walletService";
+import { walletService } from "@/shared/services/walletService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useStripeIntegration } from "@/shared/hooks/useStripeIntegration";
-import { StripePromptDialog } from "@/components/integrations/StripePromptDialog";
+import { StripePromptDialog } from "@/modules/settings/components/integrations/StripePromptDialog";
 import { cn } from "@/shared/lib/utils";
 
 interface SubscriptionUpgradeDialogProps {

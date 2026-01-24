@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/components/ui/card";
 import { Mail } from "lucide-react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 
 export default function Inbox() {
   return (

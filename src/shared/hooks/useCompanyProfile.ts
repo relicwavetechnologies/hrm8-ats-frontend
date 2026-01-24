@@ -4,7 +4,7 @@ import {
   CompanyProfileSectionKey,
 } from '@/shared/types/companyProfile';
 import { companyProfileService } from '@/shared/lib/companyProfileService';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { useToast } from '@/shared/hooks/use-toast';
 
 interface UseCompanyProfileReturn {

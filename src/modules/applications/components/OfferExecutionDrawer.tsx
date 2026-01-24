@@ -16,10 +16,10 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Separator } from "@/shared/components/ui/separator";
 import { toast } from "sonner";
 import { Send, Edit2, ChevronDown, ChevronUp, Briefcase, MapPin, DollarSign, Calendar, Mail } from "lucide-react";
-import { offerService } from "@/shared/lib/api/offerService";
+import { offerService } from "@/shared/lib/offerService";
 import { Application } from "@/shared/types/application";
 import { Job } from "@/shared/types/job";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
 
 interface OfferExecutionDrawerProps {

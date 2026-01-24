@@ -1,4 +1,4 @@
-import { EmployerContact, ContactRole } from "@/types/employerCRM";
+import { EmployerContact, ContactRole } from "@/shared/types/employerCRM";
 import { mockEmployers } from "./mockTableData";
 
 const firstNames = ["John", "Sarah", "Michael", "Emily", "David", "Jennifer", "Robert", "Lisa", "James", "Maria"];

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { getESSProfile, getESSStats, getQuickActions } from "@/shared/lib/essStorage";
 import type { LucideIcon } from "lucide-react";
 import { User, FileText, Calendar, Receipt, Heart, Clock, TrendingUp, Bell, CheckCircle2, AlertCircle, Edit } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ProfileEditDialog } from "@/components/ess/ProfileEditDialog";
+import { ProfileEditDialog } from "@/modules/employees/components/ess/ProfileEditDialog";
 
 export default function EmployeeSelfService() {
   const { userId } = useRBAC();

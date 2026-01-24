@@ -1,4 +1,4 @@
-import type { Consultant } from '@/types/consultant';
+import type { Consultant } from '@/shared/types/consultant';
 
 export const mockConsultants: Consultant[] = [
   {

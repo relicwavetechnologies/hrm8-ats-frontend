@@ -1,7 +1,7 @@
-import { CollaborativeFeedbackPanel } from '@/components/feedback/CollaborativeFeedbackPanel';
-import { FeedbackRequestDialog } from '@/components/feedback/FeedbackRequestDialog';
-import { BulkFeedbackRequestDialog } from '@/components/feedback/BulkFeedbackRequestDialog';
-import { FeedbackExporter } from '@/components/feedback/FeedbackExporter';
+import { CollaborativeFeedbackPanel } from '@/modules/performance/components/CollaborativeFeedbackPanel';
+import { FeedbackRequestDialog } from '@/modules/performance/components/FeedbackRequestDialog';
+import { BulkFeedbackRequestDialog } from '@/modules/performance/components/BulkFeedbackRequestDialog';
+import { FeedbackExporter } from '@/modules/performance/components/FeedbackExporter';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { MessageSquare } from 'lucide-react';
 

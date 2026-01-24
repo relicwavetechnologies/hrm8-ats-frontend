@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Briefcase, Users, Star, Check, ArrowRight, Crown, Lock, Sparkles } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { canOffloadToConsultants, getPackageDisplayName, getPackageTier } from "@/shared/lib/packageUtils";
-import { PackageUpgradeDialog } from "@/components/subscription/PackageUpgradeDialog";
+import { PackageUpgradeDialog } from "@/modules/wallet/components/subscription/PackageUpgradeDialog";
 
 interface ServiceTypeSelectionDialogProps {
   open: boolean;

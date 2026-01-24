@@ -6,7 +6,7 @@ import {
   EmployeeCertification,
   SkillDevelopmentProgram,
   LearningAnalytics,
-} from '@/types/performance';
+} from '@/shared/types/performance';
 
 export const mockCourses: Course[] = [
   {

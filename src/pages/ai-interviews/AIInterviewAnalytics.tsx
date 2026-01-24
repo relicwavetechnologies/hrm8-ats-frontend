@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { getAIInterviewSessions } from '@/shared/lib/aiInterview/aiInterviewStorage';
 import { BarChart3, TrendingUp, Clock, CheckCircle } from 'lucide-react';
-import { AIInterviewPerformanceChart } from '@/components/aiInterview/dashboard/AIInterviewPerformanceChart';
-import { AIInterviewCalendar } from '@/components/aiInterview/calendar/AIInterviewCalendar';
-import { InterviewComparisonTool } from '@/components/aiInterview/comparison/InterviewComparisonTool';
-import { StandardChartCard } from '@/components/dashboard/charts/StandardChartCard';
+import { AIInterviewPerformanceChart } from '@/modules/ai-interviews/components/dashboard/AIInterviewPerformanceChart';
+import { AIInterviewCalendar } from '@/modules/ai-interviews/components/calendar/AIInterviewCalendar';
+import { InterviewComparisonTool } from '@/modules/ai-interviews/components/comparison/InterviewComparisonTool';
+import { StandardChartCard } from '@/modules/dashboard/components/charts/StandardChartCard';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 
 export default function AIInterviewAnalytics() {

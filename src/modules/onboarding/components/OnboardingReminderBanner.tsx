@@ -1,7 +1,7 @@
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card } from '@/shared/components/ui/card';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';

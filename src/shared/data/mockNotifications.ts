@@ -1,4 +1,4 @@
-import { Notification, NotificationCategory, NotificationType, NotificationPriority } from '@/types/notification';
+import { Notification, NotificationCategory, NotificationType, NotificationPriority } from '@/shared/types/notification';
 
 const MOCK_USER_ID = "user-1";
 

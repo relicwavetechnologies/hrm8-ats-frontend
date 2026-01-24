@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
@@ -28,8 +28,8 @@ import {
 } from "@/shared/lib/jobAutomationService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { formatDistanceToNow, format } from "date-fns";
-import { CreateAutomationDialog } from "@/components/jobs/automation/CreateAutomationDialog";
-import { ScheduleJobDialog } from "@/components/jobs/automation/ScheduleJobDialog";
+import { CreateAutomationDialog } from "@/modules/jobs/components/automation/CreateAutomationDialog";
+import { ScheduleJobDialog } from "@/modules/jobs/components/automation/ScheduleJobDialog";
 
 export default function JobAutomationSettings() {
   const { toast } = useToast();

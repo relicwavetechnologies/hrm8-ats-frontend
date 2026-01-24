@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Shield, FileText, AlertTriangle, CheckCircle, History, Database, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { getAuditLogs, getPolicies, getPolicyAcknowledgments, getComplianceAlerts, getDataSubjectRequests, deletePolicy, deleteDataSubjectRequest } from "@/shared/lib/complianceStorage";
 import { Badge } from "@/shared/components/ui/badge";
-import { DataTable, Column } from "@/components/tables/DataTable";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { AuditLog, CompliancePolicy, ComplianceAlert, DataSubjectRequest } from "@/shared/types/compliance";
-import { PolicyDialog } from "@/components/compliance/PolicyDialog";
-import { DataSubjectRequestDialog } from "@/components/compliance/DataSubjectRequestDialog";
+import { PolicyDialog } from "@/modules/compliance/components/PolicyDialog";
+import { DataSubjectRequestDialog } from "@/modules/compliance/components/DataSubjectRequestDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/components/shared/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
 import { toast } from "sonner";
 
 export default function Compliance() {

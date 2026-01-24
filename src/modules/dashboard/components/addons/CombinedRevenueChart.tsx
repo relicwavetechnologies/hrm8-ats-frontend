@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getAddonRevenueTrends } from '@/shared/lib/addons/combinedAnalytics';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 
 export function CombinedRevenueChart() {
   const { formatCurrency } = useCurrencyFormat();

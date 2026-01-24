@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from "@/shared/components/ui/sidebar";
 import { cn } from "@/shared/lib/utils";
-import { useConsultantAuth } from "@/app/AuthProvider";
+import { useConsultantAuth } from "@/app/providers/AuthContext";
 import { ConsultantSidebarFooter } from "./ConsultantSidebarFooter";
 
 const menuItems = [

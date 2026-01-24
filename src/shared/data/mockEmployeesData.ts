@@ -1,4 +1,4 @@
-import type { Employee, EmploymentHistory, EmployeeDocument, EmployeeNote } from '@/types/employee';
+import type { Employee, EmploymentHistory, EmployeeDocument, EmployeeNote } from '@/shared/types/employee';
 
 export const mockEmployees: Employee[] = [
   {

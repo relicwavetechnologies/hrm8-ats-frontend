@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 import { getYoYComparison } from '@/shared/lib/addons/revenueAnalytics';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 export function YoYComparisonChart() {

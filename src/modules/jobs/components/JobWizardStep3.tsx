@@ -1,7 +1,7 @@
 import { UseFormReturn } from "react-hook-form";
 import { JobFormData, HiringTeamMember } from "@/shared/types/job";
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { format, addDays } from "date-fns";
 import { CalendarIcon, Trash2, Users, Plus, Eye } from "lucide-react";
 import { HiringTeamMemberCard } from "./HiringTeamMemberCard";

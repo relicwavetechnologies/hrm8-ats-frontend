@@ -4,7 +4,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { JobRoundType } from "@/shared/lib/api/jobRoundService";
+import { JobRoundType } from "@/shared/lib/jobRoundService";
 
 interface CreateRoundDialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ export function CreateRoundDialog({ open, onOpenChange, onSuccess, jobId }: Crea
 
     setIsSubmitting(true);
     try {
-      const { jobRoundService } = await import("@/lib/api/jobRoundService");
+      const { jobRoundService } = await import("@/shared/lib/api/jobRoundService");
       const response = await jobRoundService.createRound(jobId, {
         name: name.trim(),
         type,

@@ -1,4 +1,4 @@
-import type { PayrollRun, Payslip } from '@/types/payroll';
+import type { PayrollRun, Payslip } from '@/shared/types/payroll';
 
 export const mockPayrollRuns: PayrollRun[] = [
   {

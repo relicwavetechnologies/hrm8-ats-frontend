@@ -3,7 +3,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { ShieldCheck, Plus, AlertCircle } from 'lucide-react';
-import { BackgroundCheckWizard } from '@/components/backgroundChecks/BackgroundCheckWizard';
+import { BackgroundCheckWizard } from '@/modules/background-checks/components/BackgroundCheckWizard';
 import { getBackgroundChecksByCandidate } from '@/shared/lib/mockBackgroundCheckStorage';
 import type { BackgroundCheck } from '@/shared/types/backgroundCheck';
 import { format } from 'date-fns';

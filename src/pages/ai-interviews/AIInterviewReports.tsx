@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/shared/components/common/PageHeader';
 import { useInterviewReports } from '@/shared/hooks/useInterviewReports';
-import { ReportSummaryCard } from '@/components/aiInterview/reports/ReportSummaryCard';
+import { ReportSummaryCard } from '@/modules/ai-interviews/components/reports/ReportSummaryCard';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Search } from 'lucide-react';
 import { initializeAIInterviewMockData } from '@/shared/lib/aiInterview/initializeMockData';
-import { DataResetButton } from '@/components/dev/DataResetButton';
+// TODO: Dev tools - enable when needed
+// import { DataResetButton } from '@/components/dev/DataResetButton';
 
 export default function AIInterviewReports() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function AIInterviewReports() {
       <PageHeader
         title="Interview Reports"
         description="View and manage AI interview reports"
-        actions={<DataResetButton />}
+        actions={null /* <DataResetButton /> */}
       />
 
       <div className="flex gap-4">

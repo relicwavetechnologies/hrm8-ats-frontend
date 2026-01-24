@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Badge } from "@/shared/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Helmet } from "react-helmet-async";
 import {
   Server, Activity, Zap, AlertTriangle, CheckCircle, Clock,

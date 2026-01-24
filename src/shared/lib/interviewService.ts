@@ -1,195 +1,261 @@
+/**
+ * Interview Service - Frontend API client
+ */
+
+import { apiClient } from './api';
+
+export interface InterviewConfiguration {
+  id?: string;
+  jobRoundId: string;
+  enabled: boolean;
+  autoSchedule: boolean;
+  requireBeforeProgression?: boolean;
+  requireAllInterviewers?: boolean;
+  interviewFormat: 'LIVE_VIDEO' | 'PHONE' | 'IN_PERSON' | 'PANEL';
+  defaultDuration?: number;
+  requiresInterviewer?: boolean;
+  autoScheduleWindowDays?: number;
+  availableTimeSlots?: string[];
+  bufferTimeMinutes?: number;
+  calendarIntegration?: string;
+  autoRescheduleOnNoShow?: boolean;
+  autoRescheduleOnCancel?: boolean;
+  useCustomCriteria?: boolean;
+  ratingCriteria?: RatingCriterion[];
+  passThreshold?: number;
+  scoringMethod?: 'AVERAGE' | 'WEIGHTED' | 'CONSENSUS';
+  autoMoveOnPass?: boolean;
+  passCriteria?: 'SCORE_THRESHOLD' | 'RECOMMENDATION' | 'RATING_CRITERIA' | 'COMBINATION';
+  nextRoundOnPassId?: string;
+  autoRejectOnFail?: boolean;
+  failCriteria?: 'SCORE_BELOW_THRESHOLD' | 'RECOMMENDATION_NO' | 'RATING_CRITERIA_FAIL' | 'COMBINATION';
+  rejectRoundId?: string;
+  requiresManualReview?: boolean;
+  templateId?: string;
+  questions?: any[];
+  agenda?: string;
+  assignedInterviewerIds?: string[];
+}
+
+export interface RatingCriterion {
+  id: string;
+  name: string;
+  description?: string;
+  weight: number; // Percentage (0-100)
+  threshold?: number; // 1-5 rating threshold
+}
+
+export interface CreateInterviewConfigRequest {
+  enabled: boolean;
+  autoSchedule?: boolean;
+  requireBeforeProgression?: boolean;
+  requireAllInterviewers?: boolean;
+  interviewFormat?: 'LIVE_VIDEO' | 'PHONE' | 'IN_PERSON' | 'PANEL';
+  defaultDuration?: number;
+  requiresInterviewer?: boolean;
+  autoScheduleWindowDays?: number;
+  availableTimeSlots?: string[];
+  bufferTimeMinutes?: number;
+  calendarIntegration?: string;
+  autoRescheduleOnNoShow?: boolean;
+  autoRescheduleOnCancel?: boolean;
+  useCustomCriteria?: boolean;
+  ratingCriteria?: RatingCriterion[];
+  passThreshold?: number;
+  scoringMethod?: 'AVERAGE' | 'WEIGHTED' | 'CONSENSUS';
+  autoMoveOnPass?: boolean;
+  passCriteria?: 'SCORE_THRESHOLD' | 'RECOMMENDATION' | 'RATING_CRITERIA' | 'COMBINATION';
+  nextRoundOnPassId?: string;
+  autoRejectOnFail?: boolean;
+  failCriteria?: 'SCORE_BELOW_THRESHOLD' | 'RECOMMENDATION_NO' | 'RATING_CRITERIA_FAIL' | 'COMBINATION';
+  rejectRoundId?: string;
+  requiresManualReview?: boolean;
+  templateId?: string;
+  questions?: any[];
+  agenda?: string;
+  assignedInterviewerIds?: string[];
+}
+
+export interface Candidate {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  photo?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
 export interface Interview {
   id: string;
-  jobId: string;
-  jobTitle: string;
+  applicationId: string;
   candidateId: string;
-  candidateName: string;
-  candidateEmail: string;
-  interviewerIds: string[];
-  interviewerNames: string[];
-  type: 'phone' | 'video' | 'in-person' | 'technical' | 'panel';
-  round: number;
+  candidate?: Candidate;
+  jobId: string;
+  jobRoundId?: string;
+  jobRound?: {
+    id: string;
+    name: string;
+    job?: {
+      id: string;
+      title: string;
+    };
+  };
   scheduledDate: string;
-  duration: number; // in minutes
-  location?: string;
+  duration: number;
   meetingLink?: string;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show' | 'rescheduled';
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED' | 'NO_SHOW';
+  type: 'VIDEO' | 'PHONE' | 'IN_PERSON' | 'PANEL' | 'TECHNICAL';
+  interviewerIds?: string[];
+  isAutoScheduled?: boolean;
+  rescheduledFrom?: string;
+  rescheduledAt?: string;
+  rescheduledBy?: string;
+  cancellationReason?: string;
+  noShowReason?: string;
+  overallScore?: number;
+  recommendation?: 'STRONG_YES' | 'YES' | 'MAYBE' | 'NO' | 'STRONG_NO';
+  ratingCriteriaScores?: any;
+  recordingUrl?: string;
+  transcript?: any;
+  feedback?: any;
+  interviewFeedbacks?: Array<{
+    id: string;
+    interviewer_name: string;
+    overall_rating: number;
+    notes: string;
+    createdAt: string;
+  }>;
   notes?: string;
-  feedback?: InterviewFeedback[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface InterviewFeedback {
-  interviewerId: string;
-  interviewerName: string;
-  rating: number; // 1-5
-  recommendation: 'strong-hire' | 'hire' | 'neutral' | 'no-hire' | 'strong-no-hire';
-  strengths: string[];
-  concerns: string[];
-  notes: string;
-  submittedAt: string;
-}
-
-export interface InterviewSlot {
-  date: string;
-  startTime: string;
-  endTime: string;
-  interviewerId: string;
-  available: boolean;
-}
-
-// Mock data
-const mockInterviews: Interview[] = [
-  {
-    id: '1',
-    jobId: '1',
-    jobTitle: 'Senior Software Engineer',
-    candidateId: 'c1',
-    candidateName: 'Sarah Johnson',
-    candidateEmail: 'sarah.j@email.com',
-    interviewerIds: ['i1', 'i2'],
-    interviewerNames: ['John Doe', 'Jane Smith'],
-    type: 'video',
-    round: 1,
-    scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    duration: 60,
-    meetingLink: 'https://meet.google.com/abc-defg-hij',
-    status: 'scheduled',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    jobId: '1',
-    jobTitle: 'Senior Software Engineer',
-    candidateId: 'c2',
-    candidateName: 'Michael Chen',
-    candidateEmail: 'm.chen@email.com',
-    interviewerIds: ['i1'],
-    interviewerNames: ['John Doe'],
-    type: 'technical',
-    round: 2,
-    scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    duration: 90,
-    meetingLink: 'https://meet.google.com/xyz-abcd-efg',
-    status: 'scheduled',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-export function getInterviews(filters?: {
-  jobId?: string;
-  candidateId?: string;
-  status?: Interview['status'];
-  startDate?: string;
-  endDate?: string;
-}): Interview[] {
-  let filtered = [...mockInterviews];
-
-  if (filters?.jobId) {
-    filtered = filtered.filter((i) => i.jobId === filters.jobId);
-  }
-  if (filters?.candidateId) {
-    filtered = filtered.filter((i) => i.candidateId === filters.candidateId);
-  }
-  if (filters?.status) {
-    filtered = filtered.filter((i) => i.status === filters.status);
-  }
-  if (filters?.startDate) {
-    filtered = filtered.filter((i) => i.scheduledDate >= filters.startDate!);
-  }
-  if (filters?.endDate) {
-    filtered = filtered.filter((i) => i.scheduledDate <= filters.endDate!);
+class InterviewService {
+  /**
+   * Get interview configuration for a job round
+   */
+  async getInterviewConfig(jobId: string, roundId: string) {
+    return apiClient.get<{ config: InterviewConfiguration | null }>(
+      `/api/jobs/${jobId}/rounds/${roundId}/interview-config`
+    );
   }
 
-  return filtered.sort((a, b) => 
-    new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
-  );
+  /**
+   * Configure interview for a job round
+   */
+  async configureInterview(jobId: string, roundId: string, config: CreateInterviewConfigRequest) {
+    return apiClient.post<{ message: string }>(
+      `/api/jobs/${jobId}/rounds/${roundId}/interview-config`,
+      config
+    );
+  }
+
+  /**
+   * Get all interviews (with optional filters)
+   */
+  async getInterviews(filters?: {
+    jobId?: string;
+    jobRoundId?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const params = new URLSearchParams();
+    if (filters?.jobId) params.append('jobId', filters.jobId);
+    if (filters?.jobRoundId) params.append('jobRoundId', filters.jobRoundId);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+
+    const query = params.toString();
+    return apiClient.get<{ interviews: Interview[] }>(
+      `/api/interviews${query ? `?${query}` : ''}`
+    );
+  }
+
+  /**
+   * Get interview by ID
+   */
+  async getInterview(id: string) {
+    return apiClient.get<{ interview: Interview }>(`/api/interviews/${id}`);
+  }
+
+  /**
+   * Get calendar events (FullCalendar format)
+   */
+  async getCalendarEvents(filters?: {
+    jobId?: string;
+    jobRoundId?: string;
+    status?: string;
+    start?: string;
+    end?: string;
+  }) {
+    const params = new URLSearchParams();
+    if (filters?.jobId) params.append('jobId', filters.jobId);
+    if (filters?.jobRoundId) params.append('jobRoundId', filters.jobRoundId);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.start) params.append('start', filters.start);
+    if (filters?.end) params.append('end', filters.end);
+
+    const query = params.toString();
+    return apiClient.get<any[]>(`/api/interviews/calendar/events${query ? `?${query}` : ''}`);
+  }
+
+  /**
+   * Reschedule interview
+   */
+  async rescheduleInterview(id: string, newScheduledDate: string, reason?: string) {
+    return apiClient.put<{ interview: Interview; message: string }>(
+      `/api/interviews/${id}/reschedule`,
+      { newScheduledDate, reason }
+    );
+  }
+
+  /**
+   * Cancel interview
+   */
+  async cancelInterview(id: string, reason: string) {
+    return apiClient.put<{ interview: Interview; message: string }>(
+      `/api/interviews/${id}/cancel`,
+      { reason }
+    );
+  }
+
+  /**
+   * Mark interview as no-show
+   */
+  async markAsNoShow(id: string, reason?: string) {
+    return apiClient.put<{ interview: Interview; message: string }>(
+      `/api/interviews/${id}/no-show`,
+      { reason }
+    );
+  }
+
+  /**
+   * Update interview status
+   */
+  async updateStatus(id: string, status: 'IN_PROGRESS' | 'COMPLETED') {
+    return apiClient.put<{ interview: Interview; message: string }>(
+      `/api/interviews/${id}/status`,
+      { status }
+    );
+  }
+
+  /**
+   * Add feedback to interview
+   */
+  async addFeedback(id: string, feedback: {
+    overallRating?: number;
+    notes?: string;
+  }) {
+    return apiClient.post<{ message: string }>(
+      `/api/interviews/${id}/feedback`,
+      feedback
+    );
+  }
 }
 
-export function scheduleInterview(
-  interview: Omit<Interview, 'id' | 'createdAt' | 'updatedAt'>
-): Interview {
-  const newInterview: Interview = {
-    ...interview,
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  mockInterviews.push(newInterview);
-  return newInterview;
-}
-
-export function updateInterview(
-  id: string,
-  updates: Partial<Interview>
-): Interview | null {
-  const index = mockInterviews.findIndex((i) => i.id === id);
-  if (index === -1) return null;
-
-  mockInterviews[index] = {
-    ...mockInterviews[index],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
-
-  return mockInterviews[index];
-}
-
-export function cancelInterview(id: string): boolean {
-  return updateInterview(id, { status: 'cancelled' }) !== null;
-}
-
-export function submitFeedback(
-  interviewId: string,
-  feedback: InterviewFeedback
-): Interview | null {
-  const interview = mockInterviews.find((i) => i.id === interviewId);
-  if (!interview) return null;
-
-  const existingFeedback = interview.feedback || [];
-  const updatedFeedback = [
-    ...existingFeedback.filter((f) => f.interviewerId !== feedback.interviewerId),
-    feedback,
-  ];
-
-  return updateInterview(interviewId, { feedback: updatedFeedback });
-}
-
-export function getAvailableSlots(
-  interviewerId: string,
-  date: string
-): InterviewSlot[] {
-  // Mock available slots
-  const slots: InterviewSlot[] = [];
-  const hours = [9, 10, 11, 13, 14, 15, 16];
-
-  hours.forEach((hour) => {
-    slots.push({
-      date,
-      startTime: `${hour.toString().padStart(2, '0')}:00`,
-      endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
-      interviewerId,
-      available: Math.random() > 0.3, // 70% chance of being available
-    });
-  });
-
-  return slots;
-}
-
-export function getInterviewStats(jobId?: string) {
-  const interviews = jobId ? getInterviews({ jobId }) : mockInterviews;
-
-  return {
-    total: interviews.length,
-    scheduled: interviews.filter((i) => i.status === 'scheduled').length,
-    completed: interviews.filter((i) => i.status === 'completed').length,
-    cancelled: interviews.filter((i) => i.status === 'cancelled').length,
-    upcoming: interviews.filter(
-      (i) => i.status === 'scheduled' && new Date(i.scheduledDate) > new Date()
-    ).length,
-  };
-}
+export const interviewService = new InterviewService();

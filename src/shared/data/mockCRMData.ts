@@ -1,4 +1,4 @@
-import { EmployerActivity, EmployerNote, EmployerTask } from "@/types/employerCRM";
+import { EmployerActivity, EmployerNote, EmployerTask } from "@/shared/types/employerCRM";
 import { mockEmployers } from "./mockTableData";
 
 const activityTypes = [

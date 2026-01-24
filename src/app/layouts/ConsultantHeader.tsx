@@ -9,7 +9,7 @@ import { Breadcrumbs } from "@/shared/components/common/Breadcrumbs";
 import { Badge } from "@/shared/components/ui/badge";
 import { ThemeToggle } from "@/shared/components/common/ThemeToggle";
 import { ReactNode } from "react";
-import { useConsultantAuth } from "@/app/AuthProvider";
+import { useConsultantAuth } from "@/app/providers/AuthContext";
 import { Button } from "@/shared/components/ui/button";
 import { ArrowRightLeft } from "lucide-react";
 import { Link } from "react-router-dom";

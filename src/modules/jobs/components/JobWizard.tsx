@@ -31,18 +31,18 @@ import { JobBoardPublicPreview } from "./JobBoardPublicPreview";
 import { ExternalPromotionDialog } from "./ExternalPromotionDialog";
 import { PostPublishFlow } from "./PostPublishFlow";
 import { toast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
-import { jobTemplateService } from "@/shared/lib/api/jobTemplateService";
+import { jobService } from "@/shared/lib/jobService";
+import { jobTemplateService } from "@/shared/lib/jobTemplateService";
 import { generateJobCode } from "@/shared/lib/jobUtils";
 import { calculateServicePricing, processAccountPayment, processCreditCardPayment } from "@/shared/lib/paymentService";
 import { createJobCheckoutSession } from "@/shared/lib/payments";
 import { cn } from "@/shared/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { transformJobFormDataToCreateRequest, transformRequirements, transformResponsibilities } from "@/shared/lib/jobFormTransformers";
-import { companySettingsService, JobAssignmentMode } from "@/shared/lib/api/companySettingsService";
-import { InsufficientBalanceModal } from "@/components/wallet/InsufficientBalanceModal";
+import { companySettingsService, JobAssignmentMode } from "@/shared/lib/companySettingsService";
+import { InsufficientBalanceModal } from "@/modules/wallet/components/InsufficientBalanceModal";
 import { useWalletBalance } from "@/shared/hooks/useWalletBalance";
-import { walletService } from "@/services/walletService";
+import { walletService } from "@/shared/services/walletService";
 
 
 interface JobWizardProps {

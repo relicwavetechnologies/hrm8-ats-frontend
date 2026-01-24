@@ -1,15 +1,15 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAIInterview } from '@/shared/hooks/useAIInterview';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { ArrowLeft, Play, FileText, BarChart3, MessageSquare } from 'lucide-react';
-import { LiveTranscript } from '@/components/aiInterview/interface/LiveTranscript';
-import { AIInterviewAnalysis } from '@/components/aiInterview/analysis/AIInterviewAnalysis';
-import { InterviewReport } from '@/components/aiInterview/reports/InterviewReport';
+import { LiveTranscript } from '@/modules/ai-interviews/components/interface/LiveTranscript';
+import { AIInterviewAnalysis } from '@/modules/ai-interviews/components/analysis/AIInterviewAnalysis';
+import { InterviewReport } from '@/modules/ai-interviews/components/reports/InterviewReport';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 

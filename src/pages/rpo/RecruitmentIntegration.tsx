@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Progress } from '@/shared/components/ui/progress';

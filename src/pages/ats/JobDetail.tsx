@@ -40,10 +40,10 @@ import { JobActivityFeed } from "@/modules/jobs/components/JobActivityFeed";
 import { JobLifecycleActions } from "@/modules/jobs/components/JobLifecycleActions";
 import { JobPaymentStatus } from "@/modules/jobs/components/JobPaymentStatus";
 import { formatSalaryRange, formatExperienceLevel, formatRelativeDate } from "@/shared/lib/jobUtils";
-import { ApplicationPipeline } from "@/components/applications/ApplicationPipeline";
-import { JobApplicantsList } from "@/components/applications/JobApplicantsList";
-import { AllApplicantsCard } from "@/components/applications/AllApplicantsCard";
-import { InitialScreeningTab } from "@/components/applications/InitialScreeningTab";
+import { ApplicationPipeline } from "@/modules/applications/components/ApplicationPipeline";
+import { JobApplicantsList } from "@/modules/applications/components/JobApplicantsList";
+import { AllApplicantsCard } from "@/modules/applications/components/AllApplicantsCard";
+import { InitialScreeningTab } from "@/modules/applications/components/InitialScreeningTab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,7 +59,7 @@ import { JobBudgetTracker } from "@/modules/jobs/components/budget/JobBudgetTrac
 import { CandidateMatchingPanel } from "@/modules/jobs/components/matching/CandidateMatchingPanel";
 import { JobAIInterviewsTab } from "@/modules/jobs/components/aiInterview/JobAIInterviewsTab";
 import { useToast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
 import { UpgradeServiceDialog } from "@/modules/jobs/components/UpgradeServiceDialog";
 import { JobDetailPageSkeleton } from "@/modules/jobs/components/JobDetailPageSkeleton";
@@ -67,11 +67,11 @@ import { JobBoardVisibilityControl } from "@/modules/jobs/components/JobBoardVis
 import { ArchiveJobDialog } from "@/modules/jobs/components/ArchiveJobDialog";
 import { DeleteJobDialog } from "@/modules/jobs/components/DeleteJobDialog";
 import { applicationService } from "@/shared/lib/applicationService";
-import { TalentPoolSearchDialog } from "@/components/applications/TalentPoolSearchDialog";
-import { JobApplicationsFilterBar, JobApplicationsFilters } from "@/components/applications/JobApplicationsFilterBar";
-import { ManualUploadDialog } from "@/components/applications/ManualUploadDialog";
-import { ApplicationListView } from "@/components/applications/ApplicationListView";
-import { JobEmailHubDrawer } from "@/components/email/JobEmailHubDrawer";
+import { TalentPoolSearchDialog } from "@/modules/applications/components/TalentPoolSearchDialog";
+import { JobApplicationsFilterBar, JobApplicationsFilters } from "@/modules/applications/components/JobApplicationsFilterBar";
+import { ManualUploadDialog } from "@/modules/applications/components/ManualUploadDialog";
+import { ApplicationListView } from "@/modules/applications/components/ApplicationListView";
+import { JobEmailHubDrawer } from "@/modules/email/components/JobEmailHubDrawer";
 import { Upload, LayoutGrid, List, Inbox } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { filterApplicationsByTags } from "@/shared/lib/applicationTags";

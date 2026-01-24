@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { RPOContractsList } from '@/components/rpo/RPOContractsList';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { RPOContractsList } from '@/modules/rpo/components/RPOContractsList';
 import { getRPODashboardMetrics } from '@/shared/lib/rpoTrackingUtils';
 import { Button } from '@/shared/components/ui/button';
 import { FileBarChart, BarChart3 } from 'lucide-react';

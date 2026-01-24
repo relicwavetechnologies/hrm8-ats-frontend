@@ -1,185 +1,201 @@
 /**
- * Job Service
- * Handles job-related API calls
+ * Job API Service
+ * Handles all job-related API calls
  */
 
 import { apiClient } from './api';
+import { Job, JobFormData } from '@/shared/types/job';
 
-export interface PublicJob {
-  id: string;
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'VISITOR';
+export type JobStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'ON_HOLD' | 'FILLED' | 'CANCELLED' | 'TEMPLATE';
+export type HiringMode = 'SELF_MANAGED' | 'SHORTLISTING' | 'FULL_SERVICE' | 'EXECUTIVE_SEARCH';
+export type WorkArrangement = 'ON_SITE' | 'REMOTE' | 'HYBRID';
+export type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'CASUAL';
+
+export interface CreateJobRequest {
   title: string;
   description: string;
   jobSummary?: string;
-  category?: string;
+  hiringMode: HiringMode;
   location: string;
   department?: string;
-  workArrangement: string;
-  employmentType: string;
-  numberOfVacancies: number;
+  workArrangement: WorkArrangement;
+  employmentType: EmploymentType;
+  numberOfVacancies?: number;
   salaryMin?: number;
   salaryMax?: number;
-  salaryCurrency: string;
+  salaryCurrency?: string;
   salaryDescription?: string;
-  requirements: string[];
-  responsibilities: string[];
-  promotionalTags: string[];
-  featured: boolean;
+  category?: string;
+  promotionalTags?: string[];
+  featured?: boolean;
+  stealth?: boolean;
+  visibility?: string;
+  expiryDate?: string;
+  videoInterviewingEnabled?: boolean;
+  assignmentMode?: 'AUTO' | 'MANUAL';
+  regionId?: string;
+  servicePackage?: string;
+}
+
+export interface UpdateJobRequest extends Partial<CreateJobRequest> {
+  status?: JobStatus;
+  closeDate?: string;
+  assignedConsultantId?: string | null;
+  screening_enabled?: boolean;
+  automated_screening_enabled?: boolean;
+  screening_criteria?: any;
+  pre_interview_questionnaire_enabled?: boolean;
+  requirements?: string[];
+  responsibilities?: string[];
+  hiringTeam?: any[];
   postingDate?: string;
   expiryDate?: string;
-  regionId?: string;
-  company: {
-    id: string;
-    name: string;
-    website: string;
-    domain?: string;
-    logoUrl?: string | null;
-    aboutCompany?: string | null;
-  };
-  applicationForm?: any;
-  createdAt: string;
+  servicePackage?: string;
 }
 
-export interface PublicJobSearchParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  location?: string;
-  companyId?: string;
+export interface GetJobsFilters {
+  status?: JobStatus;
   department?: string;
-  category?: string;
-  tags?: string;
-  employmentType?: string;
-  workArrangement?: string;
-  salaryMin?: number;
-  salaryMax?: number;
-  featured?: boolean;
-  // Keep offset for backward compatibility
-  offset?: number;
-}
-
-export interface JobFilterOptions {
-  categories: string[];
-  departments: string[];
-  locations: string[];
-  companies: Array<{ id: string; name: string }>;
-  tags: string[];
-}
-
-export interface JobAggregation {
-  value: string;
-  count: number;
-}
-
-export interface JobAggregationsResponse {
-  categories: JobAggregation[];
-  locations: JobAggregation[];
-  departments: JobAggregation[];
-  tags: JobAggregation[];
-  employmentTypes: JobAggregation[];
-  workArrangements: JobAggregation[];
-}
-
-export interface PublicJobSearchResponse {
-  jobs: PublicJob[];
-  total: number;
-  limit: number;
-  offset?: number;
-  pagination?: {
-    total: number;
-    page: number;
-    limit: number;
-    total_pages: number;
-  };
-  isRegionFiltered?: boolean;
-  regionNote?: string | null;
-}
-
-export interface ApplicationFormField {
-  id: string;
-  type: string;
-  label: string;
-  required: boolean;
-}
-
-export interface ApplicationFormQuestion {
-  id: string;
-  type: 'short_text' | 'long_text' | 'multiple_choice' | 'file_upload';
-  label: string;
-  required: boolean;
-  options?: Array<{ id: string; value: string; label: string }>;
-}
-
-export interface ApplicationFormResponse {
-  jobId: string;
-  title: string;
-  company: {
-    id: string;
-    name: string;
-    domain: string;
-  };
-  form: {
-    fields: ApplicationFormField[];
-    questions: ApplicationFormQuestion[];
-  } | null;
+  location?: string;
+  hiringMode?: HiringMode;
+  includeArchived?: boolean; // If true, includes archived jobs. If false/undefined, excludes them
+  onlyArchived?: boolean; // If true, returns only archived jobs
 }
 
 class JobService {
-  async getPublicJobs(params?: PublicJobSearchParams) {
+  /**
+   * Create a new job
+   */
+  async createJob(data: CreateJobRequest) {
+    return apiClient.post<Job>('/api/jobs', data);
+  }
+
+  /**
+   * Get all jobs for the company
+   */
+  async getJobs(filters?: GetJobsFilters) {
     const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.location) queryParams.append('location', params.location);
-    if (params?.companyId) queryParams.append('companyId', params.companyId);
-    if (params?.department) queryParams.append('department', params.department);
-    if (params?.category) queryParams.append('category', params.category);
-    if (params?.tags) queryParams.append('tags', params.tags);
-    if (params?.employmentType) queryParams.append('employmentType', params.employmentType);
-    if (params?.workArrangement) queryParams.append('workArrangement', params.workArrangement);
-    if (params?.salaryMin !== undefined) queryParams.append('salaryMin', params.salaryMin.toString());
-    if (params?.salaryMax !== undefined) queryParams.append('salaryMax', params.salaryMax.toString());
-    if (params?.featured !== undefined) queryParams.append('featured', params.featured.toString());
-    // Keep offset for backward compatibility
-    if (params?.offset !== undefined) queryParams.append('offset', params.offset.toString());
+    if (filters?.status) queryParams.append('status', filters.status);
+    if (filters?.department) queryParams.append('department', filters.department);
+    if (filters?.location) queryParams.append('location', filters.location);
+    if (filters?.hiringMode) queryParams.append('hiringMode', filters.hiringMode);
+    if (filters?.includeArchived !== undefined) queryParams.append('includeArchived', filters.includeArchived.toString());
+    if (filters?.onlyArchived) queryParams.append('onlyArchived', 'true');
 
-    return apiClient.get<PublicJobSearchResponse>(
-      `/api/public/jobs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    );
-  }
+    const queryString = queryParams.toString();
+    const endpoint = `/api/jobs${queryString ? `?${queryString}` : ''}`;
 
-  async getPublicJobById(id: string) {
-    // Backend returns { success: true, data: { ...jobFields } } directly, not { job: {...} }
-    return apiClient.get<PublicJob>(`/api/public/jobs/${id}`);
-  }
-
-  async getFilterOptions() {
-    return apiClient.get<{ data: JobFilterOptions }>('/api/public/jobs/filters');
+    return apiClient.get<Job[]>(endpoint);
   }
 
   /**
-   * Get filter aggregations with job counts
-   * Returns categories, locations, tags, etc. with how many jobs match each
+   * Get job by ID
    */
-  async getAggregations() {
-    return apiClient.get<JobAggregationsResponse>('/api/public/jobs/aggregations');
+  async getJobById(id: string) {
+    return apiClient.get<Job>(`/api/jobs/${id}`);
   }
 
   /**
-   * Get related jobs from the same company
-   * @param jobId - The job ID to get related jobs for
-   * @param limit - Maximum number of related jobs to return (default: 5)
+   * Update job
    */
-  async getRelatedJobs(jobId: string, limit: number = 5) {
-    return apiClient.get<{ jobs: PublicJob[] }>(`/api/public/jobs/${jobId}/related?limit=${limit}`);
+  async updateJob(id: string, data: UpdateJobRequest) {
+    return apiClient.put<Job>(`/api/jobs/${id}`, data);
   }
 
   /**
-   * Get application form configuration for a specific job
-   * @param jobId - The job ID to get the application form for
+   * Delete job
    */
-  async getApplicationForm(jobId: string) {
-    return apiClient.get<ApplicationFormResponse>(`/api/public/jobs/${jobId}/application-form`);
+  async deleteJob(id: string) {
+    return apiClient.delete(`/api/jobs/${id}`);
+  }
+
+  /**
+   * Bulk delete jobs
+   */
+  async bulkDeleteJobs(jobIds: string[]) {
+    return apiClient.post<{ deletedCount: number; message: string }>('/api/jobs/bulk-delete', { jobIds });
+  }
+
+  /**
+   * Publish job (change status from DRAFT to OPEN)
+   */
+  async publishJob(id: string) {
+    return apiClient.post<Job>(`/api/jobs/${id}/publish`);
+  }
+
+  /**
+   * Save job as draft
+   */
+  async saveDraft(id: string, data: UpdateJobRequest) {
+    return apiClient.post<Job>(`/api/jobs/${id}/save-draft`, data);
+  }
+
+  /**
+   * Save job as template
+   */
+  async saveTemplate(id: string | null, data: CreateJobRequest) {
+    const endpoint = id ? `/api/jobs/${id}/save-template` : `/api/jobs/new/save-template`;
+    return apiClient.post<Job>(endpoint, data);
+  }
+
+  /**
+   * Archive a job
+   */
+  async archiveJob(id: string) {
+    return apiClient.post<Job>(`/api/jobs/${id}/archive`);
+  }
+
+  /**
+   * Unarchive a job
+   */
+  async unarchiveJob(id: string) {
+    return apiClient.post<Job>(`/api/jobs/${id}/unarchive`);
+  }
+
+  /**
+   * Bulk archive jobs
+   */
+  async bulkArchiveJobs(jobIds: string[]) {
+    return apiClient.post<{ archivedCount: number; message: string }>('/api/jobs/bulk-archive', { jobIds });
+  }
+
+  /**
+   * Bulk unarchive jobs
+   */
+  async bulkUnarchiveJobs(jobIds: string[]) {
+    return apiClient.post<{ unarchivedCount: number; message: string }>('/api/jobs/bulk-unarchive', { jobIds });
+  }
+
+  /**
+   * Submit and activate job (after review step)
+   */
+  async submitAndActivate(id: string, paymentId?: string) {
+    return apiClient.post<Job>(`/api/jobs/${id}/submit`, { paymentId });
+  }
+
+  /**
+   * Update job alerts configuration
+   */
+  async updateAlerts(id: string, alertsConfig: {
+    newApplicants?: boolean;
+    inactivity?: boolean;
+    deadlines?: boolean;
+    inactivityDays?: number;
+  }) {
+    return apiClient.put<Job>(`/api/jobs/${id}/alerts`, alertsConfig);
+  }
+
+  /**
+   * Save job as template (post-launch)
+   */
+  async saveAsTemplate(id: string, templateName: string, templateDescription?: string) {
+    return apiClient.post<{ job: Job; templateId: string }>(`/api/jobs/${id}/save-as-template`, {
+      templateName,
+      templateDescription,
+    });
   }
 }
 
 export const jobService = new JobService();
+

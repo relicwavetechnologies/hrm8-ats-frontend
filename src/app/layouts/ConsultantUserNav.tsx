@@ -10,7 +10,7 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { User, Settings, Keyboard, LogOut } from "lucide-react";
-import { useConsultantAuth } from "@/app/AuthProvider";
+import { useConsultantAuth } from "@/app/providers/AuthContext";
 
 export function ConsultantUserNav() {
   const { consultant, logout } = useConsultantAuth();

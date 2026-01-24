@@ -1,4 +1,4 @@
-import { CompanyOKR, TeamObjective } from "@/types/performance";
+import { CompanyOKR, TeamObjective } from "@/shared/types/performance";
 
 export const mockCompanyOKRs: CompanyOKR[] = [
   {

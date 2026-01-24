@@ -2,7 +2,7 @@
  * Hook to check user role and permissions
  */
 
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { UserRole } from '@/shared/lib/authService';
 
 export function useRole() {

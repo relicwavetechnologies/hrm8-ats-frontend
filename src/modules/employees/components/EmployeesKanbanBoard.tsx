@@ -18,7 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Mail, Phone, MapPin, GripVertical } from "lucide-react";
 import type { Employee } from "@/shared/types/employee";
 import { getEmployees } from "@/shared/lib/employeeStorage";
-import { EmployeeStatusBadge } from "@/components/hrms/EmployeeStatusBadge";
+import { EmployeeStatusBadge } from "@/modules/employees/components/EmployeeStatusBadge";
 
 interface KanbanColumn {
   id: string;

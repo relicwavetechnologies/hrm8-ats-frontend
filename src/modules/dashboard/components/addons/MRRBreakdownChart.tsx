@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getHistoricalMRR } from '@/shared/lib/addons/revenueAnalytics';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 import { useState } from 'react';
 
 export function MRRBreakdownChart() {

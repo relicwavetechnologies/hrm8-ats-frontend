@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { MoreVertical, Eye, Edit, Users, FileText, Trash2 } from 'lucide-react';
-import { Column } from '@/components/tables/DataTable';
+import { Column } from '@/shared/components/tables/DataTable';
 import { ServiceProject } from '@/shared/types/recruitmentService';
 import { Button } from '@/shared/components/ui/button';
 import { Link } from 'react-router-dom';

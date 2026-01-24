@@ -1,4 +1,4 @@
-import { CalibrationSession } from "@/types/performance";
+import { CalibrationSession } from "@/shared/types/performance";
 
 export const mockCalibrationSessions: CalibrationSession[] = [
   {

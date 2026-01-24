@@ -16,7 +16,7 @@ import { JobEditScreeningTab } from "./JobEditScreeningTab";
 import { JobEditSettingsTab } from "./JobEditSettingsTab";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { transformJobFormDataToUpdateRequest, transformRequirements, transformResponsibilities } from "@/shared/lib/jobFormTransformers";
 import { transformJobToFormData } from "@/shared/lib/jobFormTransformers";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
@@ -117,7 +117,7 @@ export function JobEditDrawer({ open, onOpenChange, jobId, onSuccess }: JobEditD
     try {
       const formData = form.getValues();
       const isValid = await form.trigger();
-      
+
       if (!isValid) {
         toast({
           title: "Validation Error",
@@ -131,7 +131,7 @@ export function JobEditDrawer({ open, onOpenChange, jobId, onSuccess }: JobEditD
 
       // Transform form data to API format
       const updateRequest = transformJobFormDataToUpdateRequest(formData);
-      
+
       // Add screening and consultant assignment fields
       if (formData.assignedConsultantId !== undefined) {
         (updateRequest as any).assignedConsultantId = formData.assignedConsultantId || null;

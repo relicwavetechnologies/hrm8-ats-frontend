@@ -1,152 +1,109 @@
-import { JobFormData } from "@/shared/types/job";
+/**
+ * Job Template API Service
+ * Handles all job template-related API calls
+ */
+
+import { apiClient } from './api';
+import { CreateJobRequest } from './jobService';
 
 export interface JobTemplate {
   id: string;
+  companyId: string;
+  createdBy: string;
   name: string;
   description?: string;
   category: string;
-  data: Partial<JobFormData>;
   isShared: boolean;
-  createdBy: string;
-  createdAt: Date;
+  sourceJobId?: string;
+  jobData: CreateJobRequest; // All job data stored as JSON
   usageCount: number;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export const templateCategories = [
-  "Engineering",
-  "Product",
-  "Design",
-  "Marketing",
-  "Sales",
-  "Operations",
-  "Finance",
-  "HR",
-  "Customer Support",
-  "Custom"
-];
+export interface CreateTemplateRequest {
+  name: string;
+  description?: string;
+  category?: string;
+  isShared?: boolean;
+  jobData: CreateJobRequest; // All job data
+}
 
-const jobTemplates: JobTemplate[] = [
-  {
-    id: "1",
-    name: "Senior Software Engineer",
-    description: "Template for senior engineering roles",
-    category: "Engineering",
-    data: {
-      title: "Senior Software Engineer",
-      department: "Engineering",
-      employmentType: "full-time",
-      experienceLevel: "senior",
-      requirements: [
-        { id: "1", text: "5+ years of professional software development experience", order: 0 },
-        { id: "2", text: "Strong knowledge of React, TypeScript, and Node.js", order: 1 },
-        { id: "3", text: "Experience with cloud platforms (AWS/GCP/Azure)", order: 2 },
-        { id: "4", text: "Excellent problem-solving and communication skills", order: 3 }
-      ],
-      responsibilities: [
-        { id: "1", text: "Design and develop scalable web applications", order: 0 },
-        { id: "2", text: "Mentor junior engineers and conduct code reviews", order: 1 },
-        { id: "3", text: "Collaborate with product and design teams", order: 2 },
-        { id: "4", text: "Contribute to technical architecture decisions", order: 3 }
-      ],
-    },
-    isShared: true,
-    createdBy: "System",
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-    usageCount: 45,
-  },
-  {
-    id: "2",
-    name: "Product Manager",
-    description: "Standard PM role template",
-    category: "Product",
-    data: {
-      title: "Product Manager",
-      department: "Product",
-      employmentType: "full-time",
-      experienceLevel: "mid",
-      requirements: [
-        { id: "1", text: "3+ years of product management experience", order: 0 },
-        { id: "2", text: "Strong analytical and data-driven decision making", order: 1 },
-        { id: "3", text: "Experience with agile methodologies", order: 2 },
-        { id: "4", text: "Excellent stakeholder management skills", order: 3 }
-      ],
-      responsibilities: [
-        { id: "1", text: "Define product roadmap and strategy", order: 0 },
-        { id: "2", text: "Gather and prioritize product requirements", order: 1 },
-        { id: "3", text: "Work closely with engineering and design teams", order: 2 },
-        { id: "4", text: "Analyze metrics and user feedback", order: 3 }
-      ],
-    },
-    isShared: true,
-    createdBy: "Sarah Johnson",
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-    usageCount: 28,
-  },
-  {
-    id: "3",
-    name: "UX Designer",
-    category: "Design",
-    data: {
-      title: "UX Designer",
-      department: "Design",
-      employmentType: "full-time",
-      experienceLevel: "mid",
-    },
-    isShared: false,
-    createdBy: "Emma Wilson",
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    usageCount: 12,
-  },
-];
+export type UpdateTemplateRequest = Partial<CreateTemplateRequest>;
 
-export function getJobTemplates(category?: string): JobTemplate[] {
-  if (category) {
-    return jobTemplates.filter(t => t.category === category);
+export interface GetTemplatesFilters {
+  category?: string;
+  search?: string;
+}
+
+class JobTemplateService {
+  /**
+   * Create template from existing job
+   */
+  async createFromJob(jobId: string, name: string, description?: string, category?: string) {
+    return apiClient.post<JobTemplate>(`/api/job-templates/from-job/${jobId}`, {
+      name,
+      description,
+      category,
+    });
   }
-  return [...jobTemplates];
-}
 
-export function getJobTemplate(id: string): JobTemplate | undefined {
-  return jobTemplates.find(t => t.id === id);
-}
+  /**
+   * Create template from scratch
+   */
+  async createTemplate(data: CreateTemplateRequest) {
+    return apiClient.post<JobTemplate>('/api/job-templates', data);
+  }
 
-export function createJobTemplate(template: Omit<JobTemplate, "id" | "createdAt" | "usageCount">): JobTemplate {
-  const newTemplate: JobTemplate = {
-    ...template,
-    id: Date.now().toString(),
-    createdAt: new Date(),
-    usageCount: 0,
-  };
-  
-  jobTemplates.push(newTemplate);
-  return newTemplate;
-}
+  /**
+   * Get all templates for the company
+   */
+  async getTemplates(filters?: GetTemplatesFilters) {
+    const queryParams = new URLSearchParams();
+    if (filters?.category) queryParams.append('category', filters.category);
+    if (filters?.search) queryParams.append('search', filters.search);
 
-export function updateJobTemplate(id: string, updates: Partial<JobTemplate>): JobTemplate | null {
-  const index = jobTemplates.findIndex(t => t.id === id);
-  if (index === -1) return null;
-  
-  jobTemplates[index] = { ...jobTemplates[index], ...updates };
-  return jobTemplates[index];
-}
+    const queryString = queryParams.toString();
+    const endpoint = `/api/job-templates${queryString ? `?${queryString}` : ''}`;
+    
+    return apiClient.get<JobTemplate[]>(endpoint);
+  }
 
-export function deleteJobTemplate(id: string): boolean {
-  const index = jobTemplates.findIndex(t => t.id === id);
-  if (index === -1) return false;
-  
-  jobTemplates.splice(index, 1);
-  return true;
-}
+  /**
+   * Get template by ID
+   */
+  async getTemplate(id: string) {
+    return apiClient.get<JobTemplate>(`/api/job-templates/${id}`);
+  }
 
-export function incrementTemplateUsage(id: string): void {
-  const template = jobTemplates.find(t => t.id === id);
-  if (template) {
-    template.usageCount++;
+  /**
+   * Get template data formatted for job creation
+   */
+  async getTemplateJobData(id: string) {
+    return apiClient.get<CreateJobRequest>(`/api/job-templates/${id}/job-data`);
+  }
+
+  /**
+   * Update template
+   */
+  async updateTemplate(id: string, data: UpdateTemplateRequest) {
+    return apiClient.put<JobTemplate>(`/api/job-templates/${id}`, data);
+  }
+
+  /**
+   * Delete template
+   */
+  async deleteTemplate(id: string) {
+    return apiClient.delete(`/api/job-templates/${id}`);
+  }
+
+  /**
+   * Record template usage (increment usage count)
+   */
+  async recordUsage(id: string) {
+    return apiClient.post<JobTemplate>(`/api/job-templates/${id}/use`);
   }
 }
 
-export function getMostUsedTemplates(limit: number = 5): JobTemplate[] {
-  return [...jobTemplates]
-    .sort((a, b) => b.usageCount - a.usageCount)
-    .slice(0, limit);
-}
+export const jobTemplateService = new JobTemplateService();

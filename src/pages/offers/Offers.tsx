@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { FileText, Plus, Mail } from "lucide-react";
@@ -8,7 +8,7 @@ import { OfferLetter } from "@/shared/types/offer";
 import { Badge } from "@/shared/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
-import { OfferForm } from "@/components/offers/OfferForm";
+import { OfferForm } from "@/modules/offers/components/OfferForm";
 import { toast } from "@/shared/hooks/use-toast";
 
 export default function Offers() {

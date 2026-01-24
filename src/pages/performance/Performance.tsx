@@ -5,11 +5,11 @@ import { Target, FileText, Users, TrendingUp, Calendar, Star, Award, MessageSqua
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { GoalsOverview } from "@/components/performance/GoalsOverview";
-import { ReviewsOverview } from "@/components/performance/ReviewsOverview";
-import { Feedback360Overview } from "@/components/performance/Feedback360Overview";
-import { CalibrationOverview } from "@/components/performance/CalibrationOverview";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { GoalsOverview } from "@/modules/performance/components/GoalsOverview";
+import { ReviewsOverview } from "@/modules/performance/components/ReviewsOverview";
+import { Feedback360Overview } from "@/modules/performance/components/Feedback360Overview";
+import { CalibrationOverview } from "@/modules/performance/components/CalibrationOverview";
 import { getPerformanceGoals, getPerformanceReviews, getFeedback360 } from "@/shared/lib/performanceStorage";
 
 export default function Performance() {

@@ -1,21 +1,21 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, DollarSign } from "lucide-react";
 import { getEmployeeById } from "@/shared/lib/employeeStorage";
-import { EmployeeStatusBadge } from "@/components/hrms/EmployeeStatusBadge";
-import { EmploymentTypeBadge } from "@/components/hrms/EmploymentTypeBadge";
-import { EntityAvatar } from "@/components/tables/EntityAvatar";
+import { EmployeeStatusBadge } from "@/modules/employees/components/EmployeeStatusBadge";
+import { EmploymentTypeBadge } from "@/modules/employees/components/EmploymentTypeBadge";
+import { EntityAvatar } from "@/shared/components/tables/EntityAvatar";
 import { format } from "date-fns";
 import { useState } from "react";
-import { EmployeeFormDialog } from "@/components/hrms/EmployeeFormDialog";
-import { EmployeeDocuments } from "@/components/hrms/EmployeeDocuments";
-import { EmployeeNotes } from "@/components/hrms/EmployeeNotes";
-import { EmployeeHistory } from "@/components/hrms/EmployeeHistory";
+import { EmployeeFormDialog } from "@/modules/employees/components/EmployeeFormDialog";
+import { EmployeeDocuments } from "@/modules/employees/components/EmployeeDocuments";
+import { EmployeeNotes } from "@/modules/employees/components/EmployeeNotes";
+import { EmployeeHistory } from "@/modules/employees/components/EmployeeHistory";
 
 export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>();

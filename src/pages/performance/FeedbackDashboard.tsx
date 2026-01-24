@@ -1,11 +1,11 @@
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Helmet } from 'react-helmet-async';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { FeedbackRequestDashboard } from '@/components/feedback/FeedbackRequestDashboard';
-import { FeedbackAnalyticsDashboard } from '@/components/feedback/FeedbackAnalyticsDashboard';
-import { AutomationRulesManager } from '@/components/feedback/AutomationRulesManager';
-import { TeamPerformanceAnalytics } from '@/components/feedback/TeamPerformanceAnalytics';
+import { FeedbackRequestDashboard } from '@/modules/performance/components/FeedbackRequestDashboard';
+import { FeedbackAnalyticsDashboard } from '@/modules/performance/components/FeedbackAnalyticsDashboard';
+import { AutomationRulesManager } from '@/modules/performance/components/AutomationRulesManager';
+import { TeamPerformanceAnalytics } from '@/modules/performance/components/TeamPerformanceAnalytics';
 
 export default function FeedbackDashboard() {
   return (

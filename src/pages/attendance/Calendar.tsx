@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";

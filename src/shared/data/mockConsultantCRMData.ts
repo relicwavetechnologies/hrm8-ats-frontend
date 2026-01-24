@@ -1,4 +1,4 @@
-import type { CRMActivity, CRMNote, CRMTask } from '@/types/consultantCRM';
+import type { CRMActivity, CRMNote, CRMTask } from '@/shared/types/consultantCRM';
 
 const CONSULTANT_CRM_STORAGE_KEY = 'consultant_crm_data';
 const CONSULTANT_NOTES_STORAGE_KEY = 'consultant_notes';

@@ -1,4 +1,4 @@
-import type { Badge, Challenge, GamificationProfile, LeaderboardEntry } from '@/types/performance';
+import type { Badge, Challenge, GamificationProfile, LeaderboardEntry } from '@/shared/types/performance';
 
 export const mockBadges: Badge[] = [
   // Achievement Badges

@@ -20,7 +20,7 @@ import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Sparkles, Loader2 } from 'lucide-react';
-import { questionService } from '@/shared/lib/api/questionService';
+import { questionService } from '@/shared/lib/questionService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { questionTypeLabels, questionTypeIcons } from '@/shared/lib/applicationFormUtils';
 

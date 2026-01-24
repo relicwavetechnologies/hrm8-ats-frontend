@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Separator } from "@/shared/components/ui/separator";
 import { Job } from "@/shared/types/job";
 import { useToast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { Calendar, RefreshCw, Info } from "lucide-react";
 
 interface ExtendJobDurationDialogProps {
@@ -189,7 +189,7 @@ export function ExtendJobDurationDialog({
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
-                    This job will automatically renew by extending the closing date. 
+                    This job will automatically renew by extending the closing date.
                     You can disable auto-renewal at any time.
                   </AlertDescription>
                 </Alert>

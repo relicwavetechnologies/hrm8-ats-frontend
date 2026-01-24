@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { CandidatePageLayout } from '@/components/layouts/CandidatePageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { CandidatePageLayout } from '@/app/layouts/CandidatePageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/shared/lib/api';
 import { formatDistanceToNow, format } from 'date-fns';
-import { useAuth } from '@/app/AuthProvider';
-import { useCandidateAuth } from '@/app/AuthProvider' // TODO: Remove candidate auth;
+import { useAuth } from '@/app/providers/AuthContext';
+import { useCandidateAuth } from '@/app/providers/AuthContext' // TODO: Remove candidate auth;
 
 // Icon mapping for notification types
 const TYPE_ICONS: Record<string, React.ElementType> = {

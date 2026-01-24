@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Button } from "@/shared/components/ui/button";
 import { Gift, Users, DollarSign, TrendingUp, Plus, Download } from "lucide-react";
 import { getBenefitPlans, getBenefitEnrollments, calculateBenefitsStats } from "@/shared/lib/benefitsStorage";
 import { Badge } from "@/shared/components/ui/badge";
-import { BenefitEnrollmentDialog } from "@/components/benefits/BenefitEnrollmentDialog";
+import { BenefitEnrollmentDialog } from "@/modules/benefits/components/BenefitEnrollmentDialog";
 
 export default function Benefits() {
   const [refreshKey, setRefreshKey] = useState(0);

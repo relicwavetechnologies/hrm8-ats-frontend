@@ -16,8 +16,8 @@ import { Separator } from "@/shared/components/ui/separator";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { toast } from "sonner";
 import { Save, FileText } from "lucide-react";
-import { offerService } from "@/shared/lib/api/offerService";
-import { jobService } from "@/shared/lib/api/jobService";
+import { offerService } from "@/shared/lib/offerService";
+import { jobService } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
 

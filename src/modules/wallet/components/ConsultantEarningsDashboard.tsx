@@ -17,8 +17,8 @@ import {
     FileText,
     Download,
 } from "lucide-react";
-import { WalletBalance } from "@/components/wallet/WalletBalance";
-import { TransactionList } from "@/components/wallet/TransactionList";
+import { WalletBalance } from "@/modules/wallet/components/WalletBalance";
+import { TransactionList } from "@/modules/wallet/components/TransactionList";
 import { cn } from "@/shared/lib/utils";
 
 export function ConsultantEarningsDashboard() {

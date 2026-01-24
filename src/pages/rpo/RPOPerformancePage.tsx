@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { RPOPerformanceDashboard } from '@/components/rpo/RPOPerformanceDashboard';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { RPOPerformanceDashboard } from '@/modules/rpo/components/RPOPerformanceDashboard';
 import { 
   getAllContractPerformanceMetrics,
   getPerformanceMetricsSummary,

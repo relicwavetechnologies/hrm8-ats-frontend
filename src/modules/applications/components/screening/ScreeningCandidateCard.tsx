@@ -10,7 +10,7 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { Eye, Star, FileText, CheckCircle2, XCircle, Sparkles, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { AIMatchBadge } from "../AIMatchBadge";
-import { CandidateAssessmentView } from "@/components/jobs/candidate-assessment/CandidateAssessmentView";
+import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { AIAnalysisView } from "./AIAnalysisView";
 import { useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";

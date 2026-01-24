@@ -1,4 +1,4 @@
-import type { ServiceProject } from '@/types/recruitmentService';
+import type { ServiceProject } from '@/shared/types/recruitmentService';
 
 export const mockServiceProjects: ServiceProject[] = [
   {

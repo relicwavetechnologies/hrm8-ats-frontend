@@ -8,7 +8,7 @@ import { useSidebarState } from "@/shared/hooks/useSidebarState";
 import { ConsultantUserNav } from "./ConsultantUserNav";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { NotificationBell } from "@/modules/notifications/components/NotificationBell";
-import { useConsultantAuth } from "@/app/AuthProvider";
+import { useConsultantAuth } from "@/app/providers/AuthContext";
 import { Button } from "@/shared/components/ui/button";
 import { ArrowRightLeft } from "lucide-react";
 import { Link } from "react-router-dom";

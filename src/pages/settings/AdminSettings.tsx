@@ -1,21 +1,21 @@
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { isDevelopmentMode } from "@/shared/lib/rbacService";
 import { AlertCircle } from "lucide-react";
-import { AdminSettingsDashboard } from "@/components/admin/settings/AdminSettingsDashboard";
-import { PricingManagementTab } from "@/components/admin/settings/PricingManagementTab";
-import { CommissionsManagementTab } from "@/components/admin/settings/CommissionsManagementTab";
-import { TerritoryRegionsTab } from "@/components/admin/settings/TerritoryRegionsTab";
-import { CurrencyManagementTab } from "@/components/admin/settings/CurrencyManagementTab";
-import { UserManagementTab } from "@/components/admin/settings/UserManagementTab";
-import { SystemConfigurationTab } from "@/components/admin/settings/SystemConfigurationTab";
-import { IntegrationsTab } from "@/components/admin/settings/IntegrationsTab";
-import { SecurityComplianceTab } from "@/components/admin/settings/SecurityComplianceTab";
-import { AuditLogsTab } from "@/components/admin/settings/AuditLogsTab";
-import { PromoCodesTab } from "@/components/admin/settings/PromoCodesTab";
+import { AdminSettingsDashboard } from "@/modules/settings/components/admin/settings/AdminSettingsDashboard";
+import { PricingManagementTab } from "@/modules/settings/components/admin/settings/PricingManagementTab";
+import { CommissionsManagementTab } from "@/modules/settings/components/admin/settings/CommissionsManagementTab";
+import { TerritoryRegionsTab } from "@/modules/settings/components/admin/settings/TerritoryRegionsTab";
+import { CurrencyManagementTab } from "@/modules/settings/components/admin/settings/CurrencyManagementTab";
+import { UserManagementTab } from "@/modules/settings/components/admin/settings/UserManagementTab";
+import { SystemConfigurationTab } from "@/modules/settings/components/admin/settings/SystemConfigurationTab";
+import { IntegrationsTab } from "@/modules/settings/components/admin/settings/IntegrationsTab";
+import { SecurityComplianceTab } from "@/modules/settings/components/admin/settings/SecurityComplianceTab";
+import { AuditLogsTab } from "@/modules/settings/components/admin/settings/AuditLogsTab";
+import { PromoCodesTab } from "@/modules/settings/components/admin/settings/PromoCodesTab";
 
 export default function AdminSettings() {
   const { isSuperAdmin, loading } = useRBAC();

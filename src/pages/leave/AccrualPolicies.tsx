@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Clock, Plus, Play, TrendingUp, Calendar, FileText, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { getAccrualPolicies, getAccrualTransactions, processMonthlyAccruals, deleteAccrualPolicy } from "@/shared/lib/accrualStorage";
 import { Badge } from "@/shared/components/ui/badge";
-import { DataTable, Column } from "@/components/tables/DataTable";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { AccrualPolicy, AccrualTransaction } from "@/shared/types/accrual";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { toast } from "sonner";
-import { AccrualPolicyDialog } from "@/components/accrual/AccrualPolicyDialog";
+import { AccrualPolicyDialog } from "@/modules/leave/components/accrual/AccrualPolicyDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/components/shared/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
 
 export default function AccrualPolicies() {
   const { isHRAdmin, isSuperAdmin } = useRBAC();

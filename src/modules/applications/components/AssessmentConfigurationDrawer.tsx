@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Separator } from "@/shared/components/ui/separator";
-import { assessmentService, AssessmentQuestion, AssessmentConfiguration } from "@/shared/lib/api/assessmentService";
+import { assessmentService, AssessmentQuestion, AssessmentConfiguration } from "@/shared/lib/assessmentService";
 import { toast } from "sonner";
 import { Plus, Trash2, GripVertical, Save } from "lucide-react";
 

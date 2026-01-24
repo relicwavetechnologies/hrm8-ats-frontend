@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { EnhancedStatCard } from "@/components/dashboard/EnhancedStatCard";
-import { StandardChartCard } from "@/components/dashboard/charts/StandardChartCard";
-import { DashboardActionBar } from "@/components/dashboard/DashboardActionBar";
-import { ActiveFiltersIndicator } from "@/components/dashboard/ActiveFiltersIndicator";
-import { EditModeToggle } from '@/components/dashboard/EditModeToggle';
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
+import { StandardChartCard } from "@/modules/dashboard/components/charts/StandardChartCard";
+import { DashboardActionBar } from "@/modules/dashboard/components/DashboardActionBar";
+import { ActiveFiltersIndicator } from "@/modules/dashboard/components/ActiveFiltersIndicator";
+import { EditModeToggle } from '@/modules/dashboard/components/EditModeToggle';
 import {
   Users, UserCheck, UserX, Building2, Download, Eye, Filter,
   BarChart3, Calendar, Award, TrendingUp

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { ResponsiveContainer, LineChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getRevenueForecast } from '@/shared/lib/addons/revenueAnalytics';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 import { Badge } from "@/shared/components/ui/badge";
 import { TrendingUp } from 'lucide-react';
 

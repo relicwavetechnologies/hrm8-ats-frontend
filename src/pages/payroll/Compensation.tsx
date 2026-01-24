@@ -3,11 +3,11 @@ import { Helmet } from "react-helmet-async";
 import { DollarSign, TrendingUp, Award, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { SalaryReviews } from "@/components/compensation/SalaryReviews";
-import { SalaryBandsView } from "@/components/compensation/SalaryBandsView";
-import { BonusPlans } from "@/components/compensation/BonusPlans";
-import { EquityGrants } from "@/components/compensation/EquityGrants";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { SalaryReviews } from "@/modules/payroll/components/compensation/SalaryReviews";
+import { SalaryBandsView } from "@/modules/payroll/components/compensation/SalaryBandsView";
+import { BonusPlans } from "@/modules/payroll/components/compensation/BonusPlans";
+import { EquityGrants } from "@/modules/payroll/components/compensation/EquityGrants";
 import { getCompensationReviews, getSalaryBands, calculateCompensationStats } from "@/shared/lib/compensationStorage";
 
 export default function Compensation() {

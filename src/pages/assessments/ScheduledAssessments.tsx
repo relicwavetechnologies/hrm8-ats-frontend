@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { ScheduledAssessmentsTable } from '@/components/assessments/ScheduledAssessmentsTable';
-import { ScheduleAssessmentDialog } from '@/components/assessments/ScheduleAssessmentDialog';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { ScheduledAssessmentsTable } from '@/modules/assessments/components/ScheduledAssessmentsTable';
+import { ScheduleAssessmentDialog } from '@/modules/assessments/components/ScheduleAssessmentDialog';
 import { toast } from '@/shared/hooks/use-toast';
 import { 
   getAllScheduledAssessments, 

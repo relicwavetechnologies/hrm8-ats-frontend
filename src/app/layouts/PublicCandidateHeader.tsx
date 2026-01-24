@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/shared/components/common/ThemeToggle";
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
-import { useCandidateAuth } from "@/app/AuthProvider";
+import { useCandidateAuth } from "@/app/providers/AuthContext";
 
 interface PublicCandidateHeaderProps {
   breadcrumbActions?: ReactNode;

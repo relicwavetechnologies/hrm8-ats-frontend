@@ -1,4 +1,4 @@
-import type { Employer, Job, Candidate, Consultant, Department, Location } from '@/types/entities';
+import type { Employer, Job, Candidate, Consultant, Department, Location } from '@/shared/types/entities';
 
 // Helper functions to generate varied data
 const industries = ['Technology', 'Finance', 'Healthcare', 'Retail', 'Education', 'Manufacturing', 'Media', 'Construction', 'Consulting', 'Legal', 'Transportation', 'Energy', 'Pharmaceuticals', 'Real Estate', 'Telecommunications'];

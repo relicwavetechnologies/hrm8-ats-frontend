@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Separator } from "@/shared/components/ui/separator";
 import { format } from "date-fns";
 import { Loader2, RefreshCw, Eye, Send, CheckCircle2, Clock, AlertCircle, ArrowRight } from "lucide-react";
-import { JobRound } from "@/shared/lib/api/jobRoundService";
+import { JobRound } from "@/shared/lib/jobRoundService";
 import { apiClient } from "@/shared/lib/api";
 import { toast } from "sonner";
 import { AssessmentGradingDialog } from "./AssessmentGradingDialog";

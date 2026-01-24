@@ -1,6 +1,6 @@
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { getCohortSummaryMetrics } from '@/shared/lib/addons/cohortAnalytics';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 import { DollarSign, Users, TrendingDown, Clock } from 'lucide-react';
 
 export function CohortMetricsCards() {

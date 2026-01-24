@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Helmet } from "react-helmet-async";
 import { 
   Ticket, Search, Filter, MessageSquare, AlertCircle, 

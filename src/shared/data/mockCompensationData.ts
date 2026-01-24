@@ -1,4 +1,4 @@
-import type { SalaryBand, CompensationReview } from '@/types/compensation';
+import type { SalaryBand, CompensationReview } from '@/shared/types/compensation';
 
 export const mockSalaryBands: SalaryBand[] = [
   {

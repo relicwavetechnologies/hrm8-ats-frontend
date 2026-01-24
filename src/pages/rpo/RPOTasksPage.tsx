@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { RPOTaskBoard } from '@/components/rpo/RPOTaskBoard';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { RPOTaskBoard } from '@/modules/rpo/components/RPOTaskBoard';
 import { getAllRPOTasks, getTaskStats } from '@/shared/lib/rpoTaskStorage';
 import { CheckSquare } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';

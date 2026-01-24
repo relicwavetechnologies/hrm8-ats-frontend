@@ -1,43 +1,59 @@
-/**
- * Company Settings Service
- * Handles fetching and updating company-level settings (office hours, timezone)
- */
-
 import { apiClient } from './api';
 
-export interface OfficeHoursConfig {
-  timezone: string;
-  workDays: string[];
-  startTime: string;
-  endTime: string;
-  lunchStart?: string;
-  lunchEnd?: string;
-}
+export type JobAssignmentMode = 'AUTO_RULES_ONLY' | 'MANUAL_ONLY';
 
-export interface CompanySettingsResponse {
-  success: boolean;
-  data?: OfficeHoursConfig;
-  error?: string;
-  message?: string;
+export interface JobAssignmentSettings {
+  jobAssignmentMode: JobAssignmentMode;
+  preferredRecruiterId: string | null;
 }
 
 class CompanySettingsService {
   /**
-   * Get company settings (office hours, timezone)
+   * Get job assignment settings for a company
    */
-  async getCompanySettings(): Promise<CompanySettingsResponse> {
-    return apiClient.get<OfficeHoursConfig>('/api/companies/settings');
+  async getJobAssignmentSettings(companyId: string): Promise<JobAssignmentSettings> {
+    const response = await apiClient.get<JobAssignmentSettings>(
+      `/api/companies/${companyId}/job-assignment-settings`
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch job assignment settings');
+    }
+
+    return response.data;
   }
 
   /**
-   * Update company settings (office hours, timezone)
+   * Update job assignment mode for a company
    */
-  async updateCompanySettings(
-    settings: Partial<OfficeHoursConfig>
-  ): Promise<CompanySettingsResponse> {
-    return apiClient.put<OfficeHoursConfig>('/api/companies/settings', settings);
+  async updateJobAssignmentMode(companyId: string, mode: JobAssignmentMode): Promise<void> {
+    const response = await apiClient.put<{ success: boolean; message: string }>(
+      `/api/companies/${companyId}/job-assignment-mode`,
+      { mode }
+    );
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to update job assignment mode');
+    }
   }
 }
 
 export const companySettingsService = new CompanySettingsService();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

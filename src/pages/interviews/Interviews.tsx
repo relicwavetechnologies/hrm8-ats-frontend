@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Calendar as CalendarIcon, Video, Phone, Users, Plus, LayoutGrid, List, CalendarDays, BarChart3, FileText } from "lucide-react";
@@ -9,15 +9,15 @@ import { Interview } from "@/shared/types/interview";
 import { Badge } from "@/shared/components/ui/badge";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
-import { InterviewScheduler } from "@/components/interviews/InterviewScheduler";
+import { InterviewScheduler } from "@/modules/interviews/components/InterviewScheduler";
 import { getTemplateById } from "@/shared/lib/mockTemplateStorage";
-import { InterviewKanbanBoard } from "@/components/interviews/InterviewKanbanBoard";
-import { InterviewDetailPanel } from "@/components/interviews/InterviewDetailPanel";
-import { InterviewCalendarView } from "@/components/interviews/InterviewCalendarViewNew";
-import { InterviewAnalyticsDashboard } from "@/components/interviews/InterviewAnalyticsDashboard";
-import { InterviewTemplateManager } from "@/components/interviews/InterviewTemplateManager";
-import { InterviewCalibrationReport } from "@/components/interviews/InterviewCalibrationReport";
-import { CalibrationSessionManager } from "@/components/interviews/CalibrationSessionManager";
+import { InterviewKanbanBoard } from "@/modules/interviews/components/InterviewKanbanBoard";
+import { InterviewDetailPanel } from "@/modules/interviews/components/InterviewDetailPanel";
+import { InterviewCalendarView } from "@/modules/interviews/components/InterviewCalendarViewNew";
+import { InterviewAnalyticsDashboard } from "@/modules/interviews/components/InterviewAnalyticsDashboard";
+import { InterviewTemplateManager } from "@/modules/interviews/components/InterviewTemplateManager";
+import { InterviewCalibrationReport } from "@/modules/interviews/components/InterviewCalibrationReport";
+import { CalibrationSessionManager } from "@/modules/interviews/components/CalibrationSessionManager";
 
 import { toast } from "@/shared/hooks/use-toast";
 

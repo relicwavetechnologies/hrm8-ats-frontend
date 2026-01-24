@@ -34,7 +34,7 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
-import { useHrm8Auth } from "@/app/AuthProvider";
+import { useHrm8Auth } from "@/app/providers/AuthContext";
 import { Hrm8SidebarFooter } from "./Hrm8SidebarFooter";
 
 const menuItems = [

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { userNotificationPreferencesService, type UpdatePreferencesData } from '@/shared/lib/api/userNotificationPreferencesService';
+import { userNotificationPreferencesService, type UpdatePreferencesData } from '@/shared/lib/userNotificationPreferencesService';
 import { NotificationPreferences } from '@/shared/types/notificationPreferences';
 import { toast } from 'sonner';
 

@@ -23,9 +23,9 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { PipelineColumn } from "@/components/pipeline/PipelineColumn";
-import { CandidateCard } from "@/components/pipeline/CandidateCard";
-import { AICandidateScoring } from "@/components/candidates/AICandidateScoring";
+import { PipelineColumn } from "@/modules/candidates/components/pipeline/PipelineColumn";
+import { CandidateCard } from "@/modules/candidates/components/pipeline/CandidateCard";
+import { AICandidateScoring } from "@/modules/candidates/components/AICandidateScoring";
 import {
   getPipelineStages,
   getPipelineCandidates,
@@ -116,7 +116,7 @@ export default function PipelineKanban() {
         // Check if moving to interview stage and prompt for AI interview
         const interviewStages = ['phone-screen', 'technical', 'final'];
         if (interviewStages.includes(toStageId)) {
-          import('@/lib/aiInterview/aiInterviewStorage').then(({ getAIInterviewsByCandidate }) => {
+          import('@/shared/lib/aiInterview/aiInterviewStorage').then(({ getAIInterviewsByCandidate }) => {
             const aiInterviews = getAIInterviewsByCandidate(candidate.id);
             const hasScheduledInterview = aiInterviews.some(
               i => i.status === 'scheduled' || i.status === 'in-progress'

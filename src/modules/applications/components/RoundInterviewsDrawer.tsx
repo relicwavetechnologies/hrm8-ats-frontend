@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { InterviewCalendarView } from '@/components/interviews/InterviewCalendarViewNew';
+import { InterviewCalendarView } from '@/modules/interviews/components/InterviewCalendarViewNew';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -16,10 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/shared/components/ui/dialog';
-import { interviewService, Interview } from '@/shared/lib/api/interviewService';
+import { interviewService, Interview } from '@/shared/lib/interviewService';
 import { videoInterviewService, VideoInterview } from '@/shared/lib/videoInterviewService';
 import { InterviewFeedback } from '@/shared/types/interview';
-import { jobRoundService, JobRound } from '@/shared/lib/api/jobRoundService';
+import { jobRoundService, JobRound } from '@/shared/lib/jobRoundService';
 import { format, parseISO } from 'date-fns';
 import { 
   Calendar, 
@@ -48,7 +48,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { RescheduleInterviewDialog } from '@/components/interviews/RescheduleInterviewDialog';
+import { RescheduleInterviewDialog } from '@/modules/interviews/components/RescheduleInterviewDialog';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import {

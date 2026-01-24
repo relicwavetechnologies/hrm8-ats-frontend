@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { RPOConsultantAvailabilityTracker } from '@/components/rpo/RPOConsultantAvailabilityTracker';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { RPOConsultantAvailabilityTracker } from '@/modules/rpo/components/RPOConsultantAvailabilityTracker';
 import { getConsultantRPOAvailability, getConsultantRPOStats } from '@/shared/lib/rpoConsultantAvailabilityUtils';
 import { Button } from '@/shared/components/ui/button';
 import { Users, BarChart3 } from 'lucide-react';

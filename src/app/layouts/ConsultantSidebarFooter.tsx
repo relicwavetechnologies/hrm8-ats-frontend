@@ -4,7 +4,7 @@ import { useSidebar } from "@/shared/components/ui/sidebar";
 import { HelpCircle, LogOut } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/shared/lib/utils";
-import { useConsultantAuth } from "@/app/AuthProvider";
+import { useConsultantAuth } from "@/app/providers/AuthContext";
 
 export function ConsultantSidebarFooter() {
   const { open } = useSidebar();

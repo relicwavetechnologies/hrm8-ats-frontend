@@ -1,4 +1,4 @@
-import type { OffboardingWorkflow, ClearanceItem } from '@/types/offboarding';
+import type { OffboardingWorkflow, ClearanceItem } from '@/shared/types/offboarding';
 
 const clearanceItems: ClearanceItem[] = [
   {

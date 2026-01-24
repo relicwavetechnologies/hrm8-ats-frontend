@@ -15,10 +15,10 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { ArrowLeft, Plus, Save, Eye, Library, Upload } from 'lucide-react';
 import type { QuestionnaireTemplate, QuestionnaireQuestion, QuestionType } from '@/shared/types/questionnaireBuilder';
 import { getQuestionnaireTemplateById, saveQuestionnaireTemplate } from '@/shared/lib/assessments/questionnaireTemplateStorage';
-import QuestionEditor from '@/components/assessments/questionnaire-builder/QuestionEditor';
-import QuestionnairePreview from '@/components/assessments/questionnaire-builder/QuestionnairePreview';
-import QuestionTemplatesLibrary from '@/components/assessments/questionnaire-builder/QuestionTemplatesLibrary';
-import { BulkImportDialog } from '@/components/assessments/questionnaire-builder/BulkImportDialog';
+import QuestionEditor from '@/modules/assessments/components/questionnaire-builder/QuestionEditor';
+import QuestionnairePreview from '@/modules/assessments/components/questionnaire-builder/QuestionnairePreview';
+import QuestionTemplatesLibrary from '@/modules/assessments/components/questionnaire-builder/QuestionTemplatesLibrary';
+import { BulkImportDialog } from '@/modules/assessments/components/questionnaire-builder/BulkImportDialog';
 
 interface SortableQuestionProps {
   question: QuestionnaireQuestion;

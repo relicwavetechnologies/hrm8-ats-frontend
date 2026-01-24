@@ -40,7 +40,7 @@ import {
   TrendingUp,
   Clock
 } from "lucide-react";
-import { CandidateAssessmentView } from "@/components/jobs/candidate-assessment/CandidateAssessmentView";
+import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -54,7 +54,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { questionService } from "@/shared/lib/api/questionService";
+import { questionService } from "@/shared/lib/questionService";
 import type { ApplicationFormConfig, ApplicationQuestion } from "@/shared/types/applicationForm";
 
 interface ManualScreeningPanelProps {

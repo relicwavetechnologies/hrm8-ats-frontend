@@ -1,4 +1,4 @@
-import { EmployerUser } from "@/types/employerUser";
+import { EmployerUser } from "@/shared/types/employerUser";
 import { mockEmployers } from "./mockTableData";
 
 const firstNames = ["John", "Jane", "Michael", "Sarah", "David", "Emily", "Robert", "Lisa", "James", "Maria"];

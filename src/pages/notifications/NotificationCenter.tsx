@@ -1,6 +1,6 @@
-import { NotificationSettings } from '@/components/feedback/NotificationSettings';
-import { PendingFeedbackRequests } from '@/components/feedback/PendingFeedbackRequests';
-import { NotificationCenter as NotificationCenterComponent } from '@/components/feedback/NotificationCenter';
+import { NotificationSettings } from '@/modules/performance/components/NotificationSettings';
+import { PendingFeedbackRequests } from '@/modules/performance/components/PendingFeedbackRequests';
+import { NotificationCenter as NotificationCenterComponent } from '@/modules/performance/components/NotificationCenter';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { FileText, BarChart3 } from 'lucide-react';

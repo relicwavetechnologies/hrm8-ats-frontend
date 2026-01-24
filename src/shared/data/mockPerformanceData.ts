@@ -1,4 +1,4 @@
-import type { PerformanceGoal, PerformanceReviewTemplate, PerformanceReview, Feedback360, ReviewSchedule } from '@/types/performance';
+import type { PerformanceGoal, PerformanceReviewTemplate, PerformanceReview, Feedback360, ReviewSchedule } from '@/shared/types/performance';
 export { mockCompanyOKRs, mockTeamObjectives } from './mockOKRData';
 
 export const mockPerformanceGoals: PerformanceGoal[] = [

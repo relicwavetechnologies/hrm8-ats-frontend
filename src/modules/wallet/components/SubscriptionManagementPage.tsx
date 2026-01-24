@@ -20,10 +20,10 @@ import {
     AlertCircle,
     CreditCard,
 } from "lucide-react";
-import { WalletBalance } from "@/components/wallet/WalletBalance";
-import { TransactionList } from "@/components/wallet/TransactionList";
-import { SubscriptionUpgradeDialog } from "@/components/wallet/SubscriptionUpgradeDialog";
-import { WalletRechargeDialog } from "@/components/wallet/WalletRechargeDialog";
+import { WalletBalance } from "@/modules/wallet/components/WalletBalance";
+import { TransactionList } from "@/modules/wallet/components/TransactionList";
+import { SubscriptionUpgradeDialog } from "@/modules/wallet/components/SubscriptionUpgradeDialog";
+import { WalletRechargeDialog } from "@/modules/wallet/components/WalletRechargeDialog";
 import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 

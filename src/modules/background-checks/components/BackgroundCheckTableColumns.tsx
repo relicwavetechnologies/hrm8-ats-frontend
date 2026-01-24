@@ -1,4 +1,4 @@
-import { Column } from '@/components/tables/DataTable';
+import { Column } from '@/shared/components/tables/DataTable';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { MoreVertical, Eye, FileText, Mail, Download, X } from 'lucide-react';
-import { EntityAvatar } from '@/components/tables/EntityAvatar';
+import { EntityAvatar } from '@/shared/components/tables/EntityAvatar';
 import { Progress } from '@/shared/components/ui/progress';
 import { getCheckTypeIcon, getCheckProgress } from '@/shared/lib/backgroundChecks/checkTypeHelpers';
 import type { BackgroundCheck } from '@/shared/types/backgroundCheck';

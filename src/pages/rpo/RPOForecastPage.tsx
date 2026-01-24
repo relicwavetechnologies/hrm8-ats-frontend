@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { RPORevenueForecastChart } from '@/components/rpo/RPORevenueForecastChart';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { RPORevenueForecastChart } from '@/modules/rpo/components/RPORevenueForecastChart';
 import { getRevenueProjection } from '@/shared/lib/rpoTrackingUtils';
 import { DollarSign } from 'lucide-react';
 

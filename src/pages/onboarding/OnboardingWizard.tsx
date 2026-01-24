@@ -11,7 +11,7 @@ import {
   CompanyProfileSectionKey,
 } from '@/shared/types/companyProfile';
 import { useCompanyProfile } from '@/shared/hooks/useCompanyProfile';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import {
   Card,
   CardContent,

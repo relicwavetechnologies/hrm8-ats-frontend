@@ -12,7 +12,7 @@ import { applicationService } from "@/shared/lib/applicationService";
 import { AutomatedScreeningPanel } from "./screening/AutomatedScreeningPanel";
 import { ManualScreeningPanel } from "./screening/ManualScreeningPanel";
 import type { Job } from '@/shared/types/job';
-import type { JobRound } from "@/shared/lib/api/jobRoundService";
+import type { JobRound } from "@/shared/lib/jobRoundService";
 
 interface InitialScreeningDrawerProps {
   open: boolean;

@@ -36,8 +36,8 @@ import {
 import { 
   WarningConfirmationDialog
 } from "@/shared/components/ui/warning-confirmation-dialog";
-import { jobService } from "@/shared/lib/api/jobService";
-import { jobTemplateService, JobTemplate } from "@/shared/lib/api/jobTemplateService";
+import { jobService } from "@/shared/lib/jobService";
+import { jobTemplateService, JobTemplate } from "@/shared/lib/jobTemplateService";
 import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { Job } from "@/shared/types/job";
 import { useToast } from "@/shared/hooks/use-toast";

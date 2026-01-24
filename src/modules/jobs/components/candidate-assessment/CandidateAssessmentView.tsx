@@ -24,7 +24,7 @@ import { useCandidatePresence } from "@/shared/hooks/useCandidatePresence";
 import { CandidatePresenceIndicator } from "./CandidatePresenceIndicator";
 import { useCursorTracking } from "@/shared/hooks/useCursorTracking";
 import { CursorOverlay } from "./CursorIndicator";
-import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { NotificationCenter } from "@/modules/notifications/components/NotificationCenter";
 
 interface CandidateAssessmentViewProps {
   application: Application;

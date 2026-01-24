@@ -18,12 +18,12 @@ import {
 } from "@/shared/components/ui/dialog";
 import { WarningConfirmationDialog } from "@/shared/components/ui/warning-confirmation-dialog";
 import { Job } from "@/shared/types/job";
-import { 
-  MoreVertical, 
-  Edit, 
-  CheckCircle, 
-  Calendar, 
-  X, 
+import {
+  MoreVertical,
+  Edit,
+  CheckCircle,
+  Calendar,
+  X,
   Archive,
   ArrowUpCircle,
   Pause,
@@ -31,7 +31,7 @@ import {
   Play
 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { serviceTypeToHiringMode } from "@/shared/lib/jobFormTransformers";
 import { ExtendJobDurationDialog } from "./ExtendJobDurationDialog";
 import { UpgradeServiceDialog } from "./UpgradeServiceDialog";
@@ -198,8 +198,8 @@ export function JobLifecycleActions({ job, onJobUpdate, onEdit }: JobLifecycleAc
       // For now, we'll restore to default distribution
       const response = await jobService.updateJob(job.id, {
         status: 'OPEN' as any,
-        jobBoardDistribution: job.jobBoardDistribution.length > 0 
-          ? job.jobBoardDistribution 
+        jobBoardDistribution: job.jobBoardDistribution.length > 0
+          ? job.jobBoardDistribution
           : ['HRM8 Job Board'],
       });
       if (response.success) {
@@ -270,7 +270,7 @@ export function JobLifecycleActions({ job, onJobUpdate, onEdit }: JobLifecycleAc
             </DropdownMenuItem>
           )}
           {canClose && (
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => setCloseJobDialogOpen(true)}
               className="text-destructive"
             >
@@ -285,7 +285,7 @@ export function JobLifecycleActions({ job, onJobUpdate, onEdit }: JobLifecycleAc
             </DropdownMenuItem>
           )}
           {canCancel && (
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => setCancelJobDialogOpen(true)}
               className="text-destructive"
             >

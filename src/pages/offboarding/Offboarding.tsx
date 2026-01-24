@@ -8,7 +8,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { getOffboardingWorkflows, calculateOffboardingStats } from "@/shared/lib/offboardingStorage";
 import { format, differenceInDays } from "date-fns";
 import type { OffboardingStatus, SeparationType } from "@/shared/types/offboarding";

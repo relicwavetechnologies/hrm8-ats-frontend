@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Progress } from '@/shared/components/ui/progress';
@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/shared/lib/utils';
 import { getPredictiveMetrics, getDepartmentComparisons, getSkillGaps, getWorkforceInsights } from '@/shared/lib/advancedAnalyticsStorage';
 import type { PredictiveMetric, DepartmentComparison, SkillGapAnalysis, WorkforceInsight } from '@/shared/types/advancedAnalytics';
-import { ScheduleReportDialog } from '@/components/reports/ScheduleReportDialog';
+import { ScheduleReportDialog } from '@/modules/analytics/components/reports/ScheduleReportDialog';
 
 export default function AdvancedAnalytics() {
   const [predictiveMetrics, setPredictiveMetrics] = useState<PredictiveMetric[]>([]);

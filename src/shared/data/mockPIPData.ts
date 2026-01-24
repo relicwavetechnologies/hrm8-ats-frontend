@@ -1,4 +1,4 @@
-import { PerformanceImprovementPlan } from "@/types/performance";
+import { PerformanceImprovementPlan } from "@/shared/types/performance";
 
 export const mockPIPs: PerformanceImprovementPlan[] = [
   {

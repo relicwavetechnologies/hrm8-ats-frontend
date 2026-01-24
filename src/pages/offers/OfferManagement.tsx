@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { getOffers, getOfferStats, Offer } from "@/shared/lib/offerService";
 import { format } from "date-fns";
-import { CreateOfferDialog } from "@/components/offers/CreateOfferDialog";
+import { CreateOfferDialog } from "@/modules/offers/components/CreateOfferDialog";
 
 export default function OfferManagement() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);

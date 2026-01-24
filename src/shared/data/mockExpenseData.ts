@@ -1,4 +1,4 @@
-import type { Expense, ExpensePolicy } from '@/types/expense';
+import type { Expense, ExpensePolicy } from '@/shared/types/expense';
 
 export const mockExpenses: Expense[] = [
   {

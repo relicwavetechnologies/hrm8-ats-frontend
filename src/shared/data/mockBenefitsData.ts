@@ -1,4 +1,4 @@
-import type { BenefitPlan, BenefitEnrollment } from '@/types/benefits';
+import type { BenefitPlan, BenefitEnrollment } from '@/shared/types/benefits';
 
 export const mockBenefitPlans: BenefitPlan[] = [
   {

@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Shield, Plus, Crown, Users, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { getAllUserRoles } from "@/shared/lib/rbacService";
 import { Badge } from "@/shared/components/ui/badge";
-import { DataTable, Column } from "@/components/tables/DataTable";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { UserRole, ROLE_PERMISSIONS } from "@/shared/types/rbac";
-import { RoleAssignmentDialog } from "@/components/rbac/RoleAssignmentDialog";
+import { RoleAssignmentDialog } from "@/modules/settings/components/RoleAssignmentDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/components/shared/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
 import { deleteRoleAssignment } from "@/shared/lib/rbacStorage";
 import { toast } from "sonner";
 

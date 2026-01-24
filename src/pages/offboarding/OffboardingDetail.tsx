@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Badge } from "@/shared/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { ClearanceChecklist } from "@/components/offboarding/ClearanceChecklist";
-import { ExitInterviewForm } from "@/components/offboarding/ExitInterviewForm";
-import { OffboardingTimeline } from "@/components/offboarding/OffboardingTimeline";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { ClearanceChecklist } from "@/modules/offboarding/components/ClearanceChecklist";
+import { ExitInterviewForm } from "@/modules/offboarding/components/ExitInterviewForm";
+import { OffboardingTimeline } from "@/modules/offboarding/components/OffboardingTimeline";
 import { getOffboardingWorkflows } from "@/shared/lib/offboardingStorage";
 import { format, differenceInDays } from "date-fns";
 import type { OffboardingStatus } from "@/shared/types/offboarding";

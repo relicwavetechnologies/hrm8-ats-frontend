@@ -1,5 +1,5 @@
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { DigestSettings } from '@/components/backgroundChecks/DigestSettings';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { DigestSettings } from '@/modules/background-checks/components/DigestSettings';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { useNavigate } from 'react-router-dom';

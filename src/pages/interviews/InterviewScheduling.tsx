@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -8,7 +8,7 @@ import { Calendar, Clock, Video, Users, Plus, Calendar as CalendarIcon } from "l
 import { videoInterviewService, type VideoInterview } from "@/shared/lib/videoInterviewService";
 import { format } from "date-fns";
 import { useToast } from "@/shared/hooks/use-toast";
-import { AutoScheduleAIInterviewDialog } from "@/components/applications/AutoScheduleAIInterviewDialog";
+import { AutoScheduleAIInterviewDialog } from "@/modules/applications/components/AutoScheduleAIInterviewDialog";
 
 export default function InterviewScheduling() {
   const { toast } = useToast();

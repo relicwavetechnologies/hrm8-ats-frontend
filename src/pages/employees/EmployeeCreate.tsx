@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft } from "lucide-react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
-import { EmployeeFormWizard } from "@/components/employees/EmployeeFormWizard";
+import { EmployeeFormWizard } from "@/modules/employees/components/EmployeeFormWizard";
 import { saveEmployee } from "@/shared/lib/employeeStorage";
 import type { Employee } from "@/shared/types/employee";
 

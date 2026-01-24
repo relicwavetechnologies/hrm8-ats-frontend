@@ -1,4 +1,4 @@
-import type { CertificateTemplate } from '@/types/performance';
+import type { CertificateTemplate } from '@/shared/types/performance';
 
 export const mockCertificateTemplates: CertificateTemplate[] = [
   {

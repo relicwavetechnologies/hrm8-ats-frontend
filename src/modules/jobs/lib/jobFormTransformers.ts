@@ -4,7 +4,7 @@
  */
 
 import { JobFormData } from '@/shared/types/job';
-import { CreateJobRequest, HiringMode, WorkArrangement, EmploymentType } from '@/shared/lib/api/jobService';
+import { CreateJobRequest, HiringMode, WorkArrangement, EmploymentType } from '@/shared/lib/jobService';
 
 /**
  * Transform requirements/responsibilities from form objects to strings

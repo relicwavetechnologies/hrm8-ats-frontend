@@ -23,9 +23,9 @@ import { RoundInterviewsDrawer } from "./RoundInterviewsDrawer";
 import { InitialScreeningDrawer } from "./InitialScreeningDrawer";
 import { OfferConfigurationDrawer } from "./OfferConfigurationDrawer";
 import { OfferExecutionDrawer } from "./OfferExecutionDrawer";
-import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/api/jobRoundService";
-import { jobService } from "@/shared/lib/api/jobService";
-import { offerService } from "@/shared/lib/api/offerService";
+import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/jobRoundService";
+import { jobService } from "@/shared/lib/jobService";
+import { offerService } from "@/shared/lib/offerService";
 
 interface ApplicationPipelineProps {
   jobId?: string;

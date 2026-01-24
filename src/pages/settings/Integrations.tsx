@@ -1,12 +1,12 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Mail, Calendar, Link2, CreditCard } from "lucide-react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
-import { EmailIntegrationCard } from "@/components/integrations/EmailIntegrationCard";
-import { CalendarIntegrationCard } from "@/components/integrations/CalendarIntegrationCard";
-import { ATSIntegrationCard } from "@/components/integrations/ATSIntegrationCard";
-import { StripeIntegrationCard } from "@/components/integrations/StripeIntegrationCard";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
+import { EmailIntegrationCard } from "@/modules/settings/components/integrations/EmailIntegrationCard";
+import { CalendarIntegrationCard } from "@/modules/settings/components/integrations/CalendarIntegrationCard";
+import { ATSIntegrationCard } from "@/modules/settings/components/integrations/ATSIntegrationCard";
+import { StripeIntegrationCard } from "@/modules/settings/components/integrations/StripeIntegrationCard";
 import { useSearchParams } from "react-router-dom";
 
 export default function Integrations() {

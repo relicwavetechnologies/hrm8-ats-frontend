@@ -2,7 +2,7 @@
  * Hook to check if current user can post jobs
  */
 
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 
 export function useJobPostingPermission() {
   const { user } = useAuth();

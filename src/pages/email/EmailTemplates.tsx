@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -41,8 +41,8 @@ import {
   duplicateTemplate,
   EmailTemplate,
 } from "@/shared/lib/emailTemplateService";
-import { TemplateEditor } from "@/components/email-templates/TemplateEditor";
-import { TemplateAnalytics } from "@/components/email-templates/TemplateAnalytics";
+import { TemplateEditor } from "@/modules/email/components/email-templates/TemplateEditor";
+import { TemplateAnalytics } from "@/modules/email/components/email-templates/TemplateAnalytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useToast } from "@/shared/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";

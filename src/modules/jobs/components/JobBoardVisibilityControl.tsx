@@ -7,7 +7,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { useToast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { Eye, EyeOff, Globe, AlertCircle, CheckCircle } from "lucide-react";
 
@@ -20,7 +20,7 @@ export function JobBoardVisibilityControl({ job, onUpdate }: JobBoardVisibilityC
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showReapproveDialog, setShowReapproveDialog] = useState(false);
-  
+
   // Check if job is hidden from boards (simplified check - in production would check a specific field)
   const isHiddenFromBoards = job.status === 'on-hold' || (job as any).hiddenFromBoards === true;
   const requiresReapproval = (job as any).requiresReapproval === true;
@@ -42,8 +42,8 @@ export function JobBoardVisibilityControl({ job, onUpdate }: JobBoardVisibilityC
       if (response.success) {
         toast({
           title: visible ? "Job visible on boards" : "Job hidden from boards",
-          description: visible 
-            ? "The job is now visible on all selected job boards." 
+          description: visible
+            ? "The job is now visible on all selected job boards."
             : "The job has been hidden from all job boards. It can be re-approved to make it visible again.",
         });
         onUpdate();
@@ -129,7 +129,7 @@ export function JobBoardVisibilityControl({ job, onUpdate }: JobBoardVisibilityC
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                {isHiddenFromBoards 
+                {isHiddenFromBoards
                   ? "This job is currently hidden from all job boards"
                   : "This job is visible on all selected job boards"
                 }
@@ -162,7 +162,7 @@ export function JobBoardVisibilityControl({ job, onUpdate }: JobBoardVisibilityC
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                This job requires re-approval before it can be posted to job boards. 
+                This job requires re-approval before it can be posted to job boards.
                 Review the job details and re-approve to make it visible.
               </AlertDescription>
             </Alert>

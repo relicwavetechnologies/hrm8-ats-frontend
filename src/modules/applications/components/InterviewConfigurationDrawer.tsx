@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { interviewService } from "@/shared/lib/api/interviewService";
-import { userService, CompanyUser } from "@/shared/lib/api/userService";
+import { interviewService } from "@/shared/lib/interviewService";
+import { userService, CompanyUser } from "@/shared/lib/userService";
 import { toast } from "sonner";
 import { Plus, Trash2, Save, X } from "lucide-react";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";

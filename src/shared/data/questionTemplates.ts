@@ -1,4 +1,4 @@
-import { LibraryQuestion } from '@/types/applicationForm';
+import { LibraryQuestion } from '@/shared/types/applicationForm';
 
 export const questionTemplates: LibraryQuestion[] = [
   {

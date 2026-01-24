@@ -1,5 +1,5 @@
-import { UnifiedNotificationCenter } from '@/components/notifications/UnifiedNotificationCenter';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { UnifiedNotificationCenter } from '@/modules/notifications/components/UnifiedNotificationCenter';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
 import { Helmet } from 'react-helmet-async';
 
 export default function NotificationCenterPage() {

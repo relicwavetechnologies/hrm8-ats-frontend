@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { Button } from '@/shared/components/ui/button';
-import { QuestionBankPreviewDialog } from '@/components/assessments/QuestionBankPreviewDialog';
+import { QuestionBankPreviewDialog } from '@/modules/assessments/components/QuestionBankPreviewDialog';
 import { Input } from '@/shared/components/ui/input';
 import {
   Table,
@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { QuestionBankDialog } from '@/components/assessments/QuestionBankDialog';
+import { QuestionBankDialog } from '@/modules/assessments/components/QuestionBankDialog';
 import { QuestionBankItem, DifficultyLevel, QuestionType } from '@/shared/types/questionBank';
 import {
   getQuestionBankItems,

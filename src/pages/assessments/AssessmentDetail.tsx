@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Button } from '@/shared/components/ui/button';
 import { Card } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
@@ -15,9 +15,9 @@ import {
 import { getAssessmentById, getAssessmentsByJob } from '@/shared/lib/mockAssessmentStorage';
 import { AssessmentType, AssessmentStatus } from '@/shared/types/assessment';
 import { format } from 'date-fns';
-import { AssessmentPredictionCard } from '@/components/assessments/AssessmentPredictionCard';
+import { AssessmentPredictionCard } from '@/modules/assessments/components/AssessmentPredictionCard';
 import { generatePrediction } from '@/shared/lib/assessments/predictionService';
-import { AssessmentCollaboration } from '@/components/assessments/AssessmentCollaboration';
+import { AssessmentCollaboration } from '@/modules/assessments/components/AssessmentCollaboration';
 
 const getStatusBadgeVariant = (status: AssessmentStatus) => {
   switch (status) {

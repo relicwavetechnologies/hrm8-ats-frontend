@@ -4,7 +4,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Application } from "@/shared/types/application";
 import { Mail, Phone, Linkedin, MapPin, Calendar, Star, Flag, Bell, BellOff, Tag, Globe } from "lucide-react";
-import { AIMatchBadge } from "@/components/applications/AIMatchBadge";
+import { AIMatchBadge } from "@/modules/applications/components/AIMatchBadge";
 import { format, formatDistanceToNow } from "date-fns";
 
 interface CandidateProfileHeaderProps {

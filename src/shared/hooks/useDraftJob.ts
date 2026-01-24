@@ -3,10 +3,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { jobService } from '@/shared/lib/api/jobService';
+import { jobService } from '@/shared/lib/jobService';
 import { mapBackendJobToFrontend } from '@/shared/lib/jobDataMapper';
 import { Job } from '@/shared/types/job';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 
 interface UseDraftJobReturn {
   draftJob: Job | null;

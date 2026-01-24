@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { FolderOpen, FileText, Upload, Download, Search, Filter } from "lucide-react";
@@ -7,7 +7,7 @@ import { getDocuments, getFolders, calculateDocumentStats } from "@/shared/lib/d
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
 import { format } from "date-fns";
-import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
+import { DocumentUploadDialog } from "@/modules/documents/components/DocumentUploadDialog";
 
 export default function Documents() {
   const [refreshKey, setRefreshKey] = useState(0);

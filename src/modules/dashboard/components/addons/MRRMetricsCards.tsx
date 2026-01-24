@@ -1,6 +1,6 @@
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { getMRRMetrics } from '@/shared/lib/addons/revenueAnalytics';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 import { DollarSign, TrendingUp, Target, Zap } from 'lucide-react';
 
 export function MRRMetricsCards() {

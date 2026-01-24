@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
-import { TemplateBuilderDialog } from '@/components/assessments/TemplateBuilderDialog';
-import { ProviderTemplateImportDialog } from '@/components/assessments/ProviderTemplateImportDialog';
+import { TemplateBuilderDialog } from '@/modules/assessments/components/TemplateBuilderDialog';
+import { ProviderTemplateImportDialog } from '@/modules/assessments/components/ProviderTemplateImportDialog';
 import { 
   Plus, Search, Filter, Copy, Pencil, Trash2, Download,
   Clock, FileText, Target, ToggleLeft, ToggleRight 

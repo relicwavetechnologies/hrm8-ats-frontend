@@ -1,4 +1,4 @@
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { Building2, Users, DollarSign, AlertTriangle, Eye, Plus, Calendar, BarChart3 } from 'lucide-react';
 import type { RPODashboardMetrics } from '@/shared/lib/rpoTrackingUtils';
 import { useNavigate } from 'react-router-dom';

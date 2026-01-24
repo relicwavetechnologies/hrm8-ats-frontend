@@ -1,4 +1,4 @@
-import { AlertRule } from '@/types/notificationPreferences';
+import { AlertRule } from '@/shared/types/notificationPreferences';
 
 export const MOCK_ALERT_RULES: AlertRule[] = [
   {

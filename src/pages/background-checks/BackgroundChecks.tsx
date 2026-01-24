@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
-import { BackgroundCheckNotificationBadge } from "@/components/backgroundChecks/BackgroundCheckNotificationBadge";
-import { BackgroundChecksFilterBar } from "@/components/backgroundChecks/BackgroundChecksFilterBar";
-import { BackgroundChecksBulkActionsToolbar } from "@/components/backgroundChecks/BackgroundChecksBulkActionsToolbar";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
+import { BackgroundCheckNotificationBadge } from "@/modules/background-checks/components/BackgroundCheckNotificationBadge";
+import { BackgroundChecksFilterBar } from "@/modules/background-checks/components/BackgroundChecksFilterBar";
+import { BackgroundChecksBulkActionsToolbar } from "@/modules/background-checks/components/BackgroundChecksBulkActionsToolbar";
 import { useAutomatedReminders } from "@/shared/hooks/useAutomatedReminders";
 import { Button } from "@/shared/components/ui/button";
 import { Shield, Plus, FileText, Download, Upload, BarChart3, CheckCircle, Clock, AlertCircle, Eye, TestTube, Mail, Settings, Bell, TrendingUp, X, Send, FileDown, Edit } from "lucide-react";
@@ -15,17 +15,17 @@ import { exportBackgroundCheckPDF } from "@/shared/lib/backgroundChecks/backgrou
 import { generateMockAIReport } from "@/shared/lib/backgroundChecks/mockAIReportData";
 import { saveAIReport } from "@/shared/lib/backgroundChecks/aiReportStorage";
 import { saveAISession } from "@/shared/lib/backgroundChecks/aiReferenceCheckStorage";
-import { AIReportEditor } from "@/components/backgroundChecks/ai-interview/AIReportEditor";
+import { AIReportEditor } from "@/modules/background-checks/components/ai-interview/AIReportEditor";
 import { BackgroundCheck, BackgroundCheckType } from "@/shared/types/backgroundCheck";
 import type { AIReferenceCheckSession, InterviewTranscript, AIAnalysis } from "@/shared/types/aiReferenceCheck";
 import type { EditableReport } from "@/shared/types/aiReferenceReport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/shared/components/ui/dropdown-menu";
-import { BackgroundCheckForm } from "@/components/backgroundChecks/BackgroundCheckForm";
+import { BackgroundCheckForm } from "@/modules/background-checks/components/BackgroundCheckForm";
 import { toast } from "@/shared/hooks/use-toast";
-import { EnhancedStatCard } from "@/components/dashboard/EnhancedStatCard";
-import { createBackgroundCheckTableColumns } from "@/components/backgroundChecks/BackgroundCheckTableColumns";
-import { DataTable } from "@/components/tables/DataTable";
+import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
+import { createBackgroundCheckTableColumns } from "@/modules/background-checks/components/BackgroundCheckTableColumns";
+import { DataTable } from "@/shared/components/tables/DataTable";
 import { getBackgroundCheckStats } from "@/shared/lib/backgroundChecks/dashboardStats";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 

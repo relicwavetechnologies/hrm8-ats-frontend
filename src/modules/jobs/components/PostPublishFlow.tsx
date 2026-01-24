@@ -30,8 +30,8 @@ import {
   Eye,
 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
-import { jobTemplateService } from "@/shared/lib/api/jobTemplateService";
+import { jobService } from "@/shared/lib/jobService";
+import { jobTemplateService } from "@/shared/lib/jobTemplateService";
 import { ExternalPromotionDialog } from "./ExternalPromotionDialog";
 
 interface PostPublishFlowProps {

@@ -1,4 +1,4 @@
-import { CollaborativeFeedbackPanel } from '@/components/feedback/CollaborativeFeedbackPanel';
+import { CollaborativeFeedbackPanel } from '@/modules/performance/components/CollaborativeFeedbackPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';

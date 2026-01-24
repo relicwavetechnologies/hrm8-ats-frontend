@@ -5,9 +5,9 @@
 
 import { ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/app/AuthProvider';
-import { useCandidateAuth } from '@/app/AuthProvider' // TODO: Remove candidate auth;
-import { useHrm8Auth } from '@/app/AuthProvider' // TODO: Remove hrm8 auth;
+import { useAuth } from '@/app/providers/AuthContext';
+import { useCandidateAuth } from '@/app/providers/AuthContext' // TODO: Remove candidate auth;
+import { useHrm8Auth } from '@/app/providers/AuthContext' // TODO: Remove hrm8 auth;
 
 type BlockedRole = 'recruiter' | 'candidate' | 'consultant' | 'hrm8';
 

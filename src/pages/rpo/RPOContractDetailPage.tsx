@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
@@ -26,12 +26,12 @@ import { getTasksByContract, getTaskStats } from '@/shared/lib/rpoTaskStorage';
 import { getServiceProjectById } from '@/shared/lib/recruitmentServiceStorage';
 import { format, differenceInDays } from 'date-fns';
 import { useState } from 'react';
-import { RPOConsultantAssignmentDialog } from '@/components/rpo/RPOConsultantAssignmentDialog';
-import { RPOTaskDialog } from '@/components/rpo/RPOTaskDialog';
-import { RPOConsultantSuggestions } from '@/components/rpo/RPOConsultantSuggestions';
-import { RPORenewalAnalytics } from '@/components/rpo/RPORenewalAnalytics';
-import { RPOSLATracker } from '@/components/rpo/RPOSLATracker';
-import { RPOPlacementPipeline } from '@/components/rpo/RPOPlacementPipeline';
+import { RPOConsultantAssignmentDialog } from '@/modules/rpo/components/RPOConsultantAssignmentDialog';
+import { RPOTaskDialog } from '@/modules/rpo/components/RPOTaskDialog';
+import { RPOConsultantSuggestions } from '@/modules/rpo/components/RPOConsultantSuggestions';
+import { RPORenewalAnalytics } from '@/modules/rpo/components/RPORenewalAnalytics';
+import { RPOSLATracker } from '@/modules/rpo/components/RPOSLATracker';
+import { RPOPlacementPipeline } from '@/modules/rpo/components/RPOPlacementPipeline';
 import type { RPOTask } from '@/shared/types/rpoTask';
 import { toast } from '@/shared/hooks/use-toast';
 

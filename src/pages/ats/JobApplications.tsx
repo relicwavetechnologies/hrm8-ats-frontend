@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
-import { JobApplicantsList } from "@/components/applications/JobApplicantsList";
+import { JobApplicantsList } from "@/modules/applications/components/JobApplicantsList";
 import { Button } from "@/shared/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { ListSkeleton } from "@/shared/components/skeletons/ListSkeleton";
 

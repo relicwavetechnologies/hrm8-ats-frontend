@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { DataTable, Column } from "@/components/tables/DataTable";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Badge } from "@/shared/components/ui/badge";

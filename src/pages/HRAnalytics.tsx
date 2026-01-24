@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { StandardChartCard } from "@/components/dashboard/charts/StandardChartCard";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { StandardChartCard } from "@/modules/dashboard/components/charts/StandardChartCard";
 import { Button } from "@/shared/components/ui/button";
 import { DateRangePicker } from "@/shared/components/ui/date-range-picker-v2";
 import type { DateRange } from "react-day-picker";
@@ -9,7 +9,7 @@ import { Users, Briefcase, TrendingUp, DollarSign, MapPin, Award, Eye, Plus, Cal
 import { Badge } from "@/shared/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
 import { useCurrencyFormat } from "@/app/providers/CurrencyFormatContext";
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/shared/hooks/use-toast";
 

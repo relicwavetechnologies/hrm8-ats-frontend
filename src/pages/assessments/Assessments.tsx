@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
-import { AssessmentNotificationBadge } from '@/components/assessments/AssessmentNotificationBadge';
-import { AssessmentsFilterBar } from '@/components/assessments/AssessmentsFilterBar';
-import { AssessmentInvitationWizard } from '@/components/assessments/AssessmentInvitationWizard';
-import { AssessmentsBulkActionsToolbar } from '@/components/assessments/AssessmentsBulkActionsToolbar';
-import { createAssessmentTableColumns } from '@/components/assessments/AssessmentTableColumns';
-import { DataTable } from '@/components/tables/DataTable';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
+import { AssessmentNotificationBadge } from '@/modules/assessments/components/AssessmentNotificationBadge';
+import { AssessmentsFilterBar } from '@/modules/assessments/components/AssessmentsFilterBar';
+import { AssessmentInvitationWizard } from '@/modules/assessments/components/AssessmentInvitationWizard';
+import { AssessmentsBulkActionsToolbar } from '@/modules/assessments/components/AssessmentsBulkActionsToolbar';
+import { createAssessmentTableColumns } from '@/modules/assessments/components/AssessmentTableColumns';
+import { DataTable } from '@/shared/components/tables/DataTable';
 import { Button } from '@/shared/components/ui/button';
 import {
   DropdownMenu,

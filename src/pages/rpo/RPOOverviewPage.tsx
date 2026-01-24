@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
-import { DashboardActionBar } from '@/components/dashboard/DashboardActionBar';
-import { ActiveFiltersIndicator } from '@/components/dashboard/ActiveFiltersIndicator';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
+import { DashboardActionBar } from '@/modules/dashboard/components/DashboardActionBar';
+import { ActiveFiltersIndicator } from '@/modules/dashboard/components/ActiveFiltersIndicator';
 import { getRPODashboardMetrics } from '@/shared/lib/rpoTrackingUtils';
 import { getRenewalAlertsSummary } from '@/shared/lib/rpoRenewalUtils';
 import { getAllServiceProjects } from '@/shared/lib/recruitmentServiceStorage';
@@ -10,7 +10,7 @@ import { FileText, AlertTriangle, BarChart3, UserCog, FileBarChart, Building2, U
 import { Button } from '@/shared/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { RPOContractsTable } from '@/components/rpo/RPOContractsTable';
+import { RPOContractsTable } from '@/modules/rpo/components/RPOContractsTable';
 import { useToast } from '@/shared/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { applyLocationFilterToMetric } from '@/shared/lib/mockDataWithLocations';

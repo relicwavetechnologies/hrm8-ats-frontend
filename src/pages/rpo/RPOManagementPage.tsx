@@ -1,12 +1,12 @@
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
-import { RPOContractsTable } from '@/components/rpo/RPOContractsTable';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
+import { RPOContractsTable } from '@/modules/rpo/components/RPOContractsTable';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { Building2, Users, DollarSign, Clock, TrendingUp, FileText, BarChart3, Eye, Plus, Download } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { ServiceProject } from '@/shared/types/recruitmentService';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 
 // Mock data - replace with real data from your API/state management
 const mockContracts: ServiceProject[] = [

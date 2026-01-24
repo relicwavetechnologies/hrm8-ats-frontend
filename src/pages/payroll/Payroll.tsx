@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Button } from "@/shared/components/ui/button";
@@ -7,8 +7,8 @@ import { Wallet, DollarSign, Users, Calendar, Download, Plus, Eye } from "lucide
 import { getPayrollRuns, getPayslips, calculatePayrollStats } from "@/shared/lib/payrollStorage";
 import { Badge } from "@/shared/components/ui/badge";
 import { format } from "date-fns";
-import { PayrollRunDialog } from "@/components/payroll/PayrollRunDialog";
-import { PayslipDetailDialog } from "@/components/payroll/PayslipDetailDialog";
+import { PayrollRunDialog } from "@/modules/payroll/components/PayrollRunDialog";
+import { PayslipDetailDialog } from "@/modules/payroll/components/PayslipDetailDialog";
 import type { Payslip } from "@/shared/types/payroll";
 
 export default function Payroll() {

@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import {

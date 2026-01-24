@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { AssessmentInvitationWizard } from '@/components/assessments/AssessmentInvitationWizard';
+import { AssessmentInvitationWizard } from '@/modules/assessments/components/AssessmentInvitationWizard';
 import { AssessmentScoreChart } from './AssessmentScoreChart';
 import { AssessmentComparison } from './AssessmentComparison';
-import { AssessmentPredictionCard } from '@/components/assessments/AssessmentPredictionCard';
+import { AssessmentPredictionCard } from '@/modules/assessments/components/AssessmentPredictionCard';
 import { getAssessmentsByCandidate } from '@/shared/lib/mockAssessmentStorage';
 import { ASSESSMENT_PRICING } from '@/shared/lib/assessments/pricingConstants';
 import { generatePrediction } from '@/shared/lib/assessments/predictionService';

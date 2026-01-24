@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Label } from '@/shared/components/ui/label';
 import { Input } from '@/shared/components/ui/input';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { interviewService, Interview } from '@/shared/lib/api/interviewService';
+import { interviewService, Interview } from '@/shared/lib/interviewService';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon } from 'lucide-react';
 

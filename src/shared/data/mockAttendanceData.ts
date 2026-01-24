@@ -1,4 +1,4 @@
-import type { AttendanceRecord, OvertimeRequest, Shift } from '@/types/attendance';
+import type { AttendanceRecord, OvertimeRequest, Shift } from '@/shared/types/attendance';
 
 export const mockShifts: Shift[] = [
   {

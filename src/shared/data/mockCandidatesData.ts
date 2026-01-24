@@ -1,4 +1,4 @@
-import type { Candidate, CandidateNote } from '@/types/entities';
+import type { Candidate, CandidateNote } from '@/shared/types/entities';
 
 const firstNames = ['Sarah', 'Michael', 'Emily', 'James', 'Lisa', 'David', 'Maria', 'Robert', 'Jennifer', 'William', 'Patricia', 'Richard', 'Linda', 'Thomas', 'Elizabeth', 'Charles', 'Susan', 'Christopher', 'Jessica', 'Daniel', 'Karen', 'Matthew', 'Nancy', 'Anthony', 'Betty', 'Mark', 'Margaret', 'Donald', 'Sandra', 'Steven', 'Ashley', 'Paul', 'Kimberly', 'Andrew', 'Rachel', 'Joshua', 'Donna', 'Kenneth', 'Michelle', 'Kevin', 'Carol', 'Brian', 'Amanda', 'George', 'Dorothy', 'Timothy', 'Melissa', 'Ronald', 'Deborah', 'Edward', 'Stephanie', 'Jason', 'Rebecca', 'Jeffrey', 'Sharon', 'Ryan', 'Laura', 'Jacob', 'Cynthia', 'Gary', 'Angela', 'Nicholas', 'Shirley', 'Eric', 'Anna', 'Jonathan', 'Brenda', 'Stephen', 'Pamela', 'Larry', 'Nicole', 'Justin', 'Emma', 'Scott', 'Samantha', 'Brandon', 'Katherine', 'Benjamin', 'Christine', 'Samuel', 'Debra', 'Gregory', 'Rachel', 'Alexander', 'Carolyn', 'Frank', 'Janet', 'Patrick', 'Maria', 'Raymond', 'Heather', 'Jack', 'Diane'];
 

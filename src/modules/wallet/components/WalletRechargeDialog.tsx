@@ -18,7 +18,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Loader2, Wallet, AlertCircle, CreditCard } from "lucide-react";
-import { walletService } from "@/services/walletService";
+import { walletService } from "@/shared/services/walletService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useStripeIntegration } from "@/shared/hooks/useStripeIntegration";
 

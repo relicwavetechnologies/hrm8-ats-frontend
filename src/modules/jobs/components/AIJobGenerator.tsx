@@ -325,7 +325,7 @@ export function AIJobGenerator({ form, onScrollToUpload }: AIJobGeneratorProps) 
         console.log('📤 Calling API with form data:', allFormData);
         
         // Call backend API with ALL available fields
-        const { jobDescriptionService } = await import('@/lib/api/jobDescriptionService');
+        const { jobDescriptionService } = await import('@/shared/lib/jobDescriptionService');
         let generated;
         try {
           generated = await jobDescriptionService.generateDescription(allFormData);

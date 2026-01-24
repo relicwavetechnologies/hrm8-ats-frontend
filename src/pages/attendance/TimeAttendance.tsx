@@ -3,12 +3,12 @@ import { Helmet } from "react-helmet-async";
 import { Clock, Calendar, Users, TrendingUp, ClipboardList } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { ClockInOut } from "@/components/attendance/ClockInOut";
-import { TimesheetView } from "@/components/attendance/TimesheetView";
-import { ShiftManagement } from "@/components/attendance/ShiftManagement";
-import { OvertimeManagement } from "@/components/attendance/OvertimeManagement";
-import { AttendanceReports } from "@/components/attendance/AttendanceReports";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { ClockInOut } from "@/modules/attendance/components/ClockInOut";
+import { TimesheetView } from "@/modules/attendance/components/TimesheetView";
+import { ShiftManagement } from "@/modules/attendance/components/ShiftManagement";
+import { OvertimeManagement } from "@/modules/attendance/components/OvertimeManagement";
+import { AttendanceReports } from "@/modules/attendance/components/AttendanceReports";
 import { getAttendanceRecords, getOvertimeRequests } from "@/shared/lib/attendanceStorage";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 

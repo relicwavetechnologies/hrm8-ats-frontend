@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Badge } from "@/shared/components/ui/badge";
-import { EditModeToggle } from '@/components/dashboard/EditModeToggle';
+import { EditModeToggle } from '@/modules/dashboard/components/EditModeToggle';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell

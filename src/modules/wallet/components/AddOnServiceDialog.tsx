@@ -27,7 +27,7 @@ import {
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Badge } from "@/shared/components/ui/badge";
 import { AlertCircle, CheckCircle, Loader2, Wallet, CreditCard } from "lucide-react";
-import { walletService } from "@/services/walletService";
+import { walletService } from "@/shared/services/walletService";
 import { useToast } from "@/shared/hooks/use-toast";
 
 interface AddOnServiceDialogProps {

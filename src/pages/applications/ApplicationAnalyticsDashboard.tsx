@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { DashboardActionBar } from '@/components/dashboard/DashboardActionBar';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { DashboardActionBar } from '@/modules/dashboard/components/DashboardActionBar';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { getApplications } from '@/shared/lib/mockApplicationStorage';
 import {
@@ -12,11 +12,11 @@ import {
   getApplicationVolumeOverTime,
   getStatusDistribution
 } from '@/shared/lib/applications/analyticsService';
-import { TimeToHireChart } from '@/components/applications/analytics/TimeToHireChart';
-import { ConversionRateChart } from '@/components/applications/analytics/ConversionRateChart';
-import { SourceEffectivenessChart } from '@/components/applications/analytics/SourceEffectivenessChart';
-import { RecruiterPerformanceTable } from '@/components/applications/analytics/RecruiterPerformanceTable';
-import { StandardChartCard } from '@/components/dashboard/charts/StandardChartCard';
+import { TimeToHireChart } from '@/modules/applications/components/analytics/TimeToHireChart';
+import { ConversionRateChart } from '@/modules/applications/components/analytics/ConversionRateChart';
+import { SourceEffectivenessChart } from '@/modules/applications/components/analytics/SourceEffectivenessChart';
+import { RecruiterPerformanceTable } from '@/modules/applications/components/analytics/RecruiterPerformanceTable';
+import { StandardChartCard } from '@/modules/dashboard/components/charts/StandardChartCard';
 import { Clock, TrendingUp, Users, Award } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';

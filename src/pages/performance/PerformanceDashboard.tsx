@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { EnhancedStatCard } from "@/components/dashboard/EnhancedStatCard";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { DateRangePicker } from "@/shared/components/ui/date-range-picker-v2";
 import { Badge } from "@/shared/components/ui/badge";
-import { EditModeToggle } from '@/components/dashboard/EditModeToggle';
+import { EditModeToggle } from '@/modules/dashboard/components/EditModeToggle';
 import {
   LineChart, Line, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { getPerformanceGoals, getPerformanceReviews } from "@/shared/lib/performanceStorage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { StandardChartCard } from "@/components/dashboard/charts/StandardChartCard";
+import { StandardChartCard } from "@/modules/dashboard/components/charts/StandardChartCard";
 import { useToast } from "@/shared/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
 

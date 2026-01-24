@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Upload, Download, FolderKanban, Users, Briefcase, Target, Building, DollarSign, FileText, Eye, BarChart3 } from 'lucide-react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { Button } from '@/shared/components/ui/button';
-import { DataTable } from '@/components/tables/DataTable';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
-import { createServiceProjectColumns } from '@/components/recruitment-services/ServiceProjectTableColumns';
+import { DataTable } from '@/shared/components/tables/DataTable';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
+import { createServiceProjectColumns } from '@/modules/rpo/components/recruitment-services/ServiceProjectTableColumns';
 import { getAllServiceProjects, getServiceStats, updateServiceProject } from '@/shared/lib/recruitmentServiceStorage';
 import { toast } from 'sonner';
 import type { ServiceProject } from '@/shared/types/recruitmentService';
 import type { ServiceStats } from '@/shared/types/recruitmentService';
-import { useCurrencyFormat } from '@/app/CurrencyFormatProvider';
+import { useCurrencyFormat } from '@/app/providers/CurrencyFormatContext';
 
 export default function RecruitmentServices() {
   const navigate = useNavigate();

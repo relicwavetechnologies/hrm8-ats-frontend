@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { useCompanyProfile } from '@/shared/hooks/useCompanyProfile';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import {
   Card,
   CardContent,
@@ -48,7 +48,8 @@ import { FormMultiSelect } from '@/shared/components/common/form-fields';
 import { PhoneCountrySelect } from '@/shared/components/common/PhoneCountrySelect';
 import { LocationSelect } from '@/shared/components/common/LocationSelect';
 import { useToast } from '@/shared/hooks/use-toast';
-import { DeveloperTools } from '@/components/dev/DeveloperTools';
+// TODO: Dev tools - enable when needed
+// import { DeveloperTools } from '@/components/dev/DeveloperTools';
 
 const enumToKeyMap = Object.entries(COMPANY_PROFILE_SECTION_ENUM).reduce(
   (acc, [key, value]) => ({
@@ -675,7 +676,7 @@ export default function CompanyProfile() {
           </Tabs>
 
           {/* Developer Tools - Only visible in development mode */}
-          <DeveloperTools />
+          {/* <DeveloperTools /> */}
         </div>
       </div>
     </DashboardPageLayout>

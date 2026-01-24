@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Shield, Plus, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { getERCases, getERCaseStats, deleteERCase, updateERCase } from "@/shared/lib/employeeRelationsStorage";
 import { Badge } from "@/shared/components/ui/badge";
-import { DataTable, Column } from "@/components/tables/DataTable";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { ERCase } from "@/shared/types/employeeRelations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { ERCaseDialog } from "@/components/employee-relations/ERCaseDialog";
+import { ERCaseDialog } from "@/modules/employees/components/employee-relations/ERCaseDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/components/shared/DeleteConfirmationDialog";
-import { DateRangeFilter, MultiSelectFilter } from "@/components/tables/AdvancedFilters";
-import { GroupConfig } from "@/components/tables/TableGrouping";
-import { PivotConfig } from "@/components/tables/PivotTable";
+import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
+import { DateRangeFilter, MultiSelectFilter } from "@/shared/components/tables/AdvancedFilters";
+import { GroupConfig } from "@/shared/components/tables/TableGrouping";
+import { PivotConfig } from "@/shared/components/tables/PivotTable";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 

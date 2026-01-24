@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { useCandidateAuth } from "@/contexts/CandidateAuthContext";
 import { useConsultantAuth } from "@/contexts/ConsultantAuthContext";
 import { useHrm8Auth } from "@/contexts/Hrm8AuthContext";

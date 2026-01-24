@@ -1,4 +1,4 @@
-import { SkillCategory, SkillAssessment, RoleSkillRequirement } from "@/types/performance";
+import { SkillCategory, SkillAssessment, RoleSkillRequirement } from "@/shared/types/performance";
 
 export const mockSkillCategories: SkillCategory[] = [
   {

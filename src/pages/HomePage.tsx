@@ -14,7 +14,7 @@ import { SubscriptionStatusCard } from "@/modules/dashboard/components/Subscript
 // import { TransactionHistoryCard } from "@/modules/company/components/TransactionHistoryCard";
 import { companyService } from "@/shared/services/companyService";
 import { walletService } from "@/shared/services/walletService";
-import { useAuth } from "@/app/AuthProvider";
+import { useAuth } from "@/app/providers/AuthContext";
 import { useToast } from "@/shared/hooks/use-toast";
 
 export default function HomePage() {

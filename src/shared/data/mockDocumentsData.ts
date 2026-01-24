@@ -1,4 +1,4 @@
-import { EmployerDocument, DocumentType } from "@/types/employerCRM";
+import { EmployerDocument, DocumentType } from "@/shared/types/employerCRM";
 import { mockEmployers } from "./mockTableData";
 
 const documentTypes: { type: DocumentType; names: string[] }[] = [

@@ -1,4 +1,4 @@
-import type { Column } from "@/components/tables/DataTable";
+import type { Column } from "@/shared/components/tables/DataTable";
 import type { Candidate } from "@/shared/types/entities";
 import { CandidateAvatar } from "./CandidateAvatar";
 import { CandidateStatusBadge } from "./CandidateStatusBadge";

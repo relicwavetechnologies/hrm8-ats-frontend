@@ -1,7 +1,7 @@
-import type { Application, ApplicationStatus, ApplicationStage, ParsedResume } from '@/types/application';
+import type { Application, ApplicationStatus, ApplicationStage, ParsedResume } from '@/shared/types/application';
 import { mockCandidatesData } from './mockCandidatesData';
 import { mockJobs } from './mockTableData';
-import { TeamMemberFeedback } from '@/types/collaborativeFeedback';
+import { TeamMemberFeedback } from '@/shared/types/collaborativeFeedback';
 
 const statuses: ApplicationStatus[] = ['applied', 'screening', 'interview', 'offer', 'hired', 'rejected', 'withdrawn'];
 

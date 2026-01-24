@@ -28,9 +28,11 @@ import {
   useSidebar,
 } from "@/shared/components/ui/sidebar";
 import { cn } from "@/shared/lib/utils";
-import { useCandidateAuth } from "@/app/AuthProvider";
+import { useCandidateAuth } from "@/app/providers/AuthContext";
 import { CandidateSidebarFooter } from "./CandidateSidebarFooter";
-import { NotificationBell } from "@/components/candidate/NotificationBell";
+// TODO: Candidate portal component - not needed in ATS
+// import { NotificationBell } from "@/components/candidate/NotificationBell";
+const NotificationBell = () => null; // Placeholder
 import { ClipboardCheck } from "lucide-react";
 
 const menuItems = [

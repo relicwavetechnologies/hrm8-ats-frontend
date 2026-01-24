@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
 import { Button } from '@/shared/components/ui/button';
 import { Download, Calendar, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { TrendsChart } from '@/components/backgroundChecks/TrendsChart';
-import { CheckTypeComparisonChart } from '@/components/backgroundChecks/CheckTypeComparisonChart';
-import { RecruiterPerformanceTable } from '@/components/backgroundChecks/RecruiterPerformanceTable';
-import { BottleneckAnalysis } from '@/components/backgroundChecks/BottleneckAnalysis';
-import { PredictiveInsights } from '@/components/backgroundChecks/PredictiveInsights';
-import { DateRangeSelector } from '@/components/backgroundChecks/DateRangeSelector';
-import { PeriodComparisonCard } from '@/components/backgroundChecks/PeriodComparisonCard';
+import { TrendsChart } from '@/modules/background-checks/components/TrendsChart';
+import { CheckTypeComparisonChart } from '@/modules/background-checks/components/CheckTypeComparisonChart';
+import { RecruiterPerformanceTable } from '@/modules/background-checks/components/RecruiterPerformanceTable';
+import { BottleneckAnalysis } from '@/modules/background-checks/components/BottleneckAnalysis';
+import { PredictiveInsights } from '@/modules/background-checks/components/PredictiveInsights';
+import { DateRangeSelector } from '@/modules/background-checks/components/DateRangeSelector';
+import { PeriodComparisonCard } from '@/modules/background-checks/components/PeriodComparisonCard';
 import { toast } from '@/shared/hooks/use-toast';
 import {
   getTrendsData,

@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Heart, Plus, Calendar, AlertCircle, FileCheck, Users, DollarSign, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useRBAC } from "@/shared/hooks/useRBAC";
 import { getEnrollmentPeriods, getLifeEvents, getCOBRAEvents, deleteEnrollmentPeriod, deleteLifeEvent, deleteCOBRAEvent } from "@/shared/lib/benefitsEnhancedStorage";
 import { Badge } from "@/shared/components/ui/badge";
-import { DataTable, Column } from "@/components/tables/DataTable";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { EnrollmentPeriod, LifeEvent, COBRAEvent } from "@/shared/types/benefitsEnhanced";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { EnrollmentPeriodDialog } from "@/components/benefits/EnrollmentPeriodDialog";
-import { LifeEventDialog } from "@/components/benefits/LifeEventDialog";
-import { COBRADialog } from "@/components/benefits/COBRADialog";
+import { EnrollmentPeriodDialog } from "@/modules/benefits/components/EnrollmentPeriodDialog";
+import { LifeEventDialog } from "@/modules/benefits/components/LifeEventDialog";
+import { COBRADialog } from "@/modules/benefits/components/COBRADialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/components/shared/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
 import { toast } from "sonner";
 import { useCurrencyFormat } from "@/app/providers/CurrencyFormatContext";
 

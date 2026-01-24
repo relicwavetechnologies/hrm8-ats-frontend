@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -36,19 +36,19 @@ import {
 import { 
   WarningConfirmationDialog
 } from "@/shared/components/ui/warning-confirmation-dialog";
-import { jobService } from "@/shared/lib/api/jobService";
-import { jobTemplateService, JobTemplate } from "@/shared/lib/api/jobTemplateService";
+import { jobService } from "@/shared/lib/jobService";
+import { jobTemplateService, JobTemplate } from "@/shared/lib/jobTemplateService";
 import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { Job } from "@/shared/types/job";
 import { useToast } from "@/shared/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { CreateTemplateDialog } from "@/components/jobs/templates/CreateTemplateDialog";
-import { EditTemplateDialog } from "@/components/jobs/templates/EditTemplateDialog";
+import { useAuth } from "@/app/providers/AuthContext";
+import { CreateTemplateDialog } from "@/modules/jobs/components/templates/CreateTemplateDialog";
+import { EditTemplateDialog } from "@/modules/jobs/components/templates/EditTemplateDialog";
 import { formatDistanceToNow } from "date-fns";
 import { templateCategories } from "@/shared/lib/jobTemplateService";
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
 import { transformJobFormDataToCreateRequest } from "@/shared/lib/jobFormTransformers";
-import { TemplatesPageSkeleton } from "@/components/jobs/templates/TemplatesPageSkeleton";
+import { TemplatesPageSkeleton } from "@/modules/jobs/components/templates/TemplatesPageSkeleton";
 
 export default function JobTemplates() {
   const { toast } = useToast();

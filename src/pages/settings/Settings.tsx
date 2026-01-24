@@ -1,5 +1,5 @@
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Settings as SettingsIcon, DollarSign, Bell, Globe, Eye, Shield, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Label } from "@/shared/components/ui/label";
@@ -7,9 +7,9 @@ import { Switch } from "@/shared/components/ui/switch";
 import { Separator } from "@/shared/components/ui/separator";
 import { useCurrencyFormat } from "@/app/providers/CurrencyFormatContext";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { useState, useEffect } from "react";
-import { companySettingsService, JobAssignmentMode } from "@/shared/lib/api/companySettingsService";
+import { companySettingsService, JobAssignmentMode } from "@/shared/lib/companySettingsService";
 import { Loader2 } from "lucide-react";
 import {
   Select,

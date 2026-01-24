@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { applicationService, Application as RawApplication } from "@/shared/lib/applicationService";
 import { format } from "date-fns";
-import { ApplicationStatusBadge } from "@/components/applications/ApplicationStatusBadge";
-import { DetailSkeleton } from "@/components/skeletons/DetailSkeleton";
-import { DocumentViewer } from "@/components/candidates/DocumentViewer";
+import { ApplicationStatusBadge } from "@/modules/applications/components/ApplicationStatusBadge";
+import { DetailSkeleton } from "@/shared/components/skeletons/DetailSkeleton";
+import { DocumentViewer } from "@/modules/candidates/components/DocumentViewer";
 import { CandidateDocument } from "@/shared/types/entities";
-import { ApproveHireDialog } from "@/components/applications/ApproveHireDialog";
+import { ApproveHireDialog } from "@/modules/applications/components/ApproveHireDialog";
 
 export default function ApplicationDetail() {
   const { id, jobId } = useParams<{ id: string; jobId?: string }>();

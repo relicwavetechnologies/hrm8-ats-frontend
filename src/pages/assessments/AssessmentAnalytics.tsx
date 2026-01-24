@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { EnhancedStatCard } from '@/components/dashboard/EnhancedStatCard';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { EnhancedStatCard } from '@/modules/dashboard/components/EnhancedStatCard';
 import { Card } from '@/shared/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Badge } from '@/shared/components/ui/badge';

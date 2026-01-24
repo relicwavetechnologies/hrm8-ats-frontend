@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { AtsPageHeader } from '@/components/layouts/AtsPageHeader';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
 import { useInterviewReport } from '@/shared/hooks/useInterviewReports';
 import { useReportComments } from '@/shared/hooks/useReportComments';
 import { Button } from '@/shared/components/ui/button';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Badge } from '@/shared/components/ui/badge';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { ArrowLeft, Share2, Download, MessageSquare } from 'lucide-react';
-import { InterviewScorecard } from '@/components/aiInterview/analysis/InterviewScorecard';
+import { InterviewScorecard } from '@/modules/ai-interviews/components/analysis/InterviewScorecard';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';

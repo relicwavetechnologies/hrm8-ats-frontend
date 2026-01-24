@@ -1,8 +1,8 @@
-import { Column } from "@/components/tables/DataTable";
+import { Column } from "@/shared/components/tables/DataTable";
 import { Employee } from "@/shared/types/employee";
 import { EmployeeStatusBadge } from "./EmployeeStatusBadge";
 import { EmploymentTypeBadge } from "./EmploymentTypeBadge";
-import { EntityAvatar } from "@/components/tables/EntityAvatar";
+import { EntityAvatar } from "@/shared/components/tables/EntityAvatar";
 import { Button } from "@/shared/components/ui/button";
 import { MoreVertical, Eye, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";

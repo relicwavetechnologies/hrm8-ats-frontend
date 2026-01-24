@@ -14,7 +14,7 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { getAllTimezones, getTimezonesByRegion, type TimezoneOption } from '@/shared/lib/timezones';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { companySettingsService, type OfficeHoursConfig } from '@/shared/lib/companySettingsService';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 
 const DAYS = [

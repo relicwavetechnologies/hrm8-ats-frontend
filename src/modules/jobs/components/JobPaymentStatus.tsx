@@ -12,7 +12,7 @@ import { Loader2, CreditCard, CheckCircle2, XCircle, AlertCircle, DollarSign } f
 import { Job } from '@/shared/types/job';
 import { createJobCheckoutSession } from '@/shared/lib/payments';
 import { useToast } from '@/shared/hooks/use-toast';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 import { format } from 'date-fns';
 
 interface JobPaymentStatusProps {

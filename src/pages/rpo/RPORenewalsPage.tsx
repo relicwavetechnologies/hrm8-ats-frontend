@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { RPOContractRenewalAlerts } from '@/components/rpo/RPOContractRenewalAlerts';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { RPOContractRenewalAlerts } from '@/modules/rpo/components/RPOContractRenewalAlerts';
 import { getRenewalAlerts, getRenewalAlertsSummary } from '@/shared/lib/rpoRenewalUtils';
 import { AlertTriangle } from 'lucide-react';
 

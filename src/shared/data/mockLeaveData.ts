@@ -1,4 +1,4 @@
-import type { LeaveType, LeaveBalance, LeaveRequest, LeaveApprovalRule } from '@/types/leave';
+import type { LeaveType, LeaveBalance, LeaveRequest, LeaveApprovalRule } from '@/shared/types/leave';
 
 export const mockLeaveTypes: LeaveType[] = [
   {

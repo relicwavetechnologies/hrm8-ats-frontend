@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/aler
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { RECRUITMENT_SERVICES } from '@/shared/lib/subscriptionConfig';
 import { Badge } from '@/shared/components/ui/badge';
-import { useAuth } from '@/app/AuthProvider';
+import { useAuth } from '@/app/providers/AuthContext';
 
 interface JobWizardStep6Props {
   form: UseFormReturn<JobFormData>;

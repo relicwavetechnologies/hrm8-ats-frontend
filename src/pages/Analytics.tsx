@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
@@ -19,12 +19,12 @@ import {
   calculateCandidateTrends,
   calculateConversionFunnel
 } from "@/shared/lib/analyticsService";
-import { MetricsOverview } from "@/components/analytics/MetricsOverview";
-import { PipelineFunnelChart } from "@/components/analytics/PipelineFunnelChart";
-import { SourceEffectivenessChart } from "@/components/analytics/SourceEffectivenessChart";
-import { TimeToHireTrendChart } from "@/components/analytics/TimeToHireTrendChart";
-import { CandidateTrendChart } from "@/components/analytics/CandidateTrendChart";
-import { PipelineStageMetrics } from "@/components/analytics/PipelineStageMetrics";
+import { MetricsOverview } from "@/modules/analytics/components/MetricsOverview";
+import { PipelineFunnelChart } from "@/modules/analytics/components/PipelineFunnelChart";
+import { SourceEffectivenessChart } from "@/modules/analytics/components/SourceEffectivenessChart";
+import { TimeToHireTrendChart } from "@/modules/analytics/components/TimeToHireTrendChart";
+import { CandidateTrendChart } from "@/modules/analytics/components/CandidateTrendChart";
+import { PipelineStageMetrics } from "@/modules/analytics/components/PipelineStageMetrics";
 import { useToast } from "@/shared/hooks/use-toast";
 
 export default function Analytics() {

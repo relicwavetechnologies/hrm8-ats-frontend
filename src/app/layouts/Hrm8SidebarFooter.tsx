@@ -4,7 +4,7 @@ import { useSidebar } from "@/shared/components/ui/sidebar";
 import { Settings, HelpCircle, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/shared/lib/utils";
-import { useHrm8Auth } from "@/app/AuthProvider";
+import { useHrm8Auth } from "@/app/providers/AuthContext";
 
 export function Hrm8SidebarFooter() {
   const { open } = useSidebar();

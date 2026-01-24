@@ -1,23 +1,23 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
 import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, Filter, X, Zap, Eye } from "lucide-react";
-import { EnhancedStatCard } from "@/components/dashboard/EnhancedStatCard";
-import { DataTable, Column } from "@/components/tables/DataTable";
-import { jobService } from "@/shared/lib/api/jobService";
+import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
+import { DataTable, Column } from "@/shared/components/tables/DataTable";
+import { jobService } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { useJobPostingPermission } from "@/shared/hooks/useJobPostingPermission";
 import { mapBackendJobToFrontend, mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { FormDrawer } from "@/shared/components/ui/form-drawer";
-import { JobWizard } from "@/components/jobs/JobWizard";
-import { JobEditDrawer } from "@/components/jobs/JobEditDrawer";
-import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
-import { EmploymentTypeBadge } from "@/components/jobs/EmploymentTypeBadge";
-import { ServiceTypeBadge } from "@/components/jobs/ServiceTypeBadge";
-import { EntityAvatar } from "@/components/tables/EntityAvatar";
+import { JobWizard } from "@/modules/jobs/components/JobWizard";
+import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
+import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
+import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
+import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
+import { EntityAvatar } from "@/shared/components/tables/EntityAvatar";
 import { formatRelativeDate } from "@/shared/lib/jobUtils";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -29,16 +29,16 @@ import {
 import { useToast } from "@/shared/hooks/use-toast";
 import { WarningConfirmationDialog } from "@/shared/components/ui/warning-confirmation-dialog";
 import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
-import { JobsFilterBar } from "@/components/jobs/JobsFilterBar";
+import { JobsFilterBar } from "@/modules/jobs/components/JobsFilterBar";
 import { getCountryFromLocation, expandRegionsToCountries, REGION_COUNTRY_MAP, getRegionForCountry } from "@/shared/lib/countryRegions";
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
 
-import { AdvancedFilterBuilder } from "@/components/jobs/filters/AdvancedFilterBuilder";
-import { SavedFiltersPanel } from "@/components/jobs/filters/SavedFiltersPanel";
-import { BulkActionsToolbar } from "@/components/jobs/bulk/BulkActionsToolbar";
+import { AdvancedFilterBuilder } from "@/modules/jobs/components/filters/AdvancedFilterBuilder";
+import { SavedFiltersPanel } from "@/modules/jobs/components/filters/SavedFiltersPanel";
+import { BulkActionsToolbar } from "@/modules/jobs/components/bulk/BulkActionsToolbar";
 import { FilterCriteria, SavedFilter } from "@/shared/lib/savedFiltersService";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible";
-import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
 import {
   AlertDialog,
   AlertDialogContent,

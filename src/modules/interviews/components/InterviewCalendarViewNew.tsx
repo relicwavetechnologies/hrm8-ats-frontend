@@ -14,7 +14,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
-import { interviewService, Interview } from '@/shared/lib/api/interviewService';
+import { interviewService, Interview } from '@/shared/lib/interviewService';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon, Loader2, Video, Phone, Users, MapPin, User, Mail, MapPin as LocationIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';

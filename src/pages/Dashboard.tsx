@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
-import { EditModeToggle } from '@/components/dashboard/EditModeToggle';
-import { EditModeToolbar } from '@/components/dashboard/EditModeToolbar';
-import { WidgetPalette } from '@/components/dashboard/WidgetPalette';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { DashboardActionBar } from '@/components/dashboard/DashboardActionBar';
+import { DashboardGrid } from '@/modules/dashboard/components/DashboardGrid';
+import { EditModeToggle } from '@/modules/dashboard/components/EditModeToggle';
+import { EditModeToolbar } from '@/modules/dashboard/components/EditModeToolbar';
+import { WidgetPalette } from '@/modules/dashboard/components/WidgetPalette';
+import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { DashboardActionBar } from '@/modules/dashboard/components/DashboardActionBar';
 import { useDashboardLayout } from '@/shared/hooks/useDashboardLayout';
 import { WIDGET_REGISTRY } from '@/shared/lib/dashboard/widgetRegistry';
 import { DASHBOARD_METADATA } from '@/shared/lib/dashboard/dashboardTypes';

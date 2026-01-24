@@ -26,7 +26,7 @@ import {
 } from "@/shared/components/ui/select";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-import { walletService } from "@/services/walletService";
+import { walletService } from "@/shared/services/walletService";
 import { useToast } from "@/shared/hooks/use-toast";
 
 interface WithdrawalDialogProps {

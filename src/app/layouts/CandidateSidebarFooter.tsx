@@ -4,7 +4,7 @@ import { useSidebar } from "@/shared/components/ui/sidebar";
 import { Settings, HelpCircle, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/shared/lib/utils";
-import { useCandidateAuth } from "@/app/AuthProvider";
+import { useCandidateAuth } from "@/app/providers/AuthContext";
 
 export function CandidateSidebarFooter() {
   const { open } = useSidebar();

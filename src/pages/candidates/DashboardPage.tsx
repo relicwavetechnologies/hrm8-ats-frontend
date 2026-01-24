@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { EnhancedStatCard } from "@/components/dashboard/EnhancedStatCard";
-import { DashboardActionBar } from "@/components/dashboard/DashboardActionBar";
-import { ActiveFiltersIndicator } from "@/components/dashboard/ActiveFiltersIndicator";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
+import { DashboardActionBar } from "@/modules/dashboard/components/DashboardActionBar";
+import { ActiveFiltersIndicator } from "@/modules/dashboard/components/ActiveFiltersIndicator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Badge } from "@/shared/components/ui/badge";
-import { EditModeToggle } from '@/components/dashboard/EditModeToggle';
+import { EditModeToggle } from '@/modules/dashboard/components/EditModeToggle';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -16,7 +16,7 @@ import {
   CheckCircle, Award, Download, Eye, Filter, BarChart3, Calendar, Plus
 } from "lucide-react";
 import { getCandidates } from "@/shared/lib/mockCandidateStorage";
-import { StandardChartCard } from "@/components/dashboard/charts/StandardChartCard";
+import { StandardChartCard } from "@/modules/dashboard/components/charts/StandardChartCard";
 import { useToast } from "@/shared/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
 import { applyLocationFilterToMetric } from "@/shared/lib/mockDataWithLocations";

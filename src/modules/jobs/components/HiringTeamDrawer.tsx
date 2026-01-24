@@ -56,7 +56,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
-import { jobService } from '@/shared/lib/api/jobService';
+import { jobService } from '@/shared/lib/jobService';
 
 // Types
 export interface HiringTeamMember {

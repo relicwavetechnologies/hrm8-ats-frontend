@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { StandardChartCard } from "@/components/dashboard/charts/StandardChartCard";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { StandardChartCard } from "@/modules/dashboard/components/charts/StandardChartCard";
 import { Button } from "@/shared/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { DateRangePicker } from "@/shared/components/ui/date-range-picker-v2";
@@ -25,7 +25,7 @@ import { getJobAnalytics, getRecruitmentMetrics } from "@/shared/lib/analyticsSe
 import { exportJobAnalytics } from "@/shared/lib/exportService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { getJobs } from "@/shared/lib/mockJobStorage";
-import { EnhancedStatCard } from "@/components/dashboard/EnhancedStatCard";
+import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { useNavigate } from "react-router-dom";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--accent))", "hsl(var(--muted))"];

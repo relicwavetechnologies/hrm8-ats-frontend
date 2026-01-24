@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { AtsPageHeader } from "@/components/layouts/AtsPageHeader";
+import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
+import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -31,54 +31,54 @@ import {
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
 import { Job } from "@/shared/types/job";
-import { JobStatusBadge } from "@/components/jobs/JobStatusBadge";
-import { EmploymentTypeBadge } from "@/components/jobs/EmploymentTypeBadge";
-import { ServiceTypeBadge } from "@/components/jobs/ServiceTypeBadge";
-import { JobQuickStats } from "@/components/jobs/JobQuickStats";
-import { DetailSkeleton } from "@/components/skeletons/DetailSkeleton";
-import { JobActivityFeed } from "@/components/jobs/JobActivityFeed";
-import { JobLifecycleActions } from "@/components/jobs/JobLifecycleActions";
-import { JobPaymentStatus } from "@/components/jobs/JobPaymentStatus";
+import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
+import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
+import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
+import { JobQuickStats } from "@/modules/jobs/components/JobQuickStats";
+import { DetailSkeleton } from "@/shared/components/skeletons/DetailSkeleton";
+import { JobActivityFeed } from "@/modules/jobs/components/JobActivityFeed";
+import { JobLifecycleActions } from "@/modules/jobs/components/JobLifecycleActions";
+import { JobPaymentStatus } from "@/modules/jobs/components/JobPaymentStatus";
 import { formatSalaryRange, formatExperienceLevel, formatRelativeDate } from "@/shared/lib/jobUtils";
-import { ApplicationPipeline } from "@/components/applications/ApplicationPipeline";
-import { JobApplicantsList } from "@/components/applications/JobApplicantsList";
-import { AllApplicantsCard } from "@/components/applications/AllApplicantsCard";
-import { InitialScreeningTab } from "@/components/applications/InitialScreeningTab";
+import { ApplicationPipeline } from "@/modules/applications/components/ApplicationPipeline";
+import { JobApplicantsList } from "@/modules/applications/components/JobApplicantsList";
+import { AllApplicantsCard } from "@/modules/applications/components/AllApplicantsCard";
+import { InitialScreeningTab } from "@/modules/applications/components/InitialScreeningTab";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { JobEditDrawer } from "@/components/jobs/JobEditDrawer";
-import { ExternalPromotionDialog } from "@/components/jobs/ExternalPromotionDialog";
-import { JobAnalyticsDashboard } from "@/components/jobs/analytics/JobAnalyticsDashboard";
-import { JobCollaborationPanel } from "@/components/jobs/collaboration/JobCollaborationPanel";
-import { JobVersionHistory } from "@/components/jobs/history/JobVersionHistory";
-import { JobBudgetTracker } from "@/components/jobs/budget/JobBudgetTracker";
-import { CandidateMatchingPanel } from "@/components/jobs/matching/CandidateMatchingPanel";
-import { JobAIInterviewsTab } from "@/components/jobs/aiInterview/JobAIInterviewsTab";
+import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
+import { ExternalPromotionDialog } from "@/modules/jobs/components/ExternalPromotionDialog";
+import { JobAnalyticsDashboard } from "@/modules/jobs/components/analytics/JobAnalyticsDashboard";
+import { JobCollaborationPanel } from "@/modules/jobs/components/collaboration/JobCollaborationPanel";
+import { JobVersionHistory } from "@/modules/jobs/components/history/JobVersionHistory";
+import { JobBudgetTracker } from "@/modules/jobs/components/budget/JobBudgetTracker";
+import { CandidateMatchingPanel } from "@/modules/jobs/components/matching/CandidateMatchingPanel";
+import { JobAIInterviewsTab } from "@/modules/jobs/components/aiInterview/JobAIInterviewsTab";
 import { useToast } from "@/shared/hooks/use-toast";
-import { jobService } from "@/shared/lib/api/jobService";
+import { jobService } from "@/shared/lib/jobService";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
-import { UpgradeServiceDialog } from "@/components/jobs/UpgradeServiceDialog";
-import { JobDetailPageSkeleton } from "@/components/jobs/JobDetailPageSkeleton";
-import { JobBoardVisibilityControl } from "@/components/jobs/JobBoardVisibilityControl";
-import { ArchiveJobDialog } from "@/components/jobs/ArchiveJobDialog";
-import { DeleteJobDialog } from "@/components/jobs/DeleteJobDialog";
+import { UpgradeServiceDialog } from "@/modules/jobs/components/UpgradeServiceDialog";
+import { JobDetailPageSkeleton } from "@/modules/jobs/components/JobDetailPageSkeleton";
+import { JobBoardVisibilityControl } from "@/modules/jobs/components/JobBoardVisibilityControl";
+import { ArchiveJobDialog } from "@/modules/jobs/components/ArchiveJobDialog";
+import { DeleteJobDialog } from "@/modules/jobs/components/DeleteJobDialog";
 import { applicationService } from "@/shared/lib/applicationService";
-import { TalentPoolSearchDialog } from "@/components/applications/TalentPoolSearchDialog";
-import { JobApplicationsFilterBar, JobApplicationsFilters } from "@/components/applications/JobApplicationsFilterBar";
-import { ManualUploadDialog } from "@/components/applications/ManualUploadDialog";
-import { ApplicationListView } from "@/components/applications/ApplicationListView";
-import { JobEmailHubDrawer } from "@/components/email/JobEmailHubDrawer";
+import { TalentPoolSearchDialog } from "@/modules/applications/components/TalentPoolSearchDialog";
+import { JobApplicationsFilterBar, JobApplicationsFilters } from "@/modules/applications/components/JobApplicationsFilterBar";
+import { ManualUploadDialog } from "@/modules/applications/components/ManualUploadDialog";
+import { ApplicationListView } from "@/modules/applications/components/ApplicationListView";
+import { JobEmailHubDrawer } from "@/modules/email/components/JobEmailHubDrawer";
 import { Upload, LayoutGrid, List, Inbox } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { filterApplicationsByTags } from "@/shared/lib/applicationTags";
 import { useMemo } from "react";
 import { verifyJobPayment } from "@/shared/lib/payments";
-import { useAuth } from "@/contexts/AuthContext";
-import { HiringTeamDrawer, HiringTeamData } from "@/components/jobs/HiringTeamDrawer";
+import { useAuth } from "@/app/providers/AuthContext";
+import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
 
 export default function JobDetail() {
   const { jobId } = useParams();

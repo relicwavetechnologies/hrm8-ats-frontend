@@ -1,4 +1,4 @@
-import { OneOnOneMeeting, MeetingAgendaTemplate } from "@/types/performance";
+import { OneOnOneMeeting, MeetingAgendaTemplate } from "@/shared/types/performance";
 
 export const mockMeetingTemplates: MeetingAgendaTemplate[] = [
   {

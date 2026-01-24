@@ -1,4 +1,4 @@
-import type { Document, DocumentFolder } from '@/types/document';
+import type { Document, DocumentFolder } from '@/shared/types/document';
 
 export const mockFolders: DocumentFolder[] = [
   {
