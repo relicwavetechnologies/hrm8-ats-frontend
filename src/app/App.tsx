@@ -1,18 +1,10 @@
-import { BrowserRouter } from 'react-router-dom'
+/**
+ * Main Application Component
+ * Renders the application routes
+ */
 
-function App() {
-  return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto p-8">
-          <h1 className="text-4xl font-bold text-primary mb-4">HRM8 ATS</h1>
-          <p className="text-muted-foreground">
-            Project initialization complete. Ready for component extraction.
-          </p>
-        </div>
-      </div>
-    </BrowserRouter>
-  )
+import { AppRoutes } from './routes';
+
+export default function App() {
+  return <AppRoutes />;
 }
-
-export default App
