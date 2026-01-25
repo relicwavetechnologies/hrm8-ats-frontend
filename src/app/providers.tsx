@@ -10,6 +10,7 @@ import { Toaster } from '@/shared/components/ui/sonner';
 import { AuthProvider, useAuth } from './providers/AuthContext';
 import { CurrencyFormatProvider } from './providers/CurrencyFormatContext';
 import { WebSocketProvider } from './providers/WebSocketContext';
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 
 // Create a Query Client instance
 const queryClient = new QueryClient({
@@ -37,17 +38,19 @@ interface ProvidersProps {
  */
 export function Providers({ children }: ProvidersProps) {
     return (
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <HelmetProvider>
                 <QueryClientProvider client={queryClient}>
-                    <AuthProvider>
-                        <CurrencyFormatProvider>
-                            <WebSocketWrapper>
-                                {children}
-                                <Toaster />
-                            </WebSocketWrapper>
-                        </CurrencyFormatProvider>
-                    </AuthProvider>
+                    <ErrorBoundary>
+                        <AuthProvider>
+                            <CurrencyFormatProvider>
+                                <WebSocketWrapper>
+                                    {children}
+                                    <Toaster />
+                                </WebSocketWrapper>
+                            </CurrencyFormatProvider>
+                        </AuthProvider>
+                    </ErrorBoundary>
                 </QueryClientProvider>
             </HelmetProvider>
         </BrowserRouter>

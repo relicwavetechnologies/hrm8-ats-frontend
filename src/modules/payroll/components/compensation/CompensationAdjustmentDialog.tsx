@@ -8,7 +8,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { saveCompensationReview } from "@/lib/compensationStorage";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 
 const formSchema = z.object({
   employeeName: z.string().min(1, "Employee name is required").max(100),

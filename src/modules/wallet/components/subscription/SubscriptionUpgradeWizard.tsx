@@ -10,7 +10,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import { SUBSCRIPTION_TIERS, type SubscriptionTier, HRMS_ADDON } from "@/lib/subscriptionConfig";
 import { calculateMonthlyCost } from "@/lib/moduleAccessControl";
 import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 
 interface SubscriptionUpgradeWizardProps {
   open: boolean;

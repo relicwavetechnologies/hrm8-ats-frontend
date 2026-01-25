@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Badge } from '@/shared/components/ui/badge';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Mail, Eye, MousePointerClick, MessageSquare, TrendingUp } from 'lucide-react';
-import { getTemplatePerformance, getTopPerformingTemplates } from '@/lib/mockTemplatePerformance';
+import { getTemplatePerformance, getTopPerformingTemplates } from '@/shared/lib/mockTemplatePerformance';
 import { format } from 'date-fns';
 
 interface TemplateAnalyticsProps {

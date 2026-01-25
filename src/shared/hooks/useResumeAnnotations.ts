@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { resumeAnnotationService } from '@/services/resumeAnnotationService';
+import { resumeAnnotationService } from '@/shared/services/resumeAnnotationService';
 import { toast } from 'sonner';
 
 export interface Annotation {
@@ -102,8 +102,8 @@ export const useResumeAnnotations = ({
       await resumeAnnotationService.deleteAnnotation(documentId, annotationId, currentUserId);
       setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
     } catch (error) {
-        console.error('Failed to delete annotation:', error);
-        toast.error('Failed to delete annotation');
+      console.error('Failed to delete annotation:', error);
+      toast.error('Failed to delete annotation');
     }
   }, [documentId, currentUserId]);
 

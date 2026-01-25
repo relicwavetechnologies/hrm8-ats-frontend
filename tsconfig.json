@@ -12,7 +12,10 @@
       "@/modules/*": ["./src/modules/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/pages/*": ["./src/pages/*"],
-      "@/assets/*": ["./src/assets/*"]
+      "@/assets/*": ["./src/assets/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/contexts/*": ["./src/contexts/*"],
+      "@/utils/*": ["./src/utils/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

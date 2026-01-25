@@ -11,7 +11,7 @@ import { updateApplicationStatus, getApplications } from "@/shared/lib/mockAppli
 import { applicationService } from "@/shared/lib/applicationService";
 import { ConsultantCandidateService } from "@/shared/lib/consultant/consultantCandidateService";
 import { toast } from "sonner";
-import { CandidateAssessmentView } from "../jobs/candidate-assessment/CandidateAssessmentView";
+import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { ChevronDown, Plus, Trash2, GripVertical, Settings, CalendarClock, FileSearch, Send, Star, Users, Play } from "lucide-react";
 import { CreateRoundDialog } from "./CreateRoundDialog";

@@ -61,11 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const profile = await refreshProfileSummary();
-      if (!profile) {
+      const response = await authService.getCurrentUser();
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        setProfileSummary(response.data.profile);
+      } else {
         setUser(null);
         setProfileSummary(null);
       }
+    } catch (error) {
+      console.error('[AuthContext] Auth check exception:', error);
+      setUser(null);
+      setProfileSummary(null);
     } finally {
       setIsLoading(false);
     }
@@ -127,9 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const pendingDetails =
           response.details?.code === 'PENDING_VERIFICATION'
             ? {
-                email: (response.details.email as string) || email,
-                companyId: response.details.companyId as string | undefined,
-              }
+              email: (response.details.email as string) || email,
+              companyId: response.details.companyId as string | undefined,
+            }
             : null;
 
         if (pendingDetails) {
@@ -253,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.success && response.data) {
         const verifiedEmail = response.data.email || email;
-        
+
         if (!verifiedEmail) {
           return { success: false, needsPassword: false, error: 'No email found in verification response' };
         }
@@ -269,10 +276,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             title: 'Company verified!',
             description: response.data.message || 'Your company has been verified successfully',
           });
-          
+
           // Clear stored credentials
           sessionStorage.removeItem('pendingVerification');
-          
+
           // Don't redirect - let VerifyCompany page handle onboarding inline
           return { success: true, email: verifiedEmail };
         }
@@ -280,7 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // If no user data returned, try to auto-login if we have credentials
         if (email && password) {
           const loginResult = await login(email, password);
-          
+
           // Clear stored credentials
           sessionStorage.removeItem(PENDING_VERIFICATION_KEY);
           localStorage.removeItem(PENDING_VERIFICATION_KEY);
@@ -291,7 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               timestamp: new Date().toISOString(),
             })
           );
-          
+
           if (loginResult.success) {
             return { success: true, email: verifiedEmail };
           }

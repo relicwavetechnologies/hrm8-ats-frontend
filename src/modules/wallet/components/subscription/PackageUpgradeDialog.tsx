@@ -6,8 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/aler
 import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Loader2, CheckCircle2, XCircle, Sparkles, Check } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/shared/hooks/use-toast";
+import { cn } from "@/shared/lib/utils";
 import { createUpgradeCheckoutSession, type UpgradeTier } from "@/lib/payments";
 
 interface PackageUpgradeDialogProps {

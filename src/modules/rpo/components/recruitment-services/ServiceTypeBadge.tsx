@@ -1,6 +1,6 @@
 import { Badge } from '@/shared/components/ui/badge';
 import type { ServiceType } from '@/types/recruitmentService';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 interface ServiceTypeBadgeProps {
   type: ServiceType;

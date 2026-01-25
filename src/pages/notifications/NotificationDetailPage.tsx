@@ -24,7 +24,7 @@ import {
 import { apiClient } from '@/shared/lib/api';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAuth } from '@/app/providers/AuthContext';
-import { useCandidateAuth } from '@/app/providers/AuthContext' // TODO: Remove candidate auth;
+import { useCandidateAuth } from '@/contexts/CandidateAuthContext';
 
 // Icon mapping for notification types
 const TYPE_ICONS: Record<string, React.ElementType> = {

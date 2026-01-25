@@ -28,7 +28,7 @@ const offerSchema = z.object({
   expiryDate: z.string().min(1, "Expiry date is required"),
 });
 
-type OfferFormData = z.infer<typeof offerSchema>;
+export type OfferFormData = z.infer<typeof offerSchema>;
 
 interface OfferFormProps {
   candidateName: string;
@@ -45,6 +45,7 @@ function mapEmploymentTypeToOfferType(employmentType?: string): "full-time" | "p
     case "part_time":
       return "part-time";
     case "contract":
+    case "casual": // Job.ts has casual, mapping to contract or adding casual? Original code mapped default to full-time.
       return "contract";
     case "intern":
     case "internship":
@@ -82,6 +83,7 @@ export function OfferForm({ candidateName, jobTitle, job, onSubmit, onCancel }: 
     const defaultSalary = job?.salaryMax || job?.salaryMin || 0;
 
     // Get salary period from job, default to annual
+    // Job.ts uses 'hourly' | 'daily' | 'weekly' | 'monthly' | 'annual'
     const defaultSalaryPeriod = (job?.salaryPeriod || "annual") as "annual" | "hourly" | "monthly" | "weekly" | "daily";
 
     return {
@@ -226,6 +228,7 @@ export function OfferForm({ candidateName, jobTitle, job, onSubmit, onCancel }: 
                       <SelectItem value="USD">USD</SelectItem>
                       <SelectItem value="EUR">EUR</SelectItem>
                       <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="INR">INR</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -245,13 +248,13 @@ export function OfferForm({ candidateName, jobTitle, job, onSubmit, onCancel }: 
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
-                  <SelectContent>
-                    <SelectItem value="annual">Annual</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="hourly">Hourly</SelectItem>
-                  </SelectContent>
+                    <SelectContent>
+                      <SelectItem value="annual">Annual</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="hourly">Hourly</SelectItem>
+                    </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>

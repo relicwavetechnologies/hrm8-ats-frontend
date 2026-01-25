@@ -107,7 +107,8 @@ export default function Jobs() {
         const response = await jobService.getJobs(filters);
         if (response.success && response.data) {
           // Map backend jobs to frontend format
-          const mappedJobs = response.data.map(mapBackendJobToFrontend);
+          const jobsData = Array.isArray(response.data) ? response.data : [];
+          const mappedJobs = jobsData.map(mapBackendJobToFrontend);
           setJobs(mappedJobs);
         } else {
           toast({

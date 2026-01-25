@@ -1,5 +1,5 @@
 import { InterviewSlot } from '@/shared/types/interviewConfirmation';
-import { getInterviews } from './interviewService';
+import { getInterviews } from '@/modules/interviews/services';
 
 export interface Interviewer {
   id: string;
@@ -107,7 +107,7 @@ export function suggestAlternativeSlots(
   for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
     const date = new Date(preferredDate);
     date.setDate(date.getDate() + dayOffset);
-    
+
     const daySlots = generateAvailableSlots(interviewerId, date, durationMinutes);
     allSlots.push(...daySlots.filter(slot => slot.isAvailable));
 

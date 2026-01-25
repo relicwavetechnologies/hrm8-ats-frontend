@@ -3,14 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Calendar, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 import {
   connectCalendarProvider,
   disconnectCalendarIntegration,
   syncCalendar,
   getCalendarIntegration,
   type CalendarProvider,
-} from "@/lib/integrations/calendarIntegrationService";
+} from "@/shared/lib/integrations/calendarIntegrationService";
 
 interface CalendarIntegrationCardProps {
   provider: CalendarProvider;

@@ -1,7 +1,7 @@
 import { Badge } from '@/shared/components/ui/badge';
 import type { ServicePriority } from '@/types/recruitmentService';
 import { AlertCircle, Circle, MinusCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 interface PriorityIndicatorProps {
   priority: ServicePriority;

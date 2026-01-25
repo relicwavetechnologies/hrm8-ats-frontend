@@ -94,7 +94,6 @@ export function WebSocketProvider({
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: WSMessage = JSON.parse(event.data);
-      console.log('📨 WebSocket message received:', message.type, message.payload);
 
       // Call registered handlers
       const handler = messageHandlersRef.current.get(message.type);
@@ -105,11 +104,9 @@ export function WebSocketProvider({
       // Handle specific message types
       switch (message.type) {
         case 'connection_established':
-          console.log('✅ WebSocket connection established');
           break;
 
         case 'authentication_success':
-          console.log('✅ WebSocket authentication successful');
           setConnectionState('connected');
           reconnectAttemptRef.current = 0; // Reset reconnect attempts
           break;
@@ -159,20 +156,10 @@ export function WebSocketProvider({
             // Check if message already exists
             const exists = conversationMessages.some((m) => m.id === newMessage.id);
 
-            console.log('🔄 Processing new_message/message_sent:', {
-              id: newMessage.id,
-              content: newMessage.content,
-              conversationId: newMessage.conversationId,
-              exists,
-              currentCount: conversationMessages.length
-            });
-
             if (exists) {
-              console.log('⚠️ Message already exists, skipping update');
               return prev;
             }
 
-            console.log('✅ Adding new message to state');
             return {
               ...prev,
               [newMessage.conversationId]: [...conversationMessages, newMessage],
@@ -207,18 +194,15 @@ export function WebSocketProvider({
             notificationPayload.type === 'NEW_MESSAGE' &&
             notificationPayload.data?.conversationId === currentConversationIdRef.current
           ) {
-            console.log('🔕 Suppressing notification for active conversation:', currentConversationIdRef.current);
             return;
           }
-          console.log('🔔 Notification received:', message.payload);
           break;
 
         case 'notifications_count':
-          console.log('🔢 Notification count update:', message.payload);
           break;
 
         default:
-          console.log('📨 Unhandled message type:', message.type);
+          break;
       }
     } catch (error) {
       console.error('❌ Error parsing WebSocket message:', error);
@@ -237,7 +221,6 @@ export function WebSocketProvider({
 
     try {
       const wsUrl = getWebSocketUrl();
-      console.log('🔌 Connecting to WebSocket:', wsUrl);
       setConnectionState('connecting');
 
       // WebSocket automatically includes cookies for same-origin requests
@@ -246,7 +229,6 @@ export function WebSocketProvider({
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('✅ WebSocket opened');
         // Authentication happens automatically via cookies
       };
 
@@ -258,16 +240,12 @@ export function WebSocketProvider({
       };
 
       ws.onclose = (event) => {
-        console.log('🔌 WebSocket closed:', event.code, event.reason);
         setConnectionState('disconnected');
         wsRef.current = null;
 
         // Attempt to reconnect if we should
         if (shouldReconnectRef.current && isAuthenticated) {
           const delay = getReconnectDelay(reconnectAttemptRef.current);
-          console.log(
-            `🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current + 1})`
-          );
           setConnectionState('reconnecting');
           reconnectAttemptRef.current += 1;
 
@@ -307,7 +285,6 @@ export function WebSocketProvider({
 
       const message: WSMessage = { type, payload };
       wsRef.current.send(JSON.stringify(message));
-      console.log('📤 WebSocket message sent:', type, payload);
     },
     []
   );

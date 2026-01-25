@@ -7,12 +7,15 @@ import { useNavigationShortcuts } from "@/shared/hooks/useKeyboardShortcuts";
 import { useSidebarState } from "@/shared/hooks/useSidebarState";
 
 
+import { GlobalNotificationHandler } from "./GlobalNotificationHandler";
+
 export function DashboardLayout() {
   const { open, setOpen } = useSidebarState();
   useNavigationShortcuts();
 
   return (
     <SidebarProvider open={open} onOpenChange={setOpen}>
+      <GlobalNotificationHandler />
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset className="flex-1">

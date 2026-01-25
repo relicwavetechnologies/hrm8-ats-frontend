@@ -75,7 +75,9 @@ export default function HomePage() {
     );
   }
 
-  const activeSubscriptions = subscriptions.filter(s => s.status === 'ACTIVE').length;
+  const activeSubscriptions = Array.isArray(subscriptions)
+    ? subscriptions.filter(s => s.status === 'ACTIVE').length
+    : 0;
 
   return (
     <DashboardPageLayout>

@@ -20,14 +20,14 @@ export function CreateRoundDialog({ open, onOpenChange, onSuccess, jobId }: Crea
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const { jobRoundService } = await import("@/shared/lib/api/jobRoundService");
+      const { jobRoundService } = await import("@/shared/lib/jobRoundService");
       const response = await jobRoundService.createRound(jobId, {
         name: name.trim(),
         type,
@@ -58,7 +58,7 @@ export function CreateRoundDialog({ open, onOpenChange, onSuccess, jobId }: Crea
             Add a new round to the interview pipeline. Each round can be either an assessment or an interview.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="round-name">Round Name *</Label>

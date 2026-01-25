@@ -4,22 +4,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 import { Button } from '@/shared/components/ui/button';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Bell, CheckCheck, Trash2, Archive, Download } from 'lucide-react';
-import { useNotifications } from '@/shared/hooks/useNotifications';
+import { useUniversalNotifications } from '@/shared/hooks/useUniversalNotifications';
 import { NotificationSearch } from './NotificationSearch';
 import { NotificationDetailModal } from './NotificationDetailModal';
 import { NotificationAnalytics } from './NotificationAnalytics';
 import { formatDistanceToNow } from 'date-fns';
-import { 
-  archiveNotification, 
-  bulkMarkAsRead, 
-  bulkDelete, 
-  bulkArchive 
+import {
+  archiveNotification,
+  bulkMarkAsRead,
+  bulkDelete,
+  bulkArchive
 } from '@/shared/lib/notificationStorage';
-import { 
-  exportNotificationsToCSV, 
-  exportNotificationsToJSON, 
-  downloadCSV, 
-  downloadJSON 
+import {
+  exportNotificationsToCSV,
+  exportNotificationsToJSON,
+  downloadCSV,
+  downloadJSON
 } from '@/shared/lib/notificationExport';
 import { toast } from 'sonner';
 import { Notification } from '@/shared/types/notification';
@@ -29,17 +29,36 @@ const MOCK_USER_ID = 'user-1';
 export function UnifiedNotificationCenter() {
   const {
     notifications,
-    stats,
-    filters,
-    searchQuery,
+    unreadCount,
+    // stats, // stats not available in universal hook yet, will approximate or mock
+    // filters, // Filters need to be handled locally or added to hook
+    // searchQuery,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    updateFilters,
-    updateSearchQuery,
-    clearFilters,
-    refresh,
-  } = useNotifications(MOCK_USER_ID);
+    // updateFilters,
+    // updateSearchQuery,
+    // clearFilters,
+    refetch: refresh,
+  } = useUniversalNotifications({ autoFetch: true });
+
+  // Local state for search and filters since hook handles data fetching
+  const [filters, setFilters] = useState<any>({});
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const updateFilters = (newFilters: any) => setFilters(newFilters);
+  const updateSearchQuery = (query: string) => setSearchQuery(query);
+  const clearFilters = () => {
+    setFilters({});
+    setSearchQuery('');
+  };
+
+  // Mock stats for now
+  const stats = {
+    total: notifications.length,
+    unread: unreadCount,
+    archived: 0
+  };
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [detailNotification, setDetailNotification] = useState<Notification | null>(null);
@@ -251,9 +270,8 @@ export function UnifiedNotificationCenter() {
                         {dateNotifications.map((notification) => (
                           <div
                             key={notification.id}
-                            className={`p-4 hover:bg-muted/50 transition-colors ${
-                              !notification.read ? 'bg-primary/5' : ''
-                            }`}
+                            className={`p-4 hover:bg-muted/50 transition-colors ${!notification.read ? 'bg-primary/5' : ''
+                              }`}
                           >
                             <div className="flex items-start gap-3">
                               <Checkbox

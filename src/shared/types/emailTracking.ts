@@ -13,6 +13,7 @@ export interface EmailLog {
   bounces: string[];
   createdBy: string;
   createdAt: string;
+  updatedAt?: string;
   metadata?: Record<string, any>;
 }
 

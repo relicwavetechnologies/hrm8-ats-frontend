@@ -33,62 +33,62 @@ export const userNotificationPreferencesService = {
      * Get notification preferences for the authenticated user
      */
     async getPreferences(): Promise<NotificationPreferences> {
-        const response = await apiClient.get<NotificationPreferences>('/api/user/notifications/preferences');
+        const response = await apiClient.get<{ preferences: NotificationPreferences }>('/api/users/preferences/notifications');
         if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to fetch preferences');
         }
-        return response.data;
+        return response.data.preferences;
     },
 
     /**
      * Update notification preferences
      */
     async updatePreferences(data: UpdatePreferencesData): Promise<NotificationPreferences> {
-        const response = await apiClient.put<NotificationPreferences>('/api/user/notifications/preferences', data);
+        const response = await apiClient.put<{ preferences: NotificationPreferences }>('/api/users/preferences/notifications', data);
         if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to update preferences');
         }
-        return response.data;
+        return response.data.preferences;
     },
 
     /**
      * Get all alert rules for the authenticated user
      */
     async getAlertRules(): Promise<AlertRule[]> {
-        const response = await apiClient.get<AlertRule[]>('/api/user/notifications/alert-rules');
+        const response = await apiClient.get<{ rules: AlertRule[] }>('/api/users/alerts/rules');
         if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to fetch alert rules');
         }
-        return response.data;
+        return response.data.rules;
     },
 
     /**
      * Create a new alert rule
      */
     async createAlertRule(data: CreateAlertRuleData): Promise<AlertRule> {
-        const response = await apiClient.post<AlertRule>('/api/user/notifications/alert-rules', data);
+        const response = await apiClient.post<{ rule: AlertRule }>('/api/users/alerts/rules', data);
         if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to create alert rule');
         }
-        return response.data;
+        return response.data.rule;
     },
 
     /**
      * Update an existing alert rule
      */
     async updateAlertRule(ruleId: string, data: Partial<CreateAlertRuleData>): Promise<AlertRule> {
-        const response = await apiClient.put<AlertRule>(`/api/user/notifications/alert-rules/${ruleId}`, data);
+        const response = await apiClient.put<{ rule: AlertRule }>(`/api/users/alerts/rules/${ruleId}`, data);
         if (!response.success || !response.data) {
             throw new Error(response.error || 'Failed to update alert rule');
         }
-        return response.data;
+        return response.data.rule;
     },
 
     /**
      * Delete an alert rule
      */
     async deleteAlertRule(ruleId: string): Promise<void> {
-        const response = await apiClient.delete(`/api/user/notifications/alert-rules/${ruleId}`);
+        const response = await apiClient.delete(`/api/users/alerts/rules/${ruleId}`);
         if (!response.success) {
             throw new Error(response.error || 'Failed to delete alert rule');
         }

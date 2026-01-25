@@ -35,9 +35,9 @@ import {
   extractVariablesFromTemplate,
   interpolateTemplate,
   templateSchema,
-} from "@/lib/emailTemplateService";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+} from "@/shared/lib/emailTemplateService";
+import { useToast } from "@/shared/hooks/use-toast";
+import { cn } from "@/shared/lib/utils";
 
 interface TemplateEditorProps {
   open: boolean;

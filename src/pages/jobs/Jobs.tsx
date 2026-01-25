@@ -105,11 +105,18 @@ export default function Jobs() {
           filters.status = statusMap[selectedStatus] || selectedStatus.toUpperCase();
         }
         const response = await jobService.getJobs(filters);
+
         if (response.success && response.data) {
           // Map backend jobs to frontend format
-          const mappedJobs = response.data.map(mapBackendJobToFrontend);
+          // Handle case where data is { jobs: [...] } or just [...]
+          const rawData = response.data;
+          // @ts-ignore - Check if data has jobs property
+          const jobsData = Array.isArray(rawData) ? rawData : (rawData.jobs && Array.isArray(rawData.jobs) ? rawData.jobs : []);
+
+          const mappedJobs = jobsData.map(mapBackendJobToFrontend);
           setJobs(mappedJobs);
         } else {
+          console.error('[Jobs Page] Fetch failed:', response.error);
           toast({
             title: 'Error',
             description: response.error || 'Failed to fetch jobs',
@@ -117,6 +124,7 @@ export default function Jobs() {
           });
         }
       } catch (error) {
+        console.error('[Jobs Page] Exception:', error);
         toast({
           title: 'Error',
           description: 'Failed to fetch jobs',

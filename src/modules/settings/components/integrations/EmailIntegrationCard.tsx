@@ -3,14 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Mail, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 import {
   connectEmailProvider,
   disconnectEmailIntegration,
   syncEmails,
   getEmailIntegration,
   type EmailProvider,
-} from "@/lib/integrations/emailIntegrationService";
+} from "@/shared/lib/integrations/emailIntegrationService";
 
 interface EmailIntegrationCardProps {
   provider: EmailProvider;

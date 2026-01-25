@@ -9,8 +9,8 @@ import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { AlertCircle, CheckCircle2, CreditCard, ExternalLink, RefreshCw } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { useToast } from '@/shared/hooks/use-toast';
+import { cn } from '@/shared/lib/utils';
 
 interface StripeIntegrationCardProps {
     onConnectionChange?: (connected: boolean) => void;

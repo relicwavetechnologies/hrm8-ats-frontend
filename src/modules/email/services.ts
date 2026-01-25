@@ -1,129 +1,11 @@
+import { z } from "zod";
+
 /**
  * Email service for sending ATS notifications
- * Note: Requires RESEND_API_KEY to be configured in Supabase secrets
+ * Note: Currently using mock implementation for dev
  */
 
-export interface EmailNotification {
-  to: string;
-  subject: string;
-  type: 'application' | 'interview' | 'offer' | 'background-check';
-  data: {
-    candidateName?: string;
-    jobTitle?: string;
-    interviewDate?: string;
-    interviewTime?: string;
-    interviewType?: string;
-    meetingLink?: string;
-    offerDetails?: string;
-    consentLink?: string;
-    [key: string]: any;
-  };
-}
 
-export async function sendNotificationEmail(notification: EmailNotification): Promise<void> {
-  try {
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    
-    if (!SUPABASE_URL) {
-      console.warn('Supabase URL not configured. Email notification skipped.');
-      return;
-    }
-
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notification-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify(notification),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('Failed to send email:', error);
-      throw new Error('Failed to send email notification');
-    }
-
-    console.log('Email notification sent successfully');
-  } catch (error) {
-    console.error('Email service error:', error);
-    // Don't throw - we don't want email failures to break the application flow
-  }
-}
-
-// Helper functions for common notifications
-export async function sendApplicationReceivedEmail(
-  candidateName: string,
-  candidateEmail: string,
-  jobTitle: string
-): Promise<void> {
-  await sendNotificationEmail({
-    to: candidateEmail,
-    subject: 'Application Received - ' + jobTitle,
-    type: 'application',
-    data: {
-      candidateName,
-      jobTitle,
-    },
-  });
-}
-
-export async function sendInterviewScheduledEmail(
-  candidateName: string,
-  candidateEmail: string,
-  jobTitle: string,
-  interviewDate: string,
-  interviewTime: string,
-  interviewType: string,
-  meetingLink?: string
-): Promise<void> {
-  await sendNotificationEmail({
-    to: candidateEmail,
-    subject: 'Interview Scheduled - ' + jobTitle,
-    type: 'interview',
-    data: {
-      candidateName,
-      jobTitle,
-      interviewDate,
-      interviewTime,
-      interviewType,
-      meetingLink,
-    },
-  });
-}
-
-export async function sendOfferLetterEmail(
-  candidateName: string,
-  candidateEmail: string,
-  jobTitle: string
-): Promise<void> {
-  await sendNotificationEmail({
-    to: candidateEmail,
-    subject: 'Job Offer - ' + jobTitle,
-    type: 'offer',
-    data: {
-      candidateName,
-      jobTitle,
-    },
-  });
-}
-
-export async function sendBackgroundCheckEmail(
-  candidateName: string,
-  candidateEmail: string,
-  consentLink: string
-): Promise<void> {
-  await sendNotificationEmail({
-    to: candidateEmail,
-    subject: 'Background Check Required',
-    type: 'background-check',
-    data: {
-      candidateName,
-      consentLink,
-    },
-  });
-}
-import { z } from "zod";
 
 export interface EmailNotification {
   id: string;
@@ -176,10 +58,10 @@ export function sendStageChangeEmail(
   };
 
   mockNotifications.unshift(notification);
-  
+
   // Simulate sending (in real app, would call email service API)
   console.log(`📧 Email notification sent to ${candidateEmail}:`, notification.subject);
-  
+
   return notification;
 }
 
@@ -214,7 +96,7 @@ export function sendInterviewScheduledEmail(
 
   mockNotifications.unshift(notification);
   console.log(`📧 Interview email sent to ${candidateEmail}`);
-  
+
   return notification;
 }
 
@@ -247,7 +129,7 @@ export function sendOfferEmail(
 
   mockNotifications.unshift(notification);
   console.log(`📧 Offer email sent to ${candidateEmail}`);
-  
+
   return notification;
 }
 
@@ -278,7 +160,7 @@ export function sendRejectionEmail(
 
   mockNotifications.unshift(notification);
   console.log(`📧 Rejection email sent to ${candidateEmail}`);
-  
+
   return notification;
 }
 
@@ -329,14 +211,14 @@ export function deleteEmailLog(id: string): void {
 export function getEmailEvents(emailLogId?: string): EmailEvent[] {
   const stored = localStorage.getItem(EMAIL_EVENTS_KEY);
   let events: EmailEvent[] = [];
-  
+
   if (!stored) {
     localStorage.setItem(EMAIL_EVENTS_KEY, JSON.stringify(mockEmailEvents));
     events = mockEmailEvents;
   } else {
     events = JSON.parse(stored);
   }
-  
+
   if (emailLogId) {
     return events.filter(event => event.emailLogId === emailLogId);
   }
@@ -352,14 +234,14 @@ export function addEmailEvent(event: EmailEvent): void {
 export function getEmailStats(): EmailStats {
   const logs = getEmailLogs();
   const sent = logs.filter(log => log.status === 'sent');
-  
+
   const totalSent = sent.length;
   const totalDelivered = sent.length; // In mock, all sent are delivered
   const totalOpened = sent.reduce((sum, log) => sum + (log.opens > 0 ? 1 : 0), 0);
   const totalClicked = sent.reduce((sum, log) => sum + (log.clicks > 0 ? 1 : 0), 0);
   const totalBounced = sent.reduce((sum, log) => sum + log.bounces.length, 0);
   const totalFailed = logs.filter(log => log.status === 'failed').length;
-  
+
   return {
     totalSent,
     totalDelivered,
@@ -476,26 +358,26 @@ export function createOrUpdatePreference(
 
   const updatedPreference: EmailPreference = existingIndex >= 0
     ? {
-        ...allPrefs[existingIndex],
-        preferences: {
-          ...allPrefs[existingIndex].preferences,
-          ...preferences,
-        },
-        updatedAt: new Date(),
-      }
+      ...allPrefs[existingIndex],
+      preferences: {
+        ...allPrefs[existingIndex].preferences,
+        ...preferences,
+      },
+      updatedAt: new Date(),
+    }
     : {
-        workflowId,
-        employeeEmail,
-        preferences: {
-          welcomeEmails: preferences.welcomeEmails ?? true,
-          taskReminders: preferences.taskReminders ?? true,
-          documentRequests: preferences.documentRequests ?? true,
-          statusUpdates: preferences.statusUpdates ?? true,
-          generalAnnouncements: preferences.generalAnnouncements ?? true,
-        },
-        isFullyUnsubscribed: false,
-        updatedAt: new Date(),
-      };
+      workflowId,
+      employeeEmail,
+      preferences: {
+        welcomeEmails: preferences.welcomeEmails ?? true,
+        taskReminders: preferences.taskReminders ?? true,
+        documentRequests: preferences.documentRequests ?? true,
+        statusUpdates: preferences.statusUpdates ?? true,
+        generalAnnouncements: preferences.generalAnnouncements ?? true,
+      },
+      isFullyUnsubscribed: false,
+      updatedAt: new Date(),
+    };
 
   if (existingIndex >= 0) {
     allPrefs[existingIndex] = updatedPreference;
@@ -538,7 +420,7 @@ export function unsubscribeFromAll(workflowId: string, employeeEmail: string): v
 export function resubscribe(workflowId: string): void {
   const allPrefs = getEmailPreferences();
   const pref = allPrefs.find(p => p.workflowId === workflowId);
-  
+
   if (pref) {
     pref.isFullyUnsubscribed = false;
     pref.unsubscribedAt = undefined;
@@ -550,14 +432,14 @@ export function resubscribe(workflowId: string): void {
       generalAnnouncements: true,
     };
     pref.updatedAt = new Date();
-    
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allPrefs));
   }
 }
 
 export function canSendEmailType(workflowId: string, emailType: string): boolean {
   const pref = getPreferenceByWorkflowId(workflowId);
-  
+
   if (!pref) return true; // No preferences set, allow all
   if (pref.isFullyUnsubscribed) return false;
 
@@ -585,8 +467,8 @@ export function getUnsubscribeStats() {
   const prefs = getEmailPreferences();
   const totalWithPrefs = prefs.length;
   const fullyUnsubscribed = prefs.filter(p => p.isFullyUnsubscribed).length;
-  const partiallyUnsubscribed = prefs.filter(p => 
-    !p.isFullyUnsubscribed && 
+  const partiallyUnsubscribed = prefs.filter(p =>
+    !p.isFullyUnsubscribed &&
     Object.values(p.preferences).some(v => !v)
   ).length;
 

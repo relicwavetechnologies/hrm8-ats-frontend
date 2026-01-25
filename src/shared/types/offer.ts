@@ -12,7 +12,7 @@ export interface OfferLetter {
   offerType: 'full-time' | 'part-time' | 'contract' | 'intern';
   salary: number;
   salaryCurrency: string;
-  salaryPeriod: 'annual' | 'hourly';
+  salaryPeriod: 'annual' | 'hourly' | 'monthly' | 'weekly' | 'daily';
   startDate: string;
   benefits: string[];
   bonusStructure?: string;

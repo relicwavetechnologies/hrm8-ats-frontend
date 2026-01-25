@@ -10,7 +10,7 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { User, Settings, Keyboard, LogOut } from "lucide-react";
-import { useCandidateAuth } from "@/app/providers/AuthContext";
+import { useCandidateAuth } from "@/contexts/CandidateAuthContext";
 
 export function CandidateUserNav() {
   const { candidate, logout } = useCandidateAuth();

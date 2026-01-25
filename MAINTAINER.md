@@ -1,96 +1,266 @@
-# AI IDE Maintenance Protocol
+# Automated Codebase Maintenance Guide
 
-This document serves as the **SINGLE SOURCE OF TRUTH** for the AI IDE when performing maintenance tasks on the `hrm8-ats` codebase. Run through these steps to ensure the codebase remains clean, efficient, and aligned with `PLAN.md`.
+## Purpose
+This guide instructs AI agents on how to maintain code quality, identify duplications, fix issues, and ensure the codebase stays clean and up-to-date.
 
-## 1. Environment & Context Verification
+## Pre-Maintenance Tasks
 
-Before making changes, establish the current state of the repository.
-
-- **Check Git Status**:
-  ```bash
-  git status
-  ```
-  *Ensure the working directory is clean or understand pending changes.*
-
-- **Check Latest Changes**:
-  ```bash
-  git log -n 5 --oneline
-  ```
-  *Understand the recent history to avoid undoing recent work.*
-
-## 2. Structural Integrity Check (Crucial)
-
-Refer to [PLAN.md](./PLAN.md) to ensure all new additions follow the defined architecture.
-
-- **Module Structure**:
-  Ensure every new feature is located in `src/modules/[module-name]/`.
-  - **Correct**: `src/modules/jobs/components/JobCard.tsx`
-  - **Incorrect**: `src/components/JobCard.tsx` (unless truly shared)
-
-- **Shared Components**:
-  Ensure reusable UI elements are in `src/shared/components/ui` (shadcn) or `src/shared/components/common`.
-
-- **File Naming**:
-  - React Components: `PascalCase.tsx`
-  - Hooks: `camelCase.ts` (prefix with `use`)
-  - Utilities/Services: `camelCase.ts`
-
-## 3. Code Quality & Best Practices
-
-Scan the codebase for "bad practices" and technically debt.
-
-### 3.1 Code Duplication
-- **Look for repeated logic**: If you see the same function in multiple files, refactor it into `src/shared/lib` or a custom hook in `src/shared/hooks`.
-- **Component duplication**: If a UI pattern appears 3+ times, propose creating a reusable component.
-
-### 3.2 Anti-Patterns to Fix
-- **Console Logs**: Remove `console.log` statements used for debugging.
-  ```bash
-  grep -r "console.log" src
-  ```
-- **Type Safety**: Avoid `any`. Use specific interfaces or types associated with the module.
-- **Hardcoded Values**: Move magic numbers and strings to `constants.ts` or environment variables.
-- **Inline Styles**: We use **Tailwind CSS**. Avoid `style={{ ... }}` unless dynamic values are strictly necessary.
-
-### 3.3 Linting & Formatting
-Run the linter to catch syntax errors and style violations.
+### 1. Get Latest Changes
 ```bash
-pnpm run lint
+# Check current branch
+git branch --show-current
+
+# Fetch latest changes from remote
+git fetch origin
+
+# View what changed since last commit
+git log -1 --stat
+
+# View uncommitted changes
+git status
+
+# View detailed diff
+git diff
 ```
-*Fix any errors reported by the linter immediately.*
 
-### 3.4 Temporary File Cleanup
-- **Shell Scripts**: Remove any temporary `.sh` files created for batch operations (e.g., `fix-imports.sh`, `auto-fix-*.sh`).
-  ```bash
-  # List them first
-  ls *.sh
-  # Remove them if they are temporary
-  rm *.sh
-  ```
-  *Ensure you are not deleting essential project scripts (check if they are tracked in git).*
+### 2. Review Recent Commits
+```bash
+# View last 5 commits
+git log -5 --oneline --graph
 
+# View changes in last commit
+git show HEAD
 
-## 4. Build Verification
+# Compare with remote
+git log HEAD..origin/main --oneline
+```
 
-Always ensure the application builds successfully before finishing a session.
+## Code Quality Checks
+
+### 1. Find Code Duplications
+
+**Frontend (hrm8-ats):**
+```bash
+cd /Users/abhishekverma/Desktop/Cluster/Projects/hrm8-new/hrm8-ats
+
+# Find duplicate functions (look for similar patterns)
+grep -r "export function" src/ --include="*.ts" --include="*.tsx" | sort | uniq -d
+
+# Find duplicate API calls
+grep -r "fetch('/api" src/ --include="*.ts" --include="*.tsx" -n
+
+# Find duplicate interfaces/types
+grep -r "interface.*{" src/ --include="*.ts" --include="*.tsx" -A 5 | sort
+```
+
+**Backend (backend-template):**
+```bash
+cd /Users/abhishekverma/Desktop/Cluster/Projects/hrm8-new/backend-template
+
+# Find duplicate route definitions
+grep -r "router\." src/ --include="*.ts" -n
+
+# Find duplicate service methods
+grep -r "async.*(" src/modules --include="*.service.ts" -B 1
+```
+
+### 2. Identify Bad Code Patterns
+
+**Common Issues to Check:**
+
+1. **Unused Imports**
+   - Search for imports that are never referenced
+   - Use TypeScript compiler to find unused variables
+
+2. **Console Logs (should be removed before production)**
+   ```bash
+   grep -r "console\." src/ --include="*.ts" --include="*.tsx" -n
+   ```
+
+3. **TODO/FIXME Comments**
+   ```bash
+   grep -r "TODO\|FIXME" src/ --include="*.ts" --include="*.tsx" -n
+   ```
+
+4. **Hardcoded Values**
+   ```bash
+   # Look for hardcoded URLs
+   grep -r "http://\|https://" src/ --include="*.ts" --include="*.tsx" -n | grep -v "node_modules"
+   ```
+
+5. **Missing Error Handling**
+   - Search for fetch calls without try-catch
+   - Check async functions without error handling
+
+### 3. Type Safety Issues
 
 ```bash
-pnpm run build
+# Find 'any' types (should be avoided)
+grep -r ": any" src/ --include="*.ts" --include="*.tsx" -n
+
+# Find @ts-ignore comments (indicates type issues)
+grep -r "@ts-ignore\|@ts-nocheck" src/ --include="*.ts" --include="*.tsx" -n
 ```
-*If the build fails, PRIORITY #1 is to fix the build errors.*
 
-## 5. Maintenance Routine
+## Automated Fixes
 
-When asked to "maintain the codebase" or "cleanup", perform the following sequence:
+### 1. Build and Test
 
-1.  **Run Git Status**: Check where we are.
-2.  **Lint**: `pnpm run lint --fix`
-3.  **Cleanup**: Identify and remove temporary `.sh` files.
-4.  **Type Check**: Run `tsc` (or `pnpm run type-check` if available) to ensure no TypeScript errors.
-5.  **Audit Structure**: Randomly sample 3 recent files and ensure they match `PLAN.md` structure.
-6.  **Build**: Run `pnpm run build`.
-6.  **Report**: Summarize what was fixed, what structure violations were found, and the build status.
+**Frontend:**
+```bash
+cd /Users/abhishekverma/Desktop/Cluster/Projects/hrm8-new/hrm8-ats
+npm run build
+npm run lint
+npm run type-check  # if available
+```
 
-## 6. Self-Correction
+**Backend:**
+```bash
+cd /Users/abhishekverma/Desktop/Cluster/Projects/hrm8-new/backend-template
+npm run build
+npm run lint  # if available
+```
 
-If you find yourself creating a file outside of `src/modules` or `src/shared`, **STOP**. Read `PLAN.md` again and find the correct home for that code.
+### 2. Fix Common Issues
+
+**Auto-fix linting issues:**
+```bash
+npm run lint -- --fix
+```
+
+**Format code:**
+```bash
+npx prettier --write "src/**/*.{ts,tsx,js,jsx}"
+```
+
+### 3. Remove Unused Code
+
+After identifying duplicates:
+1. Extract common code into shared utilities
+2. Update all usages to use the shared code
+3. Remove duplicate implementations
+4. Test that everything still works
+
+## Refactoring Checklist
+
+When refactoring code:
+
+- [ ] Identify duplicate code blocks (3+ lines repeated)
+- [ ] Extract to shared utilities/helpers
+- [ ] Create proper types/interfaces
+- [ ] Add JSDoc comments for exported functions
+- [ ] Remove console.logs
+- [ ] Replace 'any' with proper types
+- [ ] Add error handling where missing
+- [ ] Remove unused imports
+- [ ] Test the changes
+- [ ] Update relevant documentation
+
+## Migration-Specific Tasks
+
+### When Migrating Features from Old to New Codebase:
+
+1. **Study Old Implementation**
+   - Read old frontend component in `/hrm8/frontend`
+   - Read old backend in `/backend`
+   - Document the data flow
+
+2. **Check for Existing New Code**
+   - Search if component/feature already exists in new codebase
+   - Many features are already implemented but not wired up
+
+3. **Wire Up Existing Code**
+   - Connect components to routes
+   - Verify API endpoints exist
+   - Test the integration
+
+4. **Only Write New Code If Needed**
+   - Don't duplicate - reuse existing implementations
+   - Follow the new modular structure
+   - Adapt old patterns to new architecture
+
+## Commit Guidelines
+
+After making fixes:
+
+```bash
+# Stage changes
+git add .
+
+# Commit with descriptive message
+git commit -m "chore: [brief description]
+
+- Fixed code duplications in [file]
+- Removed unused imports
+- Improved type safety
+- Fixed linting issues
+[... detailed list of changes]"
+
+# Push changes
+git push origin [branch-name]
+```
+
+## Maintenance Schedule
+
+**Daily:**
+- Check for TypeScript errors
+- Review new TODOs
+- Run linting
+
+**Weekly:**
+- Scan for code duplications
+- Review and consolidate similar components
+- Update dependencies (carefully)
+- Clean up unused files
+
+**Monthly:**
+- Deep code review
+- Refactor large duplicate blocks
+- Update documentation
+- Performance audit
+
+## Tools and Commands Reference
+
+### Useful grep patterns:
+```bash
+# Find all API endpoint definitions
+grep -r "router\.\(get\|post\|put\|delete\)" src/ --include="*.ts" -n
+
+# Find all React components
+find src -name "*.tsx" -type f | grep -v ".test." | grep -v "node_modules"
+
+# Find files larger than 500 lines (candidates for splitting)
+find src -name "*.ts*" -type f -exec wc -l {} \; | awk '$1 > 500' | sort -rn
+
+# Find files with many dependencies
+grep -h "^import" src/**/*.ts* | sort | uniq -c | sort -rn | head -20
+```
+
+### Code Metrics:
+```bash
+# Count total lines of code
+find src -name "*.ts*" -type f -exec wc -l {} \; | awk '{sum+=$1} END {print sum}'
+
+# Count files by type
+find src -type f | sed 's/.*\.//' | sort | uniq -c | sort -rn
+```
+
+## AI Agent Instructions
+
+When running maintenance:
+
+1. Execute the "Pre-Maintenance Tasks" section first
+2. Run all "Code Quality Checks"
+3. Document findings in UPDATES.md
+4. Apply fixes systematically
+5. Test after each major change
+6. Build both frontend and backend
+7. Only commit if builds succeed
+8. Update UPDATES.md with what was fixed
+
+**Remember:**
+- Always check if code exists before writing new code
+- Many features are implemented but not wired up - connect them first
+- Follow the migration pattern: study old → implement in new structure
+- Test thoroughly before committing
+- Keep UPDATES.md current with all changes

@@ -7,7 +7,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Link2, CheckCircle2, XCircle, RefreshCw, ExternalLink } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/shared/hooks/use-toast";
 import {
   connectATSProvider,
   disconnectATSIntegration,
@@ -16,7 +16,7 @@ import {
   getATSProviderInfo,
   type ATSProvider,
   type ATSIntegration,
-} from "@/lib/integrations/atsIntegrationService";
+} from "@/shared/lib/integrations/atsIntegrationService";
 
 interface ATSIntegrationCardProps {
   provider: ATSProvider;
