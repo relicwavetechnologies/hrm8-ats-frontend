@@ -49,6 +49,7 @@ export function WalletRechargeDialog({
             });
         },
         onSuccess: (data) => {
+            console.log('[WalletRechargeDialog] Mutation Success', data);
             queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'transactions'] });
 
@@ -57,9 +58,14 @@ export function WalletRechargeDialog({
                 description: data.message || `Your wallet has been credited with $${parseFloat(amount).toFixed(2)}`,
             });
 
+            // Log URL redirect for debugging
+            if (data.data?.url) console.log('[WalletRechargeDialog] Redirecting to:', data.data.url);
+            else console.warn('[WalletRechargeDialog] No redirect URL found in response');
+
             handleClose();
         },
         onError: (error: any) => {
+            console.error('[WalletRechargeDialog] Mutation Error:', error);
             // Check if error is due to Stripe not connected (402)
             if (error.response?.status === 402 || error.errorCode === 'STRIPE_NOT_CONNECTED') {
                 // StripePromptDialog will be shown automatically
@@ -87,6 +93,7 @@ export function WalletRechargeDialog({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('[WalletRechargeDialog] Handle Submit called', { amount, selectedPreset });
 
         const numericAmount = parseFloat(amount);
         if (isNaN(numericAmount) || numericAmount <= 0) {
@@ -107,6 +114,7 @@ export function WalletRechargeDialog({
             return;
         }
 
+        console.log('[WalletRechargeDialog] Mutating with amount:', numericAmount);
         rechargeMutation.mutate(numericAmount);
     };
 

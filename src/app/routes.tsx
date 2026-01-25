@@ -23,6 +23,9 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import VerifyCompanyPage from '@/pages/auth/VerifyCompanyPage';
 
+// Dev Pages
+import StripeMockCheckoutPage from '@/pages/dev/StripeMockCheckoutPage';
+
 // Lazy load module pages for code splitting
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const JobsPage = lazy(() => import('@/pages/jobs/Jobs'));
@@ -95,6 +98,9 @@ export function AppRoutes() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/verify-company" element={<VerifyCompanyPage />} />
+
+            {/* Dev/Mock Routes */}
+            <Route path="/dev/stripe-mock-checkout" element={<StripeMockCheckoutPage />} />
 
             {/* Protected Routes */}
             <Route
