@@ -6,7 +6,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
-import { enrollmentPeriodSchema, type EnrollmentPeriodFormData } from "@/schemas/enrollmentPeriodSchema";
+import { enrollmentPeriodSchema, type EnrollmentPeriodFormData } from "@/schemas/benefitsSchemas";
 import { createEnrollmentPeriod, updateEnrollmentPeriod, type EnrollmentPeriod } from "@/shared/lib/benefitsEnhancedStorage";
 import { toast } from "sonner";
 import { useEffect } from "react";
@@ -43,7 +43,7 @@ export function EnrollmentPeriodDialog({ open, onOpenChange, onSuccess, editingP
         startDate: data.startDate,
         endDate: data.endDate,
         effectiveDate: data.effectiveDate,
-      eligiblePlans: data.eligiblePlanIds,
+        eligiblePlans: data.eligiblePlanIds,
         notifications: [],
         status: data.status,
       });

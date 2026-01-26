@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Switch } from "@/shared/components/ui/switch";
 import { Badge } from "@/shared/components/ui/badge";
-import { erCaseSchema, type ERCaseFormData } from "@/schemas/erCaseSchema";
-import { createERCase, updateERCase, type ERCase } from "@/lib/employeeRelationsStorage";
-import { getEmployees } from "@/lib/employeeStorage";
+import { erCaseSchema, type ERCaseFormData } from "@/schemas/employeeSchemas";
+import { createERCase, updateERCase, type ERCase } from "@/shared/lib/employeeRelationsStorage";
+import { getEmployees } from "@/shared/lib/employeeStorage";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
@@ -189,7 +189,7 @@ export function ERCaseDialog({ open, onOpenChange, onSuccess, editingCase }: ERC
 
             <div className="flex items-center justify-between rounded-lg border p-3">
               <Label htmlFor="confidential">Confidential</Label>
-              <Switch 
+              <Switch
                 id="confidential"
                 checked={form.watch("confidential")}
                 onCheckedChange={(checked) => form.setValue("confidential", checked)}
@@ -275,10 +275,10 @@ export function ERCaseDialog({ open, onOpenChange, onSuccess, editingCase }: ERC
 
           <div>
             <Label htmlFor="description">Case Description</Label>
-            <Textarea 
-              id="description" 
-              {...form.register("description")} 
-              placeholder="Detailed description of the case..." 
+            <Textarea
+              id="description"
+              {...form.register("description")}
+              placeholder="Detailed description of the case..."
               rows={6}
             />
             {form.formState.errors.description && (

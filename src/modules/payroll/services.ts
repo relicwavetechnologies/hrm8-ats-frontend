@@ -1,1 +1,1 @@
-// payroll services placeholder
+export * from '@/shared/lib/payrollStorage';

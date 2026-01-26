@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/shared/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { saveCompensationReview } from "@/lib/compensationStorage";
+import { saveCompensationReview } from "@/shared/lib/compensationStorage";
 import { useToast } from "@/shared/hooks/use-toast";
 
 const formSchema = z.object({
@@ -29,7 +29,7 @@ interface CompensationAdjustmentDialogProps {
 
 export function CompensationAdjustmentDialog({ open, onOpenChange, onSuccess }: CompensationAdjustmentDialogProps) {
   const { toast } = useToast();
-  
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -140,8 +140,8 @@ export function CompensationAdjustmentDialog({ open, onOpenChange, onSuccess }: 
                   <FormItem>
                     <FormLabel>Current Amount ($)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
                         step="0.01"
                         placeholder="0.00"
                         {...field}
@@ -160,8 +160,8 @@ export function CompensationAdjustmentDialog({ open, onOpenChange, onSuccess }: 
                   <FormItem>
                     <FormLabel>New Amount ($)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
                         step="0.01"
                         placeholder="0.00"
                         {...field}
@@ -205,7 +205,7 @@ export function CompensationAdjustmentDialog({ open, onOpenChange, onSuccess }: 
                 <FormItem>
                   <FormLabel>Reason</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Explain the reason for this change (minimum 10 characters)"
                       className="resize-none"
                       rows={3}

@@ -6,7 +6,7 @@ import { Slider } from "@/shared/components/ui/slider";
 import { Badge } from "@/shared/components/ui/badge";
 import { Separator } from "@/shared/components/ui/separator";
 import { Info } from "lucide-react";
-import { calculateRPOGuidePricing } from "@/lib/subscriptionConfig";
+import { calculateRPOGuidePricing } from "@/shared/lib/subscriptionConfig";
 
 interface RPOPricingCalculatorProps {
   onCalculate?: (result: {
@@ -193,7 +193,7 @@ export function RPOPricingCalculator({ onCalculate }: RPOPricingCalculatorProps)
         <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
           <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-blue-900 dark:text-blue-100">
-            <strong>These are guide prices.</strong> Actual pricing is tailored to your specific needs, 
+            <strong>These are guide prices.</strong> Actual pricing is tailored to your specific needs,
             hiring volume, and contract terms. Contact us for a custom quote.
           </p>
         </div>

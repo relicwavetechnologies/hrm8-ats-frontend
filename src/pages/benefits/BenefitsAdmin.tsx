@@ -13,7 +13,7 @@ import { EnrollmentPeriodDialog } from "@/modules/benefits/components/Enrollment
 import { LifeEventDialog } from "@/modules/benefits/components/LifeEventDialog";
 import { COBRADialog } from "@/modules/benefits/components/COBRADialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
 import { toast } from "sonner";
 import { useCurrencyFormat } from "@/app/providers/CurrencyFormatContext";
 
@@ -46,12 +46,12 @@ export default function BenefitsAdmin() {
 
   const handleDelete = () => {
     if (!itemToDelete || !deleteType) return;
-    
+
     setIsDeleting(true);
     try {
       let success = false;
       let message = "";
-      
+
       if (deleteType === "enrollment") {
         success = deleteEnrollmentPeriod(itemToDelete.id);
         message = "Enrollment period deleted successfully";
@@ -62,7 +62,7 @@ export default function BenefitsAdmin() {
         success = deleteCOBRAEvent(itemToDelete.id);
         message = "COBRA event deleted successfully";
       }
-      
+
       if (success) {
         toast.success(message);
         setDeleteDialogOpen(false);
@@ -81,12 +81,12 @@ export default function BenefitsAdmin() {
 
   const handleBulkDelete = () => {
     if (!bulkDeleteType) return;
-    
+
     setIsDeleting(true);
     try {
       let successCount = 0;
       let selectedIds: string[] = [];
-      
+
       if (bulkDeleteType === "enrollment") {
         selectedIds = selectedEnrollments;
         selectedIds.forEach((id) => {
@@ -103,7 +103,7 @@ export default function BenefitsAdmin() {
           if (deleteCOBRAEvent(id)) successCount++;
         });
       }
-      
+
       toast.success(`Successfully deleted ${successCount} item${successCount > 1 ? 's' : ''}`);
       setBulkDeleteDialogOpen(false);
       setSelectedEnrollments([]);
@@ -187,7 +187,7 @@ export default function BenefitsAdmin() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Period
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setDeleteType("enrollment");
                 setItemToDelete(period);
@@ -270,7 +270,7 @@ export default function BenefitsAdmin() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Event
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setDeleteType("life-event");
                 setItemToDelete(event);
@@ -352,7 +352,7 @@ export default function BenefitsAdmin() {
               <Edit className="mr-2 h-4 w-4" />
               Edit COBRA
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setDeleteType("cobra");
                 setItemToDelete(cobra);
@@ -676,7 +676,7 @@ export default function BenefitsAdmin() {
             setEditingCOBRA(null);
           }}
         />
-        
+
         <DeleteConfirmationDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -685,20 +685,18 @@ export default function BenefitsAdmin() {
           onConfirm={handleDelete}
           isDeleting={isDeleting}
         />
-        
+
         <DeleteConfirmationDialog
           open={bulkDeleteDialogOpen}
           onOpenChange={setBulkDeleteDialogOpen}
           title="Delete Multiple Items"
-          description={`Are you sure you want to delete ${
-            bulkDeleteType === 'enrollment' ? selectedEnrollments.length :
-            bulkDeleteType === 'life-event' ? selectedLifeEvents.length :
-            selectedCOBRA.length
-          } item${
-            (bulkDeleteType === 'enrollment' ? selectedEnrollments.length :
-            bulkDeleteType === 'life-event' ? selectedLifeEvents.length :
-            selectedCOBRA.length) > 1 ? 's' : ''
-          }? This action cannot be undone.`}
+          description={`Are you sure you want to delete ${bulkDeleteType === 'enrollment' ? selectedEnrollments.length :
+              bulkDeleteType === 'life-event' ? selectedLifeEvents.length :
+                selectedCOBRA.length
+            } item${(bulkDeleteType === 'enrollment' ? selectedEnrollments.length :
+              bulkDeleteType === 'life-event' ? selectedLifeEvents.length :
+                selectedCOBRA.length) > 1 ? 's' : ''
+            }? This action cannot be undone.`}
           onConfirm={handleBulkDelete}
           isDeleting={isDeleting}
         />

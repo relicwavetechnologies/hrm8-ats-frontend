@@ -1,1 +1,1 @@
-// documents services placeholder
+export * from '@/shared/lib/documentStorage';

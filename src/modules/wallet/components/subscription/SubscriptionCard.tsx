@@ -8,7 +8,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Sparkles, Check, Loader2 } from "lucide-react";
 import { useCompanyProfile } from "@/hooks/useCompanyProfile";
-import { SUBSCRIPTION_TIERS, type SubscriptionTier } from "@/lib/subscriptionConfig";
+import { SUBSCRIPTION_TIERS, type SubscriptionTier } from "@/shared/lib/subscriptionConfig";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 
 interface SubscriptionCardProps {
@@ -34,21 +34,21 @@ function isPaidPackage(tier: SubscriptionTier): boolean {
 
 export function SubscriptionCard({ companyId, onUpgradeClick }: SubscriptionCardProps) {
   const { data, isLoading } = useCompanyProfile();
-  
+
   // Get subscription tier from company profile
   const subscriptionTier: SubscriptionTier = (() => {
     if (!data?.profile?.profileData) {
       return 'ats-lite';
     }
-    
+
     const profileData = data.profile.profileData as any;
     const tier = profileData.billing?.subscriptionTier || profileData.subscriptionTier;
-    
+
     // Validate tier exists in SUBSCRIPTION_TIERS
     if (tier && tier in SUBSCRIPTION_TIERS) {
       return tier as SubscriptionTier;
     }
-    
+
     return 'ats-lite';
   })();
 

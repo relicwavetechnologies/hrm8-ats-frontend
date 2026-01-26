@@ -134,8 +134,8 @@ Every dashboard page MUST have:
 
 ```tsx
 import { useState } from "react";
-import { DateRangePicker } from "@/components/ui/date-range-picker-v2";
-import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/shared/components/ui/date-range-picker-v2";
+import { Button } from "@/shared/components/ui/button";
 import { Download } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { useToast } from "@/hooks/use-toast";
@@ -209,7 +209,7 @@ The DateRangePicker component (`date-range-picker-v2.tsx`) supports:
 ### Migration Checklist
 
 When updating a dashboard page:
-- [ ] Import DateRangePicker from `@/components/ui/date-range-picker-v2`
+- [ ] Import DateRangePicker from `@/shared/components/ui/date-range-picker-v2`
 - [ ] Import DateRange type from `react-day-picker`
 - [ ] Add `useState` for dateRange
 - [ ] Add DateRangePicker to breadcrumbActions or header
@@ -392,7 +392,7 @@ The following components are deprecated and should NOT be used in new code:
 Use the `getCardActions()` utility to retrieve dashboard-specific action menus:
 
 ```tsx
-import { getCardActions } from "@/lib/cardActions";
+import { getCardActions } from "@/shared/lib/cardActions";
 
 const actions = getCardActions("sales");
 // Returns: { icon: DollarSign, actions: [...] }

@@ -1,1 +1,1 @@
-// attendance services placeholder
+export * from '@/shared/lib/attendanceStorage';

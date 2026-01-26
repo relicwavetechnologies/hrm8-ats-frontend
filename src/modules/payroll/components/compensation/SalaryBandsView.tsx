@@ -2,7 +2,7 @@ import { Plus, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Progress } from "@/shared/components/ui/progress";
-import { getSalaryBands } from "@/lib/compensationStorage";
+import { getSalaryBands } from "@/shared/lib/compensationStorage";
 import { format } from "date-fns";
 
 export function SalaryBandsView() {
@@ -83,8 +83,8 @@ export function SalaryBandsView() {
                       {(((band.maxSalary - band.minSalary) / band.minSalary) * 100).toFixed(0)}%
                     </span>
                   </div>
-                  <Progress 
-                    value={50} 
+                  <Progress
+                    value={50}
                     className="h-2"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">

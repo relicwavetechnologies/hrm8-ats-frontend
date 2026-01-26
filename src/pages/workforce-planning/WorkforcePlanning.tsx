@@ -11,7 +11,7 @@ import { HeadcountPlan } from "@/shared/types/workforcePlanning";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { HeadcountPlanDialog } from "@/shared/components/workforce/HeadcountPlanDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/shared/components/shared/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
 import { toast } from "sonner";
 
 export default function WorkforcePlanning() {
@@ -33,7 +33,7 @@ export default function WorkforcePlanning() {
 
   const handleDeletePlan = () => {
     if (!planToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const success = deleteHeadcountPlan(planToDelete.id);
@@ -61,7 +61,7 @@ export default function WorkforcePlanning() {
           successCount++;
         }
       });
-      
+
       toast.success(`Successfully deleted ${successCount} plan${successCount > 1 ? 's' : ''}`);
       setBulkDeleteDialogOpen(false);
       setSelectedPlans([]);
@@ -139,7 +139,7 @@ export default function WorkforcePlanning() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Plan
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setPlanToDelete(plan);
                 setDeleteDialogOpen(true);
@@ -429,7 +429,7 @@ export default function WorkforcePlanning() {
             setEditingPlan(null);
           }}
         />
-        
+
         <DeleteConfirmationDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -438,7 +438,7 @@ export default function WorkforcePlanning() {
           onConfirm={handleDeletePlan}
           isDeleting={isDeleting}
         />
-        
+
         <DeleteConfirmationDialog
           open={bulkDeleteDialogOpen}
           onOpenChange={setBulkDeleteDialogOpen}

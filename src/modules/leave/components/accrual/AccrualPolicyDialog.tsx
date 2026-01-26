@@ -8,9 +8,10 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
 import { accrualPolicySchema, type AccrualPolicyFormData } from "@/schemas/accrualPolicySchema";
-import { createAccrualPolicy, updateAccrualPolicy, type AccrualPolicy } from "@/lib/accrualStorage";
+import { createAccrualPolicy, updateAccrualPolicy, type AccrualPolicy } from "@/shared/lib/accrualStorage";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { AccrualMethod, AccrualFrequency } from "@/shared/types/accrual";
 
 interface AccrualPolicyDialogProps {
   open: boolean;
@@ -21,7 +22,7 @@ interface AccrualPolicyDialogProps {
 
 export function AccrualPolicyDialog({ open, onOpenChange, onSuccess, editingPolicy }: AccrualPolicyDialogProps) {
   const [tenureRates, setTenureRates] = useState<Array<{ yearsFrom: number; yearsTo?: number; accrualRate: number }>>([]);
-  
+
   const form = useForm<AccrualPolicyFormData>({
     resolver: zodResolver(accrualPolicySchema),
     defaultValues: {
@@ -72,6 +73,8 @@ export function AccrualPolicyDialog({ open, onOpenChange, onSuccess, editingPoli
       if (editingPolicy) {
         updateAccrualPolicy(editingPolicy.id, {
           ...data,
+          accrualMethod: data.accrualMethod as AccrualMethod,
+          accrualFrequency: data.accrualFrequency as AccrualFrequency,
           tenureBasedRates: tenureRates,
         });
         toast.success("Accrual policy updated successfully");
@@ -80,9 +83,9 @@ export function AccrualPolicyDialog({ open, onOpenChange, onSuccess, editingPoli
           name: data.name!,
           leaveTypeId: data.leaveTypeId!,
           leaveTypeName: data.leaveTypeName!,
-          accrualMethod: data.accrualMethod!,
+          accrualMethod: data.accrualMethod as AccrualMethod,
           accrualRate: data.accrualRate!,
-          accrualFrequency: data.accrualFrequency!,
+          accrualFrequency: data.accrualFrequency as AccrualFrequency,
           startDate: data.startDate!,
           prorateFirstYear: data.prorateFirstYear!,
           prorateLastYear: data.prorateLastYear!,

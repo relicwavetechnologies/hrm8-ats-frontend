@@ -13,8 +13,8 @@ import { Separator } from "@/shared/components/ui/separator";
 import { Info, Calculator, DollarSign, Users, Calendar, FileText } from "lucide-react";
 import { rpoServiceSchema, type RPOServiceFormData } from "@/schemas/rpoServiceSchema";
 import { RPOPricingCalculator } from "./RPOPricingCalculator";
-import { RPOFeeStructureBuilder } from "@/modules/employers/components/detail/services/RPOFeeStructureBuilder";
-import { RECRUITMENT_SERVICES } from "@/lib/subscriptionConfig";
+import { RPOFeeStructureBuilder } from "./RPOFeeStructureBuilder";
+import { RECRUITMENT_SERVICES } from "@/shared/lib/subscriptionConfig";
 import type { RPOFeeStructure } from "@/types/recruitmentService";
 
 interface RPOServiceFormProps {
@@ -325,14 +325,14 @@ export function RPOServiceForm({ initialData, onSubmit, onCancel }: RPOServiceFo
                 {isCustomPricing && (
                   <>
                     <Separator />
-                     <FormField
+                    <FormField
                       control={form.control}
                       name="rpoFeeStructures"
                       render={({ field }) => (
                         <FormItem>
-                          <RPOFeeStructureBuilder 
-                            fees={field.value as RPOFeeStructure[]} 
-                            onChange={field.onChange} 
+                          <RPOFeeStructureBuilder
+                            fees={field.value as RPOFeeStructure[]}
+                            onChange={field.onChange}
                           />
                           <FormMessage />
                         </FormItem>

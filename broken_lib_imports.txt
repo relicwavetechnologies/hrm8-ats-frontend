@@ -1,0 +1,18 @@
+src/modules/rpo/components/recruitment-services/RPOServiceForm.tsx:import { RECRUITMENT_SERVICES } from "@/lib/subscriptionConfig";
+src/modules/rpo/components/recruitment-services/RPOPricingCalculator.tsx:import { calculateRPOGuidePricing } from "@/lib/subscriptionConfig";
+src/modules/dashboard/components/README.md:import { getCardActions } from "@/lib/cardActions";
+src/modules/wallet/components/subscription/SubscriptionUpgradeWizard.tsx:import { SUBSCRIPTION_TIERS, type SubscriptionTier, HRMS_ADDON } from "@/lib/subscriptionConfig";
+src/modules/wallet/components/subscription/SubscriptionUpgradeWizard.tsx:import { calculateMonthlyCost } from "@/lib/moduleAccessControl";
+src/modules/wallet/components/subscription/CurrentPackageCard.tsx:import { getPackageTier, getPackageDisplayName, isPaidPackage } from "@/lib/packageUtils";
+src/modules/wallet/components/subscription/CurrentPackageCard.tsx:import { SUBSCRIPTION_TIERS } from "@/lib/subscriptionConfig";
+src/modules/wallet/components/subscription/PackageUpgradeDialog.tsx:import { createUpgradeCheckoutSession, type UpgradeTier } from "@/lib/payments";
+src/modules/wallet/components/subscription/SubscriptionCard.tsx:import { SUBSCRIPTION_TIERS, type SubscriptionTier } from "@/lib/subscriptionConfig";
+src/modules/payroll/components/compensation/CompensationApprovalActions.tsx:import { updateCompensationReview } from "@/lib/compensationStorage";
+src/modules/payroll/components/compensation/SalaryReviews.tsx:import { getCompensationReviews, updateCompensationReview } from "@/lib/compensationStorage";
+src/modules/payroll/components/compensation/CompensationAdjustmentDialog.tsx:import { saveCompensationReview } from "@/lib/compensationStorage";
+src/modules/payroll/components/compensation/SalaryBandsView.tsx:import { getSalaryBands } from "@/lib/compensationStorage";
+src/modules/payroll/components/compensation/BonusPlans.tsx:import { getBonusPlans } from "@/lib/compensationStorage";
+src/modules/payroll/components/compensation/EquityGrants.tsx:import { getEquityGrants } from "@/lib/compensationStorage";
+src/modules/employees/components/employee-relations/ERCaseDialog.tsx:import { createERCase, updateERCase, type ERCase } from "@/lib/employeeRelationsStorage";
+src/modules/employees/components/employee-relations/ERCaseDialog.tsx:import { getEmployees } from "@/lib/employeeStorage";
+src/modules/employees/components/ess/ProfileEditDialog.tsx:import { getEmployeeById, saveEmployee } from "@/lib/employeeStorage";

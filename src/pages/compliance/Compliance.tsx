@@ -12,7 +12,7 @@ import { AuditLog, CompliancePolicy, ComplianceAlert, DataSubjectRequest } from 
 import { PolicyDialog } from "@/modules/compliance/components/PolicyDialog";
 import { DataSubjectRequestDialog } from "@/modules/compliance/components/DataSubjectRequestDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
 import { toast } from "sonner";
 
 export default function Compliance() {
@@ -122,7 +122,7 @@ export default function Compliance() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Policy
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setDeleteType("policy");
                 setItemToDelete(policy);
@@ -185,7 +185,7 @@ export default function Compliance() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Request
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setDeleteType("dsr");
                 setItemToDelete(dsr);
@@ -204,12 +204,12 @@ export default function Compliance() {
 
   const handleDelete = () => {
     if (!itemToDelete || !deleteType) return;
-    
+
     setIsDeleting(true);
     try {
       let success = false;
       let message = "";
-      
+
       if (deleteType === "policy") {
         success = deletePolicy(itemToDelete.id);
         message = "Policy deleted successfully";
@@ -217,7 +217,7 @@ export default function Compliance() {
         success = deleteDataSubjectRequest(itemToDelete.id);
         message = "Data subject request deleted successfully";
       }
-      
+
       if (success) {
         toast.success(message);
         setDeleteDialogOpen(false);
@@ -236,12 +236,12 @@ export default function Compliance() {
 
   const handleBulkDelete = () => {
     if (!bulkDeleteType) return;
-    
+
     setIsDeleting(true);
     try {
       let successCount = 0;
       let selectedIds: string[] = [];
-      
+
       if (bulkDeleteType === "policy") {
         selectedIds = selectedPolicies;
         selectedIds.forEach((id) => {
@@ -253,7 +253,7 @@ export default function Compliance() {
           if (deleteDataSubjectRequest(id)) successCount++;
         });
       }
-      
+
       toast.success(`Successfully deleted ${successCount} item${successCount > 1 ? 's' : ''}`);
       setBulkDeleteDialogOpen(false);
       setSelectedPolicies([]);
@@ -563,7 +563,7 @@ export default function Compliance() {
             setEditingDSR(null);
           }}
         />
-        
+
         <DeleteConfirmationDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -572,16 +572,14 @@ export default function Compliance() {
           onConfirm={handleDelete}
           isDeleting={isDeleting}
         />
-        
+
         <DeleteConfirmationDialog
           open={bulkDeleteDialogOpen}
           onOpenChange={setBulkDeleteDialogOpen}
           title="Delete Multiple Items"
-          description={`Are you sure you want to delete ${
-            bulkDeleteType === 'policy' ? selectedPolicies.length : selectedDSRs.length
-          } item${
-            (bulkDeleteType === 'policy' ? selectedPolicies.length : selectedDSRs.length) > 1 ? 's' : ''
-          }? This action cannot be undone.`}
+          description={`Are you sure you want to delete ${bulkDeleteType === 'policy' ? selectedPolicies.length : selectedDSRs.length
+            } item${(bulkDeleteType === 'policy' ? selectedPolicies.length : selectedDSRs.length) > 1 ? 's' : ''
+            }? This action cannot be undone.`}
           onConfirm={handleBulkDelete}
           isDeleting={isDeleting}
         />

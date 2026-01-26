@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { profileEditSchema, type ProfileEditFormData } from "@/schemas/profileSchema";
-import { getEmployeeById, saveEmployee } from "@/lib/employeeStorage";
+import { profileEditSchema, type ProfileEditFormData } from "@/schemas/employeeSchemas";
+import { getEmployeeById, saveEmployee } from "@/shared/lib/employeeStorage";
 import { toast } from "sonner";
 import { useState } from "react";
 import { X, Plus } from "lucide-react";

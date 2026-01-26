@@ -6,7 +6,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { useToast } from "@/shared/hooks/use-toast";
-import { getCompensationReviews, updateCompensationReview } from "@/lib/compensationStorage";
+import { getCompensationReviews, updateCompensationReview } from "@/shared/lib/compensationStorage";
 import { format } from "date-fns";
 
 export function SalaryReviews() {
@@ -122,7 +122,7 @@ export function SalaryReviews() {
                         <h3 className="text-lg font-semibold">{review.employeeName}</h3>
                         <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div>
                           <span className="text-muted-foreground">Current Salary: </span>

@@ -2,7 +2,7 @@ import { Plus, Award } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { getBonusPlans } from "@/lib/compensationStorage";
+import { getBonusPlans } from "@/shared/lib/compensationStorage";
 
 export function BonusPlans() {
   const plans = getBonusPlans();
@@ -48,7 +48,7 @@ export function BonusPlans() {
         ) : (
           plans.map((plan) => {
             const typeBadge = getTypeBadge(plan.type);
-            
+
             return (
               <Card key={plan.id}>
                 <CardHeader>
