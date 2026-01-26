@@ -7,7 +7,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Switch } from "@/shared/components/ui/switch";
-import { cobraSchema, type COBRAFormData } from "@/schemas/cobraSchema";
+import { cobraSchema, type COBRAFormData } from "@/schemas/benefitsSchemas";
 import { createCOBRAEvent, updateCOBRAEvent, type COBRAEvent } from "@/shared/lib/benefitsEnhancedStorage";
 import { toast } from "sonner";
 import { useEffect } from "react";

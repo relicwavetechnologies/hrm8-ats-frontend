@@ -1,1 +1,1 @@
-// leave services placeholder
+export * from '@/shared/lib/leaveStorage';

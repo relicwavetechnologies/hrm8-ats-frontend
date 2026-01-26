@@ -6,7 +6,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { dataSubjectRequestSchema, type DataSubjectRequestFormData } from "@/schemas/dataSubjectRequestSchema";
+import { dataSubjectRequestSchema, type DataSubjectRequestFormData } from "@/schemas/complianceSchemas";
 import { createDataSubjectRequest, updateDataSubjectRequest, type DataSubjectRequest } from "@/shared/lib/complianceStorage";
 import { toast } from "sonner";
 import { useEffect } from "react";

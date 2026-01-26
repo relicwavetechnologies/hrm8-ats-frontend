@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { Loader2, CheckCircle2, XCircle, Sparkles, Check } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { cn } from "@/shared/lib/utils";
-import { createUpgradeCheckoutSession, type UpgradeTier } from "@/lib/payments";
+import { createUpgradeCheckoutSession, type UpgradeTier } from "@/shared/lib/payments";
 
 interface PackageUpgradeDialogProps {
   open: boolean;

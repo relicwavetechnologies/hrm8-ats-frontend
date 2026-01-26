@@ -2,8 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Sparkles, Check } from "lucide-react";
-import { getPackageTier, getPackageDisplayName, isPaidPackage } from "@/lib/packageUtils";
-import { SUBSCRIPTION_TIERS } from "@/lib/subscriptionConfig";
+import { getPackageTier, getPackageDisplayName, isPaidPackage } from "@/shared/lib/packageUtils";
+import { SUBSCRIPTION_TIERS } from "@/shared/lib/subscriptionConfig";
 import { PackageUpgradeDialog } from "./PackageUpgradeDialog";
 import { useState } from "react";
 
@@ -14,7 +14,7 @@ interface CurrentPackageCardProps {
 
 export function CurrentPackageCard({ companyId, showUpgradeButton = true }: CurrentPackageCardProps) {
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-  
+
   const packageTier = getPackageTier(companyId);
   const isPaid = isPaidPackage(companyId);
   const tierConfig = SUBSCRIPTION_TIERS[packageTier];

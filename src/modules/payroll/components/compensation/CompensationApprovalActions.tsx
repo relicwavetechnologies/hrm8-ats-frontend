@@ -1,6 +1,6 @@
 import { Button } from "@/shared/components/ui/button";
 import { Check, X } from "lucide-react";
-import { updateCompensationReview } from "@/lib/compensationStorage";
+import { updateCompensationReview } from "@/shared/lib/compensationStorage";
 import { useToast } from "@/shared/hooks/use-toast";
 
 interface CompensationApprovalActionsProps {

@@ -1,1 +1,1 @@
-// Employee services - placeholder for mock storage
+export * from '@/shared/lib/employeeStorage';

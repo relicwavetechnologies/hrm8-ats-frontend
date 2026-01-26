@@ -5,9 +5,9 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
-import { getEquityGrants } from "@/lib/compensationStorage";
+import { getEquityGrants } from "@/shared/lib/compensationStorage";
 import { format } from "date-fns";
-import { useCurrencyFormat } from "@/contexts/CurrencyFormatContext";
+import { useCurrencyFormat } from "@/app/providers/CurrencyFormatContext";
 
 export function EquityGrants() {
   const { formatCurrency } = useCurrencyFormat();
@@ -16,7 +16,7 @@ export function EquityGrants() {
   const grants = getEquityGrants();
 
   const filteredGrants = useMemo(() => {
-    return grants.filter(grant => 
+    return grants.filter(grant =>
       grant.employeeName.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [grants, searchQuery]);
@@ -128,7 +128,7 @@ export function EquityGrants() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Vesting Progress</span>
                         <span className="font-medium">
-                          {grant.vestedShares.toLocaleString()} / {grant.shares.toLocaleString()} 
+                          {grant.vestedShares.toLocaleString()} / {grant.shares.toLocaleString()}
                           ({vestingPercentage.toFixed(0)}%)
                         </span>
                       </div>

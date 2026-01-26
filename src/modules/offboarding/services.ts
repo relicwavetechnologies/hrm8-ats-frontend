@@ -1,1 +1,1 @@
-// offboarding services placeholder
+export * from '@/shared/lib/offboardingStorage';

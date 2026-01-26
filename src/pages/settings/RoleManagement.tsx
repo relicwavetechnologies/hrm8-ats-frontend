@@ -10,7 +10,7 @@ import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { UserRole, ROLE_PERMISSIONS } from "@/shared/types/rbac";
 import { RoleAssignmentDialog } from "@/modules/settings/components/RoleAssignmentDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
 import { deleteRoleAssignment } from "@/shared/lib/rbacStorage";
 import { toast } from "sonner";
 
@@ -87,7 +87,7 @@ export default function RoleManagement() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Assignment
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setRoleToDelete(userRole);
                 setDeleteDialogOpen(true);
@@ -105,7 +105,7 @@ export default function RoleManagement() {
 
   const handleDeleteRole = () => {
     if (!roleToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const success = deleteRoleAssignment(roleToDelete.id);
@@ -133,7 +133,7 @@ export default function RoleManagement() {
           successCount++;
         }
       });
-      
+
       toast.success(`Successfully revoked ${successCount} role${successCount > 1 ? 's' : ''}`);
       setBulkDeleteDialogOpen(false);
       setSelectedRoles([]);
@@ -306,7 +306,7 @@ export default function RoleManagement() {
             setEditingRole(null);
           }}
         />
-        
+
         <DeleteConfirmationDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -315,7 +315,7 @@ export default function RoleManagement() {
           onConfirm={handleDeleteRole}
           isDeleting={isDeleting}
         />
-        
+
         <DeleteConfirmationDialog
           open={bulkDeleteDialogOpen}
           onOpenChange={setBulkDeleteDialogOpen}

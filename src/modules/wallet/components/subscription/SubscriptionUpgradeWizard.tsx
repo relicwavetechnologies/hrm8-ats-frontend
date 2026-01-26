@@ -7,8 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { SUBSCRIPTION_TIERS, type SubscriptionTier, HRMS_ADDON } from "@/lib/subscriptionConfig";
-import { calculateMonthlyCost } from "@/lib/moduleAccessControl";
+import { SUBSCRIPTION_TIERS, type SubscriptionTier, HRMS_ADDON } from "@/shared/lib/subscriptionConfig";
+import { calculateMonthlyCost } from "@/shared/lib/moduleAccessControl";
 import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 
@@ -36,7 +36,7 @@ export function SubscriptionUpgradeWizard({
   const progress = (step / totalSteps) * 100;
 
   const availableTiers: SubscriptionTier[] = ['small', 'medium', 'large', 'enterprise'];
-  
+
   const addons = [
     { id: 'assessments', name: 'Skills Assessments', price: 99 },
     { id: 'reference-checking', name: 'Reference Checking', price: 79 },
@@ -50,12 +50,12 @@ export function SubscriptionUpgradeWizard({
       hrmsEmployeeCount: hrmsEnabled ? hrmsEmployeeCount : undefined,
       enabledAddons: selectedAddons
     });
-    
+
     selectedAddons.forEach(addonId => {
       const addon = addons.find(a => a.id === addonId);
       if (addon) total += addon.price;
     });
-    
+
     return total;
   };
 
@@ -122,7 +122,7 @@ export function SubscriptionUpgradeWizard({
               <h3 className="text-lg font-semibold mb-2">Add HRMS Module</h3>
               <p className="text-sm text-muted-foreground">Manage employees with our HR Management System</p>
             </div>
-            
+
             <div className="border rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -140,7 +140,7 @@ export function SubscriptionUpgradeWizard({
                   <Badge variant="default">Active</Badge>
                 )}
               </div>
-              
+
               {hrmsEnabled && (
                 <div className="space-y-2 pt-4 border-t">
                   <Label htmlFor="employee-count">Number of Employees</Label>
@@ -175,7 +175,7 @@ export function SubscriptionUpgradeWizard({
               <h3 className="text-lg font-semibold mb-2">Add-on Services</h3>
               <p className="text-sm text-muted-foreground">Enhance your platform with premium features</p>
             </div>
-            
+
             <div className="space-y-3">
               {addons.map(addon => (
                 <div key={addon.id} className="border rounded-lg p-4">
@@ -217,7 +217,7 @@ export function SubscriptionUpgradeWizard({
               <h3 className="text-lg font-semibold mb-2">Review Your Selection</h3>
               <p className="text-sm text-muted-foreground">Confirm your upgrade details</p>
             </div>
-            
+
             <div className="border rounded-lg p-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm">Subscription Plan</span>
@@ -227,7 +227,7 @@ export function SubscriptionUpgradeWizard({
                 <span className="text-sm">Base Cost</span>
                 <span>${selectedTierConfig.monthlyFee}/month</span>
               </div>
-              
+
               {hrmsEnabled && (
                 <>
                   <div className="border-t pt-2">
@@ -242,7 +242,7 @@ export function SubscriptionUpgradeWizard({
                   </div>
                 </>
               )}
-              
+
               {selectedAddons.length > 0 && (
                 <div className="border-t pt-2">
                   <p className="text-sm font-semibold mb-2">Add-ons</p>
@@ -257,7 +257,7 @@ export function SubscriptionUpgradeWizard({
                   })}
                 </div>
               )}
-              
+
               <div className="border-t pt-2">
                 <div className="flex justify-between items-center">
                   <span className="font-bold">Total</span>
@@ -282,7 +282,7 @@ export function SubscriptionUpgradeWizard({
             Step {step} of {totalSteps}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="mb-6">
           <Progress value={progress} className="h-2" />
         </div>
@@ -299,7 +299,7 @@ export function SubscriptionUpgradeWizard({
             <ChevronLeft className="h-4 w-4 mr-2" />
             {step === 1 ? 'Cancel' : 'Back'}
           </Button>
-          
+
           {step < totalSteps ? (
             <Button onClick={handleNext}>
               Next

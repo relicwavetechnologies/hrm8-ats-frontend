@@ -1,1 +1,1 @@
-// compliance services placeholder
+export * from '@/shared/lib/complianceStorage';

@@ -23,8 +23,8 @@ Reusable form field components with consistent styling and validation error disp
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Form } from '@/components/ui/form';
-import { FormInput, FormSelect, FormTextarea, FormCheckbox } from '@/components/common/form-fields';
+import { Form } from '@/shared/components/ui/form';
+import { FormInput, FormSelect, FormTextarea, FormCheckbox } from '@/shared/components/common/form-fields';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -234,7 +234,7 @@ function MyForm() {
 Generate forms dynamically from JSON schemas - perfect for CMS-driven forms.
 
 ```tsx
-import { FormBuilder, FormSchema } from '@/components/common/form-fields';
+import { FormBuilder, FormSchema } from '@/shared/components/common/form-fields';
 
 const formSchema: FormSchema = {
   id: 'employee-form',
@@ -303,7 +303,7 @@ Global error boundary component that catches React errors and displays a user-fr
 Already implemented at the app root level in `App.tsx`. You can also use it for specific sections:
 
 ```tsx
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { ErrorBoundary } from '@/shared/components/common/ErrorBoundary';
 
 function MyComponent() {
   return (
@@ -375,7 +375,7 @@ function MyComponent() {
 ### Using the Service
 
 ```tsx
-import { notify } from '@/lib/notifications';
+import { notify } from '@/shared/lib/notifications';
 
 // Direct usage without hooks
 notify.success('Operation successful');
@@ -409,8 +409,8 @@ Reusable wizard component for multi-step forms with standardized navigation, pro
 ```tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FormWizard, WizardStep } from '@/components/common/FormWizard';
-import { mySchema, type MyFormData } from '@/lib/validations';
+import { FormWizard, WizardStep } from '@/shared/components/common/FormWizard';
+import { mySchema, type MyFormData } from '@/shared/lib/validations';
 
 const STEPS: WizardStep<MyFormData>[] = [
   { title: 'Basic Info', component: BasicInfoStep, fields: ['name', 'email'] },

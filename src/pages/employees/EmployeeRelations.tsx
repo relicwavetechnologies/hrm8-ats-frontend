@@ -11,7 +11,7 @@ import { ERCase } from "@/shared/types/employeeRelations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ERCaseDialog } from "@/modules/employees/components/employee-relations/ERCaseDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/shared/components/common/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
 import { DateRangeFilter, MultiSelectFilter } from "@/shared/components/tables/AdvancedFilters";
 import { GroupConfig } from "@/shared/components/tables/TableGrouping";
 import { PivotConfig } from "@/shared/components/tables/PivotTable";
@@ -40,7 +40,7 @@ export default function EmployeeRelations() {
 
   const handleDeleteCase = () => {
     if (!caseToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const success = deleteERCase(caseToDelete.id);
@@ -68,7 +68,7 @@ export default function EmployeeRelations() {
           successCount++;
         }
       });
-      
+
       toast.success(`Successfully deleted ${successCount} case${successCount > 1 ? 's' : ''}`);
       setBulkDeleteDialogOpen(false);
       setSelectedCases([]);
@@ -221,7 +221,7 @@ export default function EmployeeRelations() {
               <Edit className="mr-2 h-4 w-4" />
               Edit Case
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => {
                 setCaseToDelete(erCase);
                 setDeleteDialogOpen(true);
@@ -576,7 +576,7 @@ export default function EmployeeRelations() {
             setEditingCase(null);
           }}
         />
-        
+
         <DeleteConfirmationDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -585,7 +585,7 @@ export default function EmployeeRelations() {
           onConfirm={handleDeleteCase}
           isDeleting={isDeleting}
         />
-        
+
         <DeleteConfirmationDialog
           open={bulkDeleteDialogOpen}
           onOpenChange={setBulkDeleteDialogOpen}

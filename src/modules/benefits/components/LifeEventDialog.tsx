@@ -7,7 +7,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Switch } from "@/shared/components/ui/switch";
-import { lifeEventSchema, type LifeEventFormData } from "@/schemas/lifeEventSchema";
+import { lifeEventSchema, type LifeEventFormData } from "@/schemas/benefitsSchemas";
 import { createLifeEvent, updateLifeEvent, type LifeEvent } from "@/shared/lib/benefitsEnhancedStorage";
 import { toast } from "sonner";
 import { useEffect } from "react";

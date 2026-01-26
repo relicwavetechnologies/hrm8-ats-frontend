@@ -1,1 +1,1 @@
-// benefits services placeholder
+export * from '@/shared/lib/benefitsStorage';

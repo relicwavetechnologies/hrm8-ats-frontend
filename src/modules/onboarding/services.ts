@@ -1,1 +1,1 @@
-// onboarding services placeholder
+export * from '@/shared/lib/onboardingStorage';

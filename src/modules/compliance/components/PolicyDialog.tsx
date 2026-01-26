@@ -7,7 +7,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Switch } from "@/shared/components/ui/switch";
-import { compliancePolicySchema, type CompliancePolicyFormData } from "@/schemas/compliancePolicySchema";
+import { compliancePolicySchema, type CompliancePolicyFormData } from "@/schemas/complianceSchemas";
 import { createPolicy, updatePolicy, type CompliancePolicy } from "@/shared/lib/complianceStorage";
 import { toast } from "sonner";
 import { useEffect } from "react";
