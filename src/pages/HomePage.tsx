@@ -10,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/button";
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { SubscriptionStatusCard } from "@/modules/dashboard/components/SubscriptionStatusCard";
-// TODO: Extract TransactionHistoryCard from company module
-// import { TransactionHistoryCard } from "@/modules/company/components/TransactionHistoryCard";
+import { TransactionHistoryCard } from "@/modules/wallet/components/TransactionHistoryCard";
 import { companyService } from "@/shared/services/companyService";
 import { walletService } from "@/shared/services/walletService";
 import { useAuth } from "@/app/providers/AuthContext";
@@ -253,10 +252,10 @@ export default function HomePage() {
           </Card>
         </div>
 
-        {/* Transaction History Section - TODO: Extract company module */}
-        {/* <div className="mt-6">
+        {/* Transaction History Section */}
+        <div className="mt-6">
           <TransactionHistoryCard />
-        </div> */}
+        </div>
       </div>
     </DashboardPageLayout>
   );

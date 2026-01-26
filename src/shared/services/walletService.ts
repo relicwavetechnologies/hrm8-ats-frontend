@@ -189,35 +189,57 @@ class WalletService {
         amount: number;
         paymentMethod: string;
     }) {
-        const response = await fetch(`${this.apiUrl}/api/integrations/stripe/create-checkout-session`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                amount: data.amount,
-                description: `Wallet recharge - $${data.amount.toFixed(2)}`,
-                metadata: {
-                    type: 'wallet_recharge',
-                },
-            }),
-        });
+        console.log('[WalletService] rechargeWallet called', data);
+        const url = `${this.apiUrl}/api/integrations/stripe/create-checkout-session`;
+        console.log('[WalletService] Fetching URL:', url);
 
-        if (!response.ok) {
-            const error = await response.json();
-            const errorObj: any = new Error(error.message || 'Failed to initiate recharge');
-            errorObj.response = { status: response.status };
-            errorObj.errorCode = error.errorCode;
-            throw errorObj;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    amount: data.amount,
+                    description: `Wallet recharge - $${data.amount.toFixed(2)}`,
+                    metadata: {
+                        type: 'wallet_recharge',
+                    },
+                }),
+            });
+
+            console.log('[WalletService] Response Status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[WalletService] Response Error Text:', errorText);
+                let error;
+                try {
+                    error = JSON.parse(errorText);
+                } catch (e) {
+                    error = { message: errorText || 'Network error' };
+                }
+                const errorObj: any = new Error(error.message || 'Failed to initiate recharge');
+                errorObj.response = { status: response.status };
+                errorObj.errorCode = error.errorCode;
+                throw errorObj;
+            }
+
+            const result = await response.json();
+            console.log('[WalletService] Recharge Result:', result);
+
+            // Redirect to Stripe Checkout
+            if (result.data?.url) {
+                console.log('[WalletService] Redirecting to:', result.data.url);
+                window.location.href = result.data.url;
+            } else {
+                console.warn('[WalletService] No URL in result data:', result);
+            }
+
+            return result;
+        } catch (error) {
+            console.error('[WalletService] rechargeWallet exception:', error);
+            throw error;
         }
-
-        const result = await response.json();
-
-        // Redirect to Stripe Checkout
-        if (result.data?.url) {
-            window.location.href = result.data.url;
-        }
-
-        return result;
     }
 
     // Add-on Services
