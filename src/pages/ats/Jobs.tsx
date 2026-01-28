@@ -6,11 +6,11 @@ import { Button } from "@/shared/components/ui/button";
 import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, Filter, X, Zap, Eye } from "lucide-react";
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { DataTable, Column } from "@/shared/components/tables/DataTable";
-import { jobService } from "@/shared/lib/jobService";
+import { jobService, JobStatus, GetJobsFilters } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { useJobPostingPermission } from "@/shared/hooks/useJobPostingPermission";
 import { mapBackendJobToFrontend, mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { FormDrawer } from "@/shared/components/ui/form-drawer";
 import { JobWizard } from "@/modules/jobs/components/JobWizard";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
@@ -65,6 +65,7 @@ export default function Jobs() {
   const [editingJobIdForEdit, setEditingJobIdForEdit] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalJobs, setTotalJobs] = useState(0);
 
   // Filter states
   const [searchValue, setSearchValue] = useState("");
@@ -90,26 +91,29 @@ export default function Jobs() {
       try {
         setLoading(true);
         // Build filters object
-        const filters: { status?: string } = {};
+        const filters: GetJobsFilters = {};
         if (selectedStatus !== 'all') {
           // Convert frontend status format to backend format
           const statusMap: Record<string, string> = {
             'draft': 'DRAFT',
             'open': 'OPEN',
-            'closed': 'CLOSED',
-            'on-hold': 'ON_HOLD',
-            'filled': 'FILLED',
-            'cancelled': 'CANCELLED',
             'template': 'TEMPLATE',
           };
-          filters.status = statusMap[selectedStatus] || selectedStatus.toUpperCase();
+          filters.status = (statusMap[selectedStatus] || selectedStatus.toUpperCase()) as JobStatus;
         }
         const response = await jobService.getJobs(filters);
         if (response.success && response.data) {
+          // Response now contains { jobs, total, page, limit }
+          const { jobs: jobsData, total } = response.data;
+          console.log('>>> TOTAL JOBS FROM API:', total);
           // Map backend jobs to frontend format
-          const jobsData = Array.isArray(response.data) ? response.data : [];
-          const mappedJobs = jobsData.map(mapBackendJobToFrontend);
+          const mappedJobs = (jobsData || []).map(mapBackendJobToFrontend);
           setJobs(mappedJobs);
+
+          // Use total from response body
+          if (total !== undefined) {
+            setTotalJobs(total);
+          }
         } else {
           toast({
             title: 'Error',
@@ -148,13 +152,13 @@ export default function Jobs() {
     }).length;
 
     return {
-      total: jobs.length || 0,
+      total: totalJobs || 0, // Use total from backend instead of current page's job count
       active: activeJobs || 0,
       applicants: totalApplicants || 0,
       filled: filledJobs || 0,
       avgApplicants: avgApplicants || 0,
     };
-  }, [jobs]);
+  }, [jobs, totalJobs]);
 
   // Auto-open job wizard when navigating with action=create
   useEffect(() => {
@@ -502,7 +506,7 @@ export default function Jobs() {
       sortable: true,
       render: (job) => {
         // Use company name from job or fallback to user's company
-        const companyName = job.employerName || user?.companyName || profileSummary?.name || "Company";
+        const companyName = job.employerName || user?.companyName || "Company";
         const companyId = job.employerId || user?.companyId || "";
 
         return (

@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { jobService } from '@/shared/lib/jobService';
+import { jobService, JobStatus } from '@/shared/lib/jobService';
 import { mapBackendJobToFrontend } from '@/shared/lib/jobDataMapper';
 import { Job } from '@/shared/types/job';
 import { useAuth } from '@/app/providers/AuthContext';
@@ -35,11 +35,11 @@ export function useDraftJob(): UseDraftJobReturn {
       setLoading(true);
       setError(null);
 
-      const response = await jobService.getJobs({ status: 'DRAFT' });
+      const response = await jobService.getJobs({ status: 'DRAFT' as JobStatus });
 
       if (response.success && response.data) {
-        const jobsData = Array.isArray(response.data) ? response.data : [];
-        const mappedJobs = jobsData.map(mapBackendJobToFrontend);
+        const { jobs } = response.data;
+        const mappedJobs = jobs.map(mapBackendJobToFrontend);
 
         // Find the most recent draft job created by the current user
         const userDraftJobs = mappedJobs
