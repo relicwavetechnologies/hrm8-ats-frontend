@@ -86,7 +86,18 @@ class JobService {
     const queryString = queryParams.toString();
     const endpoint = `/api/jobs${queryString ? `?${queryString}` : ''}`;
 
-    return apiClient.get<{ jobs: Job[], total: number, page: number, limit: number }>(endpoint);
+    return apiClient.get<{
+      jobs: Job[],
+      total: number,
+      page: number,
+      limit: number,
+      stats?: {
+        total: number;
+        active: number;
+        filled: number;
+        applicants: number;
+      }
+    }>(endpoint);
   }
 
   /**

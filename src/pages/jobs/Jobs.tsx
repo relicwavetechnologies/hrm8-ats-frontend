@@ -65,6 +65,13 @@ export default function Jobs() {
   const [editingJobIdForEdit, setEditingJobIdForEdit] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [backendStats, setBackendStats] = useState<{
+    total: number;
+    active: number;
+    filled: number;
+    applicants: number;
+  } | null>(null);
 
   // Filter states
   const [searchValue, setSearchValue] = useState("");
@@ -107,12 +114,19 @@ export default function Jobs() {
         const response = await jobService.getJobs(filters);
 
         if (response.success && response.data) {
-          // Map backend jobs to frontend format
-          // Handle case where data is { jobs: [...] } or just [...]
-          const rawData = response.data;
-          // @ts-ignore - Check if data has jobs property
-          const jobsData = Array.isArray(rawData) ? rawData : (rawData.jobs && Array.isArray(rawData.jobs) ? rawData.jobs : []);
+          // Destructure response data safely as per typed interface
+          const { jobs: jobsList, total, stats } = response.data;
 
+          if (stats) {
+            setBackendStats(stats);
+          }
+
+          if (total !== undefined) {
+            setTotalJobs(total);
+          }
+
+          // Handle potentially missing jobs array
+          const jobsData = Array.isArray(jobsList) ? jobsList : [];
           const mappedJobs = jobsData.map(mapBackendJobToFrontend);
           setJobs(mappedJobs);
         } else {
@@ -140,6 +154,17 @@ export default function Jobs() {
 
   // Calculate stats
   const stats = useMemo(() => {
+    // Prefer backend stats if available
+    if (backendStats) {
+      return {
+        total: backendStats.total,
+        active: backendStats.active,
+        applicants: backendStats.applicants,
+        filled: backendStats.filled,
+        avgApplicants: backendStats.total > 0 ? Math.round(backendStats.applicants / backendStats.total) : 0,
+      };
+    }
+
     const activeJobs = jobs.filter(j => {
       const status = typeof j.status === 'string' ? j.status.toLowerCase() : j.status;
       return status === 'open';
@@ -155,13 +180,13 @@ export default function Jobs() {
     }).length;
 
     return {
-      total: jobs.length || 0,
+      total: totalJobs || jobs.length || 0,
       active: activeJobs || 0,
       applicants: totalApplicants || 0,
       filled: filledJobs || 0,
       avgApplicants: avgApplicants || 0,
     };
-  }, [jobs]);
+  }, [jobs, totalJobs, backendStats]);
 
   // Auto-open job wizard when navigating with action=create
   useEffect(() => {
