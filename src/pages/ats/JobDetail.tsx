@@ -1323,7 +1323,7 @@ export default function JobDetail() {
             onOpenChange={setHiringTeamDrawerOpen}
             jobId={job.id}
             jobTitle={job.title}
-            hiringTeam={job.hiringTeam as HiringTeamData | null}
+            hiringTeam={job.hiringTeam as unknown as HiringTeamData | null}
             onUpdate={handleJobUpdate}
           />
         )}

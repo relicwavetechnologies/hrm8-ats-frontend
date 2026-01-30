@@ -7,7 +7,7 @@ export interface Application {
   employerName?: string; // Optional
   status: ApplicationStatus;
   stage: ApplicationStage;
-  appliedDate: string; // ISO Date string
+  appliedDate: string | Date; // Allow Date object
   resumeUrl?: string;
   coverLetterUrl?: string;
   portfolioUrl?: string;
@@ -26,18 +26,30 @@ export interface Application {
   aiMatchScore?: number; // Alias for score
   rank?: number;
   shortlisted: boolean;
-  shortlistedAt?: string;
+  shortlistedAt?: string | Date;
   shortlistedBy?: string;
   manuallyAdded: boolean;
   addedBy?: string;
-  addedAt?: string;
+  addedAt?: string | Date;
   recruiterNotes?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   assignedTo?: string;
   assignedToName?: string;
   activities: any[]; // Define a stricter type if needed
   interviews: any[]; // Define a stricter type if needed
+
+  // Missing fields based on usage in JobDetail.tsx
+  candidateEmail?: string;
+  candidatePhone?: string;
+  candidateCity?: string;
+  candidateState?: string;
+  candidateCountry?: string;
+  candidatePhoto?: string;
+  roundId?: string;
+  aiAnalysis?: any;
+  notes?: any[];
+  candidatePreferences?: any;
 }
 
 export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected' | 'withdrawn';

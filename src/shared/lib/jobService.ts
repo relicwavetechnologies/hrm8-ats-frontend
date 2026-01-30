@@ -104,7 +104,7 @@ class JobService {
    * Get job by ID
    */
   async getJobById(id: string) {
-    return apiClient.get<Job>(`/api/jobs/${id}`);
+    return apiClient.get<{ job: Job }>(`/api/jobs/${id}`);
   }
 
   /**

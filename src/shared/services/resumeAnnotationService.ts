@@ -27,13 +27,12 @@ export interface CreateAnnotationRequest {
 class ResumeAnnotationService {
     async getAnnotations(documentId: string): Promise<Annotation[]> {
         try {
-            // Use a real endpoint if available, for now mocking or assuming standard CRUD
-            // return apiClient.get<Annotation[]>(`/api/candidates/resumes/${documentId}/annotations`);
-
-            // Return empty array for now to prevent runtime crashes if API is not ready
-            // or check if we should mock it using localStorage
             const result = await apiClient.get<Annotation[]>(`/api/resumes/${documentId}/annotations`);
-            return result || [];
+            // Extract data from ApiResponse wrapper
+            if (result.success && result.data) {
+                return result.data;
+            }
+            return [];
         } catch (error) {
             console.warn('Failed to fetch annotations, returning empty list', error);
             return [];
@@ -41,12 +40,20 @@ class ResumeAnnotationService {
     }
 
     async createAnnotation(data: CreateAnnotationRequest): Promise<Annotation> {
-        return apiClient.post<Annotation>(`/api/resumes/${data.resume_id}/annotations`, data);
+        const result = await apiClient.post<Annotation>(`/api/resumes/${data.resume_id}/annotations`, data);
+        if (result.success && result.data) {
+            return result.data;
+        }
+        throw new Error(result.error || 'Failed to create annotation');
     }
 
     async deleteAnnotation(documentId: string, annotationId: string, userId: string): Promise<void> {
-        await apiClient.delete(`/api/resumes/${documentId}/annotations/${annotationId}`);
+        const result = await apiClient.delete(`/api/resumes/${documentId}/annotations/${annotationId}`, { user_id: userId });
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to delete annotation');
+        }
     }
 }
 
 export const resumeAnnotationService = new ResumeAnnotationService();
+

@@ -15,13 +15,18 @@ class UserService {
    * Get all users in the company
    */
   async getCompanyUsers(): Promise<CompanyUser[]> {
-    const response = await apiClient.get<CompanyUser[]>('/api/employees');
+    const response = await apiClient.get<{ users: CompanyUser[] }>('/api/employees');
 
     if (!response.success) {
       throw new Error(response.error || 'Failed to fetch company users');
     }
 
-    return response.data as CompanyUser[];
+    // Handle both old format (array directly) and new format (nested in users property)
+    const data = response.data as { users?: CompanyUser[] } | CompanyUser[];
+    if (Array.isArray(data)) {
+      return data;
+    }
+    return data.users || [];
   }
 }
 

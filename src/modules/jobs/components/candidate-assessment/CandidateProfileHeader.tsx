@@ -135,7 +135,12 @@ export function CandidateProfileHeader({ application, jobTitle }: CandidateProfi
             
             <div className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />
-              <span>Applied {formatDistanceToNow(application.appliedDate, { addSuffix: true })}</span>
+              <span>Applied {(() => {
+                const date = new Date(application.appliedDate);
+                return isNaN(date.getTime()) 
+                  ? 'Just now' 
+                  : formatDistanceToNow(date, { addSuffix: true });
+              })()}</span>
             </div>
           </div>
 

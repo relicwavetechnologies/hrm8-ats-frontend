@@ -19,7 +19,6 @@ import { Label } from "@/shared/components/ui/label";
 import { Slider } from "@/shared/components/ui/slider";
 import { Calendar as CalendarComponent } from "@/shared/components/ui/calendar";
 import { format } from "date-fns";
-import { StatusQuickFilters, quickFilters } from "./StatusQuickFilters";
 
 export interface JobApplicationsFilters {
   searchQuery: string;
@@ -180,12 +179,6 @@ export function JobApplicationsFilterBar({
 
   return (
     <div className="space-y-4">
-      {/* Quick Filter Chips */}
-      <StatusQuickFilters
-        activeFilterId={filters.quickFilter || undefined}
-        onFilterChange={(filterId) => handleQuickFilter(filterId as any || null)}
-      />
-
       {/* Main Filter Bar */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* Search */}

@@ -79,6 +79,8 @@ import { useMemo } from "react";
 import { verifyJobPayment } from "@/shared/lib/payments";
 import { useAuth } from "@/app/providers/AuthContext";
 import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
+import { JobRound, jobRoundService } from "@/shared/lib/jobRoundService";
+import { RoundDetailView } from "@/modules/applications/components/RoundDetailView";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -97,7 +99,10 @@ export default function JobDetail() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [emailHubOpen, setEmailHubOpen] = useState(false);
   const [hiringTeamDrawerOpen, setHiringTeamDrawerOpen] = useState(false);
-  const [allApplications, setAllApplications] = useState<Application[]>([]);;
+  const [allApplications, setAllApplications] = useState<Application[]>([]);
+  const [rounds, setRounds] = useState<JobRound[]>([]);
+  const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState("overview");;
   const [applicationsFilters, setApplicationsFilters] = useState<JobApplicationsFilters>({
     searchQuery: '',
     selectedStages: [],
@@ -197,7 +202,7 @@ export default function JobDetail() {
       const query = applicationsFilters.searchQuery.toLowerCase();
       filtered = filtered.filter((app) =>
         app.candidateName.toLowerCase().includes(query) ||
-        app.candidateEmail.toLowerCase().includes(query) ||
+        (app.candidateEmail && app.candidateEmail.toLowerCase().includes(query)) ||
         app.jobTitle.toLowerCase().includes(query)
       );
     }
@@ -318,7 +323,7 @@ export default function JobDetail() {
         setLoading(true);
         const response = await jobService.getJobById(jobId);
         if (response.success && response.data) {
-          const mappedJob = mapBackendJobToFrontend(response.data);
+          const mappedJob = mapBackendJobToFrontend(response.data.job);
           setJob(mappedJob);
         } else {
           // If API fails, try to get from mock storage as fallback
@@ -353,6 +358,24 @@ export default function JobDetail() {
 
     fetchJob();
   }, [jobId, refreshKey, toast]);
+
+  // Fetch rounds
+  useEffect(() => {
+    if (!jobId) return;
+    const fetchRounds = async () => {
+      try {
+        const response = await jobRoundService.getJobRounds(jobId);
+        if (response.success && response.data) {
+          // Sort by order
+          const sortedRounds = (response.data.rounds || []).sort((a, b) => a.order - b.order);
+          setRounds(sortedRounds);
+        }
+      } catch (error) {
+        console.error("Error fetching rounds:", error);
+      }
+    };
+    fetchRounds();
+  }, [jobId]);
 
   // Verify payment after redirect from Stripe checkout
   useEffect(() => {
@@ -457,6 +480,13 @@ export default function JobDetail() {
             console.error(`[JobDetail] Invalid mapped status "${mappedStatus}" for application ${app.id} (original: "${originalStatus}"), using "applied"`);
           }
 
+          // Safe date parsing helper
+          const safeDate = (dateVal: string | Date | undefined): Date => {
+            if (!dateVal) return new Date();
+            if (dateVal instanceof Date) return dateVal;
+            return new Date(dateVal);
+          };
+
           return {
             id: app.id,
             candidateId: app.candidateId,
@@ -470,7 +500,7 @@ export default function JobDetail() {
             jobId: app.jobId,
             jobTitle: app.job?.title || 'Unknown Job',
             employerName: app.job?.company?.name || 'Unknown Company',
-            appliedDate: new Date(app.appliedDate),
+            appliedDate: app.appliedDate instanceof Date ? app.appliedDate : new Date(app.appliedDate),
             status: mappedStatus, // Always set from mapping function
             stage: mappedStage, // Always set from mapping function
             roundId: roundMap[app.id] || app.roundId, // Assign round ID from progress map or direct backend field
@@ -496,8 +526,8 @@ export default function JobDetail() {
             notes: [],
             activities: [],
             interviews: [],
-            createdAt: new Date(app.createdAt),
-            updatedAt: new Date(app.updatedAt),
+            createdAt: safeDate(app.createdAt),
+            updatedAt: safeDate(app.updatedAt),
             candidatePreferences: app.candidate ? {
         salaryPreference: app.candidate.salaryPreference,
         employmentType: app.candidate.jobTypePreference,
@@ -651,125 +681,172 @@ export default function JobDetail() {
   };
 
   return (
-    <DashboardPageLayout>
-      <div className="p-6 space-y-6">
-        <AtsPageHeader
-          title={job.title}
-          subtitle={`${job.employerName}${job.department ? ` • ${job.department}` : ''} • ${job.location}`}
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 mr-4">
-              <JobStatusBadge status={job.status} />
-              {job.assignedConsultantName ? (
-                <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
-                  Consultant: {job.assignedConsultantName}
-                </Badge>
-              ) : (
-                <ServiceTypeBadge type="self-managed" />
-              )}
-              {job.pipeline?.stage && (
-                <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
-                  Pipeline: {job.pipeline.stage.replace(/_/g, ' ')}
-                </Badge>
-              )}
-            </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/ats/jobs">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Link>
-            </Button>
-            <Button size="sm" onClick={handleEditJob}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setHiringTeamDrawerOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Manage Team
-            </Button>
-            <JobLifecycleActions
-              job={job}
-              onJobUpdate={handleJobUpdate}
-              onEdit={handleEditJob}
-            />
-          </div>
-        </AtsPageHeader>
-
-        {/* Quick Stats */}
-        <JobQuickStats
-          applicantsCount={job.applicantsCount}
-          viewsCount={job.viewsCount}
-          postingDate={job.postingDate}
-        />
-
-        {/* Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <div className="overflow-x-auto -mx-1 px-1">
-            <TabsList className="inline-flex w-auto gap-1 rounded-full border bg-muted/40 px-1 py-1 shadow-sm">
+    <DashboardPageLayout fullWidth>
+      <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="flex h-[calc(100vh-65px)] w-full">
+        {/* Secondary Sidebar - Tabs */}
+        <div className="w-56 border-r bg-muted/5 flex-shrink-0 flex flex-col h-full overflow-y-auto">
+          <div className="p-4 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+            <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-3 px-2">Job Menu</h3>
+            <TabsList className="flex flex-col h-auto w-full bg-transparent p-0 space-y-1">
               <TabsTrigger
                 value="overview"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                asChild={false}
               >
+                <List className="h-4 w-4" />
                 Overview
               </TabsTrigger>
               <TabsTrigger
                 value="applicants"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
+                <UserPlus className="h-4 w-4" />
                 Applicants
                 {job.applicantsCount > 0 && (
-                  <Badge variant="outline" className="h-5 px-1.5 text-xs rounded-full ml-1">{job.applicantsCount}</Badge>
+                  <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 h-5 min-w-5 flex items-center justify-center">{job.applicantsCount}</Badge>
                 )}
               </TabsTrigger>
+
+              {/* Sub-navigation for Applicants */}
+              {activeTab === 'applicants' && (
+                <div className="flex flex-col gap-0.5 mt-0.5 mb-1 px-2 animate-in slide-in-from-top-1 duration-200">
+                   <button
+                     onClick={() => setActiveRoundTab('overview')}
+                     className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                   >
+                     Overview
+                   </button>
+                   {rounds.map(round => (
+                     <button
+                       key={round.id}
+                       onClick={() => setActiveRoundTab(round.id)}
+                       className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                     >
+                       <span className="truncate">{round.name}</span>
+                       <span className="ml-auto text-[10px] opacity-70">
+                         {allApplications.filter(a => a.roundId === round.id).length}
+                       </span>
+                     </button>
+                   ))}
+                </div>
+              )}
               <TabsTrigger 
                 value="screening"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
+                <Inbox className="h-4 w-4" />
                 Initial Screening
               </TabsTrigger>
               <TabsTrigger 
                 value="matching"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <Sparkles className="h-3.5 w-3.5 flex-shrink-0" />
+                <Sparkles className="h-4 w-4" />
                 Matching
               </TabsTrigger>
               <TabsTrigger
                 value="ai-interviews"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <Video className="h-3.5 w-3.5 flex-shrink-0" />
+                <Video className="h-4 w-4" />
                 AI Interviews
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
+                <ArrowUpCircle className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
               <TabsTrigger
                 value="collaboration"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
+                <UserPlus className="h-4 w-4" />
                 Collaboration
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
+                <ArchiveRestore className="h-4 w-4" />
                 History
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
+                <MoreVertical className="h-4 w-4" />
                 Settings
+              </TabsTrigger>
+              <TabsTrigger 
+                value="sourcing"
+                className="hidden"
+              >
+                Sourcing
               </TabsTrigger>
             </TabsList>
           </div>
+        </div>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="mt-6 space-y-6">
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto h-full bg-background p-8">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {activeTab !== 'applicants' && (
+              <>
+                <AtsPageHeader
+                  title={job.title}
+                  subtitle={`${job.employerName}${job.department ? ` • ${job.department}` : ''} • ${job.location}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mr-4">
+                      <JobStatusBadge status={job.status} />
+                      {job.assignedConsultantName ? (
+                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                          Consultant: {job.assignedConsultantName}
+                        </Badge>
+                      ) : (
+                        <ServiceTypeBadge type="self-managed" />
+                      )}
+                      {job.pipeline?.stage && (
+                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                          Pipeline: {job.pipeline.stage.replace(/_/g, ' ')}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="/ats/jobs">
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back
+                      </Link>
+                    </Button>
+                    <Button size="sm" onClick={handleEditJob}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setHiringTeamDrawerOpen(true)}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Manage Team
+                    </Button>
+                    <JobLifecycleActions
+                      job={job}
+                      onJobUpdate={handleJobUpdate}
+                      onEdit={handleEditJob}
+                    />
+                  </div>
+                </AtsPageHeader>
+
+                {/* Quick Stats */}
+                <JobQuickStats
+                  applicantsCount={job.applicantsCount}
+                  viewsCount={job.viewsCount}
+                  postingDate={job.postingDate}
+                />
+              </>
+            )}
+
+            {/* Overview Tab Content */}
+            <TabsContent value="overview" className="mt-6 space-y-6">
             {/* Payment Status - Show for paid packages */}
             {(job.serviceType !== 'self-managed' && job.serviceType !== 'rpo') && (
               <JobPaymentStatus job={job} onPaymentComplete={handleJobUpdate} />
@@ -1010,88 +1087,88 @@ export default function JobDetail() {
           </TabsContent>
 
           {/* Applicants Tab */}
-          <TabsContent value="applicants" className="mt-6 space-y-6">
+          <TabsContent value="applicants" className="mt-2 space-y-2">
             {/* Action Bar */}
-            <div className="flex items-center justify-between">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-              <AllApplicantsCard
-                onClick={() => navigate(`/ats/jobs/${job.id}/applications`)}
-                count={applicantsCount ?? job.applicantsCount}
-              />
-              </div>
+            <div className="flex items-center justify-end mb-4">
               <div className="flex items-center gap-2 ml-4">
                 <Button 
                   onClick={() => setEmailHubOpen(true)}
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs"
                 >
-                  <Inbox className="h-4 w-4 mr-2" />
+                  <Inbox className="h-3 w-3 mr-2" />
                   Email Center
                 </Button>
                 <Button 
                   onClick={() => setUploadDialogOpen(true)}
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
+                    className="h-8 text-xs"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Candidates
+                  <Upload className="h-3 w-3 mr-2" />
+                  Upload
                 </Button>
                 <Button 
                   onClick={() => setTalentPoolDialogOpen(true)}
+                  variant="ghost"
+                  size="sm"
+                    className="h-8 text-xs"
                 >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add from Talent Pool
+                  <UserPlus className="h-3 w-3 mr-2" />
+                  Add Talent
                 </Button>
               </div>
             </div>
 
-            {/* Filter Bar and View Toggle */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <JobApplicationsFilterBar
-                  filters={applicationsFilters}
-                  onFiltersChange={setApplicationsFilters}
-                  totalCount={allApplications.length}
-                  filteredCount={filteredApplications.length}
-                />
-                
-                {/* View Mode Toggle */}
-                <Tabs value={applicationsViewMode} onValueChange={(v) => setApplicationsViewMode(v as 'pipeline' | 'list')}>
-                  <TabsList>
-                    <TabsTrigger value="pipeline">
-                      <LayoutGrid className="h-4 w-4 mr-2" />
-                      Pipeline
-                    </TabsTrigger>
-                    <TabsTrigger value="list">
-                      <List className="h-4 w-4 mr-2" />
-                      List
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </div>
+            {/* Content Area - Switched by Sidebar State */}
+            {activeRoundTab === 'overview' ? (
+               <div className="space-y-4">
+                {/* Filter Bar */}
+                <div className="space-y-2 mb-2">
+                   <div className="flex items-center justify-between">
+                    <JobApplicationsFilterBar
+                      filters={applicationsFilters}
+                      onFiltersChange={setApplicationsFilters}
+                      totalCount={allApplications.length}
+                      filteredCount={filteredApplications.length}
+                    />
+                  </div>
+                </div>
 
-            {/* Pipeline or List View */}
-            {applicationsViewMode === 'pipeline' ? (
-              <ApplicationPipeline 
-                jobId={job.id} 
-                jobTitle={job.title}
-                applications={filteredApplications}
-                enableMultiSelect={false}
-                onApplicationMoved={() => {
-                  // Refresh applications when moved to update filters
-                  setRefreshKey(prev => prev + 1);
-                }}
-                key={refreshKey}
-              />
+                <ApplicationPipeline 
+                  jobId={job.id} 
+                  jobTitle={job.title}
+                  applications={filteredApplications}
+                  enableMultiSelect={false}
+                  onApplicationMoved={() => {
+                    setRefreshKey(prev => prev + 1);
+                  }}
+                  key={refreshKey}
+                  allRounds={rounds}
+                />
+               </div>
             ) : (
-              <ApplicationListView
-                applications={filteredApplications}
-                onApplicationClick={(app) => {
-                  // Open detail panel or navigate
-                  // For now, we can reuse the pipeline's detail view logic
-                  // In production, integrate with CandidateAssessmentView
-                }}
-                selectable={false}
-              />
+              // Round Detail View
+              (() => {
+                 const round = rounds.find(r => r.id === activeRoundTab);
+                 if (!round) return null;
+                 return (
+                  <RoundDetailView
+                    key={round.id}
+                    jobId={job.id}
+                    round={round}
+                    applications={allApplications}
+                    onApplicationClick={(app) => {
+                      // We can open the drawer or some detailed view
+                    }}
+                    allRounds={rounds}
+                    onMoveToRound={async (appId, roundId) => {
+                       // Implement move logic if needed
+                    }}
+                  />
+                 );
+              })()
             )}
           </TabsContent>
 
@@ -1211,7 +1288,9 @@ export default function JobDetail() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+        </div>
+      </div>
+    </Tabs>
 
         {/* Job Edit Drawer */}
         {jobId && (
@@ -1312,7 +1391,6 @@ export default function JobDetail() {
             open={emailHubOpen}
             onOpenChange={setEmailHubOpen}
             jobId={job.id}
-            jobTitle={job.title}
           />
         )}
 
@@ -1323,11 +1401,10 @@ export default function JobDetail() {
             onOpenChange={setHiringTeamDrawerOpen}
             jobId={job.id}
             jobTitle={job.title}
-            hiringTeam={job.hiringTeam as HiringTeamData | null}
+            hiringTeam={job.hiringTeam as unknown as HiringTeamData | null}
             onUpdate={handleJobUpdate}
           />
         )}
-      </div>
-      </DashboardPageLayout>
+    </DashboardPageLayout>
   );
 }

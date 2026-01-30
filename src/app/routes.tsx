@@ -29,6 +29,7 @@ import StripeMockCheckoutPage from '@/pages/dev/StripeMockCheckoutPage';
 // Lazy load module pages for code splitting
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const JobsPage = lazy(() => import('@/pages/jobs/Jobs'));
+const JobDetailPage = lazy(() => import('@/pages/jobs/JobDetail'));
 const CandidatesPage = lazy(() => import('@/pages/candidates/Candidates'));
 const ApplicationsPage = lazy(() => import('@/pages/applications/Applications'));
 const InterviewsPage = lazy(() => import('@/pages/interviews/Interviews'));
@@ -130,6 +131,11 @@ export function AppRoutes() {
                 <Route path="/ats/jobs" element={
                     <Suspense fallback={<PageLoader />}>
                         <JobsPage />
+                    </Suspense>
+                } />
+                <Route path="/ats/jobs/:jobId" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <JobDetailPage />
                     </Suspense>
                 } />
                 <Route path="/jobs/*" element={

@@ -6,12 +6,12 @@ const CONSULTANT_STORAGE_KEY = 'consultant-sidebar-state';
 const CANDIDATE_STORAGE_KEY = 'candidate-sidebar-state';
 
 export function useSidebarState(userType?: 'hrm8' | 'consultant' | 'candidate') {
-  const storageKey = userType 
-    ? userType === 'hrm8' 
-      ? HRM8_STORAGE_KEY 
+  const storageKey = userType
+    ? userType === 'hrm8'
+      ? HRM8_STORAGE_KEY
       : userType === 'consultant'
-      ? CONSULTANT_STORAGE_KEY
-      : CANDIDATE_STORAGE_KEY
+        ? CONSULTANT_STORAGE_KEY
+        : CANDIDATE_STORAGE_KEY
     : STORAGE_KEY;
 
   const [open, setOpen] = useState(() => {

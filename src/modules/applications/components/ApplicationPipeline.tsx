@@ -368,41 +368,18 @@ function StageColumn({
                       isCompareMode={isCompareMode}
                       isSelected={selectedForComparison.includes(application.id)}
                       onToggleSelect={onToggleSelect}
-                      showOnlyReview={true}
+                      variant="minimal"
+                      allRounds={allRounds}
+                      onMoveToRound={(appId, roundId) => {
+                        if (onMoveToRound) {
+                          onMoveToRound(appId, roundId);
+                        }
+                      }}
                       onViewInterviews={onViewInterviews}
                     />
-                    {/* Round Dropdown - Alternative to drag-drop */}
-                    <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                      <Select
-                        value={round.id}
-                        onValueChange={(roundId) => {
-                          if (onMoveToRound && roundId !== round.id) {
-                            onMoveToRound(application.id, roundId);
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          className="h-6 text-[10px] px-1.5 w-auto bg-background/95 backdrop-blur-sm border"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <SelectValue />
-                          <ChevronDown className="h-3 w-3 ml-1" />
-                        </SelectTrigger>
-                        <SelectContent onClick={(e) => e.stopPropagation()}>
-                          {allRounds.map((r) => (
-                            <SelectItem
-                              key={r.id}
-                              value={r.id}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {r.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 ))}
+
                 {applications.length === 0 && (
                   <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
                     No applications
@@ -501,6 +478,7 @@ export function ApplicationPipeline({
       const response = isConsultantView 
         ? await ConsultantCandidateService.getJobRounds(jobId)
         : await jobRoundService.getJobRounds(jobId);
+
       if (response.success && response.data) {
         const loadedRounds = response.data.rounds || [];
         // Ensure we always have the 4 fixed rounds
@@ -1194,9 +1172,19 @@ export function ApplicationPipeline({
         if (round.fixedKey === 'REJECTED' && stageName.includes('rejected')) return true;
       }
 
-      // For custom rounds, try to match by name similarity (fallback only)
-      if (!round.isFixed) {
-        return stageName.includes(roundName) || roundName.includes(stageName);
+      // 1. Try direct match
+      if (stageName.includes(roundName) || roundName.includes(stageName)) {
+        return true;
+      }
+
+      // 2. Try matching via pipelineStages labels
+      // e.g. "Resume Review" stage has label "Screening" -> matches "Screening" round
+      const stageConfig = pipelineStages.find(s => s.stage === app.stage);
+      if (stageConfig) {
+        const labelName = stageConfig.label.toLowerCase();
+        if (roundName.includes(labelName) || labelName.includes(roundName)) {
+          return true;
+        }
       }
 
       return false;
@@ -1232,60 +1220,53 @@ export function ApplicationPipeline({
 
   return (
     <>
-      <div className="space-y-4 mb-6">
-        {/* Pipeline Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Application Pipeline</h2>
-            {providedApplications === undefined && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Drag and drop to move candidates between stages
-              </p>
-            )}
-          </div>
-          {jobId && (
-            <Button
-              onClick={() => setCreateRoundDialogOpen(true)}
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create Round
-            </Button>
-          )}
-        </div>
-
+      <div className="flex items-center justify-between mb-4">
         {/* Pipeline Stats */}
-        {totalApplications > 0 && (
-          <div className="flex items-center gap-6 flex-wrap">
+        {totalApplications > 0 ? (
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Total:</span>
-              <span className="text-sm font-semibold">{totalApplications}</span>
+              <span className="text-xs text-muted-foreground">Total:</span>
+              <span className="text-xs font-semibold">{totalApplications}</span>
             </div>
             {newApplicationsCount > 0 && (
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                <span className="text-sm text-muted-foreground">New:</span>
-                <span className="text-sm font-semibold">{newApplicationsCount}</span>
+                <div className="h-1.5 w-1.5 bg-blue-500 rounded-full" />
+                <span className="text-xs text-muted-foreground">New:</span>
+                <span className="text-xs font-semibold">{newApplicationsCount}</span>
               </div>
             )}
             {shortlistedCount > 0 && (
               <div className="flex items-center gap-2">
-                <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-                <span className="text-sm text-muted-foreground">Shortlisted:</span>
-                <span className="text-sm font-semibold">{shortlistedCount}</span>
+                <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                <span className="text-xs text-muted-foreground">Shortlisted:</span>
+                <span className="text-xs font-semibold">{shortlistedCount}</span>
               </div>
             )}
             {avgScore !== null && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Avg Score:</span>
-                <Badge variant="outline" className="text-sm font-semibold">
+                <span className="text-xs text-muted-foreground">Avg Score:</span>
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 font-semibold">
                   {avgScore}%
                 </Badge>
               </div>
             )}
           </div>
-        )}
+        ) : <div />}
+
+        {/* Create Round Button */}
+        {jobId && (
+            <div>
+                 <Button
+                  onClick={() => setCreateRoundDialogOpen(true)}
+                  size="sm"
+                  className="gap-2 h-7 text-xs"
+                  variant="outline"
+                >
+                  <Plus className="h-3 w-3" />
+                  Create Round
+                </Button>
+            </div>
+          )}
       </div>
 
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>

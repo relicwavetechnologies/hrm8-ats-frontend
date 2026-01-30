@@ -131,7 +131,9 @@ export function ScreeningCandidateCard({
                 {application.candidateName || application.candidateEmail?.split('@')[0] || "Unknown Candidate"}
               </h4>
               <p className="text-xs text-muted-foreground truncate">
-                Applied {formatDistanceToNow(new Date(application.appliedDate), { addSuffix: true })}
+                {application.appliedDate && !isNaN(new Date(application.appliedDate).getTime())
+                  ? `Applied ${formatDistanceToNow(new Date(application.appliedDate), { addSuffix: true })}`
+                  : "Applied date unknown"}
               </p>
             </div>
 

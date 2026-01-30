@@ -129,7 +129,12 @@ export function ApplicationListView({
     {
       key: "appliedDate",
       label: "Applied Date",
-      render: (app) => <span className="text-sm">{format(app.appliedDate, "MMM d, yyyy")}</span>,
+      render: (app) => {
+        if (!app.appliedDate) return <span className="text-sm text-muted-foreground">-</span>;
+        const date = new Date(app.appliedDate);
+        if (isNaN(date.getTime())) return <span className="text-sm text-muted-foreground">Invalid Date</span>;
+        return <span className="text-sm">{format(date, "MMM d, yyyy")}</span>;
+      },
     },
     {
       key: "score",
