@@ -5,7 +5,7 @@ export interface HiringTeamMember {
   userId?: string;
   email: string;
   name: string;
-  role: 'hiring_manager' | 'recruiter' | 'interviewer' | 'coordinator';
+  role: 'admin' | 'member' | 'hiring_manager' | 'recruiter' | 'interviewer' | 'coordinator';
   permissions: {
     canViewApplications: boolean;
     canShortlist: boolean;

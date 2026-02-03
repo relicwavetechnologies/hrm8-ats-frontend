@@ -56,8 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check if user is authenticated on mount
   useEffect(() => {
+    // Skip auth check for public assessment portal
+    if (location.pathname.startsWith('/assessment/')) {
+      setIsLoading(false);
+      return;
+    }
     checkAuth();
-  }, []);
+  }, [location.pathname]);
 
   const checkAuth = async () => {
     try {

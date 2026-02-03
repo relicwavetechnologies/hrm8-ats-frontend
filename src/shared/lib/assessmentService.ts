@@ -12,6 +12,9 @@ export interface AssessmentConfiguration {
   deadlineDays?: number;
   timeLimitMinutes?: number;
   passThreshold?: number;
+  auto_reject_on_fail?: boolean;
+  auto_reject_on_deadline?: boolean;
+  auto_move_on_pass?: boolean;
   provider?: string;
   providerConfig?: any;
   questions?: AssessmentQuestion[];
@@ -34,6 +37,9 @@ export interface CreateAssessmentRequest {
   deadlineDays?: number;
   timeLimitMinutes?: number;
   passThreshold?: number;
+  auto_reject_on_fail?: boolean;
+  auto_reject_on_deadline?: boolean;
+  auto_move_on_pass?: boolean;
   provider?: string;
   providerConfig?: any;
   questions?: AssessmentQuestion[];

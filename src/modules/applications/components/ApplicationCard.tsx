@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avat
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Star, Calendar, FileText, MoreVertical, Mail, Phone, Sparkles, MessageSquare, Users, Bell, Info, Eye, CheckCircle2, CalendarClock, CheckCircle, Clock } from "lucide-react";
+import { Star, Calendar, FileText, MoreVertical, Mail, Phone, Sparkles, MessageSquare, Users, Bell, Info, Eye, CheckCircle2, CalendarClock, CheckCircle, Clock, UserX } from "lucide-react";
 import { AIAnalysisView } from "./screening/AIAnalysisView";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { formatDistanceToNow } from "date-fns";
@@ -166,6 +166,29 @@ export function ApplicationCard({
     }
   };
 
+  const handleReject = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onMoveToRound || !allRounds) return;
+    
+    // Find the Rejected round
+    // Try to find by fixedKey first, then name
+    const rejectedRound = allRounds.find(r => r.fixedKey === 'REJECTED' || r.name === 'Rejected' || r.name === 'Declined');
+    
+    if (rejectedRound) {
+       onMoveToRound(application.id, rejectedRound.id);
+       toast({
+         title: "Candidate Rejected",
+         description: `Moved ${application.candidateName} to Rejected.`,
+       });
+    } else {
+       toast({
+         title: "Error",
+         description: "Could not find 'Rejected' stage.",
+         variant: "destructive"
+       });
+    }
+  };
+
   const handleGenerateQuestions = (e: React.MouseEvent) => {
     e.stopPropagation();
     const questions = generateQuestionsFromApplication(
@@ -202,65 +225,7 @@ export function ApplicationCard({
           <div className="absolute top-2 right-2 h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
         )}
 
-        {/* Quick Actions Menu */}
-        {!isCompareMode && variant !== 'minimal' && (
-          <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              {onStageChange && (
-                <>
-                  <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
-                    <StageDropdownMenu
-                      currentStage={application.stage}
-                      onStageChange={(stage) => onStageChange(application.id, stage)}
-                      variant="trigger"
-                      size="sm"
-                    />
-                  </div>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem onClick={handleGenerateQuestions}>
-                <Sparkles className="mr-2 h-3.5 w-3.5" />
-                Generate Interview Questions
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowScheduleAIInterview(true); }}>
-                <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
-                Schedule AI Interview
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowReviewDialog(true); }}>
-                <MessageSquare className="mr-2 h-3.5 w-3.5" />
-                Add Review
-              </DropdownMenuItem>
-              {(reviewCount > 0 || voteCount > 0) && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowReviewPanel(true); }}>
-                  <Users className="mr-2 h-3.5 w-3.5" />
-                  View Team Reviews ({reviewCount})
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleToggleFollow}>
-                <Bell className="mr-2 h-3.5 w-3.5" />
-                {following ? 'Unfollow Application' : 'Follow Application'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Mail className="mr-2 h-3.5 w-3.5" />
-                Send Email
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Phone className="mr-2 h-3.5 w-3.5" />
-                Schedule Call
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        )}
+        {/* Quick Actions Menu - REMOVED as per user request */}
         <div className="flex items-start gap-2">
           {variant === 'minimal' ? (
             // Minimal Header Layout
@@ -307,35 +272,66 @@ export function ApplicationCard({
                       View
                     </Button>
                     
-                    {allRounds && onMoveToRound && (
-                      <div className="flex-1 min-w-0">
-                         <Select
-                          value={application.roundId || ''}
-                          onValueChange={(roundId) => {
-                             onMoveToRound(application.id, roundId);
-                          }}
-                        >
-                          <SelectTrigger
-                            className="h-7 text-xs w-full px-2 bg-background hover:bg-muted border-input"
-                            onClick={(e) => e.stopPropagation()}
+                    {/* Reject Button (Minimal) */}
+                    <Button 
+                       variant="ghost" 
+                       size="sm"
+                       className="h-7 w-7 px-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                       onClick={handleReject}
+                       title="Reject Candidate"
+                    >
+                       <UserX className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Next Stage Button (Minimal) */}
+                    {(() => {
+                      if (!allRounds || !onMoveToRound) return null;
+                      
+                      let currentRoundIndex = -1;
+                      
+                      // 1. Try to match by round ID (most accurate)
+                      if (application.roundId) {
+                        currentRoundIndex = allRounds.findIndex(r => r.id === application.roundId);
+                      }
+                      
+                      // 2. Fallback to name match if ID not found
+                      if (currentRoundIndex === -1 && application.stage) {
+                        currentRoundIndex = allRounds.findIndex(r => {
+                          const roundName = r.name.toLowerCase();
+                          const stageName = application.stage.toLowerCase();
+                          
+                          // Direct match
+                          if (roundName === stageName) return true;
+                          
+                          // Known aliases/mappings
+                          if (stageName === 'new application' && roundName === 'new') return true;
+                          if (stageName === 'resume review' && roundName === 'screening') return true;
+                          if (stageName === 'offer extended' && roundName === 'offer') return true;
+                          if (stageName === 'offer accepted' && roundName === 'hired') return true;
+                          
+                          return false;
+                        });
+                      }
+
+                      if (currentRoundIndex !== -1 && currentRoundIndex < allRounds.length - 1) {
+                        const nextRound = allRounds[currentRoundIndex + 1];
+                        return (
+                          <Button 
+                             variant="ghost" 
+                             size="sm"
+                             className="h-7 w-7 px-0 text-primary hover:text-primary hover:bg-primary/10"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               onMoveToRound(application.id, nextRound.id);
+                             }}
+                             title={`Move to ${nextRound.name}`}
                           >
-                            <span className="truncate mr-1">Move</span>
-                            <ArrowRight className="h-3 w-3 ml-auto opacity-50" />
-                          </SelectTrigger>
-                          <SelectContent onClick={(e) => e.stopPropagation()}>
-                            {allRounds.map((r) => (
-                              <SelectItem
-                                key={r.id}
-                                value={r.id}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {r.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                             <ArrowRight className="h-3.5 w-3.5" />
+                          </Button>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
             </div>
           ) : (
@@ -609,20 +605,16 @@ export function ApplicationCard({
                             <Eye className="h-3 w-3 mr-1" />
                             Review
                           </Button>
-                          {application.aiAnalysis && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 text-xs h-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowAIAnalysis(true);
-                              }}
-                            >
-                              <Sparkles className="h-3 w-3 mr-1" />
-                              AI Analysis
-                            </Button>
-                          )}
+                          {/* Reject Button */}
+                          <Button 
+                             variant="ghost" 
+                             size="sm"
+                             className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                             onClick={handleReject}
+                             title="Reject Candidate"
+                          >
+                             <UserX className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                         {!application.shortlisted && (
                           <Button

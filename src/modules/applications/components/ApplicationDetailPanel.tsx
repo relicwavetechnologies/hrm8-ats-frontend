@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { 
   Mail, Phone, MapPin, Briefcase, FileText, Calendar, 
   Star, MessageSquare, Clock, ArrowRight, Download, Video, Send,
-  Award, TrendingUp, Bookmark, BookmarkCheck, Sparkles
+  Award, TrendingUp, Bookmark, BookmarkCheck, Sparkles, UserX,
 } from "lucide-react";
 import { AIAnalysisView } from "./screening/AIAnalysisView";
 import { ParsedResumeView } from "./parsing/ParsedResumeView";
@@ -38,6 +38,8 @@ import { jobService } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
 import { ApplicationEmailHistory } from "@/modules/email/components/ApplicationEmailHistory";
+import { MoveStageDialog } from "./MoveStageDialog";
+import { TeamReviewsTab } from "./TeamReviewsTab";
 
 interface ApplicationDetailPanelProps {
   application: Application | null;
@@ -56,7 +58,11 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
   const [editingRank, setEditingRank] = useState<string>("");
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
   const [isUpdatingRank, setIsUpdatingRank] = useState(false);
+  const [isUpdatingRank, setIsUpdatingRank] = useState(false);
   const [isShortlisting, setIsShortlisting] = useState(false);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [pendingStage, setPendingStage] = useState<ApplicationStage | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
 
   // Fetch job data when offer dialog opens
   useEffect(() => {
@@ -101,7 +107,15 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
     return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const handleStageChange = async (newStage: ApplicationStage) => {
+  const handleStageChange = (newStage: ApplicationStage) => {
+    setPendingStage(newStage);
+    setIsMoveDialogOpen(true);
+  };
+
+  const confirmMove = async (comment: string) => {
+    if (!pendingStage) return;
+    
+    setIsMoving(true);
     try {
       // Map frontend stage to backend stage format
       const stageMap: Record<ApplicationStage, string> = {
@@ -118,27 +132,35 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
         "Withdrawn": "REJECTED",
       };
 
-      const backendStage = stageMap[newStage] || "NEW_APPLICATION";
+      const backendStage = stageMap[pendingStage] || "NEW_APPLICATION";
+      
+      // Update stage
       const response = await applicationService.updateStage(application.id, backendStage);
 
       if (response.success) {
+        // Add comment as a note if provided
+        if (comment) {
+           await applicationService.updateNotes(application.id, `Moved to ${pendingStage}: ${comment}`);
+        }
+
         // Also update local mock storage for fallback
-    const statusMap: Record<ApplicationStage, Application['status']> = {
-      "New Application": "applied",
-      "Resume Review": "screening",
-      "Phone Screen": "screening",
-      "Technical Interview": "interview",
-      "Manager Interview": "interview",
-      "Final Round": "interview",
-      "Reference Check": "interview",
-      "Offer Extended": "offer",
-      "Offer Accepted": "hired",
-      "Rejected": "rejected",
-      "Withdrawn": "withdrawn",
-    };
-    updateApplicationStatus(application.id, statusMap[newStage], newStage);
-    toast.success("Application stage updated");
-    onRefresh();
+        const statusMap: Record<ApplicationStage, Application['status']> = {
+          "New Application": "applied",
+          "Resume Review": "screening",
+          "Phone Screen": "screening",
+          "Technical Interview": "interview",
+          "Manager Interview": "interview",
+          "Final Round": "interview",
+          "Reference Check": "interview",
+          "Offer Extended": "offer",
+          "Offer Accepted": "hired",
+          "Rejected": "rejected",
+          "Withdrawn": "withdrawn",
+        };
+        updateApplicationStatus(application.id, statusMap[pendingStage], pendingStage);
+        toast.success(`Moved to ${pendingStage}`);
+        setIsMoveDialogOpen(false);
+        onRefresh();
       } else {
         toast.error("Failed to update stage", {
           description: response.error || "Please try again"
@@ -147,6 +169,8 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
     } catch (error) {
       console.error('Failed to update stage:', error);
       toast.error("Failed to update stage");
+    } finally {
+      setIsMoving(false);
     }
   };
 
@@ -229,27 +253,24 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
     }
   };
 
-  const handleNotesUpdate = async () => {
-    if (!newNote.trim()) return;
-    
+  const handleAddReviewNote = async (content: string) => {
     try {
-      const response = await applicationService.updateNotes(application.id, newNote);
+      const response = await applicationService.updateNotes(application.id, content);
       if (response.success) {
-    toast.success("Note added");
-    setNewNote("");
+        toast.success("Note added");
         onRefresh();
       } else {
-        toast.error("Failed to add note", {
-          description: response.error || "Please try again"
-        });
+        throw new Error(response.error);
       }
     } catch (error) {
       console.error('Failed to add note:', error);
       toast.error("Failed to add note");
+      throw error;
     }
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
@@ -375,23 +396,46 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
               <CardTitle className="text-sm">Move to Stage</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select value={application.stage} onValueChange={handleStageChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New Application">New Application</SelectItem>
-                  <SelectItem value="Resume Review">Resume Review</SelectItem>
-                  <SelectItem value="Phone Screen">Phone Screen</SelectItem>
-                  <SelectItem value="Technical Interview">Technical Interview</SelectItem>
-                  <SelectItem value="Manager Interview">Manager Interview</SelectItem>
-                  <SelectItem value="Final Round">Final Round</SelectItem>
-                  <SelectItem value="Reference Check">Reference Check</SelectItem>
-                  <SelectItem value="Offer Extended">Offer Extended</SelectItem>
-                  <SelectItem value="Offer Accepted">Offer Accepted</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  className="w-full gap-2" 
+                  onClick={() => {
+                    // Logic to find next stage
+                    const stages: ApplicationStage[] = [
+                      "New Application",
+                      "Resume Review",
+                      "Phone Screen",
+                      "Technical Interview",
+                      "Manager Interview",
+                      "Final Round",
+                      "Reference Check",
+                      "Offer Extended",
+                      "Offer Accepted",
+                      "Rejected" // Excluded from "Next" logic usually, but here as safety
+                    ];
+                    const currentIndex = stages.indexOf(application.stage);
+                    if (currentIndex !== -1 && currentIndex < stages.length - 2) { // Stop before Rejected/Offer Accepted if desired, or just check bounds
+                       handleStageChange(stages[currentIndex + 1]);
+                    } else if (application.stage === 'Offer Extended') {
+                       handleStageChange('Offer Accepted');
+                    } else {
+                       toast.info("No next stage available");
+                    }
+                  }}
+                >
+                  Move to Next Round
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2 text-destructive hover:text-destructive"
+                  onClick={() => handleStageChange("Rejected")}
+                >
+                  Reject Candidate
+                  <UserX className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -408,8 +452,10 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
               {application.questionnaireData && (
                 <TabsTrigger value="questionnaire">Questionnaire</TabsTrigger>
               )}
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="team-reviews" className="flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Team Reviews
+              </TabsTrigger>
               <TabsTrigger value="emails" className="flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5" />
                 Emails
@@ -505,61 +551,11 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
               )}
             </TabsContent>
 
-            <TabsContent value="timeline" className="space-y-3 mt-4">
-              {application.activities.map((activity) => (
-                <div key={activity.id} className="flex gap-3">
-                  <div className="flex-shrink-0 w-2 bg-primary rounded-full" />
-                  <div className="flex-1 pb-4">
-                    <p className="text-sm font-medium">{activity.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(activity.createdAt, { addSuffix: true })}
-                      {activity.userName && ` by ${activity.userName}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </TabsContent>
-
-            <TabsContent value="ai-analysis" className="mt-4">
-              {application.aiAnalysis ? (
-                <AIAnalysisView analysis={application.aiAnalysis} />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No AI analysis available</p>
-                  <p className="text-sm mt-2">Run AI screening to generate analysis</p>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="notes" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Add a note about this candidate..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  rows={3}
-                />
-                <Button onClick={handleNotesUpdate} size="sm">
-                  Add Note
-                </Button>
-              </div>
-
-              <Separator />
-
-              {application.notes.map((note) => (
-                <Card key={note.id}>
-                  <CardContent className="pt-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="font-medium text-sm">{note.userName}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(note.createdAt, { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-sm">{note.content}</p>
-                  </CardContent>
-                </Card>
-              ))}
+            <TabsContent value="team-reviews">
+              <TeamReviewsTab 
+                application={application} 
+                onAddNote={handleAddReviewNote} 
+              />
             </TabsContent>
 
             <TabsContent value="emails" className="mt-4">
@@ -650,5 +646,15 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
         </Dialog>
       </SheetContent>
     </Sheet>
+    
+    <MoveStageDialog 
+      open={isMoveDialogOpen}
+      onOpenChange={setIsMoveDialogOpen}
+      candidateName={application.candidateName || "Candidate"}
+      nextStageName={pendingStage || ""}
+      onConfirm={confirmMove}
+      isSubmitting={isMoving}
+    />
+    </>
   );
 }

@@ -1,398 +1,412 @@
 import { Application } from "@/shared/types/application";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
-import { Progress } from "@/shared/components/ui/progress";
-import { Separator } from "@/shared/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Button } from "@/shared/components/ui/button";
+import { Textarea } from "@/shared/components/ui/textarea"; 
+import { toast } from "sonner";
 import { 
-  Users, 
-  TrendingUp, 
-  CheckCircle2, 
-  XCircle, 
-  Circle,
   Star,
-  ThumbsUp,
-  ThumbsDown,
-  Minus,
+  Send,
+  MoveRight,
+  MessageSquare,
+  User,
   History
 } from "lucide-react";
-import { LiveCommentThread } from "../LiveCommentThread";
-import { LiveActivityFeed } from "../LiveActivityFeed";
-import { CollaborativeEditor } from "../CollaborativeEditor";
-import { VersionHistory } from "../VersionHistory";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
 
 interface TeamReviewsTabProps {
   application: Application;
+  onUpdate?: () => void;
 }
 
-export function TeamReviewsTab({ application }: TeamReviewsTabProps) {
+export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
   const reviews = application.teamReviews || [];
-  const [editorContent, setEditorContent] = useState('');
+  const [newNote, setNewNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tempNotes, setTempNotes] = useState<any[]>([]);
 
-  // Calculate consensus metrics
-  const totalReviews = reviews.length;
-  const averageScore = totalReviews > 0 
-    ? reviews.reduce((sum, r) => sum + r.overallScore, 0) / totalReviews 
-    : 0;
+  // Reset temp notes when fresh application data arrives from parent
+  useEffect(() => {
+    setTempNotes([]);
+  }, [application]);
 
-  const recommendationCounts = reviews.reduce((acc, r) => {
-    acc[r.recommendation] = (acc[r.recommendation] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Robust Date Formatter (DD/MM/YYYY, HH:mm:ss) - Deterministic
+  const formatTimestamp = (date: Date) => {
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear();
+    const h = date.getHours().toString().padStart(2, '0');
+    const min = date.getMinutes().toString().padStart(2, '0');
+    const s = date.getSeconds().toString().padStart(2, '0');
+    return `${d}/${m}/${y}, ${h}:${min}:${s}`;
+  };
 
-  const averageConfidence = totalReviews > 0
-    ? reviews.reduce((sum, r) => sum + r.confidence, 0) / totalReviews
-    : 0;
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const { applicationService } = await import("@/modules/applications/lib/applicationService");
+      
+      const noteContent = newNote;
+      
+      // Optimistic update
+      const optimisticNote = {
+        id: `temp-${Date.now()}`,
+        content: noteContent,
+        createdAt: new Date().toISOString(),
+        userName: "You",
+        type: 'note',
+        isOptimistic: true
+      };
+      setTempNotes(prev => [optimisticNote, ...prev]);
+      
+      // Append to existing notes using robust timestamp
+      const currentNotes = application.recruiterNotes || "";
+      const timestamp = formatTimestamp(new Date());
+      const appendText = currentNotes 
+        ? `${currentNotes}\n\n[${timestamp}]: ${noteContent}`
+        : `[${timestamp}]: ${noteContent}`;
 
-  // Group ratings by criterion
-  const criteriaAverages: Record<string, { total: number; count: number; notes: string[] }> = reviews.reduce((acc, review) => {
-    review.ratings.forEach(rating => {
-      if (!acc[rating.criterionId]) {
-        acc[rating.criterionId] = { total: 0, count: 0, notes: [] };
+      await applicationService.updateNotes(application.id, appendText);
+      if (onUpdate) {
+        onUpdate();
       }
-      acc[rating.criterionId].total += Number(rating.value);
-      acc[rating.criterionId].count += 1;
-      if (rating.notes) {
-        acc[rating.criterionId].notes.push(rating.notes);
+      setNewNote("");
+      toast.success("Note added");
+    } catch (error) {
+      console.error("Failed to add note", error);
+      toast.error("Failed to add note");
+      setTempNotes(prev => prev.filter(n => n.content !== newNote)); 
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getCriterionName = (id: string) => {
+    const names: Record<string, string> = {
+      '1': 'Technical Skills',
+      '2': 'Problem Solving',
+      '3': 'Communication',
+      '4': 'Cultural Fit',
+      '5': 'Leadership',
+      '6': 'Learning Agility'
+    };
+    return names[id] || 'Criterion';
+  };
+
+  const getRecommendationStyle = (rec: string) => {
+    switch (rec.toLowerCase()) {
+      case 'strong-hire': return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+      case 'hire': return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+      case 'maybe': return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+      case 'no-hire': 
+      case 'strong-no-hire': return "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+      default: return "bg-secondary text-secondary-foreground";
+    }
+  };
+
+  // Helper to parse the raw text blob from backend
+  const parseNotes = (text: string | null | undefined) => {
+    if (!text) return [];
+
+    const items: { content: string; date: Date; type: 'note' | 'move'; userName: string }[] = [];
+    
+    // Split by timestamp pattern: [DD/MM/YYYY, HH:MM:SS]
+    // We capture the timestamp and the content after it
+    // This regex looks for the bracketed timestamp at the start of a line or after a newline
+    const entryRegex = /\[(\d{1,2}[/-]\d{1,2}[/-]\d{4}.*?)\]/g;
+    
+    let lastIndex = 0;
+    let match;
+    
+    // Check for content *before* the first timestamp (legacy notes)
+    match = entryRegex.exec(text);
+    if (match && match.index > 0) {
+       const preContent = text.substring(0, match.index).trim();
+       if (preContent) {
+         items.push({
+           content: preContent,
+           date: new Date(application.createdAt),
+           type: 'note',
+           userName: 'Recruiter'
+         });
+       }
+       // Reset regex to start
+       entryRegex.lastIndex = 0; 
+    } else if (!match && text.trim()) {
+       // No timestamps at all
+       return [{ 
+         content: text.trim(), 
+         date: new Date(application.updatedAt), 
+         type: 'note', 
+         userName: 'Recruiter' 
+       }];
+    }
+
+    // Reset loop
+    entryRegex.lastIndex = 0;
+
+    while ((match = entryRegex.exec(text)) !== null) {
+      const dateStr = match[1]; // e.g. "31/01/2026, 23:12:37"
+      const startOfContent = match.index + match[0].length;
+      
+      // Find end of this entry (start of next timestamp or end of string)
+      const nextMatch = /\[(\d{1,2}[/-]\d{1,2}[/-]\d{4}.*?)\]/g;
+      nextMatch.lastIndex = startOfContent;
+      const next = nextMatch.exec(text);
+      const endOfContent = next ? next.index : text.length;
+      
+      let content = text.substring(startOfContent, endOfContent).trim();
+      
+      // Clean leading separators from content (like ": " or "- ")
+      content = content.replace(/^[:\-\s]+/, '');
+      
+      // Filter out system error logs (e.g. [Auto-schedule failed: ...])
+      content = content.replace(/\[Auto-schedule failed:[\s\S]*?\]/g, '').trim();
+
+      if (!content) continue;
+
+      // Parse Date (Simple Strategy: Try DD/MM/YYYY, fallback to JS default)
+      let date = new Date(dateStr);
+      
+      // Manual check for DD/MM/YYYY vs MM/DD/YYYY ambiguity
+      // We prioritize DD/MM/YYYY because we enforced 'en-GB' in the writer.
+      const dateParts = dateStr.split(',')[0].trim().split(/[/-]/);
+      if (dateParts.length === 3) {
+         const day = parseInt(dateParts[0]);
+         const month = parseInt(dateParts[1]);
+         const year = parseInt(dateParts[2]);
+         
+         // If valid DD/MM/YYYY date
+         if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            // Reconstruct ISO safely: YYYY-MM-DD
+            // Get time part
+            const timePart = dateStr.includes(',') ? dateStr.split(',')[1].trim() : '';
+            if (timePart) {
+               // Handle AM/PM if present
+               let [t, meridian] = timePart.split(' ');
+               let [h, m, s] = t.split(':').map(Number);
+               
+               if (meridian) {
+                 if (meridian.toLowerCase() === 'pm' && h < 12) h += 12;
+                 if (meridian.toLowerCase() === 'am' && h === 12) h = 0;
+               }
+               
+               const iso = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}T${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${(s||0).toString().padStart(2,'0')}`;
+               const strictDate = new Date(iso);
+               if (!isNaN(strictDate.getTime())) {
+                 date = strictDate;
+               }
+            }
+         }
       }
-    });
-    return acc;
-  }, {} as Record<string, { total: number; count: number; notes: string[] }>);
 
-  const criterionNames: Record<string, string> = {
-    '1': 'Technical Skills',
-    '2': 'Problem Solving',
-    '3': 'Communication',
-    '4': 'Cultural Fit',
-    '5': 'Leadership',
-    '6': 'Learning Agility'
-  };
+      if (isNaN(date.getTime())) date = new Date(); // Fallback
 
-  const getRecommendationIcon = (rec: string) => {
-    switch (rec) {
-      case 'strong-hire':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case 'hire':
-        return <ThumbsUp className="h-4 w-4 text-green-500" />;
-      case 'maybe':
-        return <Minus className="h-4 w-4 text-yellow-500" />;
-      case 'no-hire':
-        return <ThumbsDown className="h-4 w-4 text-red-500" />;
-      case 'strong-no-hire':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <Circle className="h-4 w-4" />;
+      // Identify Type
+      const lower = content.toLowerCase();
+      const isMove = lower.startsWith('moved to') || lower.startsWith('moved candidate to') || (lower.includes('moved to') && lower.length < 100);
+
+      items.push({
+        content,
+        date,
+        type: isMove ? 'move' : 'note',
+        userName: isMove ? 'System' : 'You'
+      });
     }
+
+    return items;
   };
 
-  const getRecommendationColor = (rec: string) => {
-    switch (rec) {
-      case 'strong-hire':
-      case 'hire':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'maybe':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'no-hire':
-      case 'strong-no-hire':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  const parsedRecruiterNotes = parseNotes(application.recruiterNotes);
+
+  // Process timeline items (Sorted Ascending: Oldest to Newest for Chat Flow)
+  const timelineItems = [
+    ...reviews.map(r => ({ ...r, type: 'review' as const, date: new Date(r.submittedAt) })),
+    ...parsedRecruiterNotes.map(n => ({ ...n, type: n.type === 'move' ? 'note' as const : 'note' as const, isMoveLog: n.type === 'move', isSystem: n.userName === 'System' || n.content.includes('Moved to') })),
+    ...(application.notes || []).map(n => ({ ...n, type: 'note' as const, date: new Date(n.createdAt) })),
+    ...tempNotes.map(n => ({ ...n, type: 'note' as const, date: new Date(n.createdAt) }))
+  ].sort((a, b) => a.date.getTime() - b.date.getTime()); // Oldest at top, Newest at bottom
+
+  // Group by date
+  const groupedItems: { dateLabel: string; items: typeof timelineItems }[] = [];
+  
+  timelineItems.forEach(item => {
+    const dateLabel = format(item.date, 'MMMM d, yyyy');
+    const lastGroup = groupedItems[groupedItems.length - 1];
+    if (lastGroup && lastGroup.dateLabel === dateLabel) {
+      lastGroup.items.push(item);
+    } else {
+      groupedItems.push({ dateLabel, items: [item] });
     }
-  };
-
-  const getCommentTypeColor = (type: string) => {
-    switch (type) {
-      case 'strength':
-        return 'bg-green-50 border-green-200';
-      case 'concern':
-        return 'bg-red-50 border-red-200';
-      case 'observation':
-        return 'bg-blue-50 border-blue-200';
-      case 'question':
-        return 'bg-yellow-50 border-yellow-200';
-      default:
-        return 'bg-muted border-border';
-    }
-  };
-
-  if (totalReviews === 0) {
-    return (
-      <div className="text-center py-12">
-        <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No Team Reviews Yet</h3>
-        <p className="text-muted-foreground">
-          Team reviews will appear here once team members submit their feedback.
-        </p>
-      </div>
-    );
-  }
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Consensus Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Consensus Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Overall Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-3xl font-bold text-primary">
-                {averageScore.toFixed(1)}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Average Score
-              </div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-3xl font-bold">
-                {totalReviews}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Total Reviews
-              </div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-3xl font-bold">
-                {averageConfidence.toFixed(1)}/5
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Avg Confidence
-              </div>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <div className="text-3xl font-bold text-green-600">
-                {((recommendationCounts['hire'] || 0) + (recommendationCounts['strong-hire'] || 0))}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">
-                Hire Recommendations
-              </div>
-            </div>
+    <div className="max-w-2xl mx-auto py-4 flex flex-col min-h-[500px]">
+      
+      {/* Messages Area */}
+      <div className="flex-1 space-y-8 pb-6">
+        {timelineItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 opacity-50">
+            <MessageSquare className="h-10 w-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No activity yet. Start the conversation.</p>
           </div>
+        )}
 
-          {/* Recommendation Distribution */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Recommendation Distribution</h4>
-            <div className="space-y-2">
-              {Object.entries(recommendationCounts).map(([rec, count]) => (
-                <div key={rec} className="flex items-center gap-3">
-                  <div className="w-32 text-sm capitalize flex items-center gap-2">
-                    {getRecommendationIcon(rec)}
-                    {rec.replace(/-/g, ' ')}
-                  </div>
-                  <Progress value={(count / totalReviews) * 100} className="h-2 flex-1" />
-                  <div className="w-12 text-right text-sm text-muted-foreground">
-                    {count}/{totalReviews}
-                  </div>
-                </div>
-              ))}
+        {groupedItems.map((group) => (
+          <div key={group.dateLabel} className="space-y-6">
+            <div className="flex items-center gap-4 py-2">
+              <div className="h-px bg-border flex-1" />
+              <span className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider bg-background/50 px-2 py-1 rounded-md border border-transparent">
+                {group.dateLabel}
+              </span>
+              <div className="h-px bg-border flex-1" />
             </div>
-          </div>
 
-          {/* Criteria Averages */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">Criteria Averages</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Object.entries(criteriaAverages).map(([criterionId, data]) => (
-                <div key={criterionId} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div className="font-medium text-sm">
-                    {criterionNames[criterionId] || `Criterion ${criterionId}`}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`h-4 w-4 ${
-                            star <= (data.total / data.count) / 2
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm font-semibold">
-                      {(data.total / data.count).toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-6">
+              {group.items.map((item) => {
+                if (item.type === 'review') {
+                  const review = item as any;
+                  return (
+                    <div key={`review-${review.id}`} className="group relative pl-4">
+                      {/* Review Card Style */}
+                      <div className="flex gap-4">
+                        <Avatar className="h-10 w-10 border-2 border-background shadow-sm mt-1 ring-1 ring-border/10">
+                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/5 text-primary font-bold text-xs">
+                             {review.reviewerName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 space-y-2">
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-baseline gap-2">
+                               <p className="text-sm font-bold text-foreground">{review.reviewerName}</p>
+                               <span className="text-[11px] text-muted-foreground">{format(item.date, 'h:mm a')}</span>
+                             </div>
+                             <Badge variant="outline" className={`${getRecommendationStyle(review.recommendation)} px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border rounded-full shadow-sm`}>
+                               {review.recommendation.replace(/-/g, ' ')}
+                             </Badge>
+                           </div>
 
-      {/* Individual Reviews */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Individual Reviews ({totalReviews})
-        </h3>
-
-        {reviews.map((review) => (
-          <Card key={review.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>
-                      {review.reviewerName.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-semibold">{review.reviewerName}</div>
-                    <div className="text-sm text-muted-foreground">{review.reviewerRole}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">
-                    {review.overallScore}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Confidence: {review.confidence}/5
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Recommendation */}
-              <div>
-                <Badge 
-                  variant="outline" 
-                  className={`${getRecommendationColor(review.recommendation)} flex items-center gap-1 w-fit`}
-                >
-                  {getRecommendationIcon(review.recommendation)}
-                  <span className="capitalize">{review.recommendation.replace(/-/g, ' ')}</span>
-                </Badge>
-              </div>
-
-              <Separator />
-
-              {/* Ratings */}
-              <div>
-                <h4 className="text-sm font-semibold mb-3">Ratings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {review.ratings.map((rating) => (
-                    <div 
-                      key={rating.criterionId} 
-                      className="p-3 rounded-lg border bg-card"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-medium text-sm">
-                          {criterionNames[rating.criterionId] || `Criterion ${rating.criterionId}`}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="font-semibold">{rating.value}/10</span>
+                           <div className="bg-card border rounded-2xl rounded-tl-none p-5 shadow-sm text-sm leading-relaxed text-foreground/90 hover:shadow-md transition-shadow">
+                              {review.comments && review.comments.map((c: any) => (
+                                <p key={c.id} className="whitespace-pre-wrap">{c.content}</p>
+                              ))}
+                              
+                              <div className="mt-4 pt-4 border-t border-dashed flex flex-wrap gap-2 items-center">
+                                <span className="text-xs font-bold text-primary uppercase tracking-wide">Score: {review.overallScore}/10</span>
+                                <div className="h-3 w-px bg-border mx-2" />
+                                {review.ratings.slice(0, 3).map((r: any) => (
+                                  <Badge key={r.criterionId} variant="secondary" className="text-[10px] font-medium gap-1 bg-secondary/30 hover:bg-secondary/50 border-0">
+                                    <Star className="w-2 h-2 text-amber-500 fill-amber-500" />
+                                    {getCriterionName(r.criterionId)}: {r.value}
+                                  </Badge>
+                                ))}
+                              </div>
+                           </div>
                         </div>
                       </div>
-                      {rating.notes && (
-                        <p className="text-xs text-muted-foreground italic">
-                          "{rating.notes}"
-                        </p>
-                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  );
+                } else {
+                   // Note Item
+                   const note = item as any;
+                   const isMoveLog = note.isMoveLog || (note.content && note.content.toLowerCase().startsWith('moved to'));
+                   const isLegacy = note.isLegacy;
+                   const isOptimistic = note.isOptimistic;
+                   const isMe = note.userName === 'You' || note.userName === 'Just now' || note.userName === 'Me';
 
-              {/* Comments */}
-              {review.comments && review.comments.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3">Feedback</h4>
-                    <div className="space-y-2">
-                      {review.comments.map((comment) => (
-                        <div 
-                          key={comment.id}
-                          className={`p-3 rounded-lg border ${getCommentTypeColor(comment.type)}`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <Badge variant="outline" className="capitalize text-xs">
-                              {comment.type}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              {comment.category}
-                            </Badge>
-                          </div>
-                          <p className="text-sm">{comment.content}</p>
-                          {comment.importance && (
-                            <div className="mt-2">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-xs ${
-                                  comment.importance === 'high' 
-                                    ? 'border-red-300 bg-red-50 text-red-700' 
-                                    : comment.importance === 'medium'
-                                    ? 'border-yellow-300 bg-yellow-50 text-yellow-700'
-                                    : 'border-gray-300 bg-gray-50 text-gray-700'
-                                }`}
-                              >
-                                {comment.importance} importance
+                   if (isMoveLog) {
+                     return (
+                       <div key={`move-${note.id}`} className="py-4 flex justify-center">
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                              <div className="w-full border-t border-primary/20"></div>
+                            </div>
+                            <div className="relative flex justify-center">
+                              <Badge variant="outline" className="px-4 py-1.5 gap-2 rounded-full border-primary/30 bg-primary/5 text-primary text-xs font-semibold shadow-sm hover:bg-primary/10 transition-colors uppercase tracking-wide">
+                                <MoveRight className="w-3.5 h-3.5" />
+                                {note.content}
+                                <span className="ml-1 opacity-50 font-normal normal-case">&middot; {format(note.date, 'h:mm a')}</span>
                               </Badge>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+                          </div>
+                       </div>
+                     );
+                   }
 
-              {/* Submitted Date */}
-              <div className="text-xs text-muted-foreground text-right">
-                Submitted on {new Date(review.submittedAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                   return (
+                     <div key={`note-${note.id}`} className={`flex gap-3 group ${isOptimistic ? 'opacity-70' : ''} ${isMe ? 'flex-row-reverse' : ''}`}>
+                        <div className="mt-1 flex-shrink-0">
+                           <Avatar className="h-8 w-8 border-2 border-background shadow-sm">
+                             <AvatarFallback className={`${isMe ? 'bg-blue-600 text-white' : 'bg-zinc-100 text-zinc-600'} font-bold text-xs`}>
+                               {note.userName ? note.userName.charAt(0) : <User className="w-4 h-4" />}
+                             </AvatarFallback>
+                           </Avatar>
+                        </div>
+
+                        <div className={`flex flex-col max-w-[85%] ${isMe ? 'items-end' : 'items-start'}`}>
+                           <div className="flex items-baseline gap-2 mb-1 px-1">
+                             <span className="text-xs font-semibold text-foreground/80">
+                               {note.userName || "System"}
+                             </span>
+                             <span className="text-[10px] text-muted-foreground/60">
+                               {format(note.date, 'h:mm a')}
+                             </span>
+                           </div>
+                           
+                           <div className={`
+                             px-4 py-2.5 rounded-2xl text-[14px] leading-relaxed shadow-sm whitespace-pre-wrap
+                             ${isMe 
+                               ? 'bg-blue-600 text-white rounded-tr-none' 
+                               : 'bg-white dark:bg-zinc-800 border text-foreground rounded-tl-none'
+                             }
+                             ${isLegacy ? 'italic text-muted-foreground border-dashed bg-muted/20' : ''}
+                           `}>
+                             {note.content}
+                           </div>
+                        </div>
+                     </div>
+                   );
+                }
+              })}
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Collaborative Editor and Version History */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className="lg:col-span-2">
-          <CollaborativeEditor
-            documentId={`interview-notes-${application.id}`}
-            candidateName={application.candidateName}
-            initialContent={editorContent}
-          />
-        </div>
-        <div>
-          <VersionHistory
-            documentId={`interview-notes-${application.id}`}
-            currentContent={editorContent}
-            onRestore={setEditorContent}
-          />
-        </div>
+      {/* Input Area - Fixed at Bottom Style */}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur pt-2 pb-0 z-20">
+         <InputArea newNote={newNote} setNewNote={setNewNote} handleAddNote={handleAddNote} isSubmitting={isSubmitting} />
       </div>
+    </div>
+  );
+}
 
-      {/* Live Activity Feed and Comment Thread */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <LiveCommentThread
-          candidateId={application.id}
-          candidateName={application.candidateName}
-          currentUserId="current-user"
-          currentUserName="Current User"
+function InputArea({ newNote, setNewNote, handleAddNote, isSubmitting }: any) {
+  return (
+    <div className="bg-muted/30 border rounded-xl shadow-lg focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all p-1.5 flex gap-2 items-end">
+        <Textarea
+          placeholder="Type a note..."
+          value={newNote}
+          onChange={(e: any) => setNewNote(e.target.value)}
+          className="min-h-[44px] max-h-[150px] border-none shadow-none focus-visible:ring-0 resize-none py-2.5 px-3 text-[14px] bg-transparent placeholder:text-muted-foreground/50 leading-relaxed flex-1"
+          onKeyDown={(e: any) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleAddNote();
+            }
+          }}
         />
-        
-        <LiveActivityFeed
-          candidateId={application.id}
-          maxHeight="600px"
-        />
-      </div>
+        <Button 
+             size="icon" 
+             onClick={handleAddNote} 
+             disabled={!newNote.trim() || isSubmitting}
+             className={`h-9 w-9 mb-0.5 rounded-lg transition-all ${newNote.trim() ? 'bg-primary hover:bg-primary/90' : 'bg-muted-foreground/20 text-muted-foreground'}`}
+        >
+             <Send className="w-4 h-4 ml-0.5" />
+        </Button>
     </div>
   );
 }

@@ -42,6 +42,7 @@ const OffersPage = lazy(() => import('@/pages/offers/Offers'));
 const RequisitionsPage = lazy(() => import('@/pages/requisitions/Requisitions'));
 const RequisitionDetailPage = lazy(() => import('@/pages/requisitions/RequisitionDetail'));
 const AssessmentsPage = lazy(() => import('@/pages/assessments/Assessments'));
+const CandidateAssessmentSessionPage = lazy(() => import('@/pages/assessments/CandidateAssessmentSession'));
 const AssessmentTemplatesPage = lazy(() => import('@/pages/assessments/AssessmentTemplates'));
 const QuestionBankPage = lazy(() => import('@/pages/assessments/QuestionBank'));
 const AssessmentAnalyticsPage = lazy(() => import('@/pages/assessments/AssessmentAnalytics'));
@@ -103,6 +104,13 @@ export function AppRoutes() {
 
             {/* Dev/Mock Routes */}
             <Route path="/dev/stripe-mock-checkout" element={<StripeMockCheckoutPage />} />
+
+            {/* Public Assessment Route */}
+            <Route path="/assessment/:token" element={
+                <Suspense fallback={<PageLoader />}>
+                    <CandidateAssessmentSessionPage />
+                </Suspense>
+            } />
 
             {/* Protected Routes */}
             <Route

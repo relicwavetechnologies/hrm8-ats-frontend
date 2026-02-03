@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent } from "@/shared/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -35,6 +35,8 @@ interface CandidateAssessmentViewProps {
   hasNext?: boolean;
   hasPrevious?: boolean;
   jobTitle: string;
+  nextStageName?: string;
+  onMoveToNextStage?: () => void;
 }
 
 export function CandidateAssessmentView({
@@ -46,18 +48,41 @@ export function CandidateAssessmentView({
   hasNext,
   hasPrevious,
   jobTitle,
+  nextStageName,
+  onMoveToNextStage,
 }: CandidateAssessmentViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
-  const { unreadCount } = useActivityNotifications(application);
+  const [fullApplication, setFullApplication] = useState<Application>(application);
+
+  useEffect(() => {
+    // Determine if we need to fetch full details (e.g., missing notes or reviews)
+    // Or just fetch always to be safe and get latest data
+    const fetchFullDetails = async () => {
+      if (!application.id) return;
+      try {
+        const { applicationService } = await import("@/modules/applications/lib/applicationService");
+        const response = await applicationService.getApplication(application.id);
+        if (response.success && response.data && response.data.application) {
+          setFullApplication(prev => ({ ...prev, ...response.data!.application }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch full application details", error);
+      }
+    };
+    
+    fetchFullDetails();
+  }, [application.id, application.updatedAt, application]); // Re-fetch if ID matches but data/timestamp changed
+
+  const { unreadCount } = useActivityNotifications(fullApplication);
   const { activeUsers } = useCandidatePresence({
-    applicationId: application.id,
+    applicationId: fullApplication.id,
     currentUserId: 'current-user',
     currentUserName: 'You',
     currentUserRole: 'Hiring Manager',
     currentTab: activeTab,
   });
   const { cursors, containerRef } = useCursorTracking({
-    applicationId: application.id,
+    applicationId: fullApplication.id,
     currentUserId: 'current-user',
     enabled: open,
   });
@@ -124,8 +149,12 @@ export function CandidateAssessmentView({
               </div>
             </div>
 
-            <CandidateProfileHeader application={application} jobTitle={jobTitle} />
-            <QuickActionsToolbar application={application} />
+            <CandidateProfileHeader application={fullApplication} jobTitle={jobTitle} />
+            <QuickActionsToolbar 
+              application={fullApplication} 
+              nextStageName={nextStageName}
+              onNextStage={onMoveToNextStage}
+            />
           </div>
 
           {/* Content */}
@@ -182,33 +211,49 @@ export function CandidateAssessmentView({
               <ScrollArea className="flex-1">
                 <div className="p-6">
                   <TabsContent value="overview" className="mt-0">
-                    <OverviewTab application={application} />
+                    <OverviewTab application={fullApplication} />
                   </TabsContent>
 
                   <TabsContent value="experience" className="mt-0">
-                    <ExperienceSkillsTab application={application} />
+                    <ExperienceSkillsTab application={fullApplication} />
                   </TabsContent>
 
                   <TabsContent value="questionnaire" className="mt-0">
-                    <QuestionnaireResponsesTab application={application} />
+                    <QuestionnaireResponsesTab application={fullApplication} />
                   </TabsContent>
 
                   <TabsContent value="scorecards" className="mt-0">
-                    <ScorecardsTab application={application} />
+                    <ScorecardsTab application={fullApplication} />
                   </TabsContent>
 
                   <TabsContent value="interviews" className="mt-0">
-                    <InterviewsTab application={application} />
+                    <InterviewsTab application={fullApplication} />
                   </TabsContent>
 
           <TabsContent value="reviews" className="mt-0">
-            <TeamReviewsTab application={application} />
+            <TeamReviewsTab 
+              application={fullApplication} 
+              onUpdate={async () => {
+                // Determine if we need to fetch full details (e.g., missing notes or reviews)
+                // Or just fetch always to be safe and get latest data
+                if (!application.id) return;
+                try {
+                  const { applicationService } = await import("@/modules/applications/lib/applicationService");
+                  const response = await applicationService.getApplication(application.id);
+                  if (response.success && response.data && response.data.application) {
+                    setFullApplication(prev => ({ ...prev, ...response.data!.application }));
+                  }
+                } catch (error) {
+                  console.error("Failed to fetch full application details", error);
+                }
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="voting" className="mt-0">
             <VotingTab 
-              candidateId={application.id}
-              candidateName={application.candidateName}
+              candidateId={fullApplication.id}
+              candidateName={fullApplication.candidateName}
             />
           </TabsContent>
 
@@ -217,11 +262,11 @@ export function CandidateAssessmentView({
           </TabsContent>
 
           <TabsContent value="annotations" className="mt-0">
-            <ResumeAnnotationsTab candidateId={application.id} />
+            <ResumeAnnotationsTab candidateId={fullApplication.id} />
           </TabsContent>
 
           <TabsContent value="activity" className="mt-0">
-            <ActivityTimelineTab application={application} />
+            <ActivityTimelineTab application={fullApplication} />
           </TabsContent>
                 </div>
               </ScrollArea>

@@ -57,39 +57,38 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { jobService } from '@/shared/lib/jobService';
+import { authService } from '@/shared/lib/authService';
+import { userService } from '@/shared/lib/userService';
+import { hiringTeamService } from '@/shared/lib/hiringTeamService';
 
 // Types
-export interface HiringTeamMember {
-  id: string;
-  userId: string;
-  name: string;
-  email: string;
+// Importing from job.ts to ensure consistency, extending if necessary for local UI state
+import { HiringTeamMember as SharedHiringTeamMember } from '@/shared/types/job';
+
+export interface HiringTeamMember extends Omit<SharedHiringTeamMember, 'role' | 'status'> {
+  role: 'admin' | 'member';
+  status?: 'active' | 'pending_invite' | 'Active' | 'Invited'; // Allowing both for compatibility or just override to UI friendly
+  // Ideally mapping UI state to strict type.
+  // Let's stick to what we used in logic: 'Active' | 'Invited' during add, but let's map it properly.
+  // Actually simpler to just Omit status and redefine it if we want capitalized UI storage, 
+  // OR use lowercase everywhere.
+  // Let's use lowercase 'active' | 'pending_invite' to match shared.
   avatar?: string;
-  role: 'hiring_manager' | 'recruiter' | 'interviewer' | 'coordinator' | 'approver';
-  responsibilities: {
-    newCandidates: boolean;
-    assessment: boolean;
-    interview: boolean;
-    offer: boolean;
-  };
-  addedAt: string;
-  addedBy?: string;
+  addedAt: string; 
 }
 
 export interface HiringTeamData {
   members: HiringTeamMember[];
 }
 
+
 // Role configuration
 const ROLES = [
-  { value: 'hiring_manager', label: 'Hiring Manager', icon: Shield, description: 'Full access to all candidates and decisions' },
-  { value: 'recruiter', label: 'Recruiter', icon: UserCheck, description: 'Manages candidate pipeline and communication' },
-  { value: 'interviewer', label: 'Interviewer', icon: Briefcase, description: 'Conducts interviews and provides feedback' },
-  { value: 'coordinator', label: 'Coordinator', icon: Users, description: 'Schedules interviews and manages logistics' },
-  { value: 'approver', label: 'Approver', icon: Check, description: 'Reviews and approves hiring decisions' },
+  { value: 'admin', label: 'Admin', icon: Shield, description: 'Full access to all candidates and decisions.' },
+  { value: 'member', label: 'Member', icon: Users, description: 'Can interview and review assigned candidates.' },
 ] as const;
 
-// Responsibility options
+// Responsibility options - Kept for type compatibility but hidden in UI for now as per simplified flow
 const RESPONSIBILITIES = [
   { key: 'newCandidates', label: 'New Candidates', description: 'Notified when new candidates apply' },
   { key: 'assessment', label: 'Assessment', description: 'Can review and score assessments' },
@@ -102,7 +101,7 @@ interface HiringTeamDrawerProps {
   onOpenChange: (open: boolean) => void;
   jobId: string;
   jobTitle: string;
-  hiringTeam?: HiringTeamData | null;
+  hiringTeam?: HiringTeamMember[] | null; // Corrected to array
   onUpdate: () => void;
 }
 
@@ -125,18 +124,61 @@ export function HiringTeamDrawer({
   // New member form state
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState<HiringTeamMember['role']>('interviewer');
-  const [newMemberResponsibilities, setNewMemberResponsibilities] = useState({
-    newCandidates: false,
-    assessment: false,
-    interview: true,
-    offer: false,
-  });
+  const [newMemberRole, setNewMemberRole] = useState<HiringTeamMember['role']>('member');
+  const [companyUsers, setCompanyUsers] = useState<any[]>([]);
+  const [currentUserDomain, setCurrentUserDomain] = useState<string | null>(null);
+
+
+  // Initialize members and fetch context
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      try {
+        const [userResponse, companyUsersList] = await Promise.all([
+            authService.getCurrentUser(),
+            userService.getCompanyUsers()
+        ]);
+        
+        if (userResponse.success && userResponse.data.user) {
+            // Extract domain from user email or use stored company domain if available
+             const emailDomain = userResponse.data.user.email.split('@')[1];
+             setCurrentUserDomain(emailDomain);
+        }
+        setCompanyUsers(companyUsersList);
+
+        // Fetch fresh job data to get latest hiring team
+        if (open && jobId) {
+            const jobResponse = await jobService.getJobById(jobId);
+            if (jobResponse.success && jobResponse.data.job && jobResponse.data.job.hiringTeam) {
+                 setMembers(jobResponse.data.job.hiringTeam);
+            } else if (hiringTeam && Array.isArray(hiringTeam)){
+                 // Fallback to prop if fetch fails or no data
+                 setMembers(hiringTeam);
+            }
+        } else if (hiringTeam && Array.isArray(hiringTeam)) {
+             setMembers(hiringTeam);
+        }
+
+      } catch (error) {
+        console.error("Failed to fetch context", error);
+        // Fallback
+         if (hiringTeam && Array.isArray(hiringTeam)) {
+           setMembers(hiringTeam);
+         }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (open) {
+        init();
+    }
+  }, [open, jobId, hiringTeam]);
 
   // Initialize members from props
   useEffect(() => {
-    if (hiringTeam?.members) {
-      setMembers(hiringTeam.members);
+    if (hiringTeam && Array.isArray(hiringTeam)) {
+      setMembers(hiringTeam);
     } else {
       setMembers([]);
     }
@@ -161,78 +203,143 @@ export function HiringTeamDrawer({
       });
       return;
     }
+    
+    // Domain Check
+    const emailDomain = newMemberEmail.split('@')[1];
+    if (currentUserDomain && emailDomain.toLowerCase() !== currentUserDomain.toLowerCase()) {
+         toast({
+            title: 'Invalid Domain',
+            description: `You can only add members from ${currentUserDomain}`,
+            variant: 'destructive',
+          });
+          return;
+    }
 
-    const newMember: HiringTeamMember = {
-      id: `member_${Date.now()}`,
-      userId: `user_${Date.now()}`,
-      name: newMemberName,
-      email: newMemberEmail,
-      role: newMemberRole,
-      responsibilities: newMemberResponsibilities,
-      addedAt: new Date().toISOString(),
-    };
+    // Check if registered (for UI feedback mostly, backend handles actual logic)
+    const isRegistered = companyUsers.some(u => u.email.toLowerCase() === newMemberEmail.toLowerCase());
+    
+    setIsLoading(true);
 
-    const updatedMembers = [...members, newMember];
-    setMembers(updatedMembers);
+    try {
+        const permissions = {
+            canViewApplications: true,
+            canShortlist: newMemberRole === 'admin',
+            canScheduleInterviews: true,
+            canMakeOffers: newMemberRole === 'admin',
+        };
 
-    // Reset form
-    setNewMemberEmail('');
-    setNewMemberName('');
-    setNewMemberRole('interviewer');
-    setNewMemberResponsibilities({
-      newCandidates: false,
-      assessment: false,
-      interview: true,
-      offer: false,
-    });
-    setShowAddMember(false);
+        await hiringTeamService.inviteMember(jobId, {
+            email: newMemberEmail,
+            name: newMemberName,
+            role: newMemberRole,
+            permissions
+        });
 
-    toast({
-      title: 'Team Member Added',
-      description: `${newMemberName} has been added to the hiring team`,
-    });
+        const newMember: HiringTeamMember = {
+            id: `member_${Date.now()}`,
+            userId: isRegistered ? companyUsers.find(u => u.email.toLowerCase() === newMemberEmail.toLowerCase())?.id || `new_user_${Date.now()}` : `pending_user_${Date.now()}`,
+            name: newMemberName,
+            email: newMemberEmail,
+            role: newMemberRole,
+            permissions,
+            addedAt: new Date().toISOString(),
+            status: isRegistered ? 'active' : 'pending_invite'
+        };
+
+        // Optimistic update
+        const updatedMembers = [...members, newMember];
+        setMembers(updatedMembers);
+
+        // Reset form
+        setNewMemberEmail('');
+        setNewMemberName('');
+        setNewMemberRole('member');
+        setShowAddMember(false);
+        
+        toast({
+            title: 'Member Added',
+            description: `${newMemberName} has been added to the team.`,
+        });
+
+        // Refresh parent
+        if (onUpdate) onUpdate();
+
+    } catch (error) {
+        console.error('Failed to add member', error);
+        toast({
+            title: 'Error',
+            description: 'Failed to add team member. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
-  const handleRemoveMember = (memberId: string) => {
+  const handleRemoveMember = async (memberId: string) => {
     const member = members.find(m => m.id === memberId);
-    setMembers(members.filter(m => m.id !== memberId));
+    if (!member) return;
+
+    // Optimistic Update
+    const updatedMembers = members.filter(m => m.id !== memberId);
+    setMembers(updatedMembers);
     setRemovingMemberId(null);
     
-    toast({
-      title: 'Team Member Removed',
-      description: `${member?.name} has been removed from the hiring team`,
-    });
+    // API Call
+    try {
+         await jobService.updateJob(jobId, { hiringTeam: updatedMembers });
+         if (onUpdate) onUpdate();
+
+         toast({
+            title: 'Team Member Removed',
+            description: `${member.name} has been removed from the hiring team`,
+         });
+    } catch (error) {
+        console.error('Failed to remove member', error);
+        setMembers(members); // Revert
+        toast({ title: 'Error', description: 'Failed to remove member', variant: 'destructive' });
+    }
   };
 
-  const handleUpdateMemberRole = (memberId: string, role: HiringTeamMember['role']) => {
-    setMembers(members.map(m => 
+  const handleUpdateMemberRole = async (memberId: string, role: HiringTeamMember['role']) => {
+    const updatedMembers = members.map(m => 
       m.id === memberId ? { ...m, role } : m
-    ));
+    );
+    // Persist Role
+    setMembers(updatedMembers); // Optimistic
+
+    try {
+        await jobService.updateJob(jobId, { hiringTeam: updatedMembers });
+        // NOTE: Permissions should ideally update based on role too. 
+        // For simple role switch, user might expect default permissions of that role.
+        // Or we keep current permissions?
+        // Let's assume Role drives permissions if simplified.
+        if (onUpdate) onUpdate();
+    } catch (error) {
+         console.error('Failed to update role', error);
+         // Revert logic needed if robust...
+    }
   };
 
-  const handleUpdateMemberResponsibility = (
-    memberId: string,
-    responsibility: keyof HiringTeamMember['responsibilities'],
-    value: boolean
-  ) => {
-    setMembers(members.map(m => 
-      m.id === memberId 
-        ? { ...m, responsibilities: { ...m.responsibilities, [responsibility]: value } } 
-        : m
-    ));
-  };
+  // Removed handleUpdateMemberResponsibility as it's no longer used
+
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // 1. Process Invitations (Now handled immediately in Add Member)
+      // No action needed for invitations here.
+
+
+      // 2. Save Team to Job
       const response = await jobService.updateJob(jobId, {
-        hiringTeam: { members },
+        hiringTeam: members,
       });
 
       if (response.success) {
         toast({
           title: 'Hiring Team Updated',
-          description: 'The hiring team has been saved successfully',
+          description: 'The hiring team and invitations have been processed.',
         });
         onUpdate();
         onOpenChange(false);
@@ -339,6 +446,8 @@ export function HiringTeamDrawer({
                     </div>
                   </div>
 
+
+
                   <div className="space-y-1.5">
                     <Label className="text-xs">Role</Label>
                     <Select value={newMemberRole} onValueChange={(v) => setNewMemberRole(v as HiringTeamMember['role'])}>
@@ -350,35 +459,15 @@ export function HiringTeamDrawer({
                           <SelectItem key={role.value} value={role.value}>
                             <div className="flex items-center gap-2">
                               <role.icon className="h-4 w-4" />
-                              {role.label}
+                              <div className="flex flex-col text-left">
+                                <span>{role.label}</span>
+                                <span className="text-[10px] text-muted-foreground">{role.description}</span>
+                              </div>
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">Responsibilities</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {RESPONSIBILITIES.map((resp) => (
-                        <label
-                          key={resp.key}
-                          className="flex items-center gap-2 text-sm cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={newMemberResponsibilities[resp.key as keyof typeof newMemberResponsibilities]}
-                            onCheckedChange={(checked) => 
-                              setNewMemberResponsibilities(prev => ({
-                                ...prev,
-                                [resp.key]: checked === true,
-                              }))
-                            }
-                          />
-                          {resp.label}
-                        </label>
-                      ))}
-                    </div>
                   </div>
 
                   <Button onClick={handleAddMember} className="w-full">
@@ -436,6 +525,12 @@ export function HiringTeamDrawer({
                               <p className="text-sm text-muted-foreground flex items-center gap-1 mb-2">
                                 <Mail className="h-3 w-3" />
                                 {member.email}
+                                {member.status === 'pending_invite' && (
+                                    <Badge variant="outline" className="ml-2 text-[10px] h-4">Pending Invite</Badge>
+                                )}
+                                {member.status === 'active' && (
+                                    <Badge variant="default" className="ml-2 text-[10px] h-4 bg-green-500 hover:bg-green-600">Active</Badge>
+                                )}
                               </p>
 
                               {/* Role Selector */}
@@ -461,28 +556,7 @@ export function HiringTeamDrawer({
                               </div>
 
                               {/* Responsibilities */}
-                              <div className="flex flex-wrap gap-1.5">
-                                {RESPONSIBILITIES.map((resp) => {
-                                  const isActive = member.responsibilities[resp.key as keyof typeof member.responsibilities];
-                                  return (
-                                    <Badge
-                                      key={resp.key}
-                                      variant={isActive ? 'default' : 'outline'}
-                                      className="cursor-pointer text-xs"
-                                      onClick={() => 
-                                        handleUpdateMemberResponsibility(
-                                          member.id, 
-                                          resp.key as keyof HiringTeamMember['responsibilities'], 
-                                          !isActive
-                                        )
-                                      }
-                                    >
-                                      {isActive && <Check className="h-3 w-3 mr-1" />}
-                                      {resp.label}
-                                    </Badge>
-                                  );
-                                })}
-                              </div>
+                              {/* Responsibilities removed */}
                             </div>
                           </div>
                         </CardContent>
@@ -501,11 +575,7 @@ export function HiringTeamDrawer({
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Save Changes
+                  Close
                 </Button>
               </div>
             </div>

@@ -53,6 +53,20 @@ class JobRoundService {
   async deleteRound(jobId: string, roundId: string) {
     return apiClient.delete(`/api/jobs/${jobId}/rounds/${roundId}`);
   }
+
+  /**
+   * Get email configuration for a round
+   */
+  async getEmailConfig(jobId: string, roundId: string) {
+    return apiClient.get<{ enabled: boolean; templateId?: string }>(`/api/jobs/${jobId}/rounds/${roundId}/email-config`);
+  }
+
+  /**
+   * Update email configuration for a round
+   */
+  async updateEmailConfig(jobId: string, roundId: string, config: { enabled: boolean; templateId?: string }) {
+    return apiClient.put<{ round: JobRound }>(`/api/jobs/${jobId}/rounds/${roundId}/email-config`, config);
+  }
 }
 
 export const jobRoundService = new JobRoundService();

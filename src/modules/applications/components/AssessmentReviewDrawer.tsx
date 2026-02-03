@@ -121,150 +121,191 @@ export function AssessmentReviewDrawer({
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <Tabs defaultValue="submissions" className="h-[calc(100vh-150px)]">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="submissions">
-                  Submissions ({submissions.length})
+            <Tabs defaultValue="in-round" className="h-[calc(100vh-150px)]">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="in-round">
+                  In Round ({submissions.length + pending.length})
                 </TabsTrigger>
-                <TabsTrigger value="pending">
-                  Pending ({pending.length})
-                </TabsTrigger>
-                <TabsTrigger value="passed">
-                  Passed ({passed.length})
+                <TabsTrigger value="past">
+                  Past Candidates ({passed.length})
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="submissions" className="h-full mt-4">
+              <TabsContent value="in-round" className="h-full mt-4">
                 <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-                  {submissions.length === 0 ? (
+                  {(submissions.length === 0 && pending.length === 0) ? (
                     <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                      <CheckCircle2 className="h-10 w-10 mb-2 opacity-20" />
-                      <p>No submissions yet</p>
+                      <Clock className="h-10 w-10 mb-2 opacity-20" />
+                      <p>No active candidates in this round</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {submissions.map((assessment) => (
-                        <Card key={assessment.id} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarFallback>{getInitials(assessment.candidateName)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <h4 className="font-medium">{assessment.candidateName}</h4>
-                                  <div className="flex items-center text-xs text-muted-foreground gap-2">
-                                    <span>{assessment.candidateEmail}</span>
-                                    <span>•</span>
-                                    <Badge variant="secondary" className="text-sm h-6 px-2.5 rounded-full">
-                                      {assessment.averageScore != null ? `Avg: ${assessment.averageScore}` : 'Avg: N/A'}
+                    <div className="space-y-6">
+                      {/* Submissions Section */}
+                      {submissions.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Ready for Review ({submissions.length})
+                          </h3>
+                          <div className="space-y-3">
+                            {submissions.map((assessment) => (
+                              <Card key={assessment.id} className="overflow-hidden border-l-4 border-l-primary/50">
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <Avatar>
+                                        <AvatarFallback>{getInitials(assessment.candidateName)}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <h4 className="font-medium">{assessment.candidateName}</h4>
+                                        <div className="flex items-center text-xs text-muted-foreground gap-2">
+                                          <span>{assessment.candidateEmail}</span>
+                                          <span>•</span>
+                                          <Badge variant="secondary" className="text-sm h-6 px-2.5 rounded-full">
+                                            {assessment.averageScore != null ? `Avg: ${assessment.averageScore}` : 'Avg: N/A'}
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      {/* Logic for Failed/Passed actions */}
+                                      {assessment.score !== null && assessment.score < 70 ? (
+                                        <>
+                                           <Button 
+                                             size="sm" 
+                                             variant="ghost"
+                                             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                             onClick={() => handleGrade(assessment.id)}
+                                             title="View Details"
+                                           >
+                                             <Eye className="h-4 w-4" />
+                                           </Button>
+                                          <Button size="sm" variant="destructive" className="h-8">Reject</Button>
+                                        </>
+                                      ) : assessment.score !== null ? (
+                                        <>
+                                           <Button 
+                                             size="sm" 
+                                             variant="ghost"
+                                             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                             onClick={() => handleGrade(assessment.id)}
+                                             title="View Details"
+                                           >
+                                             <Eye className="h-4 w-4" />
+                                           </Button>
+                                          {onMoveToNextRound && (
+                                            <Button 
+                                              size="sm"
+                                              variant="default" // Changed to primary/default
+                                              onClick={() => onMoveToNextRound(assessment.applicationId)}
+                                            >
+                                              <ArrowRight className="h-3 w-3 mr-2" />
+                                              Next Stage
+                                            </Button>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          onClick={() => handleGrade(assessment.id)}
+                                        >
+                                          <Eye className="h-3 w-3 mr-2" />
+                                          Review & Grade
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Separator className="my-3" />
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      Completed: {assessment.completedAt ? format(new Date(assessment.completedAt), 'PP p') : '-'}
+                                    </div>
+                                    <div>
+                                      {assessment.score && assessment.score < 70 ? (
+                                        <Badge variant="destructive">Failed</Badge>
+                                      ) : (
+                                        <Badge variant="success">Passed</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pending Section */}
+                      {pending.length > 0 && (
+                        <div>
+                          {submissions.length > 0 && <Separator className="my-6" />}
+                          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            Pending ({pending.length})
+                          </h3>
+                          <div className="space-y-3">
+                            {pending.map((assessment) => (
+                              <Card key={assessment.id} className="overflow-hidden bg-muted/30">
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="opacity-75">
+                                        <AvatarFallback>{getInitials(assessment.candidateName)}</AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <h4 className="font-medium text-muted-foreground">{assessment.candidateName}</h4>
+                                        <p className="text-xs text-muted-foreground opacity-75">{assessment.candidateEmail}</p>
+                                      </div>
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      className="h-8"
+                                      onClick={() => handleResend(assessment.id)}
+                                      disabled={resendingId === assessment.id}
+                                    >
+                                      {resendingId === assessment.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                                      ) : (
+                                        <Send className="h-3 w-3 mr-2" />
+                                      )}
+                                      Resend Invite
+                                    </Button>
+                                  </div>
+                                  <Separator className="my-3 opacity-50" />
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground opacity-75">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      Invited: {assessment.invitedAt ? format(new Date(assessment.invitedAt), 'PP p') : '-'}
+                                    </div>
+                                    <Badge variant="outline" className="opacity-75">
+                                      {assessment.status}
                                     </Badge>
                                   </div>
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => handleGrade(assessment.id)}
-                                >
-                                  <Eye className="h-3 w-3 mr-2" />
-                                  Review & Grade
-                                </Button>
-                                {onMoveToNextRound && (
-                                  <Button 
-                                    size="sm"
-                                    variant="secondary" 
-                                    onClick={() => onMoveToNextRound(assessment.applicationId)}
-                                  >
-                                    <ArrowRight className="h-3 w-3 mr-2" />
-                                    Next Stage
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                            <Separator className="my-3" />
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Completed: {assessment.completedAt ? format(new Date(assessment.completedAt), 'PP p') : '-'}
-                              </div>
-                              <Badge variant={assessment.score && assessment.score >= 70 ? "success" : "secondary"}>
-                                {assessment.status}
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="pending" className="h-full mt-4">
-                <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-                  {pending.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                      <AlertCircle className="h-10 w-10 mb-2 opacity-20" />
-                      <p>No pending assessments</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {pending.map((assessment) => (
-                        <Card key={assessment.id} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarFallback>{getInitials(assessment.candidateName)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <h4 className="font-medium">{assessment.candidateName}</h4>
-                                  <p className="text-xs text-muted-foreground">{assessment.candidateEmail}</p>
-                                </div>
-                              </div>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleResend(assessment.id)}
-                                disabled={resendingId === assessment.id}
-                              >
-                                {resendingId === assessment.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                                ) : (
-                                  <Send className="h-3 w-3 mr-2" />
-                                )}
-                                Resend
-                              </Button>
-                            </div>
-                            <Separator className="my-3" />
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Invited: {assessment.invitedAt ? format(new Date(assessment.invitedAt), 'PP p') : '-'}
-                              </div>
-                              <Badge variant="outline">
-                                {assessment.status}
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="passed" className="h-full mt-4">
+              <TabsContent value="past" className="h-full mt-4">
                 <ScrollArea className="h-[calc(100vh-200px)] pr-4">
                   {passed.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                       <CheckCircle2 className="h-10 w-10 mb-2 opacity-20" />
-                      <p>No passed candidates</p>
+                      <p>No past candidates</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {passed.map((assessment) => (
-                        <Card key={assessment.id} className="overflow-hidden opacity-75">
+                        <Card key={assessment.id} className="overflow-hidden opacity-60 hover:opacity-100 transition-opacity">
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -291,8 +332,8 @@ export function AssessmentReviewDrawer({
                                   <Eye className="h-3 w-3 mr-2" />
                                   View Details
                                 </Button>
-                                <Badge variant="success" className="h-9 px-3">
-                                  Passed
+                                <Badge variant="outline" className="h-9 px-3 border-green-200 text-green-700 bg-green-50">
+                                  Moved Forward
                                 </Badge>
                               </div>
                             </div>
@@ -323,7 +364,10 @@ export function AssessmentReviewDrawer({
           open={gradingOpen} 
           onOpenChange={setGradingOpen}
           assessmentId={selectedAssessmentId}
-          readOnly={assessments.find(a => a.id === selectedAssessmentId)?.isMovedToNextRound}
+          readOnly={
+            (assessments.find(a => a.id === selectedAssessmentId)?.isMovedToNextRound) ||
+            (assessments.find(a => a.id === selectedAssessmentId)?.status === 'COMPLETED')
+          }
         />
       )}
     </>

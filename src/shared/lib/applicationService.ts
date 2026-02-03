@@ -194,6 +194,16 @@ class ApplicationService {
   }
 
   /**
+   * Move application to a stage (wrapper for backward compatibility or dual-mode)
+   */
+  async moveStage(id: string, stageName: string, roundId?: string) {
+    if (roundId) {
+      return this.moveToRound(id, roundId);
+    }
+    return this.updateStage(id, stageName);
+  }
+
+  /**
    * Move application to a round
    */
   async moveToRound(id: string, roundId: string) {

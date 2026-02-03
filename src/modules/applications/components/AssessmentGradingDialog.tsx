@@ -9,7 +9,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Separator } from "@/shared/components/ui/separator";
-import { Loader2, ChevronLeft, ChevronRight, Save, MessageSquare } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Save, MessageSquare, CheckCircle2 } from "lucide-react";
 import { apiClient } from "@/shared/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -19,45 +19,53 @@ interface AssessmentGradingDialogProps {
   onOpenChange: (open: boolean) => void;
   assessmentId: string;
   readOnly?: boolean;
+  onGraded?: () => void;
 }
 
 interface GradingData {
   id: string;
-  Application: {
+  application: {
     candidate: {
-      firstName: string;
-      lastName: string;
+      first_name: string;
+      last_name: string;
       email: string;
     }
   };
-  AssessmentQuestion: Array<{
+  assessment_question: Array<{
     id: string;
     question_text: string;
     question_type: string;
     options?: unknown;
     order: number;
   }>;
-  AssessmentResponse: Array<{
+  assessment_response: Array<{
     id: string;
     question_id: string;
     response: unknown;
-    AssessmentGrade: Array<{
+    assessment_grade: Array<{
       id: string;
       score: number | null;
-      comment: string | null;
-      User: {
+      comment: string | null;  // Changed from feedback to comment to match Prisma
+      grader_id: string;
+      user?: { // Added user
         id: string;
-        name: string;
-      }
+        first_name: string;
+        last_name: string;
+        email?: string; // Optional
+      };
     }>;
   }>;
-  AssessmentComment: Array<{
+  // Optional for now as backend might not return it yet
+  assessment_comment?: Array<{
     id: string;
     comment: string;
     created_at: string;
-    User: {
+    user: {
       id: string;
-      name: string;
+      first_name: string;
+      last_name: string;
+      email?: string;
+      photo?: string;
     }
   }>;
 }
@@ -66,8 +74,10 @@ export function AssessmentGradingDialog({
   open,
   onOpenChange,
   assessmentId,
-  readOnly
+  readOnly,
+  onGraded
 }: AssessmentGradingDialogProps) {
+  // ... (keep state same)
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<GradingData | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -76,6 +86,25 @@ export function AssessmentGradingDialog({
   const [overallComment, setOverallComment] = useState("");
   const [submittingGrade, setSubmittingGrade] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+
+  const handleFinalize = async () => {
+     // ...
+     setFinalizing(true);
+    try {
+      const res = await apiClient.post(`/api/assessments/${assessmentId}/finalize`);
+      if (res.success) {
+        toast.success("Assessment finalized");
+        if (onGraded) onGraded();
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Failed to finalize assessment", error);
+      toast.error("Failed to finalize assessment");
+    } finally {
+      setFinalizing(false);
+    }
+  };
 
   useEffect(() => {
     if (open && assessmentId) {
@@ -99,25 +128,28 @@ export function AssessmentGradingDialog({
   };
 
   const averageScore = useMemo(() => {
-    if (!data) return null;
+    if (!data || !data.assessment_response) return null;
     let total = 0;
     let count = 0;
-    data.AssessmentResponse.forEach(r => {
-      r.AssessmentGrade.forEach(g => {
-        if (g.score !== null) {
-          total += g.score;
-          count++;
-        }
-      });
+    data.assessment_response.forEach(r => {
+      if (r.assessment_grade) {
+        r.assessment_grade.forEach(g => {
+          if (g.score !== null) {
+            total += g.score;
+            count++;
+          }
+        });
+      }
     });
     return count > 0 ? (total / count).toFixed(1) : null;
   }, [data]);
 
   const handleSaveGrade = async () => {
-    if (!data) return;
+     // ...
+     if (!data) return;
     
-    const question = data.AssessmentQuestion[currentQuestionIndex];
-    const response = data.AssessmentResponse.find(r => r.question_id === question.id);
+    const question = data.assessment_question[currentQuestionIndex];
+    const response = data.assessment_response.find(r => r.question_id === question.id);
     
     if (!response) {
       toast.error("No response found for this question");
@@ -128,16 +160,21 @@ export function AssessmentGradingDialog({
     try {
       const scoreValue = gradeScore.trim() === "" ? null : Number(gradeScore);
       const safeScore = Number.isFinite(scoreValue as number) ? scoreValue : null;
-      const res = await apiClient.post(`/api/assessments/grade`, {
-        responseId: response.id,
-        score: safeScore,
-        comment: gradeComment
+      // Note: Backend expects array of grades
+      const res = await apiClient.post(`/api/assessments/${assessmentId}/grade`, {
+        grades: [{
+          questionId: question.id,
+          score: safeScore,
+          feedback: gradeComment
+        }]
       });
 
       if (res.success) {
         toast.success("Grade saved");
-        // Update local state to reflect new grade
         await fetchData(); 
+        if (onGraded) {
+          onGraded();
+        }
       }
     } catch (error) {
       console.error("Failed to save grade", error);
@@ -148,7 +185,8 @@ export function AssessmentGradingDialog({
   };
 
   const handleSaveOverallComment = async () => {
-    if (!overallComment.trim()) return;
+     // ...
+     if (!overallComment.trim()) return;
 
     setSubmittingComment(true);
     try {
@@ -172,12 +210,13 @@ export function AssessmentGradingDialog({
   // Reset inputs when question changes
   useEffect(() => {
     if (data) {
-      const question = data.AssessmentQuestion[currentQuestionIndex];
-      const response = data.AssessmentResponse.find(r => r.question_id === question.id);
-      // Ideally find current user's grade to pre-fill, but we don't have current user ID easily available here without context.
-      // We can leave empty or try to find if we passed user info.
-      setGradeScore("");
-      setGradeComment("");
+      const question = data.assessment_question[currentQuestionIndex];
+      const response = data.assessment_response.find(r => r.question_id === question.id);
+      
+      const myGrade = response?.assessment_grade?.[0]; // Assuming 1 grade for now
+      
+      setGradeScore(myGrade?.score?.toString() || "");
+      setGradeComment(myGrade?.comment || "");
     }
   }, [currentQuestionIndex, data]);
 
@@ -185,20 +224,25 @@ export function AssessmentGradingDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent overlayClassName="bg-transparent" className="w-[85vw] sm:w-[85vw] sm:max-w-[85vw] flex flex-col h-full p-0 gap-0" side="right">
+      <SheetContent overlayClassName="bg-black/20 backdrop-blur-sm" className="w-[90vw] sm:w-[90vw] sm:max-w-7xl flex flex-col h-[95vh] sm:h-[90vh] my-auto mr-4 rounded-2xl border bg-background shadow-2xl p-0 gap-0 overflow-hidden" side="right">
         {loading || !data ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex flex-col h-full"> 
+             <SheetHeader className="p-6 pb-2 border-b">
+                <SheetTitle>Loading...</SheetTitle>
+             </SheetHeader>
+             <div className="flex items-center justify-center flex-1">
+               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+             </div>
           </div>
         ) : (
           <>
             <SheetHeader className="p-6 pb-2 border-b">
               <SheetTitle>
-                Grading: {data.Application.candidate.firstName} {data.Application.candidate.lastName}
+                Grading: {data.application.candidate.first_name} {data.application.candidate.last_name}
               </SheetTitle>
               <div className="flex items-center gap-4">
                 <div className="flex items-center text-sm text-muted-foreground">
-                  {data.Application.candidate.email}
+                  {data.application.candidate.email}
                 </div>
                 {averageScore && (
                   <Badge variant={Number(averageScore) >= 70 ? "success" : "secondary"}>
@@ -215,24 +259,25 @@ export function AssessmentGradingDialog({
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold">
-                        Question {currentQuestionIndex + 1} of {data.AssessmentQuestion.length}
+                        Question {currentQuestionIndex + 1} of {data.assessment_question.length}
                       </h3>
-                      <Badge variant="outline">{data.AssessmentQuestion[currentQuestionIndex].question_type}</Badge>
+                      <Badge variant="outline">{data.assessment_question[currentQuestionIndex].question_type}</Badge>
                     </div>
                     
                     <Card>
                       <CardContent className="p-4 bg-muted/30">
-                        <p className="text-base font-medium">{data.AssessmentQuestion[currentQuestionIndex].question_text}</p>
+                        <p className="text-base font-medium">{data.assessment_question[currentQuestionIndex].question_text}</p>
                       </CardContent>
                     </Card>
 
                     <div className="space-y-2">
+                       {/* ... Candidate Response ... */}
                       <Label>Candidate Response</Label>
                       <Card>
                         <CardContent className="p-4">
                           {(() => {
-                            const question = data.AssessmentQuestion[currentQuestionIndex];
-                            const response = data.AssessmentResponse.find(r => r.question_id === question.id);
+                            const question = data.assessment_question[currentQuestionIndex];
+                            const response = data.assessment_response.find(r => r.question_id === question.id);
                             
                             if (!response) return <p className="text-muted-foreground italic">No response</p>;
                             
@@ -249,6 +294,7 @@ export function AssessmentGradingDialog({
                     <Separator />
 
                     {!readOnly && (
+                       // ... Grading Form ...
                       <>
                         <div className="space-y-4">
                           <h4 className="font-semibold flex items-center gap-2">
@@ -268,11 +314,11 @@ export function AssessmentGradingDialog({
                               />
                             </div>
                             <div className="col-span-3 space-y-2">
-                              <Label>Comment</Label>
+                              <Label>Feedback</Label>
                               <Textarea 
                                 value={gradeComment}
                                 onChange={(e) => setGradeComment(e.target.value)}
-                                placeholder="Add a comment about this answer..."
+                                placeholder="Add feedback..."
                                 className="resize-none"
                                 rows={3}
                               />
@@ -295,30 +341,34 @@ export function AssessmentGradingDialog({
 
                     {/* Other Grades */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-muted-foreground">{readOnly ? "Evaluations" : "Other Grades"}</h4>
+            <h4 className="font-semibold text-sm text-muted-foreground">{readOnly ? "Evaluations" : "Previous Grades"}</h4>
             {(() => {
-                        const question = data.AssessmentQuestion[currentQuestionIndex];
-                        const response = data.AssessmentResponse.find(r => r.question_id === question.id);
+                        const question = data.assessment_question[currentQuestionIndex];
+                        const response = data.assessment_response.find(r => r.question_id === question.id);
                         
-                        if (!response) {
+                        if (!response || !response.assessment_grade || response.assessment_grade.length === 0) {
                           return <p className="text-sm text-muted-foreground italic">No grades yet</p>;
                         }
 
-                        const grades = response.AssessmentGrade || [];
-              
-              if (grades.length === 0) {
-                return <p className="text-sm text-muted-foreground italic">No grades yet</p>;
-              }
-
-              return (
-                <div className="space-y-3">
+                        const grades = response.assessment_grade;
+                           return (
+                <div className="space-y-4">
                   {grades.map(grade => (
-                    <div key={grade.id} className="bg-muted/30 p-3 rounded-md text-sm">
-                      <div className="flex justify-between mb-1">
-                        <span className="font-medium">{grade.User.name}</span>
-                        <Badge>{grade.score}</Badge>
+                    <div key={grade.id} className="bg-muted/40 p-4 rounded-xl text-sm border border-border/40 shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                              {grade.user?.first_name?.[0] || (grade.user?.email?.[0]?.toUpperCase() || 'U')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-semibold text-foreground/80">
+                            {grade.user ? (grade.user.first_name ? `${grade.user.first_name} ${grade.user.last_name || ''}` : (grade.user.email || 'Recruiter')) : 'Unknown User'}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="bg-background/50 font-mono">{grade.score}/100</Badge>
                       </div>
-                      {grade.comment && <p className="text-muted-foreground">{grade.comment}</p>}
+                      {grade.comment && <p className="text-muted-foreground pl-8">{grade.comment}</p>}
                     </div>
                   ))}
                 </div>
@@ -339,12 +389,12 @@ export function AssessmentGradingDialog({
                     Previous
                   </Button>
                   <span className="text-sm text-muted-foreground">
-                    {currentQuestionIndex + 1} / {data.AssessmentQuestion.length}
+                    {currentQuestionIndex + 1} / {data.assessment_question.length}
                   </span>
                   <Button 
                     variant="outline" 
-                    onClick={() => setCurrentQuestionIndex(prev => Math.min(data.AssessmentQuestion.length - 1, prev + 1))}
-                    disabled={currentQuestionIndex === data.AssessmentQuestion.length - 1}
+                    onClick={() => setCurrentQuestionIndex(prev => Math.min(data.assessment_question.length - 1, prev + 1))}
+                    disabled={currentQuestionIndex === data.assessment_question.length - 1}
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-2" />
@@ -358,26 +408,27 @@ export function AssessmentGradingDialog({
                   Overall Comments
                 </div>
                 <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {data.AssessmentComment.map(comment => (
-                      <div key={comment.id} className="bg-background border p-3 rounded-md shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {(comment.User.name || '').split(' ').map(n => n[0]).join('').slice(0,2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs font-medium">
-                            {comment.User.name}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">
-                            {format(new Date(comment.created_at), 'MMM d, h:mm a')}
-                          </span>
+                   <div className="space-y-4">
+                    {data.assessment_comment && data.assessment_comment.length > 0 ? (
+                      data.assessment_comment.map(comment => (
+                        <div key={comment.id} className="bg-card p-4 rounded-xl border border-border/40 text-sm shadow-sm transition-all hover:shadow-md">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                  {comment.user?.first_name?.[0] || (comment.user?.email?.[0]?.toUpperCase() || 'U')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-semibold text-xs text-foreground/80">
+                                {comment.user ? (comment.user.first_name ? `${comment.user.first_name} ${comment.user.last_name || ''}` : (comment.user.email || 'Recruiter')) : 'Unknown User'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <p className="text-foreground/90 whitespace-pre-wrap pl-8">{comment.comment}</p>
                         </div>
-                        <p className="text-sm">{comment.comment}</p>
-                      </div>
-                    ))}
-                    {data.AssessmentComment.length === 0 && (
+                      ))
+                    ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         No comments yet
                       </p>
@@ -385,22 +436,41 @@ export function AssessmentGradingDialog({
                   </div>
                 </ScrollArea>
                 {!readOnly && (
-                  <div className="p-4 border-t bg-background">
-                    <Label className="mb-2 block">Add Comment</Label>
-                    <Textarea 
-                      value={overallComment}
-                      onChange={(e) => setOverallComment(e.target.value)}
-                      placeholder="Type your comment..."
-                      className="mb-2 resize-none"
-                      rows={3}
-                    />
-                    <Button 
-                      className="w-full" 
-                      onClick={handleSaveOverallComment}
-                      disabled={submittingComment || !overallComment.trim()}
-                    >
-                      {submittingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post Comment"}
-                    </Button>
+                  <div className="p-4 border-t bg-background space-y-4">
+                    <div>
+                      <Label className="mb-2 block">Add Comment</Label>
+                      <Textarea 
+                        value={overallComment}
+                        onChange={(e) => setOverallComment(e.target.value)}
+                        placeholder="Type your comment..."
+                        className="mb-2 resize-none"
+                        rows={3}
+                      />
+                      <Button 
+                        className="w-full" 
+                        onClick={handleSaveOverallComment}
+                        disabled={submittingComment || !overallComment.trim()}
+                        variant="secondary"
+                      >
+                        {submittingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post Comment"}
+                      </Button>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="pt-2">
+                      <Button 
+                        className="w-full bg-primary hover:bg-primary/90" 
+                        onClick={handleFinalize}
+                        disabled={finalizing}
+                      >
+                        {finalizing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                        Finalize Assessment
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Calculate final score and apply automation rules
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -41,6 +41,9 @@ export function AssessmentConfigurationDrawer({
   // Configuration state
   const [enabled, setEnabled] = useState(false);
   const [autoAssign, setAutoAssign] = useState(true);
+  const [autoMoveOnPass, setAutoMoveOnPass] = useState(false);
+  const [autoRejectOnFail, setAutoRejectOnFail] = useState(false);
+  const [autoRejectOnDeadline, setAutoRejectOnDeadline] = useState(false);
   const [deadlineDays, setDeadlineDays] = useState<number | undefined>(7);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | undefined>();
   const [passThreshold, setPassThreshold] = useState<number | undefined>(70);
@@ -63,6 +66,9 @@ export function AssessmentConfigurationDrawer({
         const config = response.data.config;
         setEnabled(config.enabled);
         setAutoAssign(config.autoAssign ?? true);
+        setAutoMoveOnPass(config.auto_move_on_pass || false);
+        setAutoRejectOnFail(config.auto_reject_on_fail || false);
+        setAutoRejectOnDeadline(config.auto_reject_on_deadline || false);
         setDeadlineDays(config.deadlineDays ?? 7);
         setTimeLimitMinutes(config.timeLimitMinutes);
         setPassThreshold(config.passThreshold ?? 70);
@@ -158,6 +164,9 @@ export function AssessmentConfigurationDrawer({
       const config = {
         enabled,
         autoAssign,
+        auto_move_on_pass: autoMoveOnPass,
+        auto_reject_on_fail: autoRejectOnFail,
+        auto_reject_on_deadline: autoRejectOnDeadline,
         deadlineDays: deadlineDays || undefined,
         timeLimitMinutes: timeLimitMinutes || undefined,
         passThreshold: passThreshold || undefined,
@@ -224,15 +233,51 @@ export function AssessmentConfigurationDrawer({
                   
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label htmlFor="auto-assign">Auto-Assign Assessment</Label>
+                      <Label>Auto-assign to new applicants</Label>
                       <p className="text-sm text-muted-foreground">
-                        Automatically assign assessment when candidate enters this round
+                        Automatically send assessment when candidate enters this stage
                       </p>
                     </div>
                     <Switch
-                      id="auto-assign"
                       checked={autoAssign}
                       onCheckedChange={setAutoAssign}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Auto-move passed candidates</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Move to next round if score &ge; threshold
+                      </p>
+                    </div>
+                    <Switch
+                      checked={autoMoveOnPass}
+                      onCheckedChange={setAutoMoveOnPass}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Auto-reject failed candidates</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Move to Rejected if score &lt; threshold
+                      </p>
+                    </div>
+                    <Switch
+                      checked={autoRejectOnFail}
+                      onCheckedChange={setAutoRejectOnFail}
+                    />
+                  </div>
+                   <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Auto-reject on deadline missed</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Move to Rejected if deadline expires
+                      </p>
+                    </div>
+                    <Switch
+                      checked={autoRejectOnDeadline}
+                      onCheckedChange={setAutoRejectOnDeadline}
                     />
                   </div>
                 </>

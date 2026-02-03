@@ -25,9 +25,11 @@ import { useToast } from "@/shared/hooks/use-toast";
 
 interface QuickActionsToolbarProps {
   application: Application;
+  nextStageName?: string;
+  onNextStage?: () => void;
 }
 
-export function QuickActionsToolbar({ application }: QuickActionsToolbarProps) {
+export function QuickActionsToolbar({ application, nextStageName, onNextStage }: QuickActionsToolbarProps) {
   const { toast } = useToast();
 
   const handleAction = (action: string) => {
@@ -40,42 +42,18 @@ export function QuickActionsToolbar({ application }: QuickActionsToolbarProps) {
   return (
     <div className="px-6 pb-4 border-b bg-muted/20">
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Move to Stage */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="default" size="sm" className="gap-2">
-              <ArrowRight className="h-4 w-4" />
-              Move to Stage
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => handleAction("Move to Resume Review")}>
-              Resume Review
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAction("Move to Phone Screen")}>
-              Phone Screen
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAction("Move to Technical Interview")}>
-              Technical Interview
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAction("Move to Manager Interview")}>
-              Manager Interview
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAction("Move to Final Round")}>
-              Final Round
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAction("Move to Reference Check")}>
-              Reference Check
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleAction("Move to Offer Extended")}>
-              Offer Extended
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAction("Move to Offer Accepted")}>
-              Offer Accepted
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Next Stage Button (Replaces Move Dropdown) */}
+        {nextStageName && onNextStage && (
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="gap-2 bg-primary hover:bg-primary/90"
+            onClick={onNextStage}
+          >
+            <ArrowRight className="h-4 w-4" />
+            Move to {nextStageName}
+          </Button>
+        )}
 
         {/* Schedule Interview */}
         <Button

@@ -50,6 +50,7 @@ export interface Application {
   aiAnalysis?: any;
   notes?: any[];
   candidatePreferences?: any;
+  teamReviews?: any[];
 }
 
 export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected' | 'withdrawn';

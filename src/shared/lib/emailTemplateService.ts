@@ -2,10 +2,15 @@ import { apiClient } from './api';
 
 export type EmailTemplateType =
   | 'APPLICATION_CONFIRMATION'
+  | 'NEW'
+  | 'ASSESSMENT'
   | 'INTERVIEW_INVITATION'
-  | 'REJECTION'
+  | 'INTERVIEW'
+  | 'REJECTED'
   | 'OFFER_EXTENDED'
+  | 'OFFER'
   | 'OFFER_ACCEPTED'
+  | 'HIRED'
   | 'STAGE_CHANGE'
   | 'REMINDER'
   | 'FOLLOW_UP'
@@ -26,6 +31,7 @@ export interface EmailTemplate {
   isAiGenerated: boolean;
   version: number;
   createdBy: string;
+  attachments?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -184,6 +190,16 @@ export const emailTemplateService = {
     }
     return response.data;
   },
+
+  /**
+   * Send test email
+   */
+  async sendTestEmail(templateId: string, to: string, variables?: Record<string, any>): Promise<void> {
+    const response = await apiClient.post(`/api/email-templates/${templateId}/send-test`, { to, variables });
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to send test email');
+    }
+  },
 };
 
 // --- Legacy/Sync Exports (Mocked for Build Compatibility) ---
@@ -250,10 +266,39 @@ export function duplicateTemplate(id: string, newName: string): void {
 // --- Utilities ---
 
 export const TEMPLATE_VARIABLES: TemplateVariable[] = [
-  { key: 'candidateName', label: 'Candidate Name', description: "Candidate's full name", example: 'John Doe', category: 'Candidate' },
-  { key: 'jobTitle', label: 'Job Title', description: "Job position title", example: 'Software Engineer', category: 'Job' },
-  { key: 'companyName', label: 'Company Name', description: "Company name", example: 'Acme Corp', category: 'Company' },
-  // Add more as needed
+  // Candidate Variables
+  { key: 'candidate.firstName', label: 'Candidate First Name', description: "Candidate's first name", example: 'John', category: 'Candidate' },
+  { key: 'candidate.lastName', label: 'Candidate Last Name', description: "Candidate's last name", example: 'Doe', category: 'Candidate' },
+  { key: 'candidate.email', label: 'Candidate Email', description: "Candidate's email address", example: 'john@example.com', category: 'Candidate' },
+  { key: 'candidate.current_company', label: 'Current Company', description: "Candidate's current employer", example: 'Tech Solutions Inc', category: 'Candidate' },
+  { key: 'candidate.current_designation', label: 'Current Designation', description: "Candidate's current job title", example: 'Senior Developer', category: 'Candidate' },
+  { key: 'candidate.total_experience', label: 'Total Experience', description: "Years of experience", example: '5', category: 'Candidate' },
+
+  // Job Variables
+  { key: 'job.title', label: 'Job Title', description: "Job position title", example: 'Senior Software Engineer', category: 'Job' },
+  { key: 'job.location', label: 'Job Location', description: "Job location (City/Remote)", example: 'New York, NY', category: 'Job' },
+  { key: 'job.type', label: 'Job Type', description: "Full-time, Contract, etc.", example: 'Full-time', category: 'Job' },
+  { key: 'job.salary_min', label: 'Min Salary', description: "Minimum salary range", example: '100000', category: 'Job' },
+  { key: 'job.salary_max', label: 'Max Salary', description: "Maximum salary range", example: '150000', category: 'Job' },
+  { key: 'job.currency', label: 'Currency', description: "Salary currency", example: 'USD', category: 'Job' },
+
+  // Hiring Manager Variables
+  { key: 'job.hiringManager.name', label: 'Hiring Manager Name', description: "Name of the hiring manager", example: 'Alice Smith', category: 'Hiring Team' },
+  { key: 'job.hiringManager.email', label: 'Hiring Manager Email', description: "Email of the hiring manager", example: 'alice@company.com', category: 'Hiring Team' },
+
+  // Company Variables
+  { key: 'company.name', label: 'Company Name', description: "Company name", example: 'Acme Corp', category: 'Company' },
+  { key: 'company.website', label: 'Company Website', description: "Company website URL", example: 'https://acme.com', category: 'Company' },
+  { key: 'company.profile.logo', label: 'Company Logo', description: "URL to company logo", example: 'https://logo.url', category: 'Company' },
+
+  // Interviewer Variables (Context specific)
+  { key: 'interviewer.name', label: 'Interviewer Name', description: "Name of the interviewer", example: 'Bob Jones', category: 'Interview' },
+  { key: 'interviewer.email', label: 'Interviewer Email', description: "Email of the interviewer", example: 'bob@company.com', category: 'Interview' },
+
+  // Legacy / Direct Access
+  { key: 'candidateName', label: 'Candidate Full Name', description: "Full Name (Legacy)", example: 'John Doe', category: 'Legacy' },
+  { key: 'jobTitle', label: 'Job Title (Legacy)', description: "Job Title (Legacy)", example: 'Developer', category: 'Legacy' },
+  { key: 'companyName', label: 'Company Name (Legacy)', description: "Company Name (Legacy)", example: 'Acme Corp', category: 'Legacy' },
 ];
 
 export const templateSchema = {

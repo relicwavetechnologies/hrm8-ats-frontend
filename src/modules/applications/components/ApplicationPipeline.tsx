@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, DragOverEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Application, ApplicationStage } from "@/shared/types/application";
@@ -13,8 +13,9 @@ import { ConsultantCandidateService } from "@/shared/lib/consultant/consultantCa
 import { toast } from "sonner";
 import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { ChevronDown, Plus, Trash2, GripVertical, Settings, CalendarClock, FileSearch, Send, Star, Users, Play } from "lucide-react";
+import { ChevronDown, Plus, Trash2, GripVertical, Settings, CalendarClock, FileSearch, Send, Star, Users, Play, Mail } from "lucide-react";
 import { CreateRoundDialog } from "./CreateRoundDialog";
+import { RoundEmailConfigDrawer } from "./RoundEmailConfigDrawer";
 import { AssessmentConfigurationDrawer } from "./AssessmentConfigurationDrawer";
 import { AssessmentReviewDrawer } from "./AssessmentReviewDrawer";
 import { InterviewConfigurationDrawer } from "./InterviewConfigurationDrawer";
@@ -26,6 +27,7 @@ import { OfferExecutionDrawer } from "./OfferExecutionDrawer";
 import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/jobRoundService";
 import { jobService } from "@/shared/lib/jobService";
 import { offerService } from "@/shared/lib/offerService";
+import { MoveStageDialog } from "./MoveStageDialog";
 
 interface ApplicationPipelineProps {
   jobId?: string;
@@ -71,6 +73,7 @@ function SortableRoundColumn({
   onConfigureOffer,
   onExecuteOffer,
   onOpenAssessmentDrawer,
+  onConfigureEmail,
 }: {
   round: JobRound;
   applications: Application[];
@@ -90,6 +93,7 @@ function SortableRoundColumn({
   onConfigureOffer?: (roundId: string) => void;
   onExecuteOffer?: (roundId: string) => void;
   onOpenAssessmentDrawer?: (round: JobRound) => void;
+  onConfigureEmail?: (round: JobRound) => void;
   dragHandleProps?: any;
 }) {
   const {
@@ -130,7 +134,9 @@ function SortableRoundColumn({
         onOpenScreening={onOpenScreening}
         onConfigureOffer={onConfigureOffer}
         onExecuteOffer={onExecuteOffer}
+        onExecuteOffer={onExecuteOffer}
         onOpenAssessmentDrawer={onOpenAssessmentDrawer}
+        onConfigureEmail={onConfigureEmail}
         dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
       />
     </div>
@@ -154,9 +160,10 @@ function StageColumn({
   onViewInterviews,
   onViewRoundInterviews,
   onOpenScreening,
-  onConfigureOffer,
   onExecuteOffer,
+  onConfigureOffer,
   onOpenAssessmentDrawer,
+  onConfigureEmail,
   dragHandleProps,
 }: {
   round: JobRound;
@@ -177,6 +184,7 @@ function StageColumn({
   onConfigureOffer?: (roundId: string) => void;
   onExecuteOffer?: (roundId: string) => void;
   onOpenAssessmentDrawer?: (round: JobRound) => void;
+  onConfigureEmail?: (round: JobRound) => void;
   dragHandleProps?: any;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -231,19 +239,37 @@ function StageColumn({
               <Badge variant="outline" className="text-xs h-6 px-2 rounded-full">
                 {applications.length}
               </Badge>
-              {round.isFixed && round.fixedKey === 'NEW' && onOpenScreening && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenScreening(round);
-                  }}
-                  title="Open Initial Screening"
-                >
-                  <FileSearch className="h-3 w-3" />
-                </Button>
+              {round.isFixed && round.fixedKey === 'NEW' && (
+                <>
+                  {onOpenScreening && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenScreening(round);
+                      }}
+                      title="Open Initial Screening"
+                    >
+                      <FileSearch className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {onConfigureEmail && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onConfigureEmail(round);
+                      }}
+                      title="Configure Auto-Reply Email"
+                    >
+                      <Mail className="h-3 w-3" />
+                    </Button>
+                  )}
+                </>
               )}
               {!round.isFixed && round.type === 'ASSESSMENT' && (
                 <>
@@ -429,8 +455,16 @@ export function ApplicationPipeline({
   const [selectedRoundForOffer, setSelectedRoundForOffer] = useState<JobRound | null>(null);
   const [assessmentReviewDrawerOpen, setAssessmentReviewDrawerOpen] = useState(false);
   const [selectedRoundForReview, setSelectedRoundForReview] = useState<JobRound | null>(null);
+  const [roundEmailConfigDrawerOpen, setRoundEmailConfigDrawerOpen] = useState(false);
+  const [selectedRoundForEmailConfig, setSelectedRoundForEmailConfig] = useState<JobRound | null>(null);
   const [jobData, setJobData] = useState<any>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
+
+  // Move Dialog State
+  const [isMoveStageDialogOpen, setIsMoveStageDialogOpen] = useState(false);
+  const [pendingMoveApplication, setPendingMoveApplication] = useState<Application | null>(null);
+  const [pendingTargetRound, setPendingTargetRound] = useState<JobRound | null>(null);
+  const [pendingIsMoving, setPendingIsMoving] = useState(false);
 
   // Load rounds and job data when jobId changes
   useEffect(() => {
@@ -595,6 +629,7 @@ export function ApplicationPipeline({
           isRead: app.isRead ?? app.is_read,
           isNew: app.isNew ?? app.is_new,
           tags: app.tags || [],
+          recruiterNotes: app.recruiterNotes || app.recruiter_notes,
           notes: [],
           activities: [],
           interviews: [],
@@ -665,6 +700,14 @@ export function ApplicationPipeline({
     }
   };
 
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    // Optional: Add logic for smoother drag-over effects between columns
+    // For now, we rely on handleDragEnd for the actual move
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -703,6 +746,12 @@ export function ApplicationPipeline({
     // Check if dropped directly on a round column
     targetRound = rounds.find(r => r.id === over.id) || null;
 
+    // Handle case where it dropped on the SortableRoundColumn wrapper
+    if (!targetRound && over.id.toString().startsWith('round-')) {
+       const cleanId = over.id.toString().replace('round-', '');
+       targetRound = rounds.find(r => r.id === cleanId) || null;
+    }
+
     if (!targetRound) {
       // Dropped on another card - find which round that card's application belongs to
       const targetApplication = applications.find((app) => app.id === over.id);
@@ -711,7 +760,11 @@ export function ApplicationPipeline({
         targetRound = rounds.find(r => {
           const roundName = r.name.toLowerCase();
           const stageName = targetApplication.stage.toLowerCase();
-          return stageName.includes(roundName) || roundName.includes(stageName);
+           // Improve matching logic to use ID if possible or reliable stage map
+          if (targetApplication.roundId && r.id === targetApplication.roundId) return true;
+          
+          if (roundName.includes(stageName) || stageName.includes(roundName)) return true;
+          return false;
         }) || null;
       }
     }
@@ -784,9 +837,40 @@ export function ApplicationPipeline({
     }
   };
 
+  // Helper to find current round for an application
+  const findRoundForApplication = (app: Application): JobRound | undefined => {
+    if (app.roundId) {
+      return rounds.find(r => r.id === app.roundId);
+    }
+    // Fallback logic specific to how getApplicationsForRound works
+    return rounds.find(round => {
+       const roundName = round.name.toLowerCase();
+       const stageName = app.stage.toLowerCase();
+       if (round.isFixed) {
+        if (round.fixedKey === 'NEW' && (stageName.includes('new'))) return true;
+        if (round.fixedKey === 'OFFER' && stageName.includes('offer')) return true;
+        if (round.fixedKey === 'HIRED' && stageName.includes('hired')) return true;
+        if (round.fixedKey === 'REJECTED' && stageName.includes('rejected')) return true;
+      }
+      if (stageName.includes(roundName) || roundName.includes(stageName)) return true;
+      const stageConfig = pipelineStages.find(s => s.stage === app.stage);
+      if (stageConfig) {
+        const labelName = stageConfig.label.toLowerCase();
+        if (roundName.includes(labelName) || labelName.includes(roundName)) return true;
+      }
+      return false;
+    });
+  };
+
   const handleStageChange = async (applicationId: string, newStage: ApplicationStage) => {
+    // Deprecated in favor of Round Movement, but kept for compatibility with detail panel if needed
+    // Logic remains similar but we should encourage round movement
     try {
-      // Map frontend stage to backend stage format
+      // ... existing implementation ...
+      // For now, let's just delegate to the existing logic or keep it as is since it's used by the DetailPanel directly
+      // However, DetailPanel now uses MoveStageDialog on its own.
+      // So this might only be called by other components (none in this file use it directly except SortableRoundColumn prop passing)
+      
       const stageMap: Record<ApplicationStage, string> = {
         "New Application": "NEW_APPLICATION",
         "Resume Review": "RESUME_REVIEW",
@@ -802,12 +886,9 @@ export function ApplicationPipeline({
       };
 
       const backendStage = stageMap[newStage] || "NEW_APPLICATION";
-
-      // Update via API
       const response = await applicationService.updateStage(applicationId, backendStage);
 
-      if (response.success) {
-        // Also update local mock storage for fallback
+       if (response.success) {
         const statusMapForUpdate: Record<string, Application['status']> = {
           "New Application": "applied",
           "Resume Review": "screening",
@@ -819,12 +900,9 @@ export function ApplicationPipeline({
           "Rejected": "rejected"
         };
         updateApplicationStatus(applicationId, statusMapForUpdate[newStage] || "applied", newStage);
-
-        // Reload applications only if not using providedApplications (parent handles refresh)
         if (providedApplications === undefined) {
           loadApplications();
         } else {
-          // Notify parent to refresh filtered applications
           onApplicationMoved?.();
         }
       }
@@ -835,104 +913,169 @@ export function ApplicationPipeline({
   };
 
   const handleMoveToRound = async (applicationId: string, roundId: string) => {
-    try {
-      // Find the target round first (might be fallback ID)
-      const targetRound = rounds.find(r => r.id === roundId);
+      // 1. Identify Application and Target Round
       const application = applications.find(app => app.id === applicationId);
+      const targetRound = rounds.find(r => r.id === roundId);
 
-      // If it's a fallback ID, find the actual round by fixedKey
-      let actualRoundId = roundId;
-      let actualRound = targetRound;
-
-      if (roundId.startsWith('fixed-')) {
-        // Extract fixedKey from fallback ID format: "fixed-{FIXEDKEY}-{jobId}"
-        const parts = roundId.split('-');
-        if (parts.length >= 2) {
-          const fixedKey = parts[1];
-
-          // Try to find the actual round in current rounds
-          actualRound = rounds.find(r => r.isFixed && r.fixedKey === fixedKey);
-
-          if (actualRound) {
-            actualRoundId = actualRound.id;
-          } else if (targetRound && targetRound.fixedKey === fixedKey) {
-            // If targetRound was found by fallback ID, use it
-            actualRoundId = targetRound.id;
-            actualRound = targetRound;
-          } else {
-            // Round doesn't exist yet - backend will create it
-            // We'll use the fallback ID and let backend handle it
-            // Backend will resolve it to actual ID
-            console.log(`Using fallback ID ${roundId}, backend will resolve to actual round`);
-          }
-        }
+      if (!application || !targetRound) {
+        console.error("Application or Target Round not found", { applicationId, roundId });
+        return;
       }
 
-      // Move application to round via API (using actual round ID)
+      // 2. Identify Current Round
+      const currentRound = findRoundForApplication(application);
+
+      // 3. Validation Logic
+      let isAllowed = false;
+
+      // Rule: Can always move to Rejected
+      if (targetRound.isFixed && targetRound.fixedKey === 'REJECTED') {
+        isAllowed = true;
+      } 
+      // Rule: Can move if we couldn't determine current round (safe fallback, or maybe restrict?)
+      // Let's allow it to avoid getting stuck
+      else if (!currentRound) {
+        isAllowed = true;
+      }
+      else {
+        const currentIndex = rounds.findIndex(r => r.id === currentRound.id);
+        const targetIndex = rounds.findIndex(r => r.id === targetRound.id);
+
+        // Rule: Can move to Next Round
+        if (targetIndex === currentIndex + 1) {
+          isAllowed = true;
+        }
+        // Rule: Can move BACKWARDS? User said "Restrict movement to only the *next* round".
+        // Usually moving back is allowed for corrections, but let's stick to the prompt's explicit instruction for now or at least warn.
+        // Prompt: "Restrict movement to only the *next* round"
+        // We will STRICTLY block skips.
+        // We will BLOCK backwards moves? 
+        // Let's block everything else for now to be strictly compliant.
+      }
+
+      if (!isAllowed) {
+        toast.error("Process Restriction", {
+          description: "You can only move candidates to the immediate next round or to Rejected.",
+          duration: 4000,
+        });
+        return;
+      }
+
+      // 4. Open Confirmation Dialog
+      setPendingMoveApplication(application);
+      setPendingTargetRound(targetRound);
+      setIsMoveStageDialogOpen(true);
+  };
+
+  const executeMoveToRound = async (comment: string) => {
+    const application = pendingMoveApplication;
+    const targetRound = pendingTargetRound;
+    
+    if (!application || !targetRound) return;
+
+    const applicationId = application.id;
+    const roundId = targetRound.id;
+
+    setPendingIsMoving(true);
+
+    try {
+      // Logic from original handleMoveToRound 
+      // ... (Using targetRound directly since we already resolved it in validation)
+      
+      let actualRoundId = roundId;
+      // Handle fallback IDs if needed (though rounds should be loaded)
+      // (Simplified from original because we trust rounds array mostly, but keeping fallback logic is safe)
+       if (roundId.startsWith('fixed-')) {
+          // ... existing logic ...
+          const parts = roundId.split('-');
+          if (parts.length >= 2) {
+             const fixedKey = parts[1];
+             const actualRound = rounds.find(r => r.isFixed && r.fixedKey === fixedKey);
+             if (actualRound) actualRoundId = actualRound.id;
+          }
+       }
+
+      // Robust Date Formatter (DD/MM/YYYY, HH:mm:ss) - Deterministic
+      const formatTimestamp = (date: Date) => {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        const h = date.getHours().toString().padStart(2, '0');
+        const min = date.getMinutes().toString().padStart(2, '0');
+        const s = date.getSeconds().toString().padStart(2, '0');
+        return `${d}/${m}/${y}, ${h}:${min}:${s}`;
+      };
+
+      // 1. Execute Move
+      // Cast appService to any if strictly typed interface is missing methods, or rely on it being the class instance
       const response = await appService.moveToRound(applicationId, actualRoundId);
-
+      
       if (response.success) {
-        // Reload rounds first in case backend created a new fixed round
-        await loadRounds();
+        // 2. Save Comment (if provided)
+        if (comment && !isConsultantView) {
+           try {
+              // Fetch latest application data to preserve existing notes
+              // If we use pendingMoveApplication directly, we rely on it being up-to-date, 
+              // but concurrent edits or stale state in kanban might cause data loss.
+              // Fetching fresh data is safer.
+              const response = await (appService as any).getApplication(applicationId);
+              const latestApp = response.data?.application || response.application; // handle potentially different response shapes if needed
+              
+              const currentNotes = latestApp?.recruiterNotes || "";
+              const timestamp = formatTimestamp(new Date());
+              const newNoteEntry = `[${timestamp}] Moved to ${targetRound.name}: ${comment}`;
+              
+              const appendText = currentNotes 
+                ? `${currentNotes}\n\n${newNoteEntry}`
+                : newNoteEntry;
 
-        // Check if moved to OFFER round and auto-send is enabled
-        const offerRound = rounds.find(r => r.isFixed && r.fixedKey === 'OFFER');
-        if (offerRound && application && jobId) {
-          const configKey = `offer_config_${jobId}_${offerRound.id}`;
-          const savedConfig = localStorage.getItem(configKey);
-          if (savedConfig) {
-            try {
-              const config = JSON.parse(savedConfig);
-              if (config.autoSend) {
-                // Auto-send offer
-                await autoSendOffer(application, config);
+              await (appService as any).updateNotes(applicationId, appendText);
+              
+              // CRITICAL: Update the selected application state so the drawer refetches/updates immediately
+              if (selectedApplication && selectedApplication.id === applicationId) {
+                 setSelectedApplication(latestApp);
               }
-            } catch (e) {
-              console.error('Failed to parse offer config:', e);
+            } catch (err) {
+               console.error("Failed to append move note", err);
+               // Fallback: try to act on what we have or just log error. 
+               // We should not block the move success UI, so catching here is good.
             }
-          }
-        }
+         }
 
-        // If using providedApplications, update round mapping only and let parent refresh
-        if (providedApplications !== undefined) {
-          // Parent component will handle the refresh
-          const finalRound = rounds.find(r => r.id === actualRoundId) || actualRound;
-          if (finalRound && application) {
-            toast.success(`Moved ${application.candidateName} to ${finalRound.name}`);
-          } else {
-            toast.success('Application moved successfully');
-          }
+         // 3. Post-Move Logic (Reloads, Auto-Offer)
+         await loadRounds();
 
-          // Notify parent to refresh filtered applications
-          onApplicationMoved?.();
-        } else {
-          // Reload applications to get updated round progress with actual round IDs
-          const roundMap = await loadApplications();
+         // Check if moved to OFFER round and auto-send is enabled
+         const offerRound = rounds.find(r => r.isFixed && r.fixedKey === 'OFFER');
+         // using fixedKey to match targetRound might be safer if IDs differ
+         if (offerRound && targetRound.fixedKey === 'OFFER' && jobId) {
+           const configKey = `offer_config_${jobId}_${offerRound.id}`;
+           const savedConfig = localStorage.getItem(configKey);
+           if (savedConfig) {
+             try {
+               const config = JSON.parse(savedConfig);
+               if (config.autoSend) {
+                 await autoSendOffer(application, config);
+               }
+             } catch (e) {
+               console.error('Failed to parse offer config:', e);
+             }
+           }
+         }
 
-          // Get the updated round ID from the returned map
-          // If we still don't have it, try to find the OFFER round again (in case it was just created)
-          let updatedRoundId = roundMap?.[applicationId];
+         if (providedApplications !== undefined) {
+            toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
+            onApplicationMoved?.();
+         } else {
+            await loadApplications();
+            toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
+         }
 
-          if (!updatedRoundId && actualRound?.fixedKey) {
-            // Try to find the round by fixedKey again (it might have been created)
-            const foundRound = rounds.find(r => r.isFixed && r.fixedKey === actualRound?.fixedKey);
-            if (foundRound) {
-              updatedRoundId = foundRound.id;
-            }
-          }
+        // Close Dialog
+        setIsMoveStageDialogOpen(false);
+        setPendingMoveApplication(null);
+        setPendingTargetRound(null);
 
-          // Fallback to actualRoundId if we still don't have it
-          if (!updatedRoundId) {
-            updatedRoundId = actualRoundId;
-          }
-
-          const finalRound = rounds.find(r => r.id === updatedRoundId) || actualRound;
-          if (finalRound && application) {
-            toast.success(`Moved ${application.candidateName} to ${finalRound.name}`);
-          } else {
-            toast.success('Application moved successfully');
-          }
-        }
       } else {
         toast.error('Failed to move application', {
           description: response.error || 'Please try again'
@@ -943,6 +1086,8 @@ export function ApplicationPipeline({
       toast.error('Failed to move application', {
         description: 'Please try again'
       });
+    } finally {
+      setPendingIsMoving(false);
     }
   };
 
@@ -1216,6 +1361,11 @@ export function ApplicationPipeline({
     }
   };
 
+  const handleConfigureEmail = (round: JobRound) => {
+    setSelectedRoundForEmailConfig(round);
+    setRoundEmailConfigDrawerOpen(true);
+  };
+
   const selectedIds = enableMultiSelect ? (selectedApplicationIds || []) : selectedForComparison;
 
   return (
@@ -1269,75 +1419,73 @@ export function ApplicationPipeline({
           )}
       </div>
 
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={rounds.map(r => `round-${r.id}`)}
-          strategy={horizontalListSortingStrategy}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4 max-h-[calc(100vh-300px)]" style={{ minWidth: 'min-content' }}>
-            {rounds.length > 0 ? (
-              rounds.map((round) => {
-                const roundApplications = getApplicationsForRound(round);
+          <div className="flex h-full gap-4 min-w-max pb-4">
+            <SortableContext items={rounds.map((r) => `round-${r.id}`)} strategy={horizontalListSortingStrategy}>
+              {rounds.map((round) => (
+                <SortableRoundColumn
+                  key={round.id}
+                  round={round}
+                  allRounds={rounds}
+                  applications={applications.filter((app) => app.roundId === round.id)}
+                  onApplicationClick={handleApplicationClick}
+                  isCompareMode={isCompareMode}
+                  selectedForComparison={selectedForComparison}
+                  onToggleSelect={onToggleSelect}
+                  onStageChange={handleStageChange}
+                  onMoveToRound={handleMoveToRound}
+                  onDeleteRound={handleDeleteRound}
+                  onConfigureAssessment={handleConfigureAssessment}
+                  onConfigureInterview={handleConfigureInterview}
+                  onViewInterviews={handleViewInterviews}
+                  onViewRoundInterviews={handleViewRoundInterviews}
+                  onOpenScreening={handleOpenScreening}
+                  onConfigureOffer={handleConfigureOffer}
+                  onExecuteOffer={handleExecuteOffer}
+                  onOpenAssessmentDrawer={handleOpenAssessmentReview}
+                  onConfigureEmail={handleConfigureEmail}
+                />
+              ))}
+            </SortableContext>
+          </div>
+          
+          <DragOverlay>
+            {activeApplication && <ApplicationCard application={activeApplication} onClick={() => { }} />}
+            {activeRoundId && (() => {
+              const draggedRound = rounds.find(r => `round-${r.id}` === activeRoundId);
+              if (draggedRound) {
+                const roundApps = getApplicationsForRound(draggedRound);
                 return (
-                  <div key={round.id} className="flex-shrink-0" style={{ width: '280px' }}>
-                    <SortableRoundColumn
-                      round={round}
-                      applications={roundApplications}
-                      onApplicationClick={handleApplicationClick}
-                      isCompareMode={enableMultiSelect ? true : isCompareMode}
-                      selectedForComparison={enableMultiSelect ? selectedIds : selectedForComparison}
-                      onToggleSelect={enableMultiSelect ? handleToggleSelection : onToggleSelect}
-                      onStageChange={handleStageChange}
-                      onMoveToRound={handleMoveToRound}
-                      onDeleteRound={round.isFixed ? undefined : handleDeleteRound}
-                      onConfigureAssessment={round.type === 'ASSESSMENT' ? handleConfigureAssessment : undefined}
-                      onConfigureInterview={round.type === 'INTERVIEW' ? handleConfigureInterview : undefined}
+                   <div style={{ width: '280px' }}>
+                    <StageColumn
+                      round={draggedRound}
+                      applications={roundApps}
+                      onApplicationClick={() => { }}
+                      isCompareMode={false}
+                      selectedForComparison={[]}
+                      onStageChange={() => { }}
                       allRounds={rounds}
-                      onViewInterviews={handleViewInterviews}
-                      onViewRoundInterviews={handleViewRoundInterviews}
-                      onOpenScreening={handleOpenScreening}
-                      onConfigureOffer={handleConfigureOffer}
-                      onExecuteOffer={handleExecuteOffer}
-                      onOpenAssessmentDrawer={handleOpenAssessmentReview}
                     />
                   </div>
                 );
-              })
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                Loading rounds...
-              </div>
-            )}
-          </div>
-        </SortableContext>
+              }
+              return null;
+            })()}
+          </DragOverlay>
+        </DndContext>
+      </div>
 
-        <DragOverlay>
-          {activeApplication && <ApplicationCard application={activeApplication} onClick={() => { }} />}
-          {activeRoundId && (() => {
-            const draggedRound = rounds.find(r => `round-${r.id}` === activeRoundId);
-            if (draggedRound) {
-              const roundApps = getApplicationsForRound(draggedRound);
-              return (
-                <div style={{ width: '280px' }}>
-                  <StageColumn
-                    round={draggedRound}
-                    applications={roundApps}
-                    onApplicationClick={() => { }}
-                    isCompareMode={false}
-                    selectedForComparison={[]}
-                    onStageChange={() => { }}
-                    allRounds={rounds}
-                  />
-                </div>
-              );
-            }
-            return null;
-          })()}
-        </DragOverlay>
-      </DndContext>
+
 
       {selectedApplication && (
         <CandidateAssessmentView
+          key={selectedApplication.id}
           application={selectedApplication}
           open={detailPanelOpen}
           onOpenChange={setDetailPanelOpen}
@@ -1346,16 +1494,55 @@ export function ApplicationPipeline({
           onPrevious={handlePrevious}
           hasNext={hasNext}
           hasPrevious={hasPrevious}
+          
+          // Next Stage Logic
+          nextStageName={(() => {
+             // Try to find current round index
+             // 1. By ID match if we know current round ID (not stored in app usually, but we can look up by stage name?)
+             // Application has "stage", Rounds have "name".
+             const currentStageName = selectedApplication.stage;
+             const currentRoundIndex = rounds.findIndex(r => r.name === currentStageName);
+             
+             if (currentRoundIndex !== -1 && currentRoundIndex < rounds.length - 1) {
+                return rounds[currentRoundIndex + 1].name;
+             }
+             return undefined;
+          })()}
+          onMoveToNextStage={() => {
+             const currentStageName = selectedApplication.stage;
+             const currentRoundIndex = rounds.findIndex(r => r.name === currentStageName);
+             
+             if (currentRoundIndex !== -1 && currentRoundIndex < rounds.length - 1) {
+                const nextRound = rounds[currentRoundIndex + 1];
+                setPendingMoveApplication(selectedApplication);
+                setPendingTargetRound(nextRound);
+                setIsMoveStageDialogOpen(true);
+             } else {
+                toast.error("No next stage available");
+             }
+          }}
         />
       )}
 
       {jobId && (
-        <CreateRoundDialog
-          open={createRoundDialogOpen}
-          onOpenChange={setCreateRoundDialogOpen}
-          onSuccess={handleRoundCreated}
-          jobId={jobId}
-        />
+        <>
+          <RoundEmailConfigDrawer
+            open={roundEmailConfigDrawerOpen}
+            onOpenChange={setRoundEmailConfigDrawerOpen}
+            jobId={jobId || ''}
+            round={selectedRoundForEmailConfig}
+            onSuccess={() => {
+              // Maybe refresh something or toast
+            }}
+          />
+          
+          <CreateRoundDialog
+              open={createRoundDialogOpen}
+              onOpenChange={setCreateRoundDialogOpen}
+              onSuccess={handleRoundCreated}
+              jobId={jobId}
+            />
+        </>
       )}
 
       {jobId && selectedRoundForConfig && (
@@ -1445,7 +1632,6 @@ export function ApplicationPipeline({
             if (currentRoundIndex !== -1 && currentRoundIndex < rounds.length - 1) {
               const nextRound = rounds[currentRoundIndex + 1];
               await handleMoveToRound(applicationId, nextRound.id);
-              toast.success(`Moved candidate to ${nextRound.name}`);
             } else {
               toast.error("No next stage available");
             }
@@ -1489,6 +1675,16 @@ export function ApplicationPipeline({
           />
         </>
       )}
+
+      {/* Move Stage Dialog from Drag & Drop */}
+      <MoveStageDialog 
+        open={isMoveStageDialogOpen}
+        onOpenChange={setIsMoveStageDialogOpen}
+        candidateName={pendingMoveApplication?.candidateName || "Candidate"}
+        nextStageName={pendingTargetRound?.name || "Next Stage"}
+        onConfirm={executeMoveToRound}
+        isSubmitting={pendingIsMoving}
+      />
     </>
   );
 }

@@ -81,6 +81,8 @@ import { useAuth } from "@/app/providers/AuthContext";
 import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
 import { JobRound, jobRoundService } from "@/shared/lib/jobRoundService";
 import { RoundDetailView } from "@/modules/applications/components/RoundDetailView";
+import { AssessmentConfigurationDrawer } from "@/modules/applications/components/AssessmentConfigurationDrawer";
+import { InterviewConfigurationDrawer } from "@/modules/applications/components/InterviewConfigurationDrawer";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -102,6 +104,27 @@ export default function JobDetail() {
   const [allApplications, setAllApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
+  const [assessmentConfigDrawerOpen, setAssessmentConfigDrawerOpen] = useState(false);
+  const [selectedRoundForConfig, setSelectedRoundForConfig] = useState<JobRound | null>(null);
+
+  const handleConfigureAssessment = (roundId: string) => {
+    const round = rounds.find(r => r.id === roundId);
+    if (round) {
+      setSelectedRoundForConfig(round);
+      setAssessmentConfigDrawerOpen(true);
+    }
+  };
+
+  const [interviewConfigDrawerOpen, setInterviewConfigDrawerOpen] = useState(false);
+  
+  const handleConfigureInterview = (roundId: string) => {
+    const round = rounds.find(r => r.id === roundId);
+    if (round) {
+      setSelectedRoundForConfig(round);
+      setInterviewConfigDrawerOpen(true);
+    }
+  };
+
   const [activeTab, setActiveTab] = useState("overview");;
   const [applicationsFilters, setApplicationsFilters] = useState<JobApplicationsFilters>({
     searchQuery: '',
@@ -472,6 +495,9 @@ export default function JobDetail() {
             mappedStatus,
             originalStage: app.stage,
             mappedStage,
+            roundMapRoundId: roundMap[app.id],
+            originalAppRoundId: app.roundId,
+            finalRoundId: roundMap[app.id] || app.roundId
           });
 
           // Validate mapped values
@@ -1164,8 +1190,58 @@ export default function JobDetail() {
                     }}
                     allRounds={rounds}
                     onMoveToRound={async (appId, roundId) => {
-                       // Implement move logic if needed
+                       try {
+                         const targetRound = rounds.find(r => r.id === roundId);
+                         if (!targetRound) return;
+                         
+                         const res = await applicationService.moveStage(appId, targetRound.name, roundId);
+                         if (res.success) {
+                           toast({ title: "Moved", description: "Candidate moved successfully" });
+                           setRefreshKey(prev => prev + 1);
+                         } else {
+                           toast({ title: "Move Failed", description: res.error || "Failed to move candidate", variant: "destructive" });
+                         }
+                       } catch (e) {
+                         console.error(e);
+                         toast({ title: "Move Error", description: "An unexpected error occurred", variant: "destructive" });
+                       }
                     }}
+                    onMoveToNextRound={async (appId) => {
+                       // Find current round index
+                       const currentIndex = rounds.findIndex(r => r.id === round.id);
+                       if (currentIndex === -1) {
+                         toast({ title: "Error", description: `Current round not found in list. Round ID: ${round.id}`, variant: "destructive" });
+                         return;
+                       }
+                       if (currentIndex === rounds.length - 1) {
+                         toast({ title: "Info", description: "This is the last round. No next stage available.", variant: "default" });
+                         return;
+                       }
+                       
+                       const nextRound = rounds[currentIndex + 1];
+                       console.log(`[JobDetail] Moving app ${appId} from ${round.name} (${round.id}) to ${nextRound.name} (${nextRound.id})`);
+                       
+                       try {
+                         // Show loading toast?
+                         toast({ title: "Moving Candidate...", description: `Moving to ${nextRound.name}` });
+                         
+                         const res = await applicationService.moveStage(appId, nextRound.name, nextRound.id);
+                         
+                         if (res.success) {
+                           toast({ title: "Success", description: `Candidate moved to ${nextRound.name}` });
+                           // Force refresh of both applications and rounds statistics if needed
+                           setRefreshKey(prev => prev + 1);
+                         } else {
+                           console.error(`[JobDetail] Move failed:`, res);
+                           toast({ title: "Move Failed", description: res.error || "Could not move candidate. Check console for details.", variant: "destructive" });
+                         }
+                       } catch (e: any) {
+                         console.error(`[JobDetail] Exception during move:`, e);
+                         toast({ title: "System Error", description: e.message || "Failed to move candidate", variant: "destructive" });
+                       }
+                    }}
+                    onConfigureAssessment={handleConfigureAssessment}
+                    onConfigureInterview={handleConfigureInterview}
                   />
                  );
               })()
@@ -1291,6 +1367,31 @@ export default function JobDetail() {
         </div>
       </div>
     </Tabs>
+
+        {/* Assessment Configuration Drawer */}
+        {selectedRoundForConfig && (
+          <AssessmentConfigurationDrawer
+            open={assessmentConfigDrawerOpen}
+            onOpenChange={setAssessmentConfigDrawerOpen}
+            jobId={jobId || ''}
+            roundId={selectedRoundForConfig.id}
+            roundName={selectedRoundForConfig.name}
+            onSuccess={() => {
+               // Refresh if needed, e.g. if config changes affect something visible immediately
+               // Often config is backend only, so no refresh needed unless we show status
+            }}
+          />
+        )}
+
+        {selectedRoundForConfig && (
+          <InterviewConfigurationDrawer
+            open={interviewConfigDrawerOpen}
+            onOpenChange={setInterviewConfigDrawerOpen}
+            jobId={jobId || ''}
+            roundId={selectedRoundForConfig.id}
+            roundName={selectedRoundForConfig.name}
+          />
+        )}
 
         {/* Job Edit Drawer */}
         {jobId && (
