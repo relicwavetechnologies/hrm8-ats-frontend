@@ -134,7 +134,6 @@ function SortableRoundColumn({
         onOpenScreening={onOpenScreening}
         onConfigureOffer={onConfigureOffer}
         onExecuteOffer={onExecuteOffer}
-        onExecuteOffer={onExecuteOffer}
         onOpenAssessmentDrawer={onOpenAssessmentDrawer}
         onConfigureEmail={onConfigureEmail}
         dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
@@ -239,6 +238,20 @@ function StageColumn({
               <Badge variant="outline" className="text-xs h-6 px-2 rounded-full">
                 {applications.length}
               </Badge>
+              {onConfigureEmail && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConfigureEmail(round);
+                  }}
+                  title="Configure Auto-Reply Email"
+                >
+                  <Mail className="h-3 w-3" />
+                </Button>
+              )}
               {round.isFixed && round.fixedKey === 'NEW' && (
                 <>
                   {onOpenScreening && (
@@ -253,20 +266,6 @@ function StageColumn({
                       title="Open Initial Screening"
                     >
                       <FileSearch className="h-3 w-3" />
-                    </Button>
-                  )}
-                  {onConfigureEmail && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onConfigureEmail(round);
-                      }}
-                      title="Configure Auto-Reply Email"
-                    >
-                      <Mail className="h-3 w-3" />
                     </Button>
                   )}
                 </>
@@ -1563,7 +1562,6 @@ export function ApplicationPipeline({
             jobId={jobId}
             roundId={selectedRoundForConfig.id}
             roundName={selectedRoundForConfig.name}
-            jobRounds={rounds}
             onSuccess={() => {
               loadRounds();
             }}

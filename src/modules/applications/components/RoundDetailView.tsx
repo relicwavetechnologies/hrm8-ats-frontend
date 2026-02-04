@@ -32,6 +32,7 @@ interface RoundDetailViewProps {
   onMoveToNextRound?: (applicationId: string) => void; 
   onReject?: (applicationId: string) => void;
   onRefresh?: () => void;
+  onConfigureEmail?: (roundId: string) => void;
 }
 
 interface RoundAssessment {
@@ -86,7 +87,8 @@ export function RoundDetailView({
   allRounds,
   onMoveToNextRound,
   onReject,
-  onRefresh
+  onRefresh,
+  onConfigureEmail
 }: RoundDetailViewProps) {
   
   // Candidates currently in this round
@@ -483,7 +485,18 @@ export function RoundDetailView({
               <Settings className="mr-2 h-3.5 w-3.5" />
               Configure
             </Button>
-          )}      
+          )} 
+          {onConfigureEmail && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 border-border/60 hover:bg-muted/50 text-xs font-medium"
+              onClick={() => onConfigureEmail(round.id)}
+            >
+              <Mail className="mr-2 h-3.5 w-3.5" />
+              Configure
+            </Button>
+          )}     
           {round.type === 'ASSESSMENT' && !round.isFixed && onConfigureAssessment && (
             <Button 
               variant="outline" 

@@ -37,7 +37,7 @@ export function AIGenerateDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [jobTitle, setJobTitle] = useState("");
-  const [type, setType] = useState("interview_invitation");
+  const [type, setType] = useState("INTERVIEW");
   const [tone, setTone] = useState("professional");
   const [context, setContext] = useState("");
 
@@ -111,11 +111,13 @@ export function AIGenerateDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="interview_invitation">Interview Invitation</SelectItem>
-                <SelectItem value="rejection">Rejection Email</SelectItem>
-                <SelectItem value="offer_letter">Offer Letter</SelectItem>
-                <SelectItem value="sourcing">Sourcing Outreach</SelectItem>
-                <SelectItem value="custom">Custom / Other</SelectItem>
+                <SelectItem value="NEW">New</SelectItem>
+                <SelectItem value="ASSESSMENT">Assessment</SelectItem>
+                <SelectItem value="INTERVIEW">Interview</SelectItem>
+                <SelectItem value="OFFER">Offered</SelectItem>
+                <SelectItem value="HIRED">Hired</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
+                <SelectItem value="CUSTOM">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
