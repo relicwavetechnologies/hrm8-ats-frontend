@@ -51,6 +51,7 @@ export interface Application {
   notes?: any[];
   candidatePreferences?: any;
   teamReviews?: any[];
+  evaluations?: any[];
 }
 
 export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected' | 'withdrawn';

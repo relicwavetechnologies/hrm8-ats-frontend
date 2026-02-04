@@ -5,14 +5,14 @@ export interface HiringTeamMember {
   userId?: string;
   email: string;
   name: string;
-  role: 'admin' | 'member' | 'hiring_manager' | 'recruiter' | 'interviewer' | 'coordinator';
+  role: 'admin' | 'member' | 'hiring_manager' | 'recruiter' | 'interviewer' | 'coordinator' | 'shortlisting' | 'ADMIN' | 'MEMBER' | 'SHORTLISTING';
   permissions: {
     canViewApplications: boolean;
     canShortlist: boolean;
     canScheduleInterviews: boolean;
     canMakeOffers: boolean;
   };
-  status: 'active' | 'pending_invite';
+  status: 'active' | 'pending_invite' | 'ACTIVE' | 'PENDING';
   invitedAt?: string;
   addedBy?: string;
 }

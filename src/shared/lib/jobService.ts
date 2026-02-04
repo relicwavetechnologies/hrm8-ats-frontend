@@ -206,7 +206,28 @@ class JobService {
       templateDescription,
     });
   }
+
+  // Hiring Team Management
+
+  async getHiringTeam(jobId: string) {
+    return apiClient.get<any[]>(`/api/jobs/${jobId}/team`);
+  }
+
+  async inviteTeamMember(jobId: string, data: { email: string; name?: string; role: string }) {
+    return apiClient.post<{ message: string }>(`/api/jobs/${jobId}/team`, data);
+  }
+
+  async updateTeamMemberRole(jobId: string, memberId: string, role: string) {
+    return apiClient.patch<{ message: string }>(`/api/jobs/${jobId}/team/${memberId}`, { role });
+  }
+
+  async removeTeamMember(jobId: string, memberId: string) {
+    return apiClient.delete<{ message: string }>(`/api/jobs/${jobId}/team/${memberId}`);
+  }
+
+  async resendInvite(jobId: string, memberId: string) {
+    return apiClient.post<{ message: string }>(`/api/jobs/${jobId}/team/${memberId}/resend-invite`);
+  }
 }
 
 export const jobService = new JobService();
-

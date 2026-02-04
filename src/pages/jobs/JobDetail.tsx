@@ -26,7 +26,8 @@ import {
   Sparkles,
   Video,
   ArrowUpCircle,
-  UserPlus
+  UserPlus,
+  Users
 } from "lucide-react";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
@@ -78,7 +79,7 @@ import { filterApplicationsByTags } from "@/shared/lib/applicationTags";
 import { useMemo } from "react";
 import { verifyJobPayment } from "@/shared/lib/payments";
 import { useAuth } from "@/app/providers/AuthContext";
-import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
+import { HiringTeamTab } from "@/modules/jobs/components/team/HiringTeamTab";
 import { JobRound, jobRoundService } from "@/shared/lib/jobRoundService";
 import { RoundDetailView } from "@/modules/applications/components/RoundDetailView";
 import { AssessmentConfigurationDrawer } from "@/modules/applications/components/AssessmentConfigurationDrawer";
@@ -100,7 +101,6 @@ export default function JobDetail() {
   const [talentPoolDialogOpen, setTalentPoolDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [emailHubOpen, setEmailHubOpen] = useState(false);
-  const [hiringTeamDrawerOpen, setHiringTeamDrawerOpen] = useState(false);
   const [allApplications, setAllApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
@@ -723,6 +723,14 @@ export default function JobDetail() {
                 Overview
               </TabsTrigger>
               <TabsTrigger
+                value="team"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                asChild={false}
+              >
+                <Users className="h-4 w-4" />
+                Team
+              </TabsTrigger>
+              <TabsTrigger
                 value="applicants"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
@@ -818,7 +826,7 @@ export default function JobDetail() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto h-full bg-background p-8">
           <div className="max-w-6xl mx-auto space-y-6">
-            {activeTab !== 'applicants' && (
+            {activeTab !== 'applicants' && activeTab !== 'team' && (
               <>
                 <AtsPageHeader
                   title={job.title}
@@ -849,10 +857,6 @@ export default function JobDetail() {
                     <Button size="sm" onClick={handleEditJob}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setHiringTeamDrawerOpen(true)}>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Manage Team
                     </Button>
                     <JobLifecycleActions
                       job={job}
@@ -1185,6 +1189,7 @@ export default function JobDetail() {
                     jobId={job.id}
                     round={round}
                     applications={allApplications}
+                    onRefresh={handleJobUpdate}
                     onApplicationClick={(app) => {
                       // We can open the drawer or some detailed view
                     }}
@@ -1282,6 +1287,11 @@ export default function JobDetail() {
           {/* History Tab */}
           <TabsContent value="history" className="mt-6">
             <JobVersionHistory jobId={job.id} onRevert={handleRevertVersion} />
+          </TabsContent>
+
+          {/* Team Tab */}
+          <TabsContent value="team" className="mt-6 space-y-6">
+            <HiringTeamTab jobId={job.id} />
           </TabsContent>
 
           {/* Settings Tab */}
@@ -1495,17 +1505,7 @@ export default function JobDetail() {
           />
         )}
 
-        {/* Hiring Team Management Drawer */}
-        {job && (
-          <HiringTeamDrawer
-            open={hiringTeamDrawerOpen}
-            onOpenChange={setHiringTeamDrawerOpen}
-            jobId={job.id}
-            jobTitle={job.title}
-            hiringTeam={job.hiringTeam as unknown as HiringTeamData | null}
-            onUpdate={handleJobUpdate}
-          />
-        )}
+
     </DashboardPageLayout>
   );
 }

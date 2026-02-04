@@ -17,7 +17,6 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
-import { Checkbox } from "@/shared/components/ui/checkbox";
 import { ComboboxWithAdd } from "@/shared/components/ui/combobox-with-add";
 
 interface AddHiringTeamDialogProps {
@@ -41,18 +40,40 @@ export function AddHiringTeamDialog({
   const [selectedUserId, setSelectedUserId] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
-  const [role, setRole] = useState<HiringTeamMember['role']>('recruiter');
-  const [permissions, setPermissions] = useState({
-    canViewApplications: true,
-    canShortlist: false,
-    canScheduleInterviews: false,
-    canMakeOffers: false,
-  });
+  const [role, setRole] = useState<HiringTeamMember['role']>('member');
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [emailError, setEmailError] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'existing' | 'invite'>('existing');
+
+  // Helper to get permissions based on role
+  const getPermissionsForRole = (r: HiringTeamMember['role']) => {
+    switch (r) {
+      case 'admin':
+        return {
+          canViewApplications: true,
+          canShortlist: true,
+          canScheduleInterviews: true,
+          canMakeOffers: true,
+        };
+      case 'shortlisting':
+        return {
+          canViewApplications: true,
+          canShortlist: true,
+          canScheduleInterviews: false,
+          canMakeOffers: false,
+        };
+      case 'member':
+      default:
+        return {
+          canViewApplications: true,
+          canShortlist: false,
+          canScheduleInterviews: false,
+          canMakeOffers: false,
+        };
+    }
+  };
 
   // Get company domain from current user's email
   const companyDomain = user?.email ? extractEmailDomain(user.email) : '';
@@ -105,8 +126,14 @@ export function AddHiringTeamDialog({
         // Clear existing user selection
         setSelectedUserId('');
       }
-      setRole(editMember.role);
-      setPermissions(editMember.permissions);
+      // Normalize role to lowercase for UI matching
+      const normalizedRole = editMember.role.toLowerCase() as HiringTeamMember['role'];
+      // Map legacy roles if necessary, or default to member
+      const mappedRole = ['admin', 'shortlisting', 'member'].includes(normalizedRole) 
+        ? normalizedRole 
+        : 'member';
+      
+      setRole(mappedRole);
     } else {
       // Not editing - reset form
       resetForm();
@@ -118,17 +145,13 @@ export function AddHiringTeamDialog({
     setSelectedUserId('');
     setInviteEmail('');
     setInviteName('');
-    setRole('recruiter');
-    setPermissions({
-      canViewApplications: true,
-      canShortlist: false,
-      canScheduleInterviews: false,
-      canMakeOffers: false,
-    });
+    setRole('member');
     setEmailError('');
   };
 
   const handleAddExisting = () => {
+    const permissions = getPermissionsForRole(role);
+
     // When editing, use the original user data
     if (editMember && editMember.userId) {
       const user = companyUsers.find((u) => u.id === editMember.userId);
@@ -236,6 +259,8 @@ export function AddHiringTeamDialog({
       return;
     }
 
+    const permissions = getPermissionsForRole(role);
+
     // If editing an existing invited member, just update local state
     // Preserve original email/name, only update role and permissions
     if (editMember && editMember.status === 'pending_invite') {
@@ -277,7 +302,7 @@ export function AddHiringTeamDialog({
       await hiringTeamService.inviteMember(jobId, {
       email: inviteEmail,
       name: inviteName,
-      role,
+      role: role.toUpperCase() as any,
       permissions,
       });
 
@@ -315,19 +340,51 @@ export function AddHiringTeamDialog({
 
   const userOptions = companyUsers.map((user) => `${user.name} (${user.email})`);
 
+  // Shared Role Selection UI
+  const RoleSelection = () => (
+    <div className="space-y-3">
+      <Label>Role</Label>
+      <RadioGroup value={role} onValueChange={(value) => setRole(value as HiringTeamMember['role'])}>
+        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" key="role-admin">
+          <RadioGroupItem value="admin" id="role-admin" className="mt-1" />
+          <Label htmlFor="role-admin" className="cursor-pointer font-normal grid gap-1">
+            <span className="font-semibold">Admin</span>
+            <span className="text-xs text-muted-foreground">Full access to manage job, team, and candidates</span>
+          </Label>
+        </div>
+        
+        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" key="role-shortlisting">
+          <RadioGroupItem value="shortlisting" id="role-shortlist" className="mt-1" />
+          <Label htmlFor="role-shortlist" className="cursor-pointer font-normal grid gap-1">
+            <span className="font-semibold">Shortlisting</span>
+            <span className="text-xs text-muted-foreground">Can view applications and shortlist candidates</span>
+          </Label>
+        </div>
+        
+        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" key="role-member">
+          <RadioGroupItem value="member" id="role-member" className="mt-1" />
+          <Label htmlFor="role-member" className="cursor-pointer font-normal grid gap-1">
+            <span className="font-semibold">Member</span>
+            <span className="text-xs text-muted-foreground">View applications only</span>
+          </Label>
+        </div>
+      </RadioGroup>
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{editMember ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
           <DialogDescription>
-            {editMember ? 'Update team member role and permissions' : 'Add existing users or invite new members to the hiring team'}
+            {editMember ? 'Update team member role' : 'Add members to the hiring team'}
           </DialogDescription>
         </DialogHeader>
 
         {editMember ? (
           // When editing, show content directly without tabs
-          <div className="space-y-4 pt-4">
+          <div className="space-y-6 pt-4">
             {editMember.userId ? (
               // Editing existing user
               <div className="space-y-2">
@@ -336,112 +393,26 @@ export function AddHiringTeamDialog({
                   <p className="font-medium">{editMember.name}</p>
                   <p className="text-sm text-muted-foreground">{editMember.email}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  User cannot be changed when editing. Only role and permissions can be modified.
-                </p>
               </div>
             ) : (
               // Editing invited user
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="invite-email">Email Address</Label>
+                  <Label>Email Address</Label>
                   <div className="p-3 border rounded-lg bg-muted">
                     <p className="font-medium">{editMember.email}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Email cannot be changed when editing. Only role and permissions can be modified.
-                  </p>
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="invite-name">Full Name</Label>
+                  <Label>Full Name</Label>
                   <div className="p-3 border rounded-lg bg-muted">
                     <p className="font-medium">{editMember.name}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Name cannot be changed when editing. Only role and permissions can be modified.
-                  </p>
                 </div>
               </>
             )}
 
-            {/* Role Section */}
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <RadioGroup value={role} onValueChange={(value) => setRole(value as HiringTeamMember['role'])}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hiring_manager" id="edit-role-hm" />
-                  <Label htmlFor="edit-role-hm" className="font-normal">Hiring Manager</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="recruiter" id="edit-role-rec" />
-                  <Label htmlFor="edit-role-rec" className="font-normal">Recruiter</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="interviewer" id="edit-role-int" />
-                  <Label htmlFor="edit-role-int" className="font-normal">Interviewer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="coordinator" id="edit-role-coord" />
-                  <Label htmlFor="edit-role-coord" className="font-normal">Coordinator</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Permissions Section */}
-            <div className="space-y-2">
-              <Label>Permissions</Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-perm-view"
-                    checked={permissions.canViewApplications}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canViewApplications: !!checked })
-                    }
-                  />
-                  <Label htmlFor="edit-perm-view" className="font-normal">
-                    View Applications
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-perm-shortlist"
-                    checked={permissions.canShortlist}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canShortlist: !!checked })
-                    }
-                  />
-                  <Label htmlFor="edit-perm-shortlist" className="font-normal">
-                    Shortlist Candidates
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-perm-schedule"
-                    checked={permissions.canScheduleInterviews}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canScheduleInterviews: !!checked })
-                    }
-                  />
-                  <Label htmlFor="edit-perm-schedule" className="font-normal">
-                    Schedule Interviews
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-perm-offer"
-                    checked={permissions.canMakeOffers}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canMakeOffers: !!checked })
-                    }
-                  />
-                  <Label htmlFor="edit-perm-offer" className="font-normal">
-                    Make Offers
-                  </Label>
-                </div>
-              </div>
-            </div>
+            <RoleSelection />
 
             {/* Update Button */}
             <Button
@@ -460,7 +431,7 @@ export function AddHiringTeamDialog({
             <TabsTrigger value="invite">Invite New User</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="existing" className="space-y-4 pt-4">
+          <TabsContent value="existing" className="space-y-6 pt-4">
             <div className="space-y-2">
               <Label>Select User</Label>
               <ComboboxWithAdd
@@ -471,88 +442,9 @@ export function AddHiringTeamDialog({
                 emptyText="No users found"
                 disabled={!!editMember} // Disable when editing
               />
-              {editMember && (
-                <p className="text-sm text-muted-foreground">
-                  User cannot be changed when editing. Only role and permissions can be modified.
-                </p>
-              )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <RadioGroup value={role} onValueChange={(value) => setRole(value as HiringTeamMember['role'])}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hiring_manager" id="role-hm" />
-                  <Label htmlFor="role-hm" className="font-normal">Hiring Manager</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="recruiter" id="role-rec" />
-                  <Label htmlFor="role-rec" className="font-normal">Recruiter</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="interviewer" id="role-int" />
-                  <Label htmlFor="role-int" className="font-normal">Interviewer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="coordinator" id="role-coord" />
-                  <Label htmlFor="role-coord" className="font-normal">Coordinator</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Permissions</Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="perm-view"
-                    checked={permissions.canViewApplications}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canViewApplications: !!checked })
-                    }
-                  />
-                  <Label htmlFor="perm-view" className="font-normal">
-                    View Applications
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="perm-shortlist"
-                    checked={permissions.canShortlist}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canShortlist: !!checked })
-                    }
-                  />
-                  <Label htmlFor="perm-shortlist" className="font-normal">
-                    Shortlist Candidates
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="perm-schedule"
-                    checked={permissions.canScheduleInterviews}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canScheduleInterviews: !!checked })
-                    }
-                  />
-                  <Label htmlFor="perm-schedule" className="font-normal">
-                    Schedule Interviews
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="perm-offer"
-                    checked={permissions.canMakeOffers}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canMakeOffers: !!checked })
-                    }
-                  />
-                  <Label htmlFor="perm-offer" className="font-normal">
-                    Make Offers
-                  </Label>
-                </div>
-              </div>
-            </div>
+            <RoleSelection />
 
             <Button
               onClick={handleAddExisting}
@@ -563,127 +455,40 @@ export function AddHiringTeamDialog({
             </Button>
           </TabsContent>
 
-          <TabsContent value="invite" className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="invite-email">Email Address</Label>
-              <Input
-                id="invite-email"
-                type="email"
-                placeholder={`user@${companyDomain || 'company.com'}`}
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className={emailError ? 'border-destructive' : ''}
-                disabled={!!editMember} // Disable when editing
-              />
-              {emailError && (
-                <p className="text-sm text-destructive">{emailError}</p>
-              )}
-              {companyDomain && !emailError && inviteEmail && (
-                <p className="text-sm text-muted-foreground">
-                  Email must be from {companyDomain}
-                </p>
-              )}
-              {editMember && (
-                <p className="text-sm text-muted-foreground">
-                  Email cannot be changed when editing. Only role and permissions can be modified.
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-name">Full Name</Label>
-              <Input
-                id="invite-name"
-                placeholder="John Doe"
-                value={inviteName}
-                onChange={(e) => setInviteName(e.target.value)}
-                disabled={!!editMember} // Disable when editing
-              />
-              {editMember && (
-                <p className="text-sm text-muted-foreground">
-                  Name cannot be changed when editing. Only role and permissions can be modified.
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <RadioGroup value={role} onValueChange={(value) => setRole(value as HiringTeamMember['role'])}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hiring_manager" id="invite-role-hm" />
-                  <Label htmlFor="invite-role-hm" className="font-normal">Hiring Manager</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="recruiter" id="invite-role-rec" />
-                  <Label htmlFor="invite-role-rec" className="font-normal">Recruiter</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="interviewer" id="invite-role-int" />
-                  <Label htmlFor="invite-role-int" className="font-normal">Interviewer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="coordinator" id="invite-role-coord" />
-                  <Label htmlFor="invite-role-coord" className="font-normal">Coordinator</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Permissions</Label>
+          <TabsContent value="invite" className="space-y-6 pt-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="invite-perm-view"
-                    checked={permissions.canViewApplications}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canViewApplications: !!checked })
-                    }
-                  />
-                  <Label htmlFor="invite-perm-view" className="font-normal">
-                    View Applications
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="invite-perm-shortlist"
-                    checked={permissions.canShortlist}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canShortlist: !!checked })
-                    }
-                  />
-                  <Label htmlFor="invite-perm-shortlist" className="font-normal">
-                    Shortlist Candidates
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="invite-perm-schedule"
-                    checked={permissions.canScheduleInterviews}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canScheduleInterviews: !!checked })
-                    }
-                  />
-                  <Label htmlFor="invite-perm-schedule" className="font-normal">
-                    Schedule Interviews
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="invite-perm-offer"
-                    checked={permissions.canMakeOffers}
-                    onCheckedChange={(checked) =>
-                      setPermissions({ ...permissions, canMakeOffers: !!checked })
-                    }
-                  />
-                  <Label htmlFor="invite-perm-offer" className="font-normal">
-                    Make Offers
-                  </Label>
-                </div>
+                <Label htmlFor="invite-email">Email Address</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder={`user@${companyDomain || 'company.com'}`}
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className={emailError ? 'border-destructive' : ''}
+                  disabled={!!editMember} // Disable when editing
+                />
+                {emailError && (
+                  <p className="text-sm text-destructive">{emailError}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invite-name">Full Name</Label>
+                <Input
+                  id="invite-name"
+                  placeholder="John Doe"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  disabled={!!editMember} // Disable when editing
+                />
               </div>
             </div>
 
+            <RoleSelection />
+
             <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-              User will receive an email invitation to join the platform and this hiring team
+              User will receive an email invitation to join the platform and this hiring team.
             </div>
 
             <Button

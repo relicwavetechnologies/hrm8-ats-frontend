@@ -79,6 +79,7 @@ import { useMemo } from "react";
 import { verifyJobPayment } from "@/shared/lib/payments";
 import { useAuth } from "@/app/AuthContext";
 import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
+import { HiringTeamTab } from "@/modules/jobs/components/team/HiringTeamTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -683,10 +684,6 @@ export default function JobDetail() {
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setHiringTeamDrawerOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Manage Team
-            </Button>
             <JobLifecycleActions
               job={job}
               onJobUpdate={handleJobUpdate}
@@ -711,6 +708,12 @@ export default function JobDetail() {
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="team"
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                Team
               </TabsTrigger>
               <TabsTrigger
                 value="applicants"
@@ -1132,6 +1135,10 @@ export default function JobDetail() {
           </TabsContent>
 
           {/* Settings Tab */}
+          <TabsContent value="team" className="mt-6 space-y-6">
+            <HiringTeamTab jobId={job.id} />
+          </TabsContent>
+
           <TabsContent value="settings" className="mt-6 space-y-6">
             {/* Job Board Visibility Control */}
             <JobBoardVisibilityControl job={job} onUpdate={handleJobUpdate} />
@@ -1313,18 +1320,6 @@ export default function JobDetail() {
             onOpenChange={setEmailHubOpen}
             jobId={job.id}
             jobTitle={job.title}
-          />
-        )}
-
-        {/* Hiring Team Management Drawer */}
-        {job && (
-          <HiringTeamDrawer
-            open={hiringTeamDrawerOpen}
-            onOpenChange={setHiringTeamDrawerOpen}
-            jobId={job.id}
-            jobTitle={job.title}
-            hiringTeam={job.hiringTeam as unknown as HiringTeamData | null}
-            onUpdate={handleJobUpdate}
           />
         )}
       </div>

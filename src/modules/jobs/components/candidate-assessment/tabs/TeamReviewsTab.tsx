@@ -97,10 +97,13 @@ export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
 
   const getRecommendationStyle = (rec: string) => {
     switch (rec.toLowerCase()) {
-      case 'strong-hire': return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+      case 'strong-hire': 
+      case 'approve': return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
       case 'hire': return "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
-      case 'maybe': return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+      case 'maybe': 
+      case 'pending': return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
       case 'no-hire': 
+      case 'reject':
       case 'strong-no-hire': return "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
       default: return "bg-secondary text-secondary-foreground";
     }
@@ -221,13 +224,20 @@ export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
 
   const parsedRecruiterNotes = parseNotes(application.recruiterNotes);
 
-  // Process timeline items (Sorted Ascending: Oldest to Newest for Chat Flow)
+  // Process timeline items (Oldest to Newest for Chat Flow)
   const timelineItems = [
     ...reviews.map(r => ({ ...r, type: 'review' as const, date: new Date(r.submittedAt) })),
     ...parsedRecruiterNotes.map(n => ({ ...n, type: n.type === 'move' ? 'note' as const : 'note' as const, isMoveLog: n.type === 'move', isSystem: n.userName === 'System' || n.content.includes('Moved to') })),
     ...(application.notes || []).map(n => ({ ...n, type: 'note' as const, date: new Date(n.createdAt) })),
+    ...(application.evaluations || []).map(e => ({ 
+      ...e, 
+      type: 'evaluation' as const, 
+      date: new Date(e.created_at || e.createdAt),
+      reviewerName: e.user?.name || 'Team Member',
+      recommendation: e.decision || 'PENDING'
+    })),
     ...tempNotes.map(n => ({ ...n, type: 'note' as const, date: new Date(n.createdAt) }))
-  ].sort((a, b) => a.date.getTime() - b.date.getTime()); // Oldest at top, Newest at bottom
+  ].sort((a, b) => a.date.getTime() - b.date.getTime()); // Oldest bottom strategy fallback to maintain balance
 
   // Group by date
   const groupedItems: { dateLabel: string; items: typeof timelineItems }[] = [];
@@ -266,14 +276,15 @@ export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
 
             <div className="space-y-6">
               {group.items.map((item) => {
-                if (item.type === 'review') {
+                if (item.type === 'review' || item.type === 'evaluation') {
                   const review = item as any;
+                  const isEvaluation = item.type === 'evaluation';
+                  
                   return (
-                    <div key={`review-${review.id}`} className="group relative pl-4">
-                      {/* Review Card Style */}
+                    <div key={`${item.type}-${review.id}`} className="group relative pl-4">
                       <div className="flex gap-4">
                         <Avatar className="h-10 w-10 border-2 border-background shadow-sm mt-1 ring-1 ring-border/10">
-                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/5 text-primary font-bold text-xs">
+                          <AvatarFallback className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 text-indigo-700 font-bold text-xs">
                              {review.reviewerName.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
@@ -281,28 +292,38 @@ export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
                         <div className="flex-1 space-y-2">
                            <div className="flex items-center justify-between">
                              <div className="flex items-baseline gap-2">
-                               <p className="text-sm font-bold text-foreground">{review.reviewerName}</p>
-                               <span className="text-[11px] text-muted-foreground">{format(item.date, 'h:mm a')}</span>
+                               <p className="text-sm font-bold text-slate-900">{review.reviewerName}</p>
+                               <span className="text-[11px] text-slate-400 font-medium">{format(item.date, 'h:mm a')}</span>
                              </div>
                              <Badge variant="outline" className={`${getRecommendationStyle(review.recommendation)} px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border rounded-full shadow-sm`}>
                                {review.recommendation.replace(/-/g, ' ')}
                              </Badge>
                            </div>
 
-                           <div className="bg-card border rounded-2xl rounded-tl-none p-5 shadow-sm text-sm leading-relaxed text-foreground/90 hover:shadow-md transition-shadow">
-                              {review.comments && review.comments.map((c: any) => (
-                                <p key={c.id} className="whitespace-pre-wrap">{c.content}</p>
-                              ))}
+                           <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-none p-5 shadow-sm text-sm leading-relaxed text-slate-700 hover:border-slate-200 transition-all group-hover:shadow-md">
+                              {isEvaluation ? (
+                                <p className="whitespace-pre-wrap font-medium">{review.comment || "No detailed review provided."}</p>
+                              ) : (
+                                review.comments && review.comments.map((c: any) => (
+                                  <p key={c.id} className="whitespace-pre-wrap">{c.content}</p>
+                                ))
+                              )}
                               
-                              <div className="mt-4 pt-4 border-t border-dashed flex flex-wrap gap-2 items-center">
-                                <span className="text-xs font-bold text-primary uppercase tracking-wide">Score: {review.overallScore}/10</span>
-                                <div className="h-3 w-px bg-border mx-2" />
-                                {review.ratings.slice(0, 3).map((r: any) => (
-                                  <Badge key={r.criterionId} variant="secondary" className="text-[10px] font-medium gap-1 bg-secondary/30 hover:bg-secondary/50 border-0">
-                                    <Star className="w-2 h-2 text-amber-500 fill-amber-500" />
-                                    {getCriterionName(r.criterionId)}: {r.value}
-                                  </Badge>
-                                ))}
+                              <div className="mt-4 pt-4 border-t border-slate-50 flex flex-wrap gap-2 items-center">
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50/50 px-2 py-1 rounded-md">
+                                  Score: {isEvaluation ? review.score : review.overallScore}/10
+                                </span>
+                                {!isEvaluation && (
+                                  <>
+                                    <div className="h-3 w-px bg-slate-200 mx-2" />
+                                    {review.ratings && review.ratings.slice(0, 3).map((r: any) => (
+                                      <Badge key={r.criterionId} variant="secondary" className="text-[10px] font-medium gap-1 bg-slate-50 text-slate-600 border-0">
+                                        <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+                                        {getCriterionName(r.criterionId)}: {r.value}
+                                      </Badge>
+                                    ))}
+                                  </>
+                                )}
                               </div>
                            </div>
                         </div>

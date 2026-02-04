@@ -140,19 +140,10 @@ class ApplicationService {
    */
   async bulkScoreCandidates(applicationIds: string[], jobId: string) {
     return apiClient.post<{
-      results: Array<{
-        applicationId: string;
-        score: number;
-        analysis: any;
-        success: boolean;
-      }>;
-      progress: Array<{ completed: number; total: number; current: string }>;
-      summary: {
-        total: number;
-        successful: number;
-        failed: number;
-      };
-    }>('/api/applications/bulk-score', {
+      success: number;
+      failed: number;
+      message: string;
+    }>('/api/applications/bulk-analyze', {
       applicationIds,
       jobId,
     });
