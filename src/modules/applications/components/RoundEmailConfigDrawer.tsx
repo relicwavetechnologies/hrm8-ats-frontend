@@ -101,13 +101,28 @@ export function RoundEmailConfigDrawer({
       }
 
       // 2. Load Templates
+      // 2. Load Templates
       const expectedType = getExpectedTemplateType(round.type, round.fixedKey);
       
-      const templatesRes = await emailTemplateService.getTemplates({
-        type: expectedType 
-      });
+      // Fetch specific templates if type is known
+      const specificTemplatesPromise = expectedType 
+        ? emailTemplateService.getTemplates({ type: expectedType }) 
+        : Promise.resolve([]);
+
+      // Always fetch CUSTOM templates
+      const customTemplatesPromise = emailTemplateService.getTemplates({ type: 'CUSTOM' });
+
+      const [specificTemplates, customTemplates] = await Promise.all([
+        specificTemplatesPromise, 
+        customTemplatesPromise
+      ]);
       
-      setTemplates(templatesRes);
+      // Combine and deduplicate by ID
+      const allTemplates = [...specificTemplates, ...customTemplates];
+      // Deduplicate by ID
+      const uniqueTemplates = Array.from(new Map(allTemplates.map(t => [t.id, t])).values());
+      
+      setTemplates(uniqueTemplates);
 
     } catch (error) {
       console.error("Failed to load email config:", error);
@@ -217,7 +232,7 @@ export function RoundEmailConfigDrawer({
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Only templates of type <strong>{formatTemplateTypeLabel(getExpectedTemplateType(round.type, round.fixedKey))}</strong> are shown.
+                            Showing <strong>{formatTemplateTypeLabel(getExpectedTemplateType(round.type, round.fixedKey))}</strong> and <strong>Custom</strong> templates.
                         </p>
                     </div>
 

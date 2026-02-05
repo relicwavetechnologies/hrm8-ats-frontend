@@ -62,7 +62,7 @@ export function TemplateEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [name, setName] = useState(template?.name || '');
-  const [type, setType] = useState(template?.type || 'custom');
+  const [type, setType] = useState(template?.type || 'CUSTOM');
   const [subject, setSubject] = useState(template?.subject || '');
   const [body, setBody] = useState(template?.body || '');
   const [isActive, setIsActive] = useState(template?.isActive ?? true);
@@ -249,13 +249,13 @@ export function TemplateEditor({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="application_confirmation">Application Confirmation</SelectItem>
-                    <SelectItem value="interview_invitation">Interview Invitation</SelectItem>
-                    <SelectItem value="offer_letter">Offer Letter</SelectItem>
-                    <SelectItem value="rejection">Rejection</SelectItem>
-                    <SelectItem value="stage_change">Stage Change</SelectItem>
-                    <SelectItem value="reminder">Reminder</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="NEW">New</SelectItem>
+                    <SelectItem value="ASSESSMENT">Assessment</SelectItem>
+                    <SelectItem value="INTERVIEW">Interview</SelectItem>
+                    <SelectItem value="OFFER">Offered</SelectItem>
+                    <SelectItem value="HIRED">Hired</SelectItem>
+                    <SelectItem value="REJECTED">Rejected</SelectItem>
+                    <SelectItem value="CUSTOM">Custom</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

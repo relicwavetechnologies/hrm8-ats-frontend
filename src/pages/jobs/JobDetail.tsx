@@ -84,6 +84,7 @@ import { JobRound, jobRoundService } from "@/shared/lib/jobRoundService";
 import { RoundDetailView } from "@/modules/applications/components/RoundDetailView";
 import { AssessmentConfigurationDrawer } from "@/modules/applications/components/AssessmentConfigurationDrawer";
 import { InterviewConfigurationDrawer } from "@/modules/applications/components/InterviewConfigurationDrawer";
+import { RoundEmailConfigDrawer } from "@/modules/applications/components/RoundEmailConfigDrawer";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -122,6 +123,15 @@ export default function JobDetail() {
     if (round) {
       setSelectedRoundForConfig(round);
       setInterviewConfigDrawerOpen(true);
+    }
+  };
+
+  const [roundEmailConfigDrawerOpen, setRoundEmailConfigDrawerOpen] = useState(false);
+  const handleConfigureEmail = (roundId: string) => {
+    const round = rounds.find(r => r.id === roundId);
+    if (round) {
+      setSelectedRoundForConfig(round);
+      setRoundEmailConfigDrawerOpen(true);
     }
   };
 
@@ -1247,6 +1257,7 @@ export default function JobDetail() {
                     }}
                     onConfigureAssessment={handleConfigureAssessment}
                     onConfigureInterview={handleConfigureInterview}
+                    onConfigureEmail={handleConfigureEmail}
                   />
                  );
               })()
@@ -1502,6 +1513,20 @@ export default function JobDetail() {
             open={emailHubOpen}
             onOpenChange={setEmailHubOpen}
             jobId={job.id}
+          />
+        )}
+
+        {/* Round Email Configuration Drawer */}
+        {selectedRoundForConfig && (
+          <RoundEmailConfigDrawer
+            open={roundEmailConfigDrawerOpen}
+            onOpenChange={setRoundEmailConfigDrawerOpen}
+            jobId={jobId || ''}
+            round={selectedRoundForConfig}
+            onSuccess={() => {
+              // Refresh job details if needed
+              handleJobUpdate();
+            }}
           />
         )}
 
