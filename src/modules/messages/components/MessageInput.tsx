@@ -7,7 +7,7 @@ import { useState, KeyboardEvent, useRef } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Paperclip, Send, Smile } from 'lucide-react';
-import { useWebSocket } from '@/shared/services/websocket';
+import { useWebSocket } from '@/app/providers/WebSocketContext';
 import { cn } from '@/shared/lib/utils';
 import { apiClient } from '@/shared/lib/api';
 

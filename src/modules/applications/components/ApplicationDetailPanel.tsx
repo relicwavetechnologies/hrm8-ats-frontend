@@ -1,13 +1,13 @@
 import { Application } from "@/shared/types/application";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Separator } from "@/shared/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { 
-  Mail, Phone, MapPin, Briefcase, FileText, Calendar, 
+import {
+  Mail, Phone, MapPin, Briefcase, FileText, Calendar,
   Star, MessageSquare, Clock, ArrowRight, Download, Video, Send,
   Award, TrendingUp, Bookmark, BookmarkCheck, Sparkles, UserX,
 } from "lucide-react";
@@ -29,7 +29,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog";
 import { InterviewScheduler } from "@/modules/interviews/components/InterviewScheduler";
 import { OfferForm } from "@/modules/offers/components/OfferForm";
 import { getTemplateById } from "@/shared/lib/mockTemplateStorage";
@@ -58,7 +58,7 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
   const [editingRank, setEditingRank] = useState<string>("");
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
   const [isUpdatingRank, setIsUpdatingRank] = useState(false);
-  const [isUpdatingRank, setIsUpdatingRank] = useState(false);
+
   const [isShortlisting, setIsShortlisting] = useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [pendingStage, setPendingStage] = useState<ApplicationStage | null>(null);
@@ -114,7 +114,7 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
 
   const confirmMove = async (comment: string) => {
     if (!pendingStage) return;
-    
+
     setIsMoving(true);
     try {
       // Map frontend stage to backend stage format
@@ -133,14 +133,14 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
       };
 
       const backendStage = stageMap[pendingStage] || "NEW_APPLICATION";
-      
+
       // Update stage
       const response = await applicationService.updateStage(application.id, backendStage);
 
       if (response.success) {
         // Add comment as a note if provided
         if (comment) {
-           await applicationService.updateNotes(application.id, `Moved to ${pendingStage}: ${comment}`);
+          await applicationService.updateNotes(application.id, `Moved to ${pendingStage}: ${comment}`);
         }
 
         // Also update local mock storage for fallback
@@ -236,7 +236,7 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
       const response = application.shortlisted
         ? await applicationService.unshortlistCandidate(application.id)
         : await applicationService.shortlistCandidate(application.id);
-      
+
       if (response.success) {
         toast.success(application.shortlisted ? "Candidate unshortlisted" : "Candidate shortlisted");
         onRefresh();
@@ -271,390 +271,398 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
 
   return (
     <>
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Application Details</SheetTitle>
-        </SheetHeader>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Application Details</SheetTitle>
+            <SheetDescription>
+              Detailed view of the application for {application.candidateName}.
+            </SheetDescription>
+          </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Candidate Header */}
-          <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={application.candidatePhoto} />
-              <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                {getInitials(application.candidateName)}
-              </AvatarFallback>
-            </Avatar>
+          <div className="mt-6 space-y-6">
+            {/* Candidate Header */}
+            <div className="flex items-start gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={application.candidatePhoto} />
+                <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                  {getInitials(application.candidateName)}
+                </AvatarFallback>
+              </Avatar>
 
-            <div className="flex-1">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-              <h2 className="text-2xl font-bold">{application.candidateName}</h2>
-              <p className="text-muted-foreground">{application.jobTitle}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline">{application.stage}</Badge>
-                {application.rating && (
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < application.rating!
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-muted-foreground/30"
-                        }`}
-                      />
-                    ))}
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold">{application.candidateName}</h2>
+                    <p className="text-muted-foreground">{application.jobTitle}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline">{application.stage}</Badge>
+                      {application.rating && (
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${i < application.rating!
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-muted-foreground/30"
+                                }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-                  </div>
+                  <ProfileCompletenessIndicator application={application} showProgress={false} showDetails={true} />
                 </div>
-                <ProfileCompletenessIndicator application={application} showProgress={false} showDetails={true} />
               </div>
             </div>
-          </div>
 
-          {/* Quick Actions */}
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1">
-              <Mail className="h-4 w-4 mr-2" />
-              Email
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsInterviewDialogOpen(true)}>
-              <Video className="h-4 w-4 mr-2" />
-              Schedule Interview
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsOfferDialogOpen(true)}>
-              <Send className="h-4 w-4 mr-2" />
-              Send Offer
-            </Button>
-          </div>
+            {/* Quick Actions */}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1">
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsInterviewDialogOpen(true)}>
+                <Video className="h-4 w-4 mr-2" />
+                Schedule Interview
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setIsOfferDialogOpen(true)}>
+                <Send className="h-4 w-4 mr-2" />
+                Send Offer
+              </Button>
+            </div>
 
-          {/* Shortlisting & Scoring Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Shortlisting & Scoring</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Shortlist Button */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">Shortlist Status</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {application.shortlisted ? "Candidate is shortlisted" : "Not shortlisted"}
-                  </p>
+            {/* Shortlisting & Scoring Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Shortlisting & Scoring</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Shortlist Button */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Shortlist Status</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {application.shortlisted ? "Candidate is shortlisted" : "Not shortlisted"}
+                    </p>
+                  </div>
+                  <ShortlistButton
+                    applicationId={application.id}
+                    shortlisted={application.shortlisted}
+                    onShortlistChange={(shortlisted) => {
+                      onRefresh();
+                    }}
+                    variant="button"
+                    size="sm"
+                    showLabel={true}
+                  />
                 </div>
-                <ShortlistButton
-                  applicationId={application.id}
-                  shortlisted={application.shortlisted}
-                  onShortlistChange={(shortlisted) => {
-                    onRefresh();
-                  }}
-                  variant="button"
-                  size="sm"
-                  showLabel={true}
-                />
-              </div>
 
-              <Separator />
+                <Separator />
 
-              {/* Score Input */}
-              <div className="space-y-2">
-                <Label htmlFor="score">Fit Score (0-100)</Label>
-                <QuickScoringWidget
-                  applicationId={application.id}
-                  score={application.score}
-                  onScoreUpdate={(newScore) => {
-                    setEditingScore(newScore.toString());
-                    onRefresh();
-                  }}
-                  variant="card"
-                  showSlider={true}
-                />
-              </div>
+                {/* Score Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="score">Fit Score (0-100)</Label>
+                  <QuickScoringWidget
+                    applicationId={application.id}
+                    score={application.score}
+                    onScoreUpdate={(newScore) => {
+                      setEditingScore(newScore.toString());
+                      onRefresh();
+                    }}
+                    variant="card"
+                    showSlider={true}
+                  />
+                </div>
 
-              {/* Rank Input */}
-              <div className="space-y-2">
-                <Label htmlFor="rank">Rank</Label>
-                <RankingWidget
-                  applicationId={application.id}
-                  rank={application.rank}
-                  onRankUpdate={(newRank) => {
-                    setEditingRank(newRank.toString());
-                    onRefresh();
-                  }}
-                  variant="card"
-                />
-              </div>
-            </CardContent>
-          </Card>
+                {/* Rank Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="rank">Rank</Label>
+                  <RankingWidget
+                    applicationId={application.id}
+                    rank={application.rank}
+                    onRankUpdate={(newRank) => {
+                      setEditingRank(newRank.toString());
+                      onRefresh();
+                    }}
+                    variant="card"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Stage Selector */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Move to Stage</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  className="w-full gap-2" 
-                  onClick={() => {
-                    // Logic to find next stage
-                    const stages: ApplicationStage[] = [
-                      "New Application",
-                      "Resume Review",
-                      "Phone Screen",
-                      "Technical Interview",
-                      "Manager Interview",
-                      "Final Round",
-                      "Reference Check",
-                      "Offer Extended",
-                      "Offer Accepted",
-                      "Rejected" // Excluded from "Next" logic usually, but here as safety
-                    ];
-                    const currentIndex = stages.indexOf(application.stage);
-                    if (currentIndex !== -1 && currentIndex < stages.length - 2) { // Stop before Rejected/Offer Accepted if desired, or just check bounds
-                       handleStageChange(stages[currentIndex + 1]);
-                    } else if (application.stage === 'Offer Extended') {
-                       handleStageChange('Offer Accepted');
-                    } else {
-                       toast.info("No next stage available");
-                    }
-                  }}
-                >
-                  Move to Next Round
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full gap-2 text-destructive hover:text-destructive"
-                  onClick={() => handleStageChange("Rejected")}
-                >
-                  Reject Candidate
-                  <UserX className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Stage Selector */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Move to Stage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => {
+                      // Logic to find next stage
+                      const stages: ApplicationStage[] = [
+                        "New Application",
+                        "Resume Review",
+                        "Phone Screen",
+                        "Technical Interview",
+                        "Manager Interview",
+                        "Final Round",
+                        "Reference Check",
+                        "Offer Extended",
+                        "Offer Accepted",
+                        "Rejected" // Excluded from "Next" logic usually, but here as safety
+                      ];
+                      const currentIndex = stages.indexOf(application.stage);
+                      if (currentIndex !== -1 && currentIndex < stages.length - 2) { // Stop before Rejected/Offer Accepted if desired, or just check bounds
+                        handleStageChange(stages[currentIndex + 1]);
+                      } else if (application.stage === 'Offer Extended') {
+                        handleStageChange('Offer Accepted');
+                      } else {
+                        toast.info("No next stage available");
+                      }
+                    }}
+                  >
+                    Move to Next Round
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
 
-          {/* Tabs */}
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              {application.parsedResume && (
-                <TabsTrigger value="resume">Resume</TabsTrigger>
-              )}
-              {application.coverLetterUrl && (
-                <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
-              )}
-              {application.questionnaireData && (
-                <TabsTrigger value="questionnaire">Questionnaire</TabsTrigger>
-              )}
-              <TabsTrigger value="team-reviews" className="flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" />
-                Team Reviews
-              </TabsTrigger>
-              <TabsTrigger value="emails" className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" />
-                Emails
-              </TabsTrigger>
-              {application.aiAnalysis && (
-                <TabsTrigger value="ai-analysis" className="flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  AI Analysis
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 text-destructive hover:text-destructive"
+                    onClick={() => handleStageChange("Rejected")}
+                  >
+                    Reject Candidate
+                    <UserX className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabs */}
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                {application.parsedResume && (
+                  <TabsTrigger value="resume">Resume</TabsTrigger>
+                )}
+                {application.coverLetterUrl && (
+                  <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
+                )}
+                {application.questionnaireData && (
+                  <TabsTrigger value="questionnaire">Questionnaire</TabsTrigger>
+                )}
+                <TabsTrigger value="team-reviews" className="flex items-center gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Team Reviews
                 </TabsTrigger>
-              )}
-            </TabsList>
+                <TabsTrigger value="emails" className="flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" />
+                  Emails
+                </TabsTrigger>
+                {application.aiAnalysis && (
+                  <TabsTrigger value="ai-analysis" className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    AI Analysis
+                  </TabsTrigger>
+                )}
+              </TabsList>
 
-            <TabsContent value="overview" className="space-y-4 mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{application.candidateEmail}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    Applied {formatDistanceToNow(application.appliedDate, { addSuffix: true })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {application.resumeUrl && (
+              <TabsContent value="overview" className="space-y-4 mt-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Documents</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" size="sm" className="w-full justify-start">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Resume.pdf
-                      <Download className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {application.customAnswers.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Application Answers</CardTitle>
+                    <CardTitle className="text-sm">Contact Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {application.customAnswers.map((answer) => (
-                      <div key={answer.questionId}>
-                        <p className="text-sm font-medium mb-1">{answer.question}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer}
-                        </p>
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span>{application.candidateEmail}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      Applied {formatDistanceToNow(application.appliedDate, { addSuffix: true })}
+                    </div>
                   </CardContent>
                 </Card>
-              )}
-            </TabsContent>
 
-            <TabsContent value="resume" className="mt-4">
-              {application.parsedResume ? (
-                <ParsedResumeView 
-                  parsedResume={application.parsedResume} 
-                  resumeUrl={application.resumeUrl}
+                {application.resumeUrl && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Documents</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Button variant="outline" size="sm" className="w-full justify-start">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Resume.pdf
+                        <Download className="h-4 w-4 ml-auto" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {application.customAnswers.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Application Answers</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {application.customAnswers.map((answer) => (
+                        <div key={answer.questionId}>
+                          <p className="text-sm font-medium mb-1">{answer.question}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer}
+                          </p>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="resume" className="mt-4">
+                {application.parsedResume ? (
+                  <ParsedResumeView
+                    parsedResume={application.parsedResume}
+                    resumeUrl={application.resumeUrl}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">Resume parsing not available</p>
+                    {application.resumeUrl && (
+                      <p className="text-xs mt-2">Resume file is available but not yet parsed</p>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="cover-letter" className="mt-4">
+                <CoverLetterView application={application} />
+              </TabsContent>
+
+              <TabsContent value="questionnaire" className="mt-4">
+                {application.questionnaireData ? (
+                  <QuestionnaireResponseView questionnaireData={application.questionnaireData} />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">No questionnaire responses available</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="team-reviews">
+                <TeamReviewsTab
+                  application={application}
+                  onAddNote={handleAddReviewNote}
                 />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">Resume parsing not available</p>
-                  {application.resumeUrl && (
-                    <p className="text-xs mt-2">Resume file is available but not yet parsed</p>
-                  )}
-                </div>
-              )}
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="cover-letter" className="mt-4">
-              <CoverLetterView application={application} />
-            </TabsContent>
+              <TabsContent value="emails" className="mt-4">
+                <ApplicationEmailHistory applicationId={application.id} />
+              </TabsContent>
+            </Tabs>
+          </div>
 
-            <TabsContent value="questionnaire" className="mt-4">
-              {application.questionnaireData ? (
-                <QuestionnaireResponseView questionnaireData={application.questionnaireData} />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">No questionnaire responses available</p>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="team-reviews">
-              <TeamReviewsTab 
-                application={application} 
-                onAddNote={handleAddReviewNote} 
+          {/* Interview Dialog */}
+          <Dialog open={isInterviewDialogOpen} onOpenChange={setIsInterviewDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Schedule Interview</DialogTitle>
+                <DialogDescription>
+                  Schedule a new interview with this candidate.
+                </DialogDescription>
+              </DialogHeader>
+              <InterviewScheduler
+                candidateName={application.candidateName}
+                jobTitle={application.jobTitle}
+                onSubmit={(data) => {
+                  const template = data.templateId ? getTemplateById(data.templateId) : null;
+                  setIsInterviewDialogOpen(false);
+                  toast.success(
+                    template
+                      ? `Interview scheduled with ${template.name} template`
+                      : "Interview scheduled successfully"
+                  );
+                }}
+                onCancel={() => setIsInterviewDialogOpen(false)}
               />
-            </TabsContent>
+            </DialogContent>
+          </Dialog>
 
-            <TabsContent value="emails" className="mt-4">
-              <ApplicationEmailHistory applicationId={application.id} />
-            </TabsContent>
-          </Tabs>
-        </div>
+          {/* Offer Dialog */}
+          <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Generate Offer Letter</DialogTitle>
+                <DialogDescription>
+                  Create and send an offer letter to the candidate.
+                </DialogDescription>
+              </DialogHeader>
+              <OfferForm
+                candidateName={application.candidateName}
+                jobTitle={application.jobTitle}
+                job={job}
+                onSubmit={async (data) => {
+                  try {
+                    // Create offer
+                    const createResponse = await offerService.createOffer(application.id, {
+                      offerType: data.offerType,
+                      salary: data.salary,
+                      salaryCurrency: data.salaryCurrency,
+                      salaryPeriod: data.salaryPeriod,
+                      startDate: data.startDate,
+                      workLocation: data.workLocation,
+                      workArrangement: data.workArrangement,
+                      probationPeriod: data.probationPeriod,
+                      vacationDays: data.vacationDays,
+                      bonusStructure: data.bonusStructure,
+                      equityOptions: data.equityOptions,
+                      benefits: data.benefits ? data.benefits.split(',').map(b => b.trim()) : [],
+                      customMessage: data.customMessage,
+                      expiryDate: data.expiryDate,
+                      templateId: data.templateId,
+                    });
 
-        {/* Interview Dialog */}
-        <Dialog open={isInterviewDialogOpen} onOpenChange={setIsInterviewDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Schedule Interview</DialogTitle>
-            </DialogHeader>
-            <InterviewScheduler
-              candidateName={application.candidateName}
-              jobTitle={application.jobTitle}
-              onSubmit={(data) => {
-                const template = data.templateId ? getTemplateById(data.templateId) : null;
-                setIsInterviewDialogOpen(false);
-                toast.success(
-                  template 
-                    ? `Interview scheduled with ${template.name} template`
-                    : "Interview scheduled successfully"
-                );
-              }}
-              onCancel={() => setIsInterviewDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-
-        {/* Offer Dialog */}
-        <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Generate Offer Letter</DialogTitle>
-            </DialogHeader>
-            <OfferForm
-              candidateName={application.candidateName}
-              jobTitle={application.jobTitle}
-              job={job}
-              onSubmit={async (data) => {
-                try {
-                  // Create offer
-                  const createResponse = await offerService.createOffer(application.id, {
-                    offerType: data.offerType,
-                    salary: data.salary,
-                    salaryCurrency: data.salaryCurrency,
-                    salaryPeriod: data.salaryPeriod,
-                    startDate: data.startDate,
-                    workLocation: data.workLocation,
-                    workArrangement: data.workArrangement,
-                    probationPeriod: data.probationPeriod,
-                    vacationDays: data.vacationDays,
-                    bonusStructure: data.bonusStructure,
-                    equityOptions: data.equityOptions,
-                    benefits: data.benefits ? data.benefits.split(',').map(b => b.trim()) : [],
-                    customMessage: data.customMessage,
-                    expiryDate: data.expiryDate,
-                    templateId: data.templateId,
-                  });
-
-                  if (createResponse.success) {
-                    // Send offer immediately
-                    const sendResponse = await offerService.sendOffer(createResponse.data.id);
-                    if (sendResponse.success) {
-                      toast.success("Offer created and sent successfully");
-                      setIsOfferDialogOpen(false);
-                      onRefresh();
+                    if (createResponse.success) {
+                      // Send offer immediately
+                      const sendResponse = await offerService.sendOffer(createResponse.data.id);
+                      if (sendResponse.success) {
+                        toast.success("Offer created and sent successfully");
+                        setIsOfferDialogOpen(false);
+                        onRefresh();
+                      } else {
+                        toast.error("Offer created but failed to send", {
+                          description: sendResponse.error
+                        });
+                      }
                     } else {
-                      toast.error("Offer created but failed to send", {
-                        description: sendResponse.error
+                      toast.error("Failed to create offer", {
+                        description: createResponse.error
                       });
                     }
-                  } else {
-                    toast.error("Failed to create offer", {
-                      description: createResponse.error
-                    });
+                  } catch (error) {
+                    console.error('Failed to create offer:', error);
+                    toast.error("Failed to create offer");
                   }
-                } catch (error) {
-                  console.error('Failed to create offer:', error);
-                  toast.error("Failed to create offer");
-                }
-              }}
-              onCancel={() => setIsOfferDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </SheetContent>
-    </Sheet>
-    
-    <MoveStageDialog 
-      open={isMoveDialogOpen}
-      onOpenChange={setIsMoveDialogOpen}
-      candidateName={application.candidateName || "Candidate"}
-      nextStageName={pendingStage || ""}
-      onConfirm={confirmMove}
-      isSubmitting={isMoving}
-    />
+                }}
+                onCancel={() => setIsOfferDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </SheetContent>
+      </Sheet>
+
+      <MoveStageDialog
+        open={isMoveDialogOpen}
+        onOpenChange={setIsMoveDialogOpen}
+        candidateName={application.candidateName || "Candidate"}
+        nextStageName={pendingStage || ""}
+        onConfirm={confirmMove}
+        isSubmitting={isMoving}
+      />
     </>
   );
 }
