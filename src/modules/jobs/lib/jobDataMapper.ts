@@ -61,167 +61,91 @@ function normalizeEmploymentType(employmentType: string): 'full-time' | 'part-ti
  * Map backend job to frontend Job interface
  */
 export function mapBackendJobToFrontend(backendJob: any): Job {
-  if (!backendJob) {
-    return {
-      id: '',
-      employerId: '',
-      employerName: '',
-      employerLogo: undefined,
-      createdBy: '',
-      createdByName: '',
-      title: '',
-      numberOfVacancies: 1,
-      jobCode: '',
-      description: '',
-      requirements: [],
-      responsibilities: [],
-      department: '',
-      location: '',
-      country: undefined,
-      employmentType: 'full-time',
-      salaryMin: undefined,
-      salaryMax: undefined,
-      salaryCurrency: 'USD',
-      salaryPeriod: 'annual',
-      salaryDescription: undefined,
-      experienceLevel: 'mid',
-      status: 'draft',
-      visibility: 'public',
-      stealth: false,
-      postingDate: new Date().toISOString(),
-      closeDate: undefined,
-      tags: [],
-      workArrangement: 'on-site',
-      aiGeneratedDescription: false,
-      serviceType: 'self-managed',
-      serviceStatus: undefined,
-      assignedConsultantId: undefined,
-      assignedConsultantName: undefined,
-      pipeline: undefined,
-      jobBoardDistribution: ['HRM8 Job Board'],
-      applicantsCount: 0,
-      unreadApplicants: undefined,
-      viewsCount: 0,
-      clicksCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      hiringTeam: [],
-      applicationForm: undefined,
-      hasJobTargetPromotion: undefined,
-      jobTargetBudget: undefined,
-      jobTargetBudgetRemaining: undefined,
-      jobTargetPromotions: undefined,
-      paymentId: undefined,
-      requiresPayment: undefined,
-      paymentStatus: undefined,
-      serviceFee: undefined,
-      termsAccepted: undefined,
-      termsAcceptedAt: undefined,
-      termsAcceptedBy: undefined,
-      isInternal: undefined,
-      internalOnly: undefined,
-      eligibleDepartments: undefined,
-      internalApplyDeadline: undefined,
-      currentEmployeePriority: undefined,
-      requisitionId: undefined,
-      aiInterviewConfig: undefined,
-      videoInterviewingEnabled: false,
-    };
-  }
-  const job = backendJob;
   return {
-    id: job.id || job.job_id || '',
-    employerId: job.companyId || job.company_id || '',
-    employerName: job.company?.name || job.companyName || job.company_name || '',
-    employerLogo: job.company?.logo || job.companyLogo || job.company_logo,
-    createdBy: job.createdBy || job.created_by || '',
-    createdByName: job.createdByName || job.created_by_name || '',
-    title: job.title || '',
-    numberOfVacancies: job.numberOfVacancies || job.number_of_vacancies || 1,
-    jobCode: job.jobCode || job.job_code || '',
-    description: job.description || '',
-    requirements: job.requirements || [],
-    responsibilities: job.responsibilities || [],
-    department: job.department || '',
-    location: job.location || '',
-    country: job.country,
-    employmentType: normalizeEmploymentType(job.employmentType || job.employment_type || 'FULL_TIME'),
-    salaryMin: job.salaryMin ?? job.salary_min,
-    salaryMax: job.salaryMax ?? job.salary_max,
-    salaryCurrency: job.salaryCurrency || job.salary_currency || 'USD',
-    salaryPeriod: job.salaryPeriod || job.salary_period || 'annual',
-    salaryDescription: job.salaryDescription || job.salary_description,
-    experienceLevel: job.experienceLevel || job.experience_level || 'mid',
-    status: normalizeStatus(job.status || 'DRAFT'),
-    visibility: job.visibility || 'public',
-    stealth: job.stealth || false,
-    postingDate: job.postingDate || job.posting_date
-      ? (typeof (job.postingDate || job.posting_date) === 'string'
-        ? (job.postingDate || job.posting_date)
-        : (job.postingDate || job.posting_date).toISOString())
+    id: backendJob.id,
+    employerId: backendJob.companyId || '',
+    employerName: backendJob.company?.name || backendJob.companyName || '',
+    employerLogo: backendJob.company?.logo || backendJob.companyLogo,
+    createdBy: backendJob.createdBy || '',
+    createdByName: backendJob.createdByName || '',
+    title: backendJob.title || '',
+    numberOfVacancies: backendJob.numberOfVacancies || 1,
+    jobCode: backendJob.jobCode || '',
+    description: backendJob.description || '',
+    requirements: backendJob.requirements || [],
+    responsibilities: backendJob.responsibilities || [],
+    department: backendJob.department || '',
+    location: backendJob.location || '',
+    country: backendJob.country,
+    employmentType: normalizeEmploymentType(backendJob.employmentType || 'FULL_TIME'),
+    salaryMin: backendJob.salaryMin,
+    salaryMax: backendJob.salaryMax,
+    salaryCurrency: backendJob.salaryCurrency || 'USD',
+    salaryPeriod: backendJob.salaryPeriod || 'annual',
+    salaryDescription: backendJob.salaryDescription,
+    experienceLevel: backendJob.experienceLevel || 'mid',
+    status: normalizeStatus(backendJob.status || 'DRAFT'),
+    visibility: backendJob.visibility || 'public',
+    stealth: backendJob.stealth || false,
+    postingDate: backendJob.postingDate
+      ? (typeof backendJob.postingDate === 'string' ? backendJob.postingDate : backendJob.postingDate.toISOString())
       : new Date().toISOString(),
-    closeDate: job.closeDate || job.close_date
-      ? (typeof (job.closeDate || job.close_date) === 'string'
-        ? (job.closeDate || job.close_date)
-        : (job.closeDate || job.close_date).toISOString())
+    closeDate: backendJob.closeDate
+      ? (typeof backendJob.closeDate === 'string' ? backendJob.closeDate : backendJob.closeDate.toISOString())
       : undefined,
-    tags: job.promotionalTags || job.promotional_tags || job.tags || [],
-    workArrangement: normalizeWorkArrangement(job.workArrangement || job.work_arrangement || 'ON_SITE'),
-    aiGeneratedDescription: job.aiGeneratedDescription || job.ai_generated_description || false,
-    serviceType: mapHiringModeToServiceType(job.hiringMode || job.hiring_mode || job.serviceType || 'SELF_MANAGED'),
-    serviceStatus: job.serviceStatus || job.service_status,
-    assignedConsultantId: job.assignedConsultantId || job.assigned_consultant_id,
-    assignedConsultantName: job.assignedConsultantName || job.assigned_consultant_name,
-    pipeline: job.pipeline
+    tags: backendJob.promotionalTags || backendJob.tags || [],
+    workArrangement: normalizeWorkArrangement(backendJob.workArrangement || 'ON_SITE'),
+    aiGeneratedDescription: backendJob.aiGeneratedDescription || false,
+    serviceType: mapHiringModeToServiceType(backendJob.hiringMode || backendJob.serviceType || 'SELF_MANAGED'),
+    serviceStatus: backendJob.serviceStatus,
+    assignedConsultantId: backendJob.assignedConsultantId,
+    assignedConsultantName: backendJob.assignedConsultantName,
+    pipeline: backendJob.pipeline
       ? {
-        stage: job.pipeline.stage,
-        progress: job.pipeline.progress,
-        note: job.pipeline.note,
-        updatedAt: job.pipeline.updatedAt
-          ? (typeof job.pipeline.updatedAt === 'string'
-            ? job.pipeline.updatedAt
-            : job.pipeline.updatedAt.toISOString())
+        stage: backendJob.pipeline.stage,
+        progress: backendJob.pipeline.progress,
+        note: backendJob.pipeline.note,
+        updatedAt: backendJob.pipeline.updatedAt
+          ? (typeof backendJob.pipeline.updatedAt === 'string'
+            ? backendJob.pipeline.updatedAt
+            : backendJob.pipeline.updatedAt.toISOString())
           : null,
-        updatedBy: job.pipeline.updatedBy,
-        consultantId: job.pipeline.consultantId,
+        updatedBy: backendJob.pipeline.updatedBy,
+        consultantId: backendJob.pipeline.consultantId,
       }
       : undefined,
-    jobBoardDistribution: job.jobBoardDistribution || job.job_board_distribution || ['HRM8 Job Board'],
-    applicantsCount: job.applicantsCount || job.applicants_count || 0,
-    unreadApplicants: job.unreadApplicants || job.unread_applicants,
-    viewsCount: job.viewsCount || job.views_count || 0,
-    clicksCount: job.clicksCount || job.clicks_count || 0,
-    createdAt: job.createdAt || job.created_at
-      ? (typeof (job.createdAt || job.created_at) === 'string'
-        ? (job.createdAt || job.created_at)
-        : (job.createdAt || job.created_at).toISOString())
+    jobBoardDistribution: backendJob.jobBoardDistribution || ['HRM8 Job Board'],
+    applicantsCount: backendJob.applicantsCount || 0,
+    unreadApplicants: backendJob.unreadApplicants,
+    viewsCount: backendJob.viewsCount || 0,
+    clicksCount: backendJob.clicksCount || 0,
+    createdAt: backendJob.createdAt
+      ? (typeof backendJob.createdAt === 'string' ? backendJob.createdAt : backendJob.createdAt.toISOString())
       : new Date().toISOString(),
-    updatedAt: job.updatedAt || job.updated_at
-      ? (typeof (job.updatedAt || job.updated_at) === 'string'
-        ? (job.updatedAt || job.updated_at)
-        : (job.updatedAt || job.updated_at).toISOString())
+    updatedAt: backendJob.updatedAt
+      ? (typeof backendJob.updatedAt === 'string' ? backendJob.updatedAt : backendJob.updatedAt.toISOString())
       : new Date().toISOString(),
-    hiringTeam: job.hiringTeam || job.hiring_team || [],
-    applicationForm: job.applicationForm || job.application_form,
-    hasJobTargetPromotion: job.hasJobTargetPromotion || job.job_target_approved,
-    jobTargetBudget: job.jobTargetBudget || job.job_target_budget,
-    jobTargetBudgetRemaining: job.jobTargetBudgetRemaining || job.job_target_budget_remaining,
-    jobTargetPromotions: job.jobTargetPromotions || job.job_target_promotions,
-    paymentId: job.paymentId || job.stripe_payment_intent_id,
-    requiresPayment: job.requiresPayment,
-    paymentStatus: job.paymentStatus || job.payment_status,
-    serviceFee: job.serviceFee,
-    termsAccepted: job.termsAccepted || job.terms_accepted,
-    termsAcceptedAt: job.termsAcceptedAt || job.terms_accepted_at,
-    termsAcceptedBy: job.termsAcceptedBy || job.terms_accepted_by,
-    isInternal: job.isInternal,
-    internalOnly: job.internalOnly,
-    eligibleDepartments: job.eligibleDepartments,
-    internalApplyDeadline: job.internalApplyDeadline,
-    currentEmployeePriority: job.currentEmployeePriority,
-    requisitionId: job.requisitionId,
-    aiInterviewConfig: job.aiInterviewConfig,
-    videoInterviewingEnabled: job.videoInterviewingEnabled || job.video_interviewing_enabled || false,
+    hiringTeam: backendJob.hiringTeam || [],
+    applicationForm: backendJob.applicationForm,
+    hasJobTargetPromotion: backendJob.hasJobTargetPromotion,
+    jobTargetBudget: backendJob.jobTargetBudget,
+    jobTargetBudgetRemaining: backendJob.jobTargetBudgetRemaining,
+    jobTargetPromotions: backendJob.jobTargetPromotions,
+    paymentId: backendJob.paymentId,
+    requiresPayment: backendJob.requiresPayment,
+    paymentStatus: backendJob.paymentStatus,
+    serviceFee: backendJob.serviceFee,
+    termsAccepted: backendJob.termsAccepted,
+    termsAcceptedAt: backendJob.termsAcceptedAt,
+    termsAcceptedBy: backendJob.termsAcceptedBy,
+    isInternal: backendJob.isInternal,
+    internalOnly: backendJob.internalOnly,
+    eligibleDepartments: backendJob.eligibleDepartments,
+    internalApplyDeadline: backendJob.internalApplyDeadline,
+    currentEmployeePriority: backendJob.currentEmployeePriority,
+    requisitionId: backendJob.requisitionId,
+    aiInterviewConfig: backendJob.aiInterviewConfig,
+    videoInterviewingEnabled: backendJob.videoInterviewingEnabled || false,
   };
 }
 
@@ -281,3 +205,4 @@ export function mapBackendJobToFormData(backendJob: any): Partial<JobFormData> {
     videoInterviewingEnabled: normalizedJob.videoInterviewingEnabled || false,
   };
 }
+

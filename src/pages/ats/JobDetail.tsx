@@ -319,7 +319,7 @@ export default function JobDetail() {
         setLoading(true);
         const response = await jobService.getJobById(jobId);
         if (response.success && response.data) {
-          const mappedJob = mapBackendJobToFrontend(response.data);
+          const mappedJob = mapBackendJobToFrontend(response.data.job || response.data);
           setJob(mappedJob);
         } else {
           // If API fails, try to get from mock storage as fallback

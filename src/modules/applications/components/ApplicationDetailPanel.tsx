@@ -58,6 +58,7 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
   const [editingRank, setEditingRank] = useState<string>("");
   const [isUpdatingScore, setIsUpdatingScore] = useState(false);
   const [isUpdatingRank, setIsUpdatingRank] = useState(false);
+  const [isUpdatingRank, setIsUpdatingRank] = useState(false);
   const [isShortlisting, setIsShortlisting] = useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [pendingStage, setPendingStage] = useState<ApplicationStage | null>(null);
@@ -71,7 +72,7 @@ export function ApplicationDetailPanel({ application, open, onOpenChange, onRefr
         try {
           const response = await jobService.getJobById(application.jobId);
           if (response.success && response.data) {
-            const mappedJob = mapBackendJobToFrontend(response.data);
+            const mappedJob = mapBackendJobToFrontend(response.data.job || response.data);
             setJob(mappedJob);
           }
         } catch (error) {

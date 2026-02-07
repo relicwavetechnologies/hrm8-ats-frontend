@@ -38,7 +38,8 @@ export function useDraftJob(): UseDraftJobReturn {
       const response = await jobService.getJobs({ status: 'DRAFT' });
 
       if (response.success && response.data) {
-        const jobsData = Array.isArray(response.data) ? response.data : [];
+        const jobs = response.data.jobs || response.data;
+        const jobsData = Array.isArray(jobs) ? jobs : [];
         const mappedJobs = jobsData.map(mapBackendJobToFrontend);
 
         // Find the most recent draft job created by the current user
