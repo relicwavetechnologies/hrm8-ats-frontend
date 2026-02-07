@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { 
+import {
   WarningConfirmationDialog
 } from "@/shared/components/ui/warning-confirmation-dialog";
 import { jobService } from "@/shared/lib/jobService";
@@ -140,11 +140,11 @@ export default function JobTemplates() {
 
   const handleUseTemplate = async (template: JobTemplate) => {
     setTemplateToUse(template);
-    
+
     // Refetch to get the latest draft before showing dialog
     const draft = await refetchDraft();
     setLatestDraft(draft);
-    
+
     setUseTemplateDialogOpen(true);
   };
 
@@ -154,7 +154,7 @@ export default function JobTemplates() {
     try {
       // Get template data formatted for job creation
       const templateDataResponse = await jobTemplateService.getTemplateJobData(templateToUse.id);
-      
+
       if (!templateDataResponse.success || !templateDataResponse.data) {
         throw new Error('Failed to get template data');
       }
@@ -182,7 +182,7 @@ export default function JobTemplates() {
 
       setUseTemplateDialogOpen(false);
       setTemplateToUse(null);
-      
+
       // Navigate to jobs page to open the draft, with flag to indicate it's from template
       navigate('/ats/jobs?action=create&fromTemplate=true');
     } catch (error) {
@@ -232,222 +232,222 @@ export default function JobTemplates() {
           <TemplatesPageSkeleton />
         ) : (
           <>
-          {/* Header */}
-          <div className="text-base font-semibold flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Job Templates</h1>
-            <p className="text-muted-foreground">
-              Create and manage reusable job posting templates
-            </p>
-          </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Template
-          </Button>
-        </div>
+            {/* Header */}
+            <div className="text-base font-semibold flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">Job Templates</h1>
+                <p className="text-muted-foreground">
+                  Create and manage reusable job posting templates
+                </p>
+              </div>
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Template
+              </Button>
+            </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Templates</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.myTemplates} created by you
-              </p>
-            </CardContent>
-          </Card>
+            {/* Stats Cards */}
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Templates</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.myTemplates} created by you
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Shared Templates</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.shared}</div>
-              <p className="text-xs text-muted-foreground">
-                Available to team
-              </p>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Shared Templates</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.shared}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Available to team
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsage}</div>
-              <p className="text-xs text-muted-foreground">
-                Times used
-              </p>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalUsage}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Times used
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Categories</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{templateCategories.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Template categories
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Categories</CardTitle>
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{templateCategories.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Template categories
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+            {/* Filters and Search */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search templates..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {templateCategories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {templateCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent</SelectItem>
+                  <SelectItem value="popular">Most Popular</SelectItem>
+                  <SelectItem value="name">Name (A-Z)</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant={showMyTemplates ? "default" : "outline"}
+                onClick={() => setShowMyTemplates(!showMyTemplates)}
+              >
+                My Templates
+              </Button>
+            </div>
+
+            {/* Templates Tabs */}
+            <Tabs defaultValue="all" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="all">
+                  All Templates ({filteredTemplates.length})
+                </TabsTrigger>
+                <TabsTrigger value="popular">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Popular
+                </TabsTrigger>
+                {templateCategories.slice(0, 3).map((category) => (
+                  <TabsTrigger key={category} value={category}>
+                    {category}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <TabsContent value="all" className="space-y-4">
+                <TemplateGrid
+                  templates={filteredTemplates}
+                  onEdit={handleEdit}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDelete}
+                  onUseTemplate={handleUseTemplate}
+                />
+              </TabsContent>
+
+              <TabsContent value="popular" className="space-y-4">
+                <TemplateGrid
+                  templates={popularTemplates}
+                  onEdit={handleEdit}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDelete}
+                  onUseTemplate={handleUseTemplate}
+                />
+              </TabsContent>
+
+              {templateCategories.slice(0, 3).map((category) => (
+                <TabsContent key={category} value={category} className="space-y-4">
+                  <TemplateGrid
+                    templates={filteredTemplates.filter((t) => t.category === category || t.jobData?.department === category)}
+                    onEdit={handleEdit}
+                    onDuplicate={handleDuplicate}
+                    onDelete={handleDelete}
+                    onUseTemplate={handleUseTemplate}
+                  />
+                </TabsContent>
               ))}
-            </SelectContent>
-          </Select>
+            </Tabs>
 
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Most Recent</SelectItem>
-              <SelectItem value="popular">Most Popular</SelectItem>
-              <SelectItem value="name">Name (A-Z)</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant={showMyTemplates ? "default" : "outline"}
-            onClick={() => setShowMyTemplates(!showMyTemplates)}
-          >
-            My Templates
-          </Button>
-        </div>
-
-        {/* Templates Tabs */}
-        <Tabs defaultValue="all" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="all">
-              All Templates ({filteredTemplates.length})
-            </TabsTrigger>
-            <TabsTrigger value="popular">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Popular
-            </TabsTrigger>
-            {templateCategories.slice(0, 3).map((category) => (
-              <TabsTrigger key={category} value={category}>
-                {category}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="all" className="space-y-4">
-            <TemplateGrid
-              templates={filteredTemplates}
-              onEdit={handleEdit}
-              onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
-              onUseTemplate={handleUseTemplate}
+            <CreateTemplateDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
             />
-          </TabsContent>
 
-          <TabsContent value="popular" className="space-y-4">
-            <TemplateGrid
-              templates={popularTemplates}
-              onEdit={handleEdit}
-              onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
-              onUseTemplate={handleUseTemplate}
-            />
-          </TabsContent>
-
-          {templateCategories.slice(0, 3).map((category) => (
-            <TabsContent key={category} value={category} className="space-y-4">
-              <TemplateGrid
-                templates={filteredTemplates.filter((t) => t.category === category || t.jobData?.department === category)}
-                onEdit={handleEdit}
-                onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
-                onUseTemplate={handleUseTemplate}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
-
-        <CreateTemplateDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
-
-        {editingTemplate && (
-          <EditTemplateDialog
-            template={editingTemplate}
-            open={!!editingTemplate}
-            onOpenChange={(open) => {
-              if (!open) {
-                setEditingTemplate(null);
-                // Refetch templates after editing
-                const fetchTemplates = async () => {
-                  try {
-                    const response = await jobTemplateService.getTemplates({
-                      category: selectedCategory !== "all" ? selectedCategory : undefined,
-                      search: searchQuery || undefined,
-                    });
-                    if (response.success && response.data) {
-                      setTemplates(response.data);
-                    }
-                  } catch (error) {
-                    console.error('Error fetching templates:', error);
+            {editingTemplate && (
+              <EditTemplateDialog
+                template={editingTemplate}
+                open={!!editingTemplate}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setEditingTemplate(null);
+                    // Refetch templates after editing
+                    const fetchTemplates = async () => {
+                      try {
+                        const response = await jobTemplateService.getTemplates({
+                          category: selectedCategory !== "all" ? selectedCategory : undefined,
+                          search: searchQuery || undefined,
+                        });
+                        if (response.success && response.data) {
+                          setTemplates(response.data);
+                        }
+                      } catch (error) {
+                        console.error('Error fetching templates:', error);
+                      }
+                    };
+                    fetchTemplates();
                   }
-                };
-                fetchTemplates();
-              }
-            }}
-          />
-        )}
+                }}
+              />
+            )}
 
-        <WarningConfirmationDialog
-          open={useTemplateDialogOpen}
-          onOpenChange={(open) => {
-            setUseTemplateDialogOpen(open);
-            if (!open) {
-              setTemplateToUse(null);
-              setLatestDraft(null);
-            }
-          }}
-          onConfirm={confirmUseTemplate}
-          type="warning"
-          title="Use Template?"
-          description={
-            latestDraft
-              ? `You have an existing draft job: "${latestDraft.title || 'Untitled Job'}". Using this template will overwrite your current draft with the template data. Any changes you made to the draft will be lost.`
-              : "This will create a new draft job using the template data."
-          }
-          confirmLabel={latestDraft ? 'Overwrite Draft & Use Template' : 'Use Template'}
-        />
+            <WarningConfirmationDialog
+              open={useTemplateDialogOpen}
+              onOpenChange={(open) => {
+                setUseTemplateDialogOpen(open);
+                if (!open) {
+                  setTemplateToUse(null);
+                  setLatestDraft(null);
+                }
+              }}
+              onConfirm={confirmUseTemplate}
+              type="warning"
+              title="Use Template?"
+              description={
+                latestDraft
+                  ? `You have an existing draft job: "${latestDraft.title || 'Untitled Job'}". Using this template will overwrite your current draft with the template data. Any changes you made to the draft will be lost.`
+                  : "This will create a new draft job using the template data."
+              }
+              confirmLabel={latestDraft ? 'Overwrite Draft & Use Template' : 'Use Template'}
+            />
           </>
         )}
       </div>
@@ -533,9 +533,9 @@ function TemplateGrid({ templates, onEdit, onDuplicate, onDelete, onUseTemplate 
             <div className="flex items-center justify-between text-sm">
               <Badge variant="secondary">{template.category || template.jobData?.department || "Uncategorized"}</Badge>
               <Badge variant="secondary" className="text-xs">
-                  <Users className="h-3 w-3 mr-1" />
-                  Shared
-                </Badge>
+                <Users className="h-3 w-3 mr-1" />
+                Shared
+              </Badge>
             </div>
 
             <div className="space-y-2 text-sm text-muted-foreground">

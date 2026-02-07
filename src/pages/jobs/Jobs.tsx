@@ -14,6 +14,7 @@ import { useAuth } from "@/app/providers/AuthContext";
 import { FormDrawer } from "@/shared/components/ui/form-drawer";
 import { JobWizard } from "@/modules/jobs/components/JobWizard";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
+import { JobCreateDrawer } from "@/components/conversational/JobCreateDrawer";
 import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
 import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
 import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
@@ -97,7 +98,7 @@ export default function Jobs() {
       try {
         setLoading(true);
         // Build filters object
-        const filters: { status?: string } = {};
+        const filters: { status?: any } = {};
         if (selectedStatus !== 'all') {
           // Convert frontend status format to backend format
           const statusMap: Record<string, string> = {
@@ -534,7 +535,7 @@ export default function Jobs() {
       sortable: true,
       render: (job) => {
         // Use company name from job or fallback to user's company
-        const companyName = job.employerName || user?.companyName || profileSummary?.name || "Company";
+        const companyName = job.employerName || user?.companyName || (profileSummary as any)?.name || "Company";
         const companyId = job.employerId || user?.companyId || "";
 
         return (
@@ -913,22 +914,12 @@ export default function Jobs() {
               tableId="jobs"
             />
 
-            <FormDrawer
+            <JobCreateDrawer
               open={drawerOpen}
               onOpenChange={handleDrawerClose}
-              title={editingJobId ? "Edit Job" : "Post Job"}
-              description={editingJobId ? "Update the job posting details" : "Fill in the details to post a new job"}
-              width="2xl"
-            >
-              <JobWizard
-                key={editingJobId || 'new'}
-                jobId={editingJobId || undefined}
-                defaultValues={editingJobData || undefined}
-                onSuccess={handleJobSuccess}
-                onCancel={handleDrawerClose}
-                embedded
-              />
-            </FormDrawer>
+              jobId={editingJobId}
+              initialData={editingJobData}
+            />
 
             <WarningConfirmationDialog
               open={deleteDialogOpen}
