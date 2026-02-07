@@ -28,6 +28,9 @@ import {
   CalendarClock
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { QuickScheduleInterviewDialog } from './QuickScheduleInterviewDialog';
+import { InterviewerAssignmentPopover } from './InterviewerAssignmentPopover';
+import { InterviewFeedbackBadge } from './InterviewFeedbackBadge';
 
 interface InterviewRoundPanelProps {
   jobId: string;
@@ -53,8 +56,10 @@ export function InterviewRoundPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   
-  // Dialog states (placeholder for now, would import actual dialogs if needed or implement them)
+  // Dialog states
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [showQuickSchedule, setShowQuickSchedule] = useState(false);
+  const [scheduleTargetCandidate, setScheduleTargetCandidate] = useState<{ id: string; name: string } | null>(null);
 
   const loadInterviews = useCallback(async () => {
     setLoading(true);
@@ -274,7 +279,14 @@ export function InterviewRoundPanel({
           </Select>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" size="sm" onClick={() => toast.info('Schedule feature specific to panel coming soon')}>
+           <Button 
+             variant="outline" 
+             size="sm" 
+             onClick={() => {
+               setScheduleTargetCandidate({ id: '', name: 'New Interview' });
+               setShowQuickSchedule(true);
+             }}
+           >
              <Plus className="h-4 w-4 mr-2" />
              Schedule New
            </Button>
@@ -369,6 +381,23 @@ export function InterviewRoundPanel({
                                         </CardDescription>
                                      </div>
                                   </div>
+                                  {/* Quick Schedule Button */}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-xs"
+                                    onClick={() => {
+                                      const interview = candidateInterviews[0];
+                                      setScheduleTargetCandidate({
+                                        id: interview.applicationId,
+                                        name: candidateName,
+                                      });
+                                      setShowQuickSchedule(true);
+                                    }}
+                                  >
+                                    <CalendarClock className="h-3.5 w-3.5 mr-1.5" />
+                                    Schedule
+                                  </Button>
                                </div>
                             </CardHeader>
                             <CardContent className="pb-3">
@@ -388,10 +417,38 @@ export function InterviewRoundPanel({
                                                  </span>
                                                  <Badge className={getStatusColor(interview.status || 'SCHEDULED')} variant="outline">
                                                     {interview.status}
-                                                 </Badge>
+                                                  </Badge>
                                               </div>
-                                              <div>
-                                                 {/* Actions for individual interview */}
+                                              <div className="flex items-center gap-2">
+                                                 {/* Interviewer Assignment */}
+                                                 <InterviewerAssignmentPopover
+                                                   interviewId={interview.id}
+                                                   applicationId={interview.applicationId}
+                                                   jobId={jobId}
+                                                   roundId={roundId}
+                                                   currentInterviewerIds={interview.interviewerIds || []}
+                                                   onAssign={() => loadInterviews()}
+                                                 />
+                                                 {/* Feedback Badge for Completed Interviews */}
+                                                 {interview.status === 'COMPLETED' && (
+                                                   <InterviewFeedbackBadge
+                                                     score={interview.overallScore}
+                                                     recommendation={interview.recommendation}
+                                                     feedbacks={interview.interviewFeedbacks?.map(f => ({
+                                                       id: f.id,
+                                                       interviewerName: f.interviewer_name,
+                                                       overallRating: f.overall_rating,
+                                                       recommendation: 'YES' as const,
+                                                       notes: f.notes,
+                                                       createdAt: f.createdAt,
+                                                     })) || []}
+                                                     totalInterviewers={interview.interviewerIds?.length || 1}
+                                                     feedbackCount={interview.interviewFeedbacks?.length || 0}
+                                                     interviewId={interview.id}
+                                                     onViewFull={(id) => toast.info(`View full feedback for ${id}`)}
+                                                   />
+                                                 )}
+                                                 {/* Complete Button */}
                                                  {interview.status === 'SCHEDULED' && (
                                                     <Button 
                                                       size="sm" 
@@ -417,6 +474,22 @@ export function InterviewRoundPanel({
             )}
          </TabsContent>
       </Tabs>
+
+      {/* Quick Schedule Dialog */}
+      {scheduleTargetCandidate && (
+        <QuickScheduleInterviewDialog
+          open={showQuickSchedule}
+          onOpenChange={setShowQuickSchedule}
+          applicationId={scheduleTargetCandidate.id}
+          candidateName={scheduleTargetCandidate.name}
+          jobId={jobId}
+          roundId={roundId}
+          onSuccess={() => {
+            loadInterviews();
+            setScheduleTargetCandidate(null);
+          }}
+        />
+      )}
     </div>
   );
 }
