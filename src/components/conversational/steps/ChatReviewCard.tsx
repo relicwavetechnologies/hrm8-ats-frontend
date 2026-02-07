@@ -166,7 +166,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                             <DialogTrigger asChild>
                                 <button className="underline text-primary hover:text-primary/80 font-medium">Terms of Service</button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+                            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
                                 <DialogHeader>
                                     <DialogTitle className="flex items-center gap-2">
                                         <FileCheck className="h-5 w-5 text-primary" />
@@ -176,7 +176,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                                         Please review our policies for job postings.
                                     </DialogDescription>
                                 </DialogHeader>
-                                <ScrollArea className="flex-1 pr-4 mt-2 border rounded-md p-4 bg-muted/30">
+                                <div className="flex-1 overflow-y-auto pr-4 mt-2 border rounded-md p-4 bg-muted/30">
                                     <div className="space-y-4 text-sm text-foreground/80">
                                         <h4 className="font-bold text-foreground">1. Job Posting Accuracy</h4>
                                         <p>By posting a job on HRM8, you agree to provide accurate, truthful, and up-to-date information about the role, company, and compensation. Misleading postings may be removed without refund.</p>
@@ -205,7 +205,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                                         <h4 className="font-bold text-foreground">7. Right to Remove</h4>
                                         <p>HRM8 reserves the right to remove any job posting that violates these terms or our community guidelines at any time, with or without prior notice.</p>
                                     </div>
-                                </ScrollArea>
+                                </div>
                                 <div className="pt-2 text-xs text-muted-foreground text-center">
                                     Last updated: January 2025
                                 </div>

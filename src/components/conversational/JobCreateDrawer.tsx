@@ -406,12 +406,12 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     </div>
 
                     {/* Live Preview Section */}
-                    <div className="w-[450px] border-l bg-white hidden lg:block overflow-hidden flex flex-col">
+                    <div className="w-[450px] border-l bg-white hidden lg:block flex flex-col min-h-0">
                         <div className="p-4 border-b bg-muted/10 flex items-center justify-between">
                             <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Live Job Preview</h3>
                             <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">LIVE UPDATE</div>
                         </div>
-                        <div className="flex-1 overflow-y-auto">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
                             <JobPreviewPanel jobData={jobData} />
                         </div>
                     </div>
