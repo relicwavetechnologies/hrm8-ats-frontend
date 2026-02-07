@@ -104,7 +104,13 @@ class JobService {
    * Get job by ID
    */
   async getJobById(id: string) {
-    return apiClient.get<{ job: Job }>(`/api/jobs/${id}`);
+    const response = await apiClient.get<any>(`/api/jobs/${id}`);
+    if (!response.success || !response.data) {
+      return response as any;
+    }
+    // Normalize: backend may return { job } or raw job
+    const normalized = (response.data as any).job ?? response.data;
+    return { ...response, data: normalized } as any;
   }
 
   /**
