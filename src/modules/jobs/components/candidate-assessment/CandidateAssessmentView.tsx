@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent } from "@/shared/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Briefcase, Vote, GitCompare, Highlighter } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter } from "lucide-react";
 import { Application } from "@/shared/types/application";
-import { CandidateProfileHeader } from "./CandidateProfileHeader";
-import { AIMatchScoreCard } from "./AIMatchScoreCard";
 import { QuickActionsToolbar } from "./QuickActionsToolbar";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { ExperienceSkillsTab } from "./tabs/ExperienceSkillsTab";
@@ -23,8 +21,10 @@ import { useActivityNotifications } from "@/shared/hooks/useActivityNotification
 import { useCandidatePresence } from "@/shared/hooks/useCandidatePresence";
 import { CandidatePresenceIndicator } from "./CandidatePresenceIndicator";
 import { useCursorTracking } from "@/shared/hooks/useCursorTracking";
-import { CursorOverlay } from "./CursorIndicator";
 import { NotificationCenter } from "@/modules/notifications/components/NotificationCenter";
+import { CandidateInfoPanel } from "./CandidateInfoPanel";
+import { CandidateNotesPanel } from "./CandidateNotesPanel";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/shared/components/ui/resizable";
 
 interface CandidateAssessmentViewProps {
   application: Application;
@@ -55,8 +55,6 @@ export function CandidateAssessmentView({
   const [fullApplication, setFullApplication] = useState<Application>(application);
 
   useEffect(() => {
-    // Determine if we need to fetch full details (e.g., missing notes or reviews)
-    // Or just fetch always to be safe and get latest data
     const fetchFullDetails = async () => {
       if (!application.id) return;
       try {
@@ -71,7 +69,7 @@ export function CandidateAssessmentView({
     };
     
     fetchFullDetails();
-  }, [application.id, application.updatedAt, application]); // Re-fetch if ID matches but data/timestamp changed
+  }, [application.id, application.updatedAt, application]);
 
   const { unreadCount } = useActivityNotifications(fullApplication);
   const { activeUsers } = useCandidatePresence({
@@ -81,13 +79,12 @@ export function CandidateAssessmentView({
     currentUserRole: 'Hiring Manager',
     currentTab: activeTab,
   });
-  const { cursors, containerRef } = useCursorTracking({
+  const { containerRef } = useCursorTracking({
     applicationId: fullApplication.id,
     currentUserId: 'current-user',
     enabled: open,
   });
 
-  // Keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       onOpenChange(false);
@@ -102,13 +99,17 @@ export function CandidateAssessmentView({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="right"
-        className="w-full sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl p-0 gap-0 h-full overflow-hidden"
+        className="w-full sm:max-w-[95vw] lg:max-w-[90vw] xl:max-w-[85vw] p-0 gap-0 h-full overflow-hidden"
         onKeyDown={handleKeyDown}
+        aria-describedby={undefined}
       >
+        {/* Screen reader only title for accessibility */}
+        <SheetTitle className="sr-only">Candidate Assessment - {fullApplication.candidateName}</SheetTitle>
+
         <div ref={containerRef} className="flex flex-col h-full relative overflow-hidden">
-          {/* Header */}
-          <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex items-center justify-between p-4">
+          {/* Compact Header */}
+          <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
+            <div className="flex items-center justify-between p-3">
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -149,7 +150,7 @@ export function CandidateAssessmentView({
               </div>
             </div>
 
-            <CandidateProfileHeader application={fullApplication} jobTitle={jobTitle} />
+            {/* Quick Actions Toolbar */}
             <QuickActionsToolbar 
               application={fullApplication} 
               nextStageName={nextStageName}
@@ -157,120 +158,154 @@ export function CandidateAssessmentView({
             />
           </div>
 
-          {/* Content */}
+          {/* Resizable 3-Panel Content Layout */}
           <div className="flex-1 overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="border-b px-4 bg-muted/20">
-                <ScrollArea className="w-full whitespace-nowrap overflow-auto">
-                  <TabsList className="h-12 bg-transparent">
-                    <TabsTrigger value="overview" className="gap-2">
-                      <FileText className="h-4 w-4" />
-                      Overview
-                    </TabsTrigger>
-                    <TabsTrigger value="annotations" className="gap-2">
-                      <Highlighter className="h-4 w-4" />
-                      Annotations
-                    </TabsTrigger>
-                    <TabsTrigger value="questionnaire" className="gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Questionnaire
-                    </TabsTrigger>
-                    <TabsTrigger value="scorecards" className="gap-2">
-                      <ClipboardCheck className="h-4 w-4" />
-                      Scorecards
-                    </TabsTrigger>
-                    <TabsTrigger value="interviews" className="gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Interviews
-                    </TabsTrigger>
-                    <TabsTrigger value="reviews" className="gap-2">
-                      <Users className="h-4 w-4" />
-                      Team Reviews
-                    </TabsTrigger>
-                    <TabsTrigger value="voting" className="gap-2">
-                      <Vote className="h-4 w-4" />
-                      Voting
-                    </TabsTrigger>
-                    <TabsTrigger value="comparison" className="gap-2">
-                      <GitCompare className="h-4 w-4" />
-                      Compare
-                    </TabsTrigger>
-                    <TabsTrigger value="activity" className="gap-2">
-                      <Activity className="h-4 w-4" />
-                      Activity
-                      {unreadCount > 0 && (
-                        <Badge variant="destructive" className="ml-1 h-5 min-w-5 rounded-full px-1 text-xs">
-                          {unreadCount}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
-                </ScrollArea>
-              </div>
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Left Panel - Resizable Candidate Info */}
+              <ResizablePanel 
+                defaultSize={25} 
+                minSize={20} 
+                maxSize={40}
+                className="overflow-hidden"
+              >
+                <CandidateInfoPanel 
+                  application={fullApplication} 
+                  jobTitle={jobTitle} 
+                />
+              </ResizablePanel>
 
-              <ScrollArea className="flex-1">
-                <div className="p-6">
-                  <TabsContent value="overview" className="mt-0">
-                    <OverviewTab application={fullApplication} />
-                  </TabsContent>
+              {/* Resize Handle */}
+              <ResizableHandle withHandle />
 
-                  <TabsContent value="experience" className="mt-0">
-                    <ExperienceSkillsTab application={fullApplication} />
-                  </TabsContent>
+              {/* Right Side - Notes + Tabs */}
+              <ResizablePanel defaultSize={75} minSize={50}>
+                <div className="h-full flex flex-col overflow-hidden">
+                  {/* Top - Notes Panel */}
+                  <div className="h-[260px] flex-shrink-0 border-b p-3">
+                    <CandidateNotesPanel
+                      applicationId={fullApplication.id}
+                      jobId={fullApplication.jobId || ''}
+                      candidateName={fullApplication.candidateName || fullApplication.candidate?.first_name + ' ' + fullApplication.candidate?.last_name}
+                      jobTitle={jobTitle}
+                    />
+                  </div>
 
-                  <TabsContent value="questionnaire" className="mt-0">
-                    <QuestionnaireResponsesTab application={fullApplication} />
-                  </TabsContent>
+                  {/* Bottom - Existing Tabs */}
+                  <div className="flex-1 overflow-hidden">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                      <div className="border-b px-4 bg-muted/20 flex-shrink-0">
+                        <ScrollArea className="w-full whitespace-nowrap overflow-auto">
+                          <TabsList className="h-10 bg-transparent">
+                            <TabsTrigger value="overview" className="gap-1.5 text-xs">
+                              <FileText className="h-3.5 w-3.5" />
+                              Overview
+                            </TabsTrigger>
+                            <TabsTrigger value="annotations" className="gap-1.5 text-xs">
+                              <Highlighter className="h-3.5 w-3.5" />
+                              Annotations
+                            </TabsTrigger>
+                            <TabsTrigger value="questionnaire" className="gap-1.5 text-xs">
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Questionnaire
+                            </TabsTrigger>
+                            <TabsTrigger value="scorecards" className="gap-1.5 text-xs">
+                              <ClipboardCheck className="h-3.5 w-3.5" />
+                              Scorecards
+                            </TabsTrigger>
+                            <TabsTrigger value="interviews" className="gap-1.5 text-xs">
+                              <Calendar className="h-3.5 w-3.5" />
+                              Interviews
+                            </TabsTrigger>
+                            <TabsTrigger value="reviews" className="gap-1.5 text-xs">
+                              <Users className="h-3.5 w-3.5" />
+                              Team Reviews
+                            </TabsTrigger>
+                            <TabsTrigger value="voting" className="gap-1.5 text-xs">
+                              <Vote className="h-3.5 w-3.5" />
+                              Voting
+                            </TabsTrigger>
+                            <TabsTrigger value="comparison" className="gap-1.5 text-xs">
+                              <GitCompare className="h-3.5 w-3.5" />
+                              Compare
+                            </TabsTrigger>
+                            <TabsTrigger value="activity" className="gap-1.5 text-xs">
+                              <Activity className="h-3.5 w-3.5" />
+                              Activity
+                              {unreadCount > 0 && (
+                                <Badge variant="destructive" className="ml-1 h-4 min-w-4 rounded-full px-1 text-[10px]">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                            </TabsTrigger>
+                          </TabsList>
+                        </ScrollArea>
+                      </div>
 
-                  <TabsContent value="scorecards" className="mt-0">
-                    <ScorecardsTab application={fullApplication} />
-                  </TabsContent>
+                      <ScrollArea className="flex-1">
+                        <div className="p-4">
+                          <TabsContent value="overview" className="mt-0">
+                            <OverviewTab application={fullApplication} />
+                          </TabsContent>
 
-                  <TabsContent value="interviews" className="mt-0">
-                    <InterviewsTab application={fullApplication} />
-                  </TabsContent>
+                          <TabsContent value="experience" className="mt-0">
+                            <ExperienceSkillsTab application={fullApplication} />
+                          </TabsContent>
 
-          <TabsContent value="reviews" className="mt-0">
-            <TeamReviewsTab 
-              application={fullApplication} 
-              onUpdate={async () => {
-                // Determine if we need to fetch full details (e.g., missing notes or reviews)
-                // Or just fetch always to be safe and get latest data
-                if (!application.id) return;
-                try {
-                  const { applicationService } = await import("@/modules/applications/lib/applicationService");
-                  const response = await applicationService.getApplication(application.id);
-                  if (response.success && response.data && response.data.application) {
-                    setFullApplication(prev => ({ ...prev, ...response.data!.application }));
-                  }
-                } catch (error) {
-                  console.error("Failed to fetch full application details", error);
-                }
-              }}
-            />
-          </TabsContent>
+                          <TabsContent value="questionnaire" className="mt-0">
+                            <QuestionnaireResponsesTab application={fullApplication} />
+                          </TabsContent>
 
-          <TabsContent value="voting" className="mt-0">
-            <VotingTab 
-              candidateId={fullApplication.id}
-              candidateName={fullApplication.candidateName}
-            />
-          </TabsContent>
+                          <TabsContent value="scorecards" className="mt-0">
+                            <ScorecardsTab application={fullApplication} />
+                          </TabsContent>
 
-          <TabsContent value="comparison" className="mt-0">
-            <ComparisonTab />
-          </TabsContent>
+                          <TabsContent value="interviews" className="mt-0">
+                            <InterviewsTab application={fullApplication} />
+                          </TabsContent>
 
-          <TabsContent value="annotations" className="mt-0">
-            <ResumeAnnotationsTab candidateId={fullApplication.id} />
-          </TabsContent>
+                          <TabsContent value="reviews" className="mt-0">
+                            <TeamReviewsTab 
+                              application={fullApplication} 
+                              onUpdate={async () => {
+                                if (!application.id) return;
+                                try {
+                                  const { applicationService } = await import("@/modules/applications/lib/applicationService");
+                                  const response = await applicationService.getApplication(application.id);
+                                  if (response.success && response.data && response.data.application) {
+                                    setFullApplication(prev => ({ ...prev, ...response.data!.application }));
+                                  }
+                                } catch (error) {
+                                  console.error("Failed to fetch full application details", error);
+                                }
+                              }}
+                            />
+                          </TabsContent>
 
-          <TabsContent value="activity" className="mt-0">
-            <ActivityTimelineTab application={fullApplication} />
-          </TabsContent>
+                          <TabsContent value="voting" className="mt-0">
+                            <VotingTab 
+                              candidateId={fullApplication.id}
+                              candidateName={fullApplication.candidateName}
+                            />
+                          </TabsContent>
+
+                          <TabsContent value="comparison" className="mt-0">
+                            <ComparisonTab />
+                          </TabsContent>
+
+                          <TabsContent value="annotations" className="mt-0">
+                            <ResumeAnnotationsTab candidateId={fullApplication.id} />
+                          </TabsContent>
+
+                          <TabsContent value="activity" className="mt-0">
+                            <ActivityTimelineTab application={fullApplication} />
+                          </TabsContent>
+                        </div>
+                      </ScrollArea>
+                    </Tabs>
+                  </div>
                 </div>
-              </ScrollArea>
-            </Tabs>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
         </div>
       </SheetContent>
