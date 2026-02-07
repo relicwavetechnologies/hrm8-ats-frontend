@@ -5,7 +5,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
-import { useWebSocket } from '@/shared/services/websocket';
+import { useWebSocket } from '@/app/providers/WebSocketContext';
 import { ConversationData } from '@/shared/types/websocket';
 import { cn } from '@/shared/lib/utils';
 import { CheckCircle2, Clock } from 'lucide-react';

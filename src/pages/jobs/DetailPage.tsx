@@ -459,7 +459,7 @@ export default function JobDetail() {
 
           return {
             id: app.id,
-            candidateId: app.candidateId,
+            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
             candidateName,
             candidateEmail: app.candidate?.email || app.candidateEmail || '',
             candidatePhone: app.candidate?.phone,
@@ -1311,8 +1311,7 @@ export default function JobDetail() {
           <JobEmailHubDrawer
             open={emailHubOpen}
             onOpenChange={setEmailHubOpen}
-            jobId={job.id}
-            jobTitle={job.title}
+            jobId={jobId || ''}
           />
         )}
 

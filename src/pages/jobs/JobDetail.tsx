@@ -85,6 +85,8 @@ import { RoundDetailView } from "@/modules/applications/components/RoundDetailVi
 import { AssessmentConfigurationDrawer } from "@/modules/applications/components/AssessmentConfigurationDrawer";
 import { InterviewConfigurationDrawer } from "@/modules/applications/components/InterviewConfigurationDrawer";
 import { RoundEmailConfigDrawer } from "@/modules/applications/components/RoundEmailConfigDrawer";
+import { JobMessagesTab } from "@/modules/jobs/components/JobMessagesTab";
+import { MessageSquarePlus } from "lucide-react";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -117,7 +119,7 @@ export default function JobDetail() {
   };
 
   const [interviewConfigDrawerOpen, setInterviewConfigDrawerOpen] = useState(false);
-  
+
   const handleConfigureInterview = (roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
@@ -165,7 +167,7 @@ export default function JobDetail() {
 
     // Normalize to uppercase for case-insensitive comparison
     const normalizedStatus = status.toUpperCase().trim();
-    
+
     const statusMap: Record<string, Application['status']> = {
       'NEW': 'applied',
       'SCREENING': 'screening',
@@ -175,14 +177,14 @@ export default function JobDetail() {
       'REJECTED': 'rejected',
       'WITHDRAWN': 'withdrawn',
     };
-    
+
     const mappedStatus = statusMap[normalizedStatus];
     if (!mappedStatus) {
       console.warn(`[JobDetail] Unknown application status: "${status}" (normalized: "${normalizedStatus}"), defaulting to "applied"`);
       console.warn(`[JobDetail] Available status mappings:`, Object.keys(statusMap));
       return 'applied';
     }
-    
+
     return mappedStatus;
   };
 
@@ -196,7 +198,7 @@ export default function JobDetail() {
 
     // Normalize to uppercase for case-insensitive comparison
     const normalizedStage = stage.toUpperCase().trim();
-    
+
     const stageMap: Record<string, Application['stage']> = {
       'NEW_APPLICATION': 'New Application',
       'RESUME_REVIEW': 'Resume Review',
@@ -210,13 +212,13 @@ export default function JobDetail() {
       'REJECTED': 'Rejected',
       'WITHDRAWN': 'Withdrawn',
     };
-    
+
     const mappedStage = stageMap[normalizedStage];
     if (!mappedStage) {
       console.warn(`[JobDetail] Unknown application stage: "${stage}", defaulting to "New Application"`);
       return 'New Application';
     }
-    
+
     return mappedStage;
   };
 
@@ -227,7 +229,7 @@ export default function JobDetail() {
       filters: applicationsFilters,
       sampleStatuses: allApplications.slice(0, 3).map(app => app.status),
     });
-    
+
     let filtered = [...allApplications];
 
     // Search filter
@@ -259,14 +261,14 @@ export default function JobDetail() {
         totalBeforeFilter: filtered.length,
         ALLAppStatuses: filtered.map(app => ({ id: app.id, status: app.status, candidateName: app.candidateName })),
       });
-      
+
       filtered = filtered.filter((app) => {
         // Defensive check: ensure status exists
         if (!app.status) {
           console.warn(`[JobDetail] Application ${app.id} has no status, skipping status filter`);
           return false;
         }
-        
+
         const matches = applicationsFilters.selectedStatuses.includes(app.status);
         if (!matches && filtered.length <= 10) {
           // Only log for first 10 to avoid spam, but help debug
@@ -274,7 +276,7 @@ export default function JobDetail() {
         }
         return matches;
       });
-      
+
       console.log('[JobDetail] After status filter:', {
         selectedStatuses: applicationsFilters.selectedStatuses,
         totalAfterFilter: filtered.length,
@@ -324,7 +326,7 @@ export default function JobDetail() {
 
     // Quick filter: needs review (no score and unread)
     if (applicationsFilters.quickFilter === 'needs-review') {
-      filtered = filtered.filter((app) => 
+      filtered = filtered.filter((app) =>
         (!app.score && !app.aiMatchScore) || !app.isRead
       );
     }
@@ -341,7 +343,7 @@ export default function JobDetail() {
         quickFilter: applicationsFilters.quickFilter,
       },
     });
-    
+
     return filtered;
   }, [allApplications, applicationsFilters]);
 
@@ -427,7 +429,7 @@ export default function JobDetail() {
             if (response.data.paymentStatus === 'PAID') {
               toast({
                 title: "Payment Successful! 🎉",
-                description: response.data.published 
+                description: response.data.published
                   ? "Your job has been published and is now live!"
                   : "Payment received. Your job is ready to be published.",
               });
@@ -468,7 +470,7 @@ export default function JobDetail() {
         console.log('[JobDetail] Loading applicant count for jobId:', jobId);
         const res = await applicationService.getJobApplications(jobId);
         const apiApplications = res.data?.applications || [];
-        
+
         // Extract round progress mapping to assign correct round IDs
         const roundMap: Record<string, string> = {};
         // @ts-expect-error - roundProgress exists in backend response but might not be in type definition
@@ -480,7 +482,7 @@ export default function JobDetail() {
             }
           });
         }
-        
+
         // Map API applications to frontend Application type
         const mappedApplications: Application[] = apiApplications.map((app: any) => {
           let candidateName = 'Unknown Candidate';
@@ -525,7 +527,7 @@ export default function JobDetail() {
 
           return {
             id: app.id,
-            candidateId: app.candidateId,
+            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
             candidateName,
             candidateEmail: app.candidate?.email || app.candidateEmail || '',
             candidatePhone: app.candidate?.phone,
@@ -565,49 +567,49 @@ export default function JobDetail() {
             createdAt: safeDate(app.createdAt),
             updatedAt: safeDate(app.updatedAt),
             candidatePreferences: app.candidate ? {
-        salaryPreference: app.candidate.salaryPreference,
-        employmentType: app.candidate.jobTypePreference,
-        willingToRelocate: app.candidate.relocationWilling,
-        visaStatus: app.candidate.visaStatus,
-        workArrangement: app.candidate.remotePreference ? [app.candidate.remotePreference] : [],
-      } : undefined,
+              salaryPreference: app.candidate.salaryPreference,
+              employmentType: app.candidate.jobTypePreference,
+              willingToRelocate: app.candidate.relocationWilling,
+              visaStatus: app.candidate.visaStatus,
+              workArrangement: app.candidate.remotePreference ? [app.candidate.remotePreference] : [],
+            } : undefined,
           };
         });
-        
+
         // Validate all mapped applications have valid statuses
         const invalidStatusApps = mappedApplications.filter(app => !app.status);
         if (invalidStatusApps.length > 0) {
           console.error(`[JobDetail] Found ${invalidStatusApps.length} applications with invalid/missing status:`, invalidStatusApps.map(app => ({ id: app.id, originalStatus: apiApplications.find(a => a.id === app.id)?.status })));
         }
-        
+
         // Log status distribution for debugging
         const statusCounts = mappedApplications.reduce((acc, app) => {
           acc[app.status] = (acc[app.status] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
         console.log(`[JobDetail] Loaded ${mappedApplications.length} applications with status distribution:`, statusCounts);
-        
+
         // Log ALL applications with their statuses to debug - EXPAND THIS IN CONSOLE
         console.group(`[JobDetail] All ${mappedApplications.length} applications with statuses:`);
         mappedApplications.forEach(app => {
           console.log(`${app.candidateName} (${app.id}): status="${app.status}"`);
         });
         console.groupEnd();
-        
+
         // Log original API statuses before mapping - EXPAND THIS IN CONSOLE
         console.group(`[JobDetail] Original API statuses before mapping:`);
         apiApplications.forEach((app: any) => {
           console.log(`${app.candidate?.firstName || app.id}: originalStatus="${app.status}" (${typeof app.status}) → mapped="${mapApplicationStatus(app.status)}"`);
         });
         console.groupEnd();
-        
+
         // Count how many applications should map to "applied"
         const shouldBeApplied = apiApplications.filter((app: any) => {
           const mapped = mapApplicationStatus(app.status);
           return mapped === 'applied';
         });
         console.log(`[JobDetail] Applications that should map to "applied": ${shouldBeApplied.length}`, shouldBeApplied.map((app: any) => ({ id: app.id, originalStatus: app.status })));
-        
+
         setAllApplications(mappedApplications);
         setApplicantsCount(mappedApplications.length);
       } catch (err) {
@@ -754,34 +756,34 @@ export default function JobDetail() {
               {/* Sub-navigation for Applicants */}
               {activeTab === 'applicants' && (
                 <div className="flex flex-col gap-0.5 mt-0.5 mb-1 px-2 animate-in slide-in-from-top-1 duration-200">
-                   <button
-                     onClick={() => setActiveRoundTab('overview')}
-                     className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                   >
-                     Overview
-                   </button>
-                   {rounds.map(round => (
-                     <button
-                       key={round.id}
-                       onClick={() => setActiveRoundTab(round.id)}
-                       className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-                     >
-                       <span className="truncate">{round.name}</span>
-                       <span className="ml-auto text-[10px] opacity-70">
-                         {allApplications.filter(a => a.roundId === round.id).length}
-                       </span>
-                     </button>
-                   ))}
+                  <button
+                    onClick={() => setActiveRoundTab('overview')}
+                    className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                  >
+                    Overview
+                  </button>
+                  {rounds.map(round => (
+                    <button
+                      key={round.id}
+                      onClick={() => setActiveRoundTab(round.id)}
+                      className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                    >
+                      <span className="truncate">{round.name}</span>
+                      <span className="ml-auto text-[10px] opacity-70">
+                        {allApplications.filter(a => a.roundId === round.id).length}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
-              <TabsTrigger 
+              <TabsTrigger
                 value="screening"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
                 <Inbox className="h-4 w-4" />
                 Initial Screening
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="matching"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
@@ -794,6 +796,13 @@ export default function JobDetail() {
               >
                 <Video className="h-4 w-4" />
                 AI Interviews
+              </TabsTrigger>
+              <TabsTrigger
+                value="messages"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                Messages
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
@@ -823,7 +832,7 @@ export default function JobDetail() {
                 <MoreVertical className="h-4 w-4" />
                 Settings
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="sourcing"
                 className="hidden"
               >
@@ -887,648 +896,659 @@ export default function JobDetail() {
 
             {/* Overview Tab Content */}
             <TabsContent value="overview" className="mt-6 space-y-6">
-            {/* Payment Status - Show for paid packages */}
-            {(job.serviceType !== 'self-managed' && job.serviceType !== 'rpo') && (
-              <JobPaymentStatus job={job} onPaymentComplete={handleJobUpdate} />
-            )}
+              {/* Payment Status - Show for paid packages */}
+              {(job.serviceType !== 'self-managed' && job.serviceType !== 'rpo') && (
+                <JobPaymentStatus job={job} onPaymentComplete={handleJobUpdate} />
+              )}
 
-            {/* Upgrade to Recruitment Service Banner for Self-Managed Jobs */}
-            {job.serviceType === 'self-managed' && (job.status === 'open' || job.status === 'draft') && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <ArrowUpCircle className="h-4 w-4 text-primary" />
-                    Upgrade to HRM8 Recruitment Service
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Need additional support? Upgrade to one of our recruitment services to get expert help with candidate sourcing, screening, and hiring.
-                  </p>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span>Professional candidate screening and evaluation</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span>Dedicated recruitment consultant support</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span>End-to-end recruitment process management</span>
-                    </li>
-                  </ul>
-                  <Button
-                    className="w-full"
-                    onClick={() => setUpgradeServiceDialogOpen(true)}
-                  >
-                    <ArrowUpCircle className="h-4 w-4 mr-2" />
-                    Upgrade to Recruitment Service
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                {/* Job Details */}
-                <Card>
+              {/* Upgrade to Recruitment Service Banner for Self-Managed Jobs */}
+              {job.serviceType === 'self-managed' && (job.status === 'open' || job.status === 'draft') && (
+                <Card className="border-primary/20 bg-primary/5">
                   <CardHeader>
-                    <CardTitle className="text-base font-semibold">Job Details</CardTitle>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <ArrowUpCircle className="h-4 w-4 text-primary" />
+                      Upgrade to HRM8 Recruitment Service
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Location:</span>
-                        <span>{job.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Arrangement:</span>
-                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
-                          {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Type:</span>
-                        <EmploymentTypeBadge type={job.employmentType} />
-                      </div>
-                      {(job.salaryMin || job.salaryMax) && (
-                        <div className="space-y-2 col-span-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">Salary:</span>
-                            <span>{formatSalaryRange(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod)}</span>
-                          </div>
-
-                          {job.salaryDescription && (
-                            <div className="ml-6 text-sm bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
-                              <p className="text-foreground italic">
-                                💰 {job.salaryDescription}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Experience:</span>
-                        <span>{formatExperienceLevel(job.experienceLevel)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Visibility:</span>
-                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full capitalize">
-                          {job.visibility}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Service:</span>
-                        <ServiceTypeBadge type={job.serviceType} />
-                        {!job.serviceType || job.serviceType === 'self-managed' ? (
-                          <span className="text-muted-foreground">Self-Managed</span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <Separator />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Job Code</p>
-                      <p className="font-mono text-sm font-medium">{job.jobCode}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                      <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Description */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Description</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: job.description }}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Requirements */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Requirements</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {job.requirements.map((req, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <span className="text-primary mt-1">•</span>
-                          <span>{req}</span>
-                        </li>
-                      ))}
+                    <p className="text-sm text-muted-foreground">
+                      Need additional support? Upgrade to one of our recruitment services to get expert help with candidate sourcing, screening, and hiring.
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Professional candidate screening and evaluation</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Dedicated recruitment consultant support</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>End-to-end recruitment process management</span>
+                      </li>
                     </ul>
+                    <Button
+                      className="w-full"
+                      onClick={() => setUpgradeServiceDialogOpen(true)}
+                    >
+                      <ArrowUpCircle className="h-4 w-4 mr-2" />
+                      Upgrade to Recruitment Service
+                    </Button>
                   </CardContent>
                 </Card>
+              )}
 
-                {/* Responsibilities */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Responsibilities</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {job.responsibilities.map((resp, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <span className="text-primary mt-1">•</span>
-                          <span>{resp}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                {/* Distribution */}
-                {job.jobBoardDistribution.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Job Details */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base font-semibold">Job Board Distribution</CardTitle>
+                      <CardTitle className="text-base font-semibold">Job Details</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {job.jobBoardDistribution.map((board) => (
-                          <Badge key={board} variant="outline" className="h-6 px-2 text-xs rounded-full">
-                            {board}
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Location:</span>
+                          <span>{job.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Arrangement:</span>
+                          <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                            {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
                           </Badge>
-                        ))}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Type:</span>
+                          <EmploymentTypeBadge type={job.employmentType} />
+                        </div>
+                        {(job.salaryMin || job.salaryMax) && (
+                          <div className="space-y-2 col-span-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">Salary:</span>
+                              <span>{formatSalaryRange(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod)}</span>
+                            </div>
+
+                            {job.salaryDescription && (
+                              <div className="ml-6 text-sm bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
+                                <p className="text-foreground italic">
+                                  💰 {job.salaryDescription}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Experience:</span>
+                          <span>{formatExperienceLevel(job.experienceLevel)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Visibility:</span>
+                          <Badge variant="outline" className="h-6 px-2 text-xs rounded-full capitalize">
+                            {job.visibility}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Globe className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Service:</span>
+                          <ServiceTypeBadge type={job.serviceType} />
+                          {!job.serviceType || job.serviceType === 'self-managed' ? (
+                            <span className="text-muted-foreground">Self-Managed</span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Job Code</p>
+                        <p className="font-mono text-sm font-medium">{job.jobCode}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Posted</p>
+                        <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
                       </div>
                     </CardContent>
                   </Card>
-                )}
-              </div>
 
-              {/* Activity Sidebar */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Quick Stats</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Eye className="h-4 w-4" />
-                        <span>Total Views</span>
-                      </div>
-                      <span className="font-semibold">{job.viewsCount?.toLocaleString() || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <ArrowUpCircle className="h-4 w-4" />
-                        <span>Apply Clicks</span>
-                      </div>
-                      <span className="font-semibold">{job.clicksCount?.toLocaleString() || 0}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Briefcase className="h-4 w-4" />
-                        <span>Applicants</span>
-                      </div>
-                      <span className="font-semibold">{job.applicantsCount || 0}</span>
-                    </div>
-                    <Separator />
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                      <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
-                    </div>
-                    {job.closeDate && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Closed</p>
-                        <p className="text-sm font-medium">{formatRelativeDate(job.closeDate)}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <JobActivityFeed activities={activities} />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
+                  {/* Description */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-semibold">Description</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: job.description }}
+                      />
+                    </CardContent>
+                  </Card>
 
-          {/* Applicants Tab */}
-          <TabsContent value="applicants" className="mt-2 space-y-2">
-            {/* Action Bar */}
-            <div className="flex items-center justify-end mb-4">
-              <div className="flex items-center gap-2 ml-4">
-                <Button 
-                  onClick={() => setEmailHubOpen(true)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs"
-                >
-                  <Inbox className="h-3 w-3 mr-2" />
-                  Email Center
-                </Button>
-                <Button 
-                  onClick={() => setUploadDialogOpen(true)}
-                  variant="ghost"
-                  size="sm"
-                    className="h-8 text-xs"
-                >
-                  <Upload className="h-3 w-3 mr-2" />
-                  Upload
-                </Button>
-                <Button 
-                  onClick={() => setTalentPoolDialogOpen(true)}
-                  variant="ghost"
-                  size="sm"
-                    className="h-8 text-xs"
-                >
-                  <UserPlus className="h-3 w-3 mr-2" />
-                  Add Talent
-                </Button>
-              </div>
-            </div>
+                  {/* Requirements */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-semibold">Requirements</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {job.requirements.map((req, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
 
-            {/* Content Area - Switched by Sidebar State */}
-            {activeRoundTab === 'overview' ? (
-               <div className="space-y-4">
-                {/* Filter Bar */}
-                <div className="space-y-2 mb-2">
-                   <div className="flex items-center justify-between">
-                    <JobApplicationsFilterBar
-                      filters={applicationsFilters}
-                      onFiltersChange={setApplicationsFilters}
-                      totalCount={allApplications.length}
-                      filteredCount={filteredApplications.length}
-                    />
-                  </div>
+                  {/* Responsibilities */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-semibold">Responsibilities</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {job.responsibilities.map((resp, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{resp}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  {/* Distribution */}
+                  {job.jobBoardDistribution.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base font-semibold">Job Board Distribution</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {job.jobBoardDistribution.map((board) => (
+                            <Badge key={board} variant="outline" className="h-6 px-2 text-xs rounded-full">
+                              {board}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
-                <ApplicationPipeline 
-                  jobId={job.id} 
-                  jobTitle={job.title}
-                  applications={filteredApplications}
-                  enableMultiSelect={false}
-                  onApplicationMoved={() => {
-                    setRefreshKey(prev => prev + 1);
-                  }}
-                  key={refreshKey}
-                  allRounds={rounds}
-                />
-               </div>
-            ) : (
-              // Round Detail View
-              (() => {
-                 const round = rounds.find(r => r.id === activeRoundTab);
-                 if (!round) return null;
-                 return (
-                  <RoundDetailView
-                    key={round.id}
+                {/* Activity Sidebar */}
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-semibold">Quick Stats</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Eye className="h-4 w-4" />
+                          <span>Total Views</span>
+                        </div>
+                        <span className="font-semibold">{job.viewsCount?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <ArrowUpCircle className="h-4 w-4" />
+                          <span>Apply Clicks</span>
+                        </div>
+                        <span className="font-semibold">{job.clicksCount?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Briefcase className="h-4 w-4" />
+                          <span>Applicants</span>
+                        </div>
+                        <span className="font-semibold">{job.applicantsCount || 0}</span>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Posted</p>
+                        <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
+                      </div>
+                      {job.closeDate && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Closed</p>
+                          <p className="text-sm font-medium">{formatRelativeDate(job.closeDate)}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-semibold">Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <JobActivityFeed activities={activities} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Applicants Tab */}
+            <TabsContent value="applicants" className="mt-2 space-y-2">
+              {/* Action Bar */}
+              <div className="flex items-center justify-end mb-4">
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    onClick={() => setEmailHubOpen(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                  >
+                    <Inbox className="h-3 w-3 mr-2" />
+                    Email Center
+                  </Button>
+                  <Button
+                    onClick={() => setUploadDialogOpen(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                  >
+                    <Upload className="h-3 w-3 mr-2" />
+                    Upload
+                  </Button>
+                  <Button
+                    onClick={() => setTalentPoolDialogOpen(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                  >
+                    <UserPlus className="h-3 w-3 mr-2" />
+                    Add Talent
+                  </Button>
+                </div>
+              </div>
+
+              {/* Content Area - Switched by Sidebar State */}
+              {activeRoundTab === 'overview' ? (
+                <div className="space-y-4">
+                  {/* Filter Bar */}
+                  <div className="space-y-2 mb-2">
+                    <div className="flex items-center justify-between">
+                      <JobApplicationsFilterBar
+                        filters={applicationsFilters}
+                        onFiltersChange={setApplicationsFilters}
+                        totalCount={allApplications.length}
+                        filteredCount={filteredApplications.length}
+                      />
+                    </div>
+                  </div>
+
+                  <ApplicationPipeline
                     jobId={job.id}
-                    round={round}
-                    applications={allApplications}
-                    onRefresh={handleJobUpdate}
-                    onApplicationClick={(app) => {
-                      // We can open the drawer or some detailed view
+                    jobTitle={job.title}
+                    applications={filteredApplications}
+                    enableMultiSelect={false}
+                    onApplicationMoved={() => {
+                      setRefreshKey(prev => prev + 1);
                     }}
+                    key={refreshKey}
                     allRounds={rounds}
-                    onMoveToRound={async (appId, roundId) => {
-                       try {
-                         const targetRound = rounds.find(r => r.id === roundId);
-                         if (!targetRound) return;
-                         
-                         const res = await applicationService.moveStage(appId, targetRound.name, roundId);
-                         if (res.success) {
-                           toast({ title: "Moved", description: "Candidate moved successfully" });
-                           setRefreshKey(prev => prev + 1);
-                         } else {
-                           toast({ title: "Move Failed", description: res.error || "Failed to move candidate", variant: "destructive" });
-                         }
-                       } catch (e) {
-                         console.error(e);
-                         toast({ title: "Move Error", description: "An unexpected error occurred", variant: "destructive" });
-                       }
-                    }}
-                    onMoveToNextRound={async (appId) => {
-                       // Find current round index
-                       const currentIndex = rounds.findIndex(r => r.id === round.id);
-                       if (currentIndex === -1) {
-                         toast({ title: "Error", description: `Current round not found in list. Round ID: ${round.id}`, variant: "destructive" });
-                         return;
-                       }
-                       if (currentIndex === rounds.length - 1) {
-                         toast({ title: "Info", description: "This is the last round. No next stage available.", variant: "default" });
-                         return;
-                       }
-                       
-                       const nextRound = rounds[currentIndex + 1];
-                       console.log(`[JobDetail] Moving app ${appId} from ${round.name} (${round.id}) to ${nextRound.name} (${nextRound.id})`);
-                       
-                       try {
-                         // Show loading toast?
-                         toast({ title: "Moving Candidate...", description: `Moving to ${nextRound.name}` });
-                         
-                         const res = await applicationService.moveStage(appId, nextRound.name, nextRound.id);
-                         
-                         if (res.success) {
-                           toast({ title: "Success", description: `Candidate moved to ${nextRound.name}` });
-                           // Force refresh of both applications and rounds statistics if needed
-                           setRefreshKey(prev => prev + 1);
-                         } else {
-                           console.error(`[JobDetail] Move failed:`, res);
-                           toast({ title: "Move Failed", description: res.error || "Could not move candidate. Check console for details.", variant: "destructive" });
-                         }
-                       } catch (e: any) {
-                         console.error(`[JobDetail] Exception during move:`, e);
-                         toast({ title: "System Error", description: e.message || "Failed to move candidate", variant: "destructive" });
-                       }
-                    }}
-                    onConfigureAssessment={handleConfigureAssessment}
-                    onConfigureInterview={handleConfigureInterview}
-                    onConfigureEmail={handleConfigureEmail}
                   />
-                 );
-              })()
-            )}
-          </TabsContent>
+                </div>
+              ) : (
+                // Round Detail View
+                (() => {
+                  const round = rounds.find(r => r.id === activeRoundTab);
+                  if (!round) return null;
+                  return (
+                    <RoundDetailView
+                      key={round.id}
+                      jobId={job.id}
+                      round={round}
+                      applications={allApplications}
+                      onRefresh={handleJobUpdate}
+                      onApplicationClick={(app) => {
+                        // We can open the drawer or some detailed view
+                      }}
+                      allRounds={rounds}
+                      onMoveToRound={async (appId, roundId) => {
+                        try {
+                          const targetRound = rounds.find(r => r.id === roundId);
+                          if (!targetRound) return;
 
-          {/* Initial Screening Tab */}
-          <TabsContent value="screening" className="mt-6">
-            <InitialScreeningTab
-              jobId={job.id}
-              jobTitle={job.title}
-              jobRequirements={job.requirements}
-              jobDescription={job.description}
-              job={job}
-            />
-          </TabsContent>
+                          const res = await applicationService.moveStage(appId, targetRound.name, roundId);
+                          if (res.success) {
+                            toast({ title: "Moved", description: "Candidate moved successfully" });
+                            setRefreshKey(prev => prev + 1);
+                          } else {
+                            toast({ title: "Move Failed", description: res.error || "Failed to move candidate", variant: "destructive" });
+                          }
+                        } catch (e) {
+                          console.error(e);
+                          toast({ title: "Move Error", description: "An unexpected error occurred", variant: "destructive" });
+                        }
+                      }}
+                      onMoveToNextRound={async (appId) => {
+                        // Find current round index
+                        const currentIndex = rounds.findIndex(r => r.id === round.id);
+                        if (currentIndex === -1) {
+                          toast({ title: "Error", description: `Current round not found in list. Round ID: ${round.id}`, variant: "destructive" });
+                          return;
+                        }
+                        if (currentIndex === rounds.length - 1) {
+                          toast({ title: "Info", description: "This is the last round. No next stage available.", variant: "default" });
+                          return;
+                        }
 
-          {/* Matching Tab */}
-          <TabsContent value="matching" className="mt-6">
-            <CandidateMatchingPanel job={job} />
-          </TabsContent>
+                        const nextRound = rounds[currentIndex + 1];
+                        console.log(`[JobDetail] Moving app ${appId} from ${round.name} (${round.id}) to ${nextRound.name} (${nextRound.id})`);
 
-          {/* AI Interviews Tab */}
-          <TabsContent value="ai-interviews" className="mt-6">
-            <JobAIInterviewsTab job={job} />
-          </TabsContent>
+                        try {
+                          // Show loading toast?
+                          toast({ title: "Moving Candidate...", description: `Moving to ${nextRound.name}` });
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="mt-6">
-            <JobAnalyticsDashboard jobId={job.id} />
-          </TabsContent>
+                          const res = await applicationService.moveStage(appId, nextRound.name, nextRound.id);
 
-          {/* Collaboration Tab */}
-          <TabsContent value="collaboration" className="mt-6">
-            <JobCollaborationPanel jobId={job.id} />
-          </TabsContent>
+                          if (res.success) {
+                            toast({ title: "Success", description: `Candidate moved to ${nextRound.name}` });
+                            // Force refresh of both applications and rounds statistics if needed
+                            setRefreshKey(prev => prev + 1);
+                          } else {
+                            console.error(`[JobDetail] Move failed:`, res);
+                            toast({ title: "Move Failed", description: res.error || "Could not move candidate. Check console for details.", variant: "destructive" });
+                          }
+                        } catch (e: any) {
+                          console.error(`[JobDetail] Exception during move:`, e);
+                          toast({ title: "System Error", description: e.message || "Failed to move candidate", variant: "destructive" });
+                        }
+                      }}
+                      onConfigureAssessment={handleConfigureAssessment}
+                      onConfigureInterview={handleConfigureInterview}
+                      onConfigureEmail={handleConfigureEmail}
+                    />
+                  );
+                })()
+              )}
+            </TabsContent>
 
-          {/* History Tab */}
-          <TabsContent value="history" className="mt-6">
-            <JobVersionHistory jobId={job.id} onRevert={handleRevertVersion} />
-          </TabsContent>
+            {/* Initial Screening Tab */}
+            <TabsContent value="screening" className="mt-6">
+              <InitialScreeningTab
+                jobId={job.id}
+                jobTitle={job.title}
+                jobRequirements={job.requirements}
+                jobDescription={job.description}
+                job={job}
+              />
+            </TabsContent>
 
-          {/* Team Tab */}
-          <TabsContent value="team" className="mt-6 space-y-6">
-            <HiringTeamTab jobId={job.id} />
-          </TabsContent>
+            {/* Matching Tab */}
+            <TabsContent value="matching" className="mt-6">
+              <CandidateMatchingPanel job={job} />
+            </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-6 space-y-6">
-            {/* Job Board Visibility Control */}
-            <JobBoardVisibilityControl job={job} onUpdate={handleJobUpdate} />
-            <JobBudgetTracker jobId={job.id} />
+            {/* AI Interviews Tab */}
+            <TabsContent value="ai-interviews" className="h-full overflow-hidden p-6 pt-0">
+              <JobAIInterviewsTab job={job} />
+            </TabsContent>
 
-            {!job.hasJobTargetPromotion && (job.serviceType === 'self-managed' || job.serviceType === 'rpo') && (
-              <Card className="border-primary/20 bg-primary/5">
+            <TabsContent value="messages" className="h-full overflow-hidden p-6 pt-0">
+              <div className="h-full flex flex-col gap-4">
+                <div className="flex justify-between items-center shrink-0">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Messages</h2>
+                    <p className="text-muted-foreground">Manage communications with candidates</p>
+                  </div>
+                </div>
+                {job.id && <JobMessagesTab jobId={job.id} />}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="analytics" className="h-full overflow-y-auto p-6 pt-0">
+              <JobAnalyticsDashboard jobId={job.id} />
+            </TabsContent>
+
+            {/* Collaboration Tab */}
+            <TabsContent value="collaboration" className="mt-6">
+              <JobCollaborationPanel jobId={job.id} />
+            </TabsContent>
+
+            {/* History Tab */}
+            <TabsContent value="history" className="mt-6">
+              <JobVersionHistory jobId={job.id} onRevert={handleRevertVersion} />
+            </TabsContent>
+
+            {/* Team Tab */}
+            <TabsContent value="team" className="mt-6 space-y-6">
+              <HiringTeamTab jobId={job.id} />
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="mt-6 space-y-6">
+              {/* Job Board Visibility Control */}
+              <JobBoardVisibilityControl job={job} onUpdate={handleJobUpdate} />
+              <JobBudgetTracker jobId={job.id} />
+
+              {!job.hasJobTargetPromotion && (job.serviceType === 'self-managed' || job.serviceType === 'rpo') && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Megaphone className="h-4 w-4 text-primary" />
+                      Promote to External Job Boards
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Maximize your job's reach by promoting it to 50M+ candidates across major job boards like Indeed, LinkedIn, and Glassdoor.
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Get 3-5x more qualified applicants</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Reduce time-to-hire with broader exposure</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Flexible budget options starting from $500</span>
+                      </li>
+                    </ul>
+                    <Button
+                      className="w-full"
+                      onClick={() => setPromotionDialogOpen(true)}
+                    >
+                      <Megaphone className="h-4 w-4 mr-2" />
+                      Promote to External Job Boards
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Megaphone className="h-4 w-4 text-primary" />
-                    Promote to External Job Boards
-                  </CardTitle>
+                  <CardTitle className="text-base font-semibold">Job Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Maximize your job's reach by promoting it to 50M+ candidates across major job boards like Indeed, LinkedIn, and Glassdoor.
-                  </p>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span>Get 3-5x more qualified applicants</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span>Reduce time-to-hire with broader exposure</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">✓</span>
-                      <span>Flexible budget options starting from $500</span>
-                    </li>
-                  </ul>
+                  <Button variant="outline" onClick={handleEditJob} className="w-full justify-start">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Job Details
+                  </Button>
                   <Button
-                    className="w-full"
-                    onClick={() => setPromotionDialogOpen(true)}
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setArchiveDialogOpen(true)}
                   >
-                    <Megaphone className="h-4 w-4 mr-2" />
-                    Promote to External Job Boards
+                    {job.archived ? (
+                      <>
+                        <ArchiveRestore className="h-4 w-4 mr-2" />
+                        Unarchive Job
+                      </>
+                    ) : (
+                      <>
+                        <Archive className="h-4 w-4 mr-2" />
+                        Archive Job
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full justify-start"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Job
                   </Button>
                 </CardContent>
               </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-semibold">Job Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button variant="outline" onClick={handleEditJob} className="w-full justify-start">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Job Details
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setArchiveDialogOpen(true)}
-                >
-                  {job.archived ? (
-                    <>
-                      <ArchiveRestore className="h-4 w-4 mr-2" />
-                      Unarchive Job
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="h-4 w-4 mr-2" />
-                      Archive Job
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="w-full justify-start"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Job
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            </TabsContent>
+          </div>
         </div>
-      </div>
-    </Tabs>
+      </Tabs>
 
-        {/* Assessment Configuration Drawer */}
-        {selectedRoundForConfig && (
-          <AssessmentConfigurationDrawer
-            open={assessmentConfigDrawerOpen}
-            onOpenChange={setAssessmentConfigDrawerOpen}
-            jobId={jobId || ''}
-            roundId={selectedRoundForConfig.id}
-            roundName={selectedRoundForConfig.name}
-            onSuccess={() => {
-               // Refresh if needed, e.g. if config changes affect something visible immediately
-               // Often config is backend only, so no refresh needed unless we show status
-            }}
-          />
-        )}
+      {/* Assessment Configuration Drawer */}
+      {selectedRoundForConfig && (
+        <AssessmentConfigurationDrawer
+          open={assessmentConfigDrawerOpen}
+          onOpenChange={setAssessmentConfigDrawerOpen}
+          jobId={jobId || ''}
+          roundId={selectedRoundForConfig.id}
+          roundName={selectedRoundForConfig.name}
+          onSuccess={() => {
+            // Refresh if needed, e.g. if config changes affect something visible immediately
+            // Often config is backend only, so no refresh needed unless we show status
+          }}
+        />
+      )}
 
-        {selectedRoundForConfig && (
-          <InterviewConfigurationDrawer
-            open={interviewConfigDrawerOpen}
-            onOpenChange={setInterviewConfigDrawerOpen}
-            jobId={jobId || ''}
-            roundId={selectedRoundForConfig.id}
-            roundName={selectedRoundForConfig.name}
-          />
-        )}
+      {selectedRoundForConfig && (
+        <InterviewConfigurationDrawer
+          open={interviewConfigDrawerOpen}
+          onOpenChange={setInterviewConfigDrawerOpen}
+          jobId={jobId || ''}
+          roundId={selectedRoundForConfig.id}
+          roundName={selectedRoundForConfig.name}
+        />
+      )}
 
-        {/* Job Edit Drawer */}
-        {jobId && (
-          <JobEditDrawer
-            open={editDrawerOpen}
-            onOpenChange={setEditDrawerOpen}
-            jobId={jobId}
-            onSuccess={handleJobUpdate}
-          />
-        )}
+      {/* Job Edit Drawer */}
+      {jobId && (
+        <JobEditDrawer
+          open={editDrawerOpen}
+          onOpenChange={setEditDrawerOpen}
+          jobId={jobId}
+          onSuccess={handleJobUpdate}
+        />
+      )}
 
-        <ExternalPromotionDialog
-          open={promotionDialogOpen}
-          onOpenChange={setPromotionDialogOpen}
+      <ExternalPromotionDialog
+        open={promotionDialogOpen}
+        onOpenChange={setPromotionDialogOpen}
+        job={job}
+        onSuccess={() => {
+          setRefreshKey(prev => prev + 1);
+        }}
+      />
+
+      <UpgradeServiceDialog
+        open={upgradeServiceDialogOpen}
+        onServiceTypeSelect={async (serviceType) => {
+          // Handle service upgrade - this will be implemented in the upgrade flow
+          toast({
+            title: "Service upgrade initiated",
+            description: `Upgrade to ${serviceType === 'shortlisting' ? 'Shortlisting Service' : serviceType === 'full-service' ? 'Full Recruitment Service' : 'Executive Search'} has been initiated.`,
+          });
+          setUpgradeServiceDialogOpen(false);
+          handleJobUpdate();
+        }}
+        onCancel={() => setUpgradeServiceDialogOpen(false)}
+      />
+
+      {/* Archive/Unarchive Dialog */}
+      {job && (
+        <ArchiveJobDialog
+          open={archiveDialogOpen}
+          onOpenChange={setArchiveDialogOpen}
           job={job}
+          onConfirm={handleArchive}
+          isProcessing={isProcessingArchive}
+          isArchive={!job.archived}
+        />
+      )}
+
+      {/* Delete Job Dialog */}
+      {job && (
+        <DeleteJobDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          job={job}
+          onConfirm={handleDelete}
+          isProcessing={isProcessingDelete}
+        />
+      )}
+
+      {/* Talent Pool Search Dialog */}
+      {job && (
+        <TalentPoolSearchDialog
+          open={talentPoolDialogOpen}
+          onOpenChange={setTalentPoolDialogOpen}
+          jobId={job.id}
+          jobTitle={job.title}
+          onCandidateAdded={() => {
+            setRefreshKey(prev => prev + 1);
+            // Refresh applicants count
+            const loadCount = async () => {
+              try {
+                const res = await applicationService.getJobApplications(job.id);
+                const list = res.data?.applications || [];
+                setApplicantsCount(list.length);
+              } catch (err) {
+                console.error("[JobDetail] Failed to load applicants count", err);
+              }
+            };
+            loadCount();
+          }}
+        />
+      )}
+
+      {/* Manual Upload Dialog */}
+      {job && (
+        <ManualUploadDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          jobId={job.id}
+          jobTitle={job.title}
           onSuccess={() => {
             setRefreshKey(prev => prev + 1);
           }}
         />
+      )}
 
-        <UpgradeServiceDialog
-          open={upgradeServiceDialogOpen}
-          onServiceTypeSelect={async (serviceType) => {
-            // Handle service upgrade - this will be implemented in the upgrade flow
-            toast({
-              title: "Service upgrade initiated",
-              description: `Upgrade to ${serviceType === 'shortlisting' ? 'Shortlisting Service' : serviceType === 'full-service' ? 'Full Recruitment Service' : 'Executive Search'} has been initiated.`,
-            });
-            setUpgradeServiceDialogOpen(false);
+      {/* Email Center Hub Drawer */}
+      {job && (
+        <JobEmailHubDrawer
+          open={emailHubOpen}
+          onOpenChange={setEmailHubOpen}
+          jobId={job.id}
+        />
+      )}
+
+      {/* Round Email Configuration Drawer */}
+      {selectedRoundForConfig && (
+        <RoundEmailConfigDrawer
+          open={roundEmailConfigDrawerOpen}
+          onOpenChange={setRoundEmailConfigDrawerOpen}
+          jobId={jobId || ''}
+          round={selectedRoundForConfig}
+          onSuccess={() => {
+            // Refresh job details if needed
             handleJobUpdate();
           }}
-          onCancel={() => setUpgradeServiceDialogOpen(false)}
         />
-
-        {/* Archive/Unarchive Dialog */}
-        {job && (
-          <ArchiveJobDialog
-            open={archiveDialogOpen}
-            onOpenChange={setArchiveDialogOpen}
-            job={job}
-            onConfirm={handleArchive}
-            isProcessing={isProcessingArchive}
-            isArchive={!job.archived}
-          />
-        )}
-
-        {/* Delete Job Dialog */}
-        {job && (
-          <DeleteJobDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            job={job}
-            onConfirm={handleDelete}
-            isProcessing={isProcessingDelete}
-          />
-        )}
-
-        {/* Talent Pool Search Dialog */}
-        {job && (
-          <TalentPoolSearchDialog
-            open={talentPoolDialogOpen}
-            onOpenChange={setTalentPoolDialogOpen}
-            jobId={job.id}
-            jobTitle={job.title}
-            onCandidateAdded={() => {
-              setRefreshKey(prev => prev + 1);
-              // Refresh applicants count
-              const loadCount = async () => {
-                try {
-                  const res = await applicationService.getJobApplications(job.id);
-                  const list = res.data?.applications || [];
-                  setApplicantsCount(list.length);
-                } catch (err) {
-                  console.error("[JobDetail] Failed to load applicants count", err);
-                }
-              };
-              loadCount();
-            }}
-          />
-        )}
-
-        {/* Manual Upload Dialog */}
-        {job && (
-          <ManualUploadDialog
-            open={uploadDialogOpen}
-            onOpenChange={setUploadDialogOpen}
-            jobId={job.id}
-            jobTitle={job.title}
-            onSuccess={() => {
-              setRefreshKey(prev => prev + 1);
-            }}
-          />
-        )}
-
-        {/* Email Center Hub Drawer */}
-        {job && (
-          <JobEmailHubDrawer
-            open={emailHubOpen}
-            onOpenChange={setEmailHubOpen}
-            jobId={job.id}
-          />
-        )}
-
-        {/* Round Email Configuration Drawer */}
-        {selectedRoundForConfig && (
-          <RoundEmailConfigDrawer
-            open={roundEmailConfigDrawerOpen}
-            onOpenChange={setRoundEmailConfigDrawerOpen}
-            jobId={jobId || ''}
-            round={selectedRoundForConfig}
-            onSuccess={() => {
-              // Refresh job details if needed
-              handleJobUpdate();
-            }}
-          />
-        )}
+      )}
 
 
     </DashboardPageLayout>

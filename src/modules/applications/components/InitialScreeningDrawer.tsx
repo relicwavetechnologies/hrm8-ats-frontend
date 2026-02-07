@@ -83,7 +83,7 @@ export function InitialScreeningDrawer({
       const response = await applicationService.getJobApplications(jobId);
       if (response.success && response.data) {
         const apiApplications = response.data.applications || [];
-        
+
         // Filter applications that are in this round
         // Applications in NEW round either:
         // 1. Have ApplicationRoundProgress with this roundId, OR
@@ -116,7 +116,7 @@ export function InitialScreeningDrawer({
 
           return {
             id: app.id,
-            candidateId: app.candidateId,
+            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
             candidateName,
             candidateEmail: app.candidate?.email || '',
             candidatePhoto: app.candidate?.photo,

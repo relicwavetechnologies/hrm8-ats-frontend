@@ -26,8 +26,14 @@ export interface CreateJobRequest {
   salaryMax?: number;
   salaryCurrency?: string;
   salaryDescription?: string;
+  hideSalary?: boolean;
   category?: string;
+  tags?: string[]; // Standard tags
   promotionalTags?: string[];
+  requirements?: string[];
+  responsibilities?: string[];
+  applicationForm?: any;
+  hiringTeam?: any[];
   featured?: boolean;
   stealth?: boolean;
   visibility?: string;
@@ -36,6 +42,8 @@ export interface CreateJobRequest {
   assignmentMode?: 'AUTO' | 'MANUAL';
   regionId?: string;
   servicePackage?: string;
+  closeDate?: string;
+  experienceLevel?: string;
 }
 
 export interface UpdateJobRequest extends Partial<CreateJobRequest> {

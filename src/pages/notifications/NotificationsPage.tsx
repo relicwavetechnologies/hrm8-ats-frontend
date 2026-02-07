@@ -59,13 +59,17 @@ export default function NotificationsPage() {
 
     // Handle notification click
     const handleNotificationClick = useCallback(async (notification: any) => {
-        // Mark as read if not already (though the detail page will also do it)
+        // Mark as read if not already
         if (!notification.read) {
             markAsRead(notification.id);
         }
 
-        // Navigate to the detail page for "expanded" view
-        navigate(`/notifications/${notification.id}`);
+        // Navigate to actionUrl if available, otherwise to detail page
+        if (notification.actionUrl) {
+            navigate(notification.actionUrl);
+        } else {
+            navigate(`/notifications/${notification.id}`);
+        }
     }, [markAsRead, navigate]);
 
     // Get priority badge variant

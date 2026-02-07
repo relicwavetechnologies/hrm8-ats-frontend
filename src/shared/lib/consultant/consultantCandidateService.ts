@@ -109,7 +109,7 @@ export const ConsultantCandidateService = {
         // Backend now returns pre-mapped camelCase data with AI scoring fields
         const applications = (data || []).map((app: any) => ({
             id: app.id,
-            candidateId: app.candidateId || app.candidate?.id,
+            candidateId: app.candidateId || app.candidate?.id || app.candidate_id || (app as any).candidate_id,
             // Use pre-mapped candidateName or construct from candidate object
             candidateName: app.candidateName || (
                 (app.candidate?.firstName && app.candidate?.lastName)

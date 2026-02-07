@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { notificationService, Notification } from '@/shared/lib/notificationService';
-import { useWebSocket } from '@/shared/services/websocket';
+import { useWebSocket } from '@/app/providers/WebSocketContext';
 import { useToast } from '@/shared/hooks/use-toast';
 
 interface UseUniversalNotificationsOptions {

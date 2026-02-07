@@ -43,7 +43,7 @@ class DocumentService {
   async parseDocument(file: File): Promise<{ success: boolean; data?: ParseDocumentResponse; error?: string }> {
     try {
       const formData = new FormData();
-      formData.append('document', file);
+      formData.append('file', file); // Must match backend's upload.single('file')
 
       // Use fetch directly for FormData to let browser set Content-Type with boundary
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';

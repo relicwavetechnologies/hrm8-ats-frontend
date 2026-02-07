@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent } from "@/shared/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
@@ -69,7 +69,7 @@ export function CandidateAssessmentView({
         console.error("Failed to fetch full application details", error);
       }
     };
-    
+
     fetchFullDetails();
   }, [application.id, application.updatedAt, application]); // Re-fetch if ID matches but data/timestamp changed
 
@@ -100,11 +100,15 @@ export function CandidateAssessmentView({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
+      <SheetContent
         side="right"
         className="w-full sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl p-0 gap-0 h-full overflow-hidden"
         onKeyDown={handleKeyDown}
       >
+        <SheetTitle className="sr-only">Candidate Assessment View</SheetTitle>
+        <SheetDescription className="sr-only">
+          Assessment details for {fullApplication.candidateName || "Candidate"}
+        </SheetDescription>
         <div ref={containerRef} className="flex flex-col h-full relative overflow-hidden">
           {/* Header */}
           <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -133,7 +137,7 @@ export function CandidateAssessmentView({
                 </Button>
               </div>
               <div className="flex items-center gap-3">
-                <CandidatePresenceIndicator 
+                <CandidatePresenceIndicator
                   activeUsers={activeUsers}
                   currentUserId="current-user"
                 />
@@ -150,8 +154,8 @@ export function CandidateAssessmentView({
             </div>
 
             <CandidateProfileHeader application={fullApplication} jobTitle={jobTitle} />
-            <QuickActionsToolbar 
-              application={fullApplication} 
+            <QuickActionsToolbar
+              application={fullApplication}
               nextStageName={nextStageName}
               onNextStage={onMoveToNextStage}
             />
@@ -230,44 +234,44 @@ export function CandidateAssessmentView({
                     <InterviewsTab application={fullApplication} />
                   </TabsContent>
 
-          <TabsContent value="reviews" className="mt-0">
-            <TeamReviewsTab 
-              application={fullApplication} 
-              onUpdate={async () => {
-                // Determine if we need to fetch full details (e.g., missing notes or reviews)
-                // Or just fetch always to be safe and get latest data
-                if (!application.id) return;
-                try {
-                  const { applicationService } = await import("@/modules/applications/lib/applicationService");
-                  const response = await applicationService.getApplication(application.id);
-                  if (response.success && response.data && response.data.application) {
-                    setFullApplication(prev => ({ ...prev, ...response.data!.application }));
-                  }
-                } catch (error) {
-                  console.error("Failed to fetch full application details", error);
-                }
-              }}
-            />
-          </TabsContent>
+                  <TabsContent value="reviews" className="mt-0">
+                    <TeamReviewsTab
+                      application={fullApplication}
+                      onUpdate={async () => {
+                        // Determine if we need to fetch full details (e.g., missing notes or reviews)
+                        // Or just fetch always to be safe and get latest data
+                        if (!application.id) return;
+                        try {
+                          const { applicationService } = await import("@/modules/applications/lib/applicationService");
+                          const response = await applicationService.getApplication(application.id);
+                          if (response.success && response.data && response.data.application) {
+                            setFullApplication(prev => ({ ...prev, ...response.data!.application }));
+                          }
+                        } catch (error) {
+                          console.error("Failed to fetch full application details", error);
+                        }
+                      }}
+                    />
+                  </TabsContent>
 
-          <TabsContent value="voting" className="mt-0">
-            <VotingTab 
-              candidateId={fullApplication.id}
-              candidateName={fullApplication.candidateName}
-            />
-          </TabsContent>
+                  <TabsContent value="voting" className="mt-0">
+                    <VotingTab
+                      candidateId={fullApplication.id}
+                      candidateName={fullApplication.candidateName}
+                    />
+                  </TabsContent>
 
-          <TabsContent value="comparison" className="mt-0">
-            <ComparisonTab />
-          </TabsContent>
+                  <TabsContent value="comparison" className="mt-0">
+                    <ComparisonTab />
+                  </TabsContent>
 
-          <TabsContent value="annotations" className="mt-0">
-            <ResumeAnnotationsTab candidateId={fullApplication.id} />
-          </TabsContent>
+                  <TabsContent value="annotations" className="mt-0">
+                    <ResumeAnnotationsTab candidateId={fullApplication.id} />
+                  </TabsContent>
 
-          <TabsContent value="activity" className="mt-0">
-            <ActivityTimelineTab application={fullApplication} />
-          </TabsContent>
+                  <TabsContent value="activity" className="mt-0">
+                    <ActivityTimelineTab application={fullApplication} />
+                  </TabsContent>
                 </div>
               </ScrollArea>
             </Tabs>
