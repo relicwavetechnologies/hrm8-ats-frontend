@@ -80,7 +80,7 @@ export function InitialScreeningTab({
 
           return {
             id: app.id,
-            candidateId: app.candidateId,
+            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
             candidateName,
             candidateEmail: app.candidate?.email || '',
             candidatePhoto: app.candidate?.photo,

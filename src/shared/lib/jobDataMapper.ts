@@ -146,6 +146,8 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     requisitionId: backendJob.requisitionId,
     aiInterviewConfig: backendJob.aiInterviewConfig,
     videoInterviewingEnabled: backendJob.videoInterviewingEnabled || false,
+    setupType: backendJob.setupType,
+    managementType: backendJob.managementType,
   };
 }
 

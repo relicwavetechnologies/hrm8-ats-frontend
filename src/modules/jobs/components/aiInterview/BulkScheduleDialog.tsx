@@ -47,12 +47,12 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
   const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
-  
+
   // AI Auto-schedule states
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
-  
+
   // Preferred date range for AI scheduling (optional)
   const [preferredDateRange, setPreferredDateRange] = useState<DateRange | undefined>(undefined);
 
@@ -90,23 +90,23 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
         );
 
         // Map applications to applicant format
-        const mappedApplicants: Applicant[] = interviewPhaseApps.map((app) => {
+        const mappedApplicants: Applicant[] = interviewPhaseApps.map((app: any) => {
           // Extract candidate name from candidate object or use fields
-          const candidateName = app.candidate 
+          const candidateName = app.candidate
             ? `${app.candidate.firstName || ''} ${app.candidate.lastName || ''}`.trim()
             : app.candidateName || 'Unknown Candidate';
-          
+
           const candidateEmail = app.candidate?.email || app.candidateEmail || '';
-          
+
           // Check if this candidate already has a scheduled interview
           const existingInterview = scheduledInterviews.find(
             i => i.candidateId === app.candidateId || i.applicationId === app.id
           );
 
           return {
-            id: app.candidateId,
+            id: app.candidateId || app.candidate?.id || app.candidate_id || (app as any).candidate_id,
             applicationId: app.id,
-            candidateId: app.candidateId,
+            candidateId: app.candidateId || app.candidate?.id || app.candidate_id || (app as any).candidate_id,
             name: candidateName,
             email: candidateEmail,
             status: app.status.toLowerCase() || 'interview',
@@ -165,7 +165,7 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
     try {
       // Get office hours configuration from backend
       const officeHours = await getOfficeHoursConfig();
-      
+
       // Get existing scheduled interviews to avoid conflicts
       const interviewsResponse = await videoInterviewService.getJobInterviews(job.id);
       const existingInterviews = interviewsResponse.success && interviewsResponse.data
@@ -181,11 +181,11 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
         : undefined;
 
       // Use preferred date range if provided, otherwise use current time as start
-      const startDate = preferredDateRange?.from 
+      const startDate = preferredDateRange?.from
         ? preferredDateRange.from.toISOString()
         : now.toISOString();
-      
-      const endDate = preferredDateRange?.to 
+
+      const endDate = preferredDateRange?.to
         ? preferredDateRange.to.toISOString()
         : undefined; // If no end date, AI will schedule based on existing interviews
 
@@ -295,13 +295,13 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
 
   return (
     <>
-    <FormDrawer
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Bulk Schedule AI Interviews"
-      description={`Schedule AI interviews for multiple applicants at once for ${job.title}`}
-      width="lg"
-    >
+      <FormDrawer
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Bulk Schedule AI Interviews"
+        description={`Schedule AI interviews for multiple applicants at once for ${job.title}`}
+        width="lg"
+      >
         <div className="space-y-6">
           {/* Office Hours Configuration */}
           <div className="flex justify-end">
@@ -325,7 +325,7 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
               <p className="text-sm text-muted-foreground">
                 Let AI analyze candidate profiles and suggest optimal interview times for each candidate
               </p>
-              
+
               {/* Preferred Date Range (Optional) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -427,20 +427,20 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
                 <Calendar className="h-5 w-5 text-primary" />
                 <Label className="text-base font-semibold">Manual Schedule</Label>
               </div>
-          <div className="space-y-2">
-            <Label htmlFor="scheduledDate">
-              Interview Date & Time
-            </Label>
-            <Input
-              id="scheduledDate"
-              type="datetime-local"
-              min={minDate}
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-            />
-            <p className="text-sm text-muted-foreground">
-              All selected applicants will receive interview invitations for this time
-            </p>
+              <div className="space-y-2">
+                <Label htmlFor="scheduledDate">
+                  Interview Date & Time
+                </Label>
+                <Input
+                  id="scheduledDate"
+                  type="datetime-local"
+                  min={minDate}
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  All selected applicants will receive interview invitations for this time
+                </p>
               </div>
             </div>
           </div>
@@ -449,10 +449,10 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-              <Label>
-                <Users className="h-4 w-4 inline mr-2" />
-                Select Applicants ({selectedApplicants.length} selected)
-              </Label>
+                <Label>
+                  <Users className="h-4 w-4 inline mr-2" />
+                  Select Applicants ({selectedApplicants.length} selected)
+                </Label>
                 <p className="text-xs text-muted-foreground mt-1">
                   Only candidates in interview phase are shown. Candidates with scheduled interviews are marked with a badge.
                 </p>
@@ -474,47 +474,46 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
                   <p className="text-sm text-muted-foreground">No applicants found for this job</p>
                 </div>
               ) : (
-              <div className="space-y-3">
+                <div className="space-y-3">
                   {applicants.map((applicant) => (
-                  <div
-                    key={applicant.id}
-                    className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent transition-colors ${
-                      applicant.hasScheduledInterview ? 'bg-blue-50 dark:bg-blue-950/20' : ''
-                    }`}
-                  >
-                    <Checkbox
-                      id={applicant.candidateId}
-                      checked={selectedApplicants.includes(applicant.candidateId)}
-                      onCheckedChange={() => handleToggleApplicant(applicant.candidateId)}
-                      disabled={applicant.hasScheduledInterview}
-                    />
-                    <label
-                      htmlFor={applicant.candidateId}
-                      className="flex-1 cursor-pointer"
+                    <div
+                      key={applicant.id}
+                      className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-accent transition-colors ${applicant.hasScheduledInterview ? 'bg-blue-50 dark:bg-blue-950/20' : ''
+                        }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium flex items-center gap-2">
-                            {applicant.name}
-                            {applicant.hasScheduledInterview && (
-                              <Badge variant="default" className="text-xs">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Scheduled
-                              </Badge>
-                            )}
+                      <Checkbox
+                        id={applicant.candidateId}
+                        checked={selectedApplicants.includes(applicant.candidateId)}
+                        onCheckedChange={() => handleToggleApplicant(applicant.candidateId)}
+                        disabled={applicant.hasScheduledInterview}
+                      />
+                      <label
+                        htmlFor={applicant.candidateId}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium flex items-center gap-2">
+                              {applicant.name}
+                              {applicant.hasScheduledInterview && (
+                                <Badge variant="default" className="text-xs">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Scheduled
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground">{applicant.email}</div>
                           </div>
-                          <div className="text-sm text-muted-foreground">{applicant.email}</div>
+                          {!applicant.hasScheduledInterview && (
+                            <Badge variant="secondary" className="capitalize">
+                              {applicant.status}
+                            </Badge>
+                          )}
                         </div>
-                        {!applicant.hasScheduledInterview && (
-                        <Badge variant="secondary" className="capitalize">
-                          {applicant.status}
-                        </Badge>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                ))}
-              </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
               )}
             </ScrollArea>
           </div>
@@ -534,37 +533,37 @@ export function BulkScheduleDialog({ job, open, onOpenChange, onScheduled }: Bul
           )}
 
           {/* Action Buttons */}
-        <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-          <Button onClick={handleSchedule} disabled={isScheduling || !scheduledDate}>
+            <Button onClick={handleSchedule} disabled={isScheduling || !scheduledDate}>
               {isScheduling ? 'Scheduling...' : `Schedule ${selectedApplicants.length} Interview${selectedApplicants.length !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>
-    </FormDrawer>
+      </FormDrawer>
 
-    {/* AI Suggestion Review Dialog */}
-    {showReviewDialog && aiSuggestions.length > 0 && (
-      <AISuggestionReviewDialog
-        open={showReviewDialog}
-        onOpenChange={(open) => {
-          setShowReviewDialog(open);
-          if (!open) {
-            // When review dialog closes, also close main dialog if interviews were finalized
-            // The onFinalized callback will handle refreshing the list
-          }
-        }}
-        suggestions={aiSuggestions}
-        jobId={job.id}
-        jobTitle={job.title}
-        onFinalized={() => {
-          onScheduled?.();
-          onOpenChange(false);
-        }}
-      />
-    )}
+      {/* AI Suggestion Review Dialog */}
+      {showReviewDialog && aiSuggestions.length > 0 && (
+        <AISuggestionReviewDialog
+          open={showReviewDialog}
+          onOpenChange={(open) => {
+            setShowReviewDialog(open);
+            if (!open) {
+              // When review dialog closes, also close main dialog if interviews were finalized
+              // The onFinalized callback will handle refreshing the list
+            }
+          }}
+          suggestions={aiSuggestions}
+          jobId={job.id}
+          jobTitle={job.title}
+          onFinalized={() => {
+            onScheduled?.();
+            onOpenChange(false);
+          }}
+        />
+      )}
     </>
   );
 }

@@ -8,6 +8,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from '@/shared/components/ui/sonner';
 import { AuthProvider, useAuth } from './providers/AuthContext';
+import { CandidateAuthProvider, useCandidateAuth } from '@/contexts/CandidateAuthContext';
+import { ConsultantAuthProvider, useConsultantAuth } from '@/contexts/ConsultantAuthContext';
+import { Hrm8AuthProvider, useHrm8Auth } from '@/contexts/Hrm8AuthContext';
 import { CurrencyFormatProvider } from './providers/CurrencyFormatContext';
 import { WebSocketProvider } from './providers/WebSocketContext';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -32,9 +35,12 @@ interface ProvidersProps {
  * 1. BrowserRouter (routing)
  * 2. HelmetProvider (SEO/meta tags)
  * 3. QueryClientProvider (data fetching)
- * 4. AuthProvider (authentication - requires routing)
- * 5. CurrencyFormatProvider (currency formatting)
- * 6. WebSocketProvider (real-time communication - requires auth)
+ * 4. AuthProvider (main company auth)
+ * 5. CandidateAuthProvider (candidate authentication)
+ * 6. ConsultantAuthProvider (consultant authentication)
+ * 7. Hrm8AuthProvider (global admin/licensee authentication)
+ * 8. CurrencyFormatProvider (currency formatting)
+ * 9. WebSocketProvider (real-time communication - requires any auth)
  */
 export function Providers({ children }: ProvidersProps) {
     return (
@@ -43,12 +49,18 @@ export function Providers({ children }: ProvidersProps) {
                 <QueryClientProvider client={queryClient}>
                     <ErrorBoundary>
                         <AuthProvider>
-                            <CurrencyFormatProvider>
-                                <WebSocketWrapper>
-                                    {children}
-                                    <Toaster />
-                                </WebSocketWrapper>
-                            </CurrencyFormatProvider>
+                            <CandidateAuthProvider>
+                                <ConsultantAuthProvider>
+                                    <Hrm8AuthProvider>
+                                        <CurrencyFormatProvider>
+                                            <WebSocketWrapper>
+                                                {children}
+                                                <Toaster />
+                                            </WebSocketWrapper>
+                                        </CurrencyFormatProvider>
+                                    </Hrm8AuthProvider>
+                                </ConsultantAuthProvider>
+                            </CandidateAuthProvider>
                         </AuthProvider>
                     </ErrorBoundary>
                 </QueryClientProvider>
@@ -59,13 +71,19 @@ export function Providers({ children }: ProvidersProps) {
 
 /**
  * Wrapper component to provide auth props to WebSocketProvider
- * Must be inside AuthProvider to access useAuth hook
+ * Must be inside all AuthProviders to access their hooks
  */
 function WebSocketWrapper({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated: isAuth, user } = useAuth();
+    const { isAuthenticated: isCandidateAuth, candidate } = useCandidateAuth();
+    const { isAuthenticated: isConsultantAuth, consultant } = useConsultantAuth();
+    const { isAuthenticated: isHrm8Auth, hrm8User } = useHrm8Auth();
+
+    const isConnected = isAuth || isCandidateAuth || isConsultantAuth || isHrm8Auth;
+    const userEmail = user?.email || candidate?.email || consultant?.email || hrm8User?.email;
 
     return (
-        <WebSocketProvider isAuthenticated={isAuthenticated} userEmail={user?.email}>
+        <WebSocketProvider isAuthenticated={isConnected} userEmail={userEmail}>
             {children}
         </WebSocketProvider>
     );

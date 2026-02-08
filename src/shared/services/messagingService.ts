@@ -18,6 +18,8 @@ export interface GetMessagesResponse {
   messages: MessageData[];
 }
 
+const API_BASE_URL = '/messaging';
+
 class MessagingService {
   /**
    * Get all conversations for the current user (CANDIDATE endpoint)
@@ -59,7 +61,7 @@ class MessagingService {
   }> {
     try {
       const response = await apiClient.get<ConversationData[]>(
-        '/api/messages/conversations'
+        '/api/messaging/conversations'
       );
       if (response.success && response.data) {
         return {
@@ -91,7 +93,7 @@ class MessagingService {
   }> {
     try {
       const response = await apiClient.get<ConversationData>(
-        `/api/messages/conversations/${conversationId}`
+        `/api/messaging/conversations/${conversationId}`
       );
       if (response.success && response.data) {
         return {
@@ -178,6 +180,38 @@ class MessagingService {
   }
 
   /**
+   * Get messages for a conversation (EMPLOYER/HR endpoint)
+   */
+  async getAdminMessages(
+    conversationId: string
+  ): Promise<{
+    success: boolean;
+    data?: MessageData[];
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.get<MessageData[]>(
+        `/api/messaging/conversations/${conversationId}/messages`
+      );
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      }
+      return {
+        success: false,
+        error: response.error || 'Failed to fetch messages',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+
+  /**
    * Mark a conversation as read
    */
   async markConversationRead(
@@ -223,6 +257,82 @@ class MessagingService {
       return {
         success: false,
         error: response.error || 'Failed to fetch conversation',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+  async createConversation(data: {
+    participantId: string;
+    participantType: string;
+    participantEmail?: string;
+    participantName?: string;
+    jobId?: string;
+    subject?: string;
+  }): Promise<{
+    success: boolean;
+    data?: ConversationData;
+    error?: string;
+  }> {
+    try {
+      const payload = {
+        participants: [
+          {
+            id: data.participantId,
+            type: data.participantType,
+            email: data.participantEmail || "",
+            name: data.participantName
+          }
+        ],
+        type: 'CANDIDATE_EMPLOYER',
+        metadata: {
+          jobId: data.jobId,
+          subject: data.subject
+        }
+      };
+
+      const response = await apiClient.post<ConversationData>(
+        '/api/messaging/conversations',
+        payload
+      );
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      }
+      return {
+        success: false,
+        error: response.error || 'Failed to create conversation',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error',
+      };
+    }
+  }
+  async getJobConversations(jobId: string): Promise<{
+    success: boolean;
+    data?: ConversationData[];
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.get<ConversationData[]>(
+        `/api/messaging/conversations?jobId=${jobId}`
+      );
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      }
+      return {
+        success: false,
+        error: response.error || 'Failed to fetch job conversations',
       };
     } catch (error) {
       return {

@@ -26,8 +26,14 @@ export interface CreateJobRequest {
   salaryMax?: number;
   salaryCurrency?: string;
   salaryDescription?: string;
+  hideSalary?: boolean;
   category?: string;
+  tags?: string[]; // Standard tags
   promotionalTags?: string[];
+  requirements?: string[];
+  responsibilities?: string[];
+  applicationForm?: any;
+  hiringTeam?: any[];
   featured?: boolean;
   stealth?: boolean;
   visibility?: string;
@@ -36,6 +42,8 @@ export interface CreateJobRequest {
   assignmentMode?: 'AUTO' | 'MANUAL';
   regionId?: string;
   servicePackage?: string;
+  closeDate?: string;
+  experienceLevel?: string;
 }
 
 export interface UpdateJobRequest extends Partial<CreateJobRequest> {
@@ -52,6 +60,8 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
   postingDate?: string;
   expiryDate?: string;
   servicePackage?: string;
+  setupType?: 'simple' | 'advanced';
+  managementType?: string;
 }
 
 export interface GetJobsFilters {
@@ -207,18 +217,38 @@ class JobService {
     });
   }
 
+  // Job Roles (per-job, for post-job setup)
+  async getJobRoles(jobId: string) {
+    return apiClient.get<{ roles: Array<{ id: string; name: string; isDefault?: boolean }> }>(
+      `/api/jobs/${jobId}/roles`
+    );
+  }
+
+  /** Create a custom job role. */
+  async createJobRole(jobId: string, data: { name: string; isDefault?: boolean }) {
+    return apiClient.post<{ role: { id: string; name: string; isDefault?: boolean } }>(
+      `/api/jobs/${jobId}/roles`,
+      data
+    );
+  }
+
   // Hiring Team Management
 
   async getHiringTeam(jobId: string) {
     return apiClient.get<any[]>(`/api/jobs/${jobId}/team`);
   }
 
-  async inviteTeamMember(jobId: string, data: { email: string; name?: string; role: string }) {
+  async inviteTeamMember(jobId: string, data: { email: string; name?: string; role: string; roles?: string[] }) {
     return apiClient.post<{ message: string }>(`/api/jobs/${jobId}/team`, data);
   }
 
   async updateTeamMemberRole(jobId: string, memberId: string, role: string) {
     return apiClient.patch<{ message: string }>(`/api/jobs/${jobId}/team/${memberId}`, { role });
+  }
+
+  /** Update per-job roles for a member (multi-role). */
+  async updateTeamMemberRoles(jobId: string, memberId: string, roleIds: string[]) {
+    return apiClient.patch<{ message: string }>(`/api/jobs/${jobId}/team/${memberId}`, { roles: roleIds });
   }
 
   async removeTeamMember(jobId: string, memberId: string) {

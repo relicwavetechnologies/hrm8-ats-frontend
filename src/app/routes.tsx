@@ -47,7 +47,7 @@ const AssessmentTemplatesPage = lazy(() => import('@/pages/assessments/Assessmen
 const QuestionBankPage = lazy(() => import('@/pages/assessments/QuestionBank'));
 const AssessmentAnalyticsPage = lazy(() => import('@/pages/assessments/AssessmentAnalytics'));
 const BackgroundChecksPage = lazy(() => import('@/pages/background-checks/BackgroundChecks'));
-const EmployeesPage = lazy(() => import('@/pages/employees/EmployeesPage'));
+const EmployeesPage = lazy(() => import('@/pages/employees/HRMS'));
 const PerformancePage = lazy(() => import('@/pages/performance/Performance'));
 const CollaborativeFeedbackPage = lazy(() => import('@/pages/performance/CollaborativeFeedback'));
 const LeaveManagementPage = lazy(() => import('@/pages/leave/LeaveManagement'));

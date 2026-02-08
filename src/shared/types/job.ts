@@ -1,11 +1,23 @@
 import { ApplicationFormConfig } from './applicationForm';
 
+/** Per-job role (e.g. Technical Interviewer, Hiring Manager). Production-grade: each job has its own roles. */
+export interface JobRole {
+  id: string;
+  name: string;
+  isDefault?: boolean;
+}
+
 export interface HiringTeamMember {
   id: string;
   userId?: string;
   email: string;
   name: string;
+  /** Legacy single role (system enum). Prefer `roles` for per-job role assignment. */
   role: 'admin' | 'member' | 'hiring_manager' | 'recruiter' | 'interviewer' | 'coordinator' | 'shortlisting' | 'ADMIN' | 'MEMBER' | 'SHORTLISTING';
+  /** Per-job role IDs (JobRole.id). Multi-role support for production. */
+  roles?: string[];
+  /** Resolved role details when API returns roleDetails */
+  roleDetails?: Array<{ id: string; name: string }>;
   permissions: {
     canViewApplications: boolean;
     canShortlist: boolean;
@@ -108,6 +120,10 @@ export interface Job {
   paymentCompletedAt?: Date | string;
   paymentFailedAt?: Date | string;
   termsAccepted?: boolean;
+  /** Post-job setup: 'simple' = manual pipeline only; 'advanced' = full ATS. */
+  setupType?: 'simple' | 'advanced';
+  /** Post-job setup: 'self-managed' | 'hrm8-managed'. */
+  managementType?: string;
   termsAcceptedAt?: Date;
   termsAcceptedBy?: string;
 

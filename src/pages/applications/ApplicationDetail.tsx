@@ -5,8 +5,9 @@ import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, MessageSquare } from "lucide-react";
 import { applicationService, Application as RawApplication } from "@/shared/lib/applicationService";
+import { messagingService } from "@/shared/services/messagingService";
 import { format } from "date-fns";
 import { ApplicationStatusBadge } from "@/modules/applications/components/ApplicationStatusBadge";
 import { DetailSkeleton } from "@/shared/components/skeletons/DetailSkeleton";
@@ -123,6 +124,33 @@ export default function ApplicationDetail() {
                 onSuccess={() => window.location.reload()}
               />
             )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!application.candidateId || !jobId) return;
+
+                try {
+                  // Create or get existing conversation
+                  const res = await messagingService.createConversation({
+                    participantId: application.candidateId,
+                    participantType: 'CANDIDATE',
+                    jobId: jobId,
+                    subject: `Regarding your application for ${q.jobMeta?.title || 'Role'}`
+                  });
+
+                  if (res.success && res.data) {
+                    navigate(`/jobs/${jobId}?tab=messages&conversationId=${res.data.id}`);
+                  }
+                } catch (e) {
+                  console.error("Failed to start conversation", e);
+                }
+              }}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Message
+            </Button>
 
             <Button
               variant="outline"

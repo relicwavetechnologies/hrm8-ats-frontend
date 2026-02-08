@@ -20,8 +20,11 @@ import {
   UserX,
   ArrowRight,
   Briefcase,
+  MessageSquare, // Added MessageSquare
 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { messagingService } from "@/shared/services/messagingService";
 
 interface QuickActionsToolbarProps {
   application: Application;
@@ -31,6 +34,7 @@ interface QuickActionsToolbarProps {
 
 export function QuickActionsToolbar({ application, nextStageName, onNextStage }: QuickActionsToolbarProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleAction = (action: string) => {
     toast({
@@ -44,9 +48,9 @@ export function QuickActionsToolbar({ application, nextStageName, onNextStage }:
       <div className="flex items-center gap-2 flex-wrap">
         {/* Next Stage Button (Replaces Move Dropdown) */}
         {nextStageName && onNextStage && (
-          <Button 
-            variant="default" 
-            size="sm" 
+          <Button
+            variant="default"
+            size="sm"
             className="gap-2 bg-primary hover:bg-primary/90"
             onClick={onNextStage}
           >
@@ -75,6 +79,70 @@ export function QuickActionsToolbar({ application, nextStageName, onNextStage }:
         >
           <Mail className="h-4 w-4" />
           Send Email
+        </Button>
+
+        {/* Message Candidate */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={async () => {
+            // Robust extraction of IDs
+            const candidateId = application.candidateId ||
+              (application as any).candidate?.id ||
+              (application as any).candidate_id;
+
+            const jobId = application.jobId ||
+              (application as any).job?.id ||
+              (application as any).job_id;
+
+            console.log('[QuickActionsToolbar] Message clicked', {
+              candidateId,
+              jobId,
+              rawCandidateId: application.candidateId,
+              rawJobId: application.jobId,
+              fullObject: JSON.stringify(application)
+            });
+
+            if (!candidateId || !jobId) {
+              console.error('[QuickActionsToolbar] Missing IDs', application);
+              toast({
+                title: "Cannot Start Conversation",
+                description: !candidateId
+                  ? "This application is not linked to a registered candidate account."
+                  : "Missing job information.",
+                variant: "destructive"
+              });
+              return;
+            }
+
+            try {
+              const res = await messagingService.createConversation({
+                participantId: candidateId,
+                participantType: 'CANDIDATE',
+                participantEmail: application.candidateEmail,
+                participantName: application.candidateName,
+                jobId: jobId,
+                subject: `Regarding your application for ${application.jobTitle || 'Role'}`
+              });
+              console.log('[QuickActionsToolbar] Create conversation result:', res);
+
+              if (res.success && res.data) {
+                const url = `/ats/jobs/${jobId}?tab=messages&conversationId=${res.data.id}`;
+                console.log('[QuickActionsToolbar] Navigating to:', url);
+                navigate(url);
+              } else {
+                console.error('[QuickActionsToolbar] Failed to create conversation:', res);
+                toast({ title: "Error", description: "Failed to start conversation", variant: "destructive" });
+              }
+            } catch (e) {
+              console.error('[QuickActionsToolbar] Exception:', e);
+              toast({ title: "Error", description: "An error occurred", variant: "destructive" });
+            }
+          }}
+        >
+          <MessageSquare className="h-4 w-4" />
+          Message
         </Button>
 
         {/* Assign Assessment */}

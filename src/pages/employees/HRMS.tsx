@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
@@ -47,36 +47,47 @@ export default function HRMS() {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
 
-  const employees = useMemo(() => getEmployees(), [refreshKey]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      setIsLoading(true);
+      const data = await getEmployees();
+      setEmployees(data);
+      setIsLoading(false);
+    };
+    fetchEmployees();
+  }, [refreshKey]);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter(employee => {
-      const matchesSearch = 
+      const matchesSearch =
         employee.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         employee.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesStatus = statusFilter === "all" || employee.status === statusFilter;
       const matchesDepartment = departmentFilter === "all" || employee.department === departmentFilter;
       const matchesLocation = locationFilter === "all" || employee.location === locationFilter;
 
       // Skills filter - check if employee has any matching skill
-      const matchesSkills = !skillsFilter || 
-        (employee.skills && employee.skills.some(skill => 
+      const matchesSkills = !skillsFilter ||
+        (employee.skills && employee.skills.some(skill =>
           skill.toLowerCase().includes(skillsFilter.toLowerCase())
         ));
 
       // Certifications filter - check if employee has any matching certification
-      const matchesCertifications = !certificationsFilter || 
-        (employee.certifications && employee.certifications.some(cert => 
+      const matchesCertifications = !certificationsFilter ||
+        (employee.certifications && employee.certifications.some(cert =>
           cert.toLowerCase().includes(certificationsFilter.toLowerCase())
         ));
 
       // Salary range filter
       const minSalary = salaryMin ? parseFloat(salaryMin) : null;
       const maxSalary = salaryMax ? parseFloat(salaryMax) : null;
-      const matchesSalary = 
+      const matchesSalary =
         (!minSalary || employee.salary >= minSalary) &&
         (!maxSalary || employee.salary <= maxSalary);
 
@@ -95,8 +106,8 @@ export default function HRMS() {
       return matchesSearch && matchesStatus && matchesDepartment && matchesLocation &&
         matchesSkills && matchesCertifications && matchesSalary && matchesHireDate;
     });
-  }, [employees, searchQuery, statusFilter, departmentFilter, locationFilter, 
-      skillsFilter, certificationsFilter, salaryMin, salaryMax, hireDateRange]);
+  }, [employees, searchQuery, statusFilter, departmentFilter, locationFilter,
+    skillsFilter, certificationsFilter, salaryMin, salaryMax, hireDateRange]);
 
   const handleEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee);
@@ -138,7 +149,7 @@ export default function HRMS() {
   const stats = useMemo(() => {
     const now = new Date();
     const monthStart = startOfMonth(now);
-    
+
     return {
       total: employees.length,
       active: employees.filter(e => e.status === 'active').length,
@@ -315,7 +326,7 @@ export default function HRMS() {
               {
                 label: "Filter by Status",
                 icon: <Filter className="h-4 w-4" />,
-                onClick: () => {}
+                onClick: () => { }
               }
             ]}
           />
@@ -335,7 +346,7 @@ export default function HRMS() {
               {
                 label: "Approve Leave",
                 icon: <UserCheck className="h-4 w-4" />,
-                onClick: () => {}
+                onClick: () => { }
               }
             ]}
           />
@@ -355,7 +366,7 @@ export default function HRMS() {
               {
                 label: "Onboarding Tasks",
                 icon: <List className="h-4 w-4" />,
-                onClick: () => {}
+                onClick: () => { }
               }
             ]}
           />
@@ -381,14 +392,14 @@ export default function HRMS() {
         {/* Advanced Search Buttons */}
         {viewMode === 'list' && (
           <div className="flex gap-2">
-            <Button 
+            <Button
               variant={showAdvancedSearch ? "default" : "outline"}
               onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
             >
               <Search className="mr-2 h-4 w-4" />
               Advanced Search
             </Button>
-            <Button 
+            <Button
               variant={showSearchPanel ? "default" : "outline"}
               onClick={() => setShowSearchPanel(!showSearchPanel)}
             >
@@ -441,16 +452,22 @@ export default function HRMS() {
 
         {viewMode === 'list' && (
           <>
-            <DataTable
-              columns={employeeColumns}
-              data={filteredEmployees}
-              selectable
-              onSelectedRowsChange={(ids) => {
-                const selected = filteredEmployees.filter(emp => ids.includes(emp.id));
-                setSelectedEmployees(selected);
-                setSelectedEmployeeIds(ids);
-              }}
-            />
+            {isLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            ) : (
+              <DataTable
+                columns={employeeColumns}
+                data={filteredEmployees}
+                selectable
+                onSelectedRowsChange={(ids) => {
+                  const selected = filteredEmployees.filter(emp => ids.includes(emp.id));
+                  setSelectedEmployees(selected);
+                  setSelectedEmployeeIds(ids);
+                }}
+              />
+            )}
           </>
         )}
 
