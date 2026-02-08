@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ResumeAnnotations } from '../ResumeAnnotations';
 import { applicationService } from '@/shared/lib/applicationService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText, ExternalLink } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 
 interface ResumeAnnotationsTabProps {
@@ -11,6 +11,7 @@ interface ResumeAnnotationsTabProps {
 export function ResumeAnnotationsTab({ candidateId }: ResumeAnnotationsTabProps) {
   const [resumeText, setResumeText] = useState<string>('');
   const [resumeId, setResumeId] = useState<string>('');
+  const [resumeUrl, setResumeUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +27,12 @@ export function ResumeAnnotationsTab({ candidateId }: ResumeAnnotationsTabProps)
         const response = await applicationService.getApplicationResume(candidateId);
         
         if (response.success && response.data) {
+          setResumeUrl(response.data.fileUrl || '');
+          setResumeId(response.data.id);
           if (response.data.content) {
             setResumeText(response.data.content);
-            setResumeId(response.data.id);
           } else {
-            setError('Resume content is not available. Please ensure the resume has been parsed.');
+            setError('Resume content is not available for text annotations.');
           }
         } else {
           setError('Failed to load resume.');
@@ -58,13 +60,18 @@ export function ResumeAnnotationsTab({ candidateId }: ResumeAnnotationsTabProps)
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-        <div className="p-4 rounded-full bg-destructive/10 text-destructive">
-          <Loader2 className="h-8 w-8" /> 
+        <div className="p-4 rounded-full bg-muted text-muted-foreground">
+          <FileText className="h-8 w-8" /> 
         </div>
         <p className="text-muted-foreground text-center max-w-md">{error}</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
-          Retry
-        </Button>
+        {resumeUrl && (
+          <Button variant="outline" asChild>
+            <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              View Original Resume
+            </a>
+          </Button>
+        )}
       </div>
     );
   }
