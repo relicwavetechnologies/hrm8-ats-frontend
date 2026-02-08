@@ -77,11 +77,21 @@ export function CandidateNotesPanel({
       if (!applicationId) return;
       setIsLoading(true);
       try {
-        const response = await apiClient.get<{ success: boolean; data: { notes: Note[] } }>(
+        const response = await apiClient.get<{ notes: any[] }>(
           `/api/applications/${applicationId}/notes`
         );
-        if (response.data?.success && response.data?.data?.notes) {
-          setNotes(response.data.data.notes);
+        if (response.success && response.data?.notes) {
+          // Map the note structure from backend to frontend format
+          const mappedNotes = response.data.notes.map((note: any) => ({
+            id: note.id,
+            content: note.content,
+            authorId: note.author?.id || 'unknown',
+            authorName: note.author?.name || 'Unknown',
+            authorAvatar: note.author?.avatar,
+            createdAt: note.createdAt,
+            mentions: note.mentions || [],
+          }));
+          setNotes(mappedNotes);
         }
       } catch (error) {
         console.error('Failed to fetch notes:', error);
@@ -155,21 +165,31 @@ export function CandidateNotesPanel({
 
     try {
       // Submit note to backend API
-      const response = await apiClient.post<{ success: boolean; data: { note: Note } }>(
+      const response = await apiClient.post<{ note: any }>(
         `/api/applications/${applicationId}/notes`,
         {
           content: noteContent.trim(),
           mentions,
-          candidateName,
-          jobTitle,
         }
       );
 
-      if (response.data?.success && response.data?.data?.note) {
+      if (response.success && response.data?.note) {
+        // Map the note structure from backend to frontend format
+        const newNote: Note = {
+          id: response.data.note.id,
+          content: response.data.note.content,
+          authorId: response.data.note.author?.id || 'current-user',
+          authorName: response.data.note.author?.name || 'You',
+          authorAvatar: response.data.note.author?.avatar,
+          createdAt: response.data.note.createdAt,
+          mentions: response.data.note.mentions || [],
+        };
         // Add new note to state
-        setNotes(prev => [response.data.data.note, ...prev]);
+        setNotes(prev => [newNote, ...prev]);
         setNoteContent('');
         onNoteAdded?.();
+      } else {
+        console.error('Failed to add note:', response.error);
       }
     } catch (error) {
       console.error('Failed to submit note:', error);
