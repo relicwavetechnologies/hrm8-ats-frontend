@@ -35,6 +35,7 @@ export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token') || '';
+  const mode = searchParams.get('mode') || '';
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +59,9 @@ export default function ResetPassword() {
 
     setStatus('loading');
     setError(null);
-    const response = await authService.resetPassword({ token, password: data.password });
+    const response = mode === 'conversion'
+      ? await authService.acceptLeadConversionInvite({ token, password: data.password })
+      : await authService.resetPassword({ token, password: data.password });
 
     if (!response.success) {
       setError(response.error || 'Unable to reset password. Please request a new link.');
@@ -68,6 +71,9 @@ export default function ResetPassword() {
 
     reset();
     setStatus('success');
+    if (mode === 'conversion') {
+      navigate('/company-profile');
+    }
   };
 
   return (
@@ -110,11 +116,17 @@ export default function ResetPassword() {
               <CheckCircle2 className="h-4 w-4" />
               <AlertTitle>Password updated</AlertTitle>
               <AlertDescription>
-                Your password has been changed. You can now{' '}
-                <button type="button" onClick={() => navigate('/login')} className="underline font-semibold">
-                  sign in
-                </button>
-                .
+                {mode === 'conversion'
+                  ? 'Your password has been set. Redirecting to your dashboard...'
+                  : (
+                    <>
+                      Your password has been changed. You can now{' '}
+                      <button type="button" onClick={() => navigate('/login')} className="underline font-semibold">
+                        sign in
+                      </button>
+                      .
+                    </>
+                  )}
               </AlertDescription>
             </Alert>
           ) : (
@@ -176,5 +188,3 @@ export default function ResetPassword() {
     </AuthLayout>
   );
 }
-
-
