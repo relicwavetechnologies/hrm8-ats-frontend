@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { CalendarIcon, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
-import { saveEmployee } from "@/shared/lib/employeeStorage";
+import { saveEmployee } from "../services";
 import { Employee } from "@/shared/types/employee";
 import { toast } from "sonner";
 import { Badge } from "@/shared/components/ui/badge";
@@ -40,7 +40,7 @@ const employeeFormSchema = z.object({
   emergencyContactName: z.string().optional(),
   emergencyContactPhone: z.string().optional(),
   emergencyContactRelationship: z.string().optional(),
-  
+
   // Job Information
   employeeId: z.string().min(1, "Employee ID is required"),
   jobTitle: z.string().min(1, "Job title is required"),
@@ -56,12 +56,12 @@ const employeeFormSchema = z.object({
   startDate: z.date({
     required_error: "Start date is required",
   }),
-  
+
   // Compensation
   salary: z.number().min(0, "Salary must be positive"),
   currency: z.string().min(1, "Currency is required"),
   payFrequency: z.enum(["hourly", "weekly", "biweekly", "monthly", "annually"]),
-  
+
   // Additional
   skills: z.string().optional(),
   certifications: z.string().optional(),
@@ -130,7 +130,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSuccess }: 
         payFrequency: employee.payFrequency,
         notes: employee.notes || "",
       });
-      
+
       setSkillsList(employee.skills || []);
       setCertsList(employee.certifications || []);
       setEmployeePhoto(employee.avatar);
@@ -213,7 +213,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSuccess }: 
     };
 
     saveEmployee(employeeData);
-    
+
     if (isEditing) {
       toast.success("Employee updated successfully", {
         description: `${employeeData.firstName} ${employeeData.lastName}'s information has been updated.`,
@@ -223,7 +223,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSuccess }: 
         description: `${employeeData.firstName} ${employeeData.lastName} has been added to the system.`,
       });
     }
-    
+
     onOpenChange(false);
     onSuccess?.();
   };
@@ -234,8 +234,8 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSuccess }: 
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Employee" : "Add New Employee"}</DialogTitle>
           <DialogDescription>
-            {isEditing 
-              ? "Update employee information" 
+            {isEditing
+              ? "Update employee information"
               : "Enter employee information to create a new record"}
           </DialogDescription>
         </DialogHeader>
@@ -462,7 +462,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSuccess }: 
 
                   <div className="pt-4 border-t">
                     <h4 className="text-sm font-semibold mb-4">Emergency Contact</h4>
-                    
+
                     <div className="space-y-4">
                       <FormField
                         control={form.control}

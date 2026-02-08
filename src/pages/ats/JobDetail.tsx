@@ -122,7 +122,6 @@ export default function JobDetail() {
   const mapApplicationStatus = (status: string | null | undefined): Application['status'] => {
     // Handle null/undefined cases
     if (!status) {
-      console.warn('[JobDetail] Application status is null/undefined, defaulting to "applied"');
       return 'applied';
     }
 
@@ -141,8 +140,6 @@ export default function JobDetail() {
 
     const mappedStatus = statusMap[normalizedStatus];
     if (!mappedStatus) {
-      console.warn(`[JobDetail] Unknown application status: "${status}" (normalized: "${normalizedStatus}"), defaulting to "applied"`);
-      console.warn(`[JobDetail] Available status mappings:`, Object.keys(statusMap));
       return 'applied';
     }
 
@@ -153,7 +150,6 @@ export default function JobDetail() {
   const mapApplicationStage = (stage: string | null | undefined): Application['stage'] => {
     // Handle null/undefined cases
     if (!stage) {
-      console.warn('[JobDetail] Application stage is null/undefined, defaulting to "New Application"');
       return 'New Application';
     }
 
@@ -176,7 +172,6 @@ export default function JobDetail() {
 
     const mappedStage = stageMap[normalizedStage];
     if (!mappedStage) {
-      console.warn(`[JobDetail] Unknown application stage: "${stage}", defaulting to "New Application"`);
       return 'New Application';
     }
 
@@ -190,7 +185,6 @@ export default function JobDetail() {
       filters: applicationsFilters,
       sampleStatuses: allApplications.slice(0, 3).map(app => app.status),
     });
-
     let filtered = [...allApplications];
 
     // Search filter
@@ -208,7 +202,6 @@ export default function JobDetail() {
       filtered = filtered.filter((app) => {
         // Defensive check: ensure stage exists
         if (!app.stage) {
-          console.warn(`[JobDetail] Application ${app.id} has no stage, skipping stage filter`);
           return false;
         }
         return applicationsFilters.selectedStages.includes(app.stage);
@@ -222,14 +215,11 @@ export default function JobDetail() {
         totalBeforeFilter: filtered.length,
         ALLAppStatuses: filtered.map(app => ({ id: app.id, status: app.status, candidateName: app.candidateName })),
       });
-
       filtered = filtered.filter((app) => {
         // Defensive check: ensure status exists
         if (!app.status) {
-          console.warn(`[JobDetail] Application ${app.id} has no status, skipping status filter`);
           return false;
         }
-
         const matches = applicationsFilters.selectedStatuses.includes(app.status);
         if (!matches && filtered.length <= 10) {
           // Only log for first 10 to avoid spam, but help debug
@@ -242,6 +232,7 @@ export default function JobDetail() {
         selectedStatuses: applicationsFilters.selectedStatuses,
         totalAfterFilter: filtered.length,
       });
+
     }
 
     // Tags filter
@@ -304,7 +295,6 @@ export default function JobDetail() {
         quickFilter: applicationsFilters.quickFilter,
       },
     });
-
     return filtered;
   }, [allApplications, applicationsFilters]);
 
@@ -319,7 +309,7 @@ export default function JobDetail() {
         setLoading(true);
         const response = await jobService.getJobById(jobId);
         if (response.success && response.data) {
-          const mappedJob = mapBackendJobToFrontend(response.data);
+          const mappedJob = mapBackendJobToFrontend(response.data.job || response.data);
           setJob(mappedJob);
         } else {
           // If API fails, try to get from mock storage as fallback
@@ -410,7 +400,6 @@ export default function JobDetail() {
     const loadApplications = async () => {
       if (!jobId) return;
       try {
-        console.log('[JobDetail] Loading applicant count for jobId:', jobId);
         const res = await applicationService.getJobApplications(jobId);
         const apiApplications = res.data?.applications || [];
 
@@ -440,23 +429,8 @@ export default function JobDetail() {
           }
 
           // Map status and stage with fallbacks
-          const originalStatus = app.status;
           const mappedStatus = mapApplicationStatus(app.status || 'NEW');
           const mappedStage = mapApplicationStage(app.stage || 'NEW_APPLICATION');
-
-          // Debug logging for ALL applications to see mapping
-          console.log(`[JobDetail] Mapping application ${app.id} (${candidateName}):`, {
-            originalStatus,
-            mappedStatus,
-            originalStage: app.stage,
-            mappedStage,
-          });
-
-          // Validate mapped values
-          const validStatuses: Application['status'][] = ['applied', 'screening', 'interview', 'offer', 'hired', 'rejected', 'withdrawn'];
-          if (!validStatuses.includes(mappedStatus)) {
-            console.error(`[JobDetail] Invalid mapped status "${mappedStatus}" for application ${app.id} (original: "${originalStatus}"), using "applied"`);
-          }
 
           return {
             id: app.id,
@@ -542,7 +516,6 @@ export default function JobDetail() {
           return mapped === 'applied';
         });
         console.log(`[JobDetail] Applications that should map to "applied": ${shouldBeApplied.length}`, shouldBeApplied.map((app: any) => ({ id: app.id, originalStatus: app.status })));
-
         setAllApplications(mappedApplications);
         setApplicantsCount(mappedApplications.length);
       } catch (err) {

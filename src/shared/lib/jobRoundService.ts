@@ -10,6 +10,8 @@ export interface JobRound {
   type: JobRoundType;
   isFixed: boolean;
   fixedKey?: string | null;
+  /** When set (Simple Flow), members with this job role are auto-assigned as round interviewers */
+  assignedRoleId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,12 +19,15 @@ export interface JobRound {
 export interface CreateJobRoundRequest {
   name: string;
   type: JobRoundType;
+  /** When set (Simple Flow), members with this job role are auto-assigned as round interviewers */
+  assignedRoleId?: string;
 }
 
 export interface UpdateJobRoundRequest {
   name?: string;
   type?: JobRoundType;
   order?: number;
+  assignedRoleId?: string | null;
 }
 
 class JobRoundService {

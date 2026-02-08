@@ -457,6 +457,7 @@ export function ApplicationPipeline({
   const [roundEmailConfigDrawerOpen, setRoundEmailConfigDrawerOpen] = useState(false);
   const [selectedRoundForEmailConfig, setSelectedRoundForEmailConfig] = useState<JobRound | null>(null);
   const [jobData, setJobData] = useState<any>(null);
+  const isSimpleFlow = jobData?.job?.setupType === 'simple';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
 
   // Move Dialog State
@@ -1440,15 +1441,15 @@ export function ApplicationPipeline({
                   onStageChange={handleStageChange}
                   onMoveToRound={handleMoveToRound}
                   onDeleteRound={handleDeleteRound}
-                  onConfigureAssessment={handleConfigureAssessment}
+                  onConfigureAssessment={isSimpleFlow ? undefined : handleConfigureAssessment}
                   onConfigureInterview={handleConfigureInterview}
                   onViewInterviews={handleViewInterviews}
                   onViewRoundInterviews={handleViewRoundInterviews}
-                  onOpenScreening={handleOpenScreening}
-                  onConfigureOffer={handleConfigureOffer}
+                  onOpenScreening={isSimpleFlow ? undefined : handleOpenScreening}
+                  onConfigureOffer={isSimpleFlow ? undefined : handleConfigureOffer}
                   onExecuteOffer={handleExecuteOffer}
-                  onOpenAssessmentDrawer={handleOpenAssessmentReview}
-                  onConfigureEmail={handleConfigureEmail}
+                  onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
+                  onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
                 />
               ))}
             </SortableContext>

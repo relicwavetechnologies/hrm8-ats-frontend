@@ -252,21 +252,8 @@ export function RoundDetailView({
 
   // Build candidate list with assessment state
   const candidatesWithState = useMemo(() => {
-    // DEBUG LOG
-    console.log('[RoundDetailView] Mapping Debug:', {
-       roundAppsCount: roundApplications.length,
-       assessmentsCount: assessments.length,
-       roundAppsIds: roundApplications.map(a => a.id),
-       assessmentsAppIds: assessments.map(a => a.applicationId)
-    });
-
     return roundApplications.map(app => {
       const assessment = assessments.find(a => a.applicationId === app.id);
-      
-      if (!assessment) {
-         console.warn(`[RoundDetailView] No assessment found for app ${app.id} (${app.candidateName})`);
-      }
-
       const displayState = getDisplayState(assessment || null);
       return { app, assessment, displayState };
     });

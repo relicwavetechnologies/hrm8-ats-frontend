@@ -12,6 +12,7 @@ import { Sparkles, X, ChevronRight } from 'lucide-react';
 import { useJobCreateStore, WizardStepId, WIZARD_STEPS } from '@/modules/jobs/store/useJobCreateStore';
 import { JobFormData } from '@/shared/types/job';
 import { JobPreviewPanel } from '@/components/conversational/JobPreviewPanel';
+import { JobSetupDrawer } from '@/components/setup/JobSetupDrawer';
 import { useJobConversation } from './useJobConversation';
 import {
     ChatServiceTypeCard,
@@ -47,6 +48,9 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
     const [uploadComplete, setUploadComplete] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [setupDrawerOpen, setSetupDrawerOpen] = useState(false);
+    const [createdJobId, setCreatedJobId] = useState<string | null>(null);
+    const [createdJobTitle, setCreatedJobTitle] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         if (open && initialData) {
@@ -103,26 +107,27 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
             const response = await import('@/shared/lib/jobService').then(m => m.jobService.createJob(payload));
 
             if (response.success && response.data) {
-                const newJobId = response.data.id;
+                const job = (response.data as { job?: { id: string }; id?: string }).job ?? response.data;
+                const newJobId = (job as { id?: string }).id ?? (response.data as { id?: string }).id;
 
-                // Handle Hiring Team Invites if any
+                // Handle Hiring Team Invites if any (role + optional roles[] for per-job roles)
                 if (jobData.hiringTeam && jobData.hiringTeam.length > 0) {
-                    // We do this in background or await? 
-                    // Let's await to ensure everything is set up
                     await Promise.all(jobData.hiringTeam.map(member =>
                         import('@/shared/lib/jobService').then(m => m.jobService.inviteTeamMember(newJobId, {
                             email: member.email,
                             name: member.name,
-                            role: member.role
+                            role: member.role,
+                            ...(member.roles?.length ? { roles: member.roles } : {}),
                         }))
                     ));
                 }
 
-                // Reset and close
+                // Open Post-Job Setup drawer (production-grade flow)
+                setCreatedJobId(newJobId);
+                setCreatedJobTitle(jobData.title || undefined);
+                setSetupDrawerOpen(true);
                 reset();
                 onOpenChange(false);
-                // Trigger refresh or navigation?
-                window.location.reload(); // Simple refresh for now to show new job
             } else {
                 throw new Error(response.error || 'Failed to create job');
             }
@@ -364,6 +369,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     };
 
     return (
+        <>
         <Drawer open={open} onOpenChange={onOpenChange}>
             <DrawerContent className="h-[95vh] rounded-t-[32px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
                 <DrawerHeader className="border-b px-6 py-4 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
@@ -418,5 +424,20 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 </div>
             </DrawerContent>
         </Drawer>
+
+        <JobSetupDrawer
+            open={setupDrawerOpen}
+            onOpenChange={(open) => {
+                setSetupDrawerOpen(open);
+                if (!open) {
+                    setCreatedJobId(null);
+                    setCreatedJobTitle(undefined);
+                    window.location.reload();
+                }
+            }}
+            jobId={createdJobId}
+            jobTitle={createdJobTitle}
+        />
+        </>
     );
 };
