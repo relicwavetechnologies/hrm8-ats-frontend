@@ -8,7 +8,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Badge } from '@/shared/components/ui/badge';
-import { Layers, Plus, ArrowRight, Loader2, Video, FileCheck } from 'lucide-react';
+import { Layers, Plus, ArrowRight, Loader2, Video, FileCheck, Settings2 } from 'lucide-react';
 import { JobRole } from '@/shared/types/job';
 import { jobRoundService, JobRound, JobRoundType } from '@/shared/lib/jobRoundService';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/shared/components/ui/dialog';
+import { RoundEmailConfigDrawer } from '@/modules/applications/components/RoundEmailConfigDrawer';
 
 const FIXED_ROUNDS_PREREQ = [
   { key: 'NEW', name: 'New', description: 'New applications land here. You move them manually to the next round.', color: 'bg-blue-50 dark:bg-blue-950/30' },
@@ -42,6 +44,7 @@ interface SetupRoundsCardProps {
   onContinue: () => void;
   onBack: () => void;
   setupType?: 'simple' | 'advanced';
+  jobTitle?: string;
 }
 
 export function SetupRoundsCard({
@@ -52,14 +55,23 @@ export function SetupRoundsCard({
   onContinue,
   onBack,
   setupType,
+  jobTitle,
 }: SetupRoundsCardProps) {
   const isSimple = setupType === 'simple';
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [allRounds, setAllRounds] = useState<JobRound[]>([]);
+  const [configRound, setConfigRound] = useState<JobRound | null>(null);
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState('');
+  /** Simple only: when true = interview round (with role), when false = normal round (ASSESSMENT) */
+  const [interviewKind, setInterviewKind] = useState(true);
   const [type, setType] = useState<JobRoundType>(isSimple ? 'INTERVIEW' : 'ASSESSMENT');
   const [assignedRoleId, setAssignedRoleId] = useState<string>('');
+  /** Advanced only */
+  const [syncPermissions, setSyncPermissions] = useState(true);
+  const [autoMoveOnPass, setAutoMoveOnPass] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -70,8 +82,9 @@ export function SetupRoundsCard({
         const res = await jobRoundService.getJobRounds(jobId);
         if (cancelled) return;
         if (res.success && res.data?.rounds) {
-          const list = res.data.rounds.filter((r: JobRound) => !r.isFixed);
-          onRoundsChange(list);
+          const list = res.data.rounds as JobRound[];
+          setAllRounds(list);
+          onRoundsChange(list.filter((r: JobRound) => !r.isFixed));
         }
       } catch (e) {
         if (!cancelled) toast({ title: 'Error', description: 'Failed to load rounds', variant: 'destructive' });
@@ -95,11 +108,13 @@ export function SetupRoundsCard({
         name: name.trim(),
         type,
         assignedRoleId: type === 'INTERVIEW' && assignedRoleId ? assignedRoleId : undefined,
+        ...(!isSimple && { syncPermissions, autoMoveOnPass }),
       });
       if (res.success && res.data?.round) {
         onRoundsChange([...rounds, res.data.round]);
         setName('');
         setType(isSimple ? 'INTERVIEW' : 'ASSESSMENT');
+        setInterviewKind(true);
         setAssignedRoleId('');
         setDialogOpen(false);
         toast({ title: 'Round created', description: `"${name.trim()}" added.${type === 'INTERVIEW' && assignedRoleId ? ' Interviewers assigned by role.' : ''}` });
@@ -112,6 +127,19 @@ export function SetupRoundsCard({
   };
 
   const customRounds = rounds.filter((r) => !r.isFixed);
+
+  const refetchRounds = async () => {
+    try {
+      const res = await jobRoundService.getJobRounds(jobId);
+      if (res.success && res.data?.rounds) {
+        const list = res.data.rounds as JobRound[];
+        setAllRounds(list);
+        onRoundsChange(list.filter((r) => !r.isFixed));
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   if (loading) {
     return (
@@ -145,10 +173,51 @@ export function SetupRoundsCard({
         </ul>
       </Card>
 
+      {!isSimple && allRounds.length > 0 && (
+        <Card className="p-5 space-y-4">
+          <Label className="text-xs font-medium uppercase text-muted-foreground">Configure rounds (role, permissions, email)</Label>
+          <p className="text-sm text-muted-foreground">Set role, who can move, and email template for each stage.</p>
+          <div className="space-y-2">
+            {allRounds.map((r) => (
+              <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  {r.type === 'INTERVIEW' ? <Video className="h-5 w-5 text-muted-foreground shrink-0" /> : <FileCheck className="h-5 w-5 text-muted-foreground shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">{r.isFixed ? 'Fixed stage' : r.type}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => { setConfigRound(r); setConfigDrawerOpen(true); }} className="gap-1">
+                  <Settings2 className="h-4 w-4" />
+                  Configure
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium uppercase text-muted-foreground">Custom rounds</Label>
-          <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)} className="gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setName('');
+              setAssignedRoleId('');
+              if (isSimple) {
+                setInterviewKind(true);
+                setType('INTERVIEW');
+              } else {
+                setType('ASSESSMENT');
+                setSyncPermissions(true);
+                setAutoMoveOnPass(false);
+              }
+              setDialogOpen(true);
+            }}
+            className="gap-1"
+          >
             <Plus className="h-4 w-4" /> Add round
           </Button>
         </div>
@@ -159,24 +228,34 @@ export function SetupRoundsCard({
             customRounds.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 p-3 rounded-lg border"
+                className="flex items-center justify-between gap-3 p-3 rounded-lg border"
               >
-                {r.type === 'INTERVIEW' ? (
-                  <Video className="h-5 w-5 text-muted-foreground shrink-0" />
-                ) : (
-                  <FileCheck className="h-5 w-5 text-muted-foreground shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{r.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.type === 'INTERVIEW' && r.assignedRoleId
-                      ? `Interview · Role: ${roles.find((x) => x.id === r.assignedRoleId)?.name ?? r.assignedRoleId}`
-                      : r.type}
-                  </p>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {r.type === 'INTERVIEW' ? (
+                    <Video className="h-5 w-5 text-muted-foreground shrink-0" />
+                  ) : (
+                    <FileCheck className="h-5 w-5 text-muted-foreground shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.type === 'INTERVIEW' && r.assignedRoleId
+                        ? `Interview · Role: ${roles.find((x) => x.id === r.assignedRoleId)?.name ?? r.assignedRoleId}`
+                        : r.type}
+                    </p>
+                  </div>
                 </div>
-                <Badge variant={r.type === 'INTERVIEW' ? 'default' : 'secondary'} className="shrink-0">
-                  {r.type}
-                </Badge>
+                <div className="flex items-center gap-2 shrink-0">
+                  {!isSimple && (
+                    <Button variant="ghost" size="sm" onClick={() => { setConfigRound(r); setConfigDrawerOpen(true); }} className="gap-1">
+                      <Settings2 className="h-4 w-4" />
+                      Configure
+                    </Button>
+                  )}
+                  <Badge variant={r.type === 'INTERVIEW' ? 'default' : 'secondary'}>
+                    {r.type}
+                  </Badge>
+                </div>
               </div>
             ))
           )}
@@ -188,9 +267,11 @@ export function SetupRoundsCard({
           <DialogHeader>
             <DialogTitle>Add round</DialogTitle>
             <DialogDescription>
-              {type === 'INTERVIEW'
-                ? (isSimple ? 'Add an interview round. Choose a role to auto-assign interviewers.' : 'Create an interview round. Optionally assign a role to auto-assign interviewers.')
-                : 'Create an assessment round. No interviewer role assignment.'}
+              {isSimple
+                ? 'Add a round. Tick "Interview round" to assign a role and auto-assign interviewers; leave unchecked for a normal stage.'
+                : type === 'INTERVIEW'
+                  ? 'Create an interview round. Optionally assign a role to auto-assign interviewers.'
+                  : 'Create an assessment round. No interviewer role assignment.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -202,18 +283,36 @@ export function SetupRoundsCard({
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v as JobRoundType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ASSESSMENT">Assessment</SelectItem>
-                  <SelectItem value="INTERVIEW">Interview</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {isSimple ? (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="interview-kind"
+                  checked={interviewKind}
+                  onCheckedChange={(checked) => {
+                    const on = checked === true;
+                    setInterviewKind(on);
+                    setType(on ? 'INTERVIEW' : 'ASSESSMENT');
+                    if (!on) setAssignedRoleId('');
+                  }}
+                />
+                <Label htmlFor="interview-kind" className="text-sm font-normal cursor-pointer">
+                  This is an interview round (assign role to auto-add interviewers)
+                </Label>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={type} onValueChange={(v) => setType(v as JobRoundType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ASSESSMENT">Assessment</SelectItem>
+                    <SelectItem value="INTERVIEW">Interview</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {type === 'INTERVIEW' && roles.length > 0 && (
               <div className="space-y-2">
                 <Label>{isSimple ? 'Assign interviewers by role (required)' : 'Auto-assign interviewers by role'}</Label>
@@ -230,6 +329,30 @@ export function SetupRoundsCard({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+            {!isSimple && (
+              <div className="space-y-3 pt-2 border-t">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="sync-permissions"
+                    checked={syncPermissions}
+                    onCheckedChange={(c) => setSyncPermissions(c === true)}
+                  />
+                  <Label htmlFor="sync-permissions" className="text-sm font-normal cursor-pointer">
+                    All hiring team roles can move / manage in this round
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="auto-move"
+                    checked={autoMoveOnPass}
+                    onCheckedChange={(c) => setAutoMoveOnPass(c === true)}
+                  />
+                  <Label htmlFor="auto-move" className="text-sm font-normal cursor-pointer">
+                    Auto-move on pass (trigger when candidate passes this round)
+                  </Label>
+                </div>
               </div>
             )}
           </div>
@@ -256,6 +379,19 @@ export function SetupRoundsCard({
           Continue <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
+
+      <RoundEmailConfigDrawer
+        open={configDrawerOpen}
+        onOpenChange={(open) => {
+          setConfigDrawerOpen(open);
+          if (!open) setConfigRound(null);
+        }}
+        jobId={jobId}
+        round={configRound}
+        roles={roles}
+        jobTitle={jobTitle}
+        onSuccess={refetchRounds}
+      />
     </div>
   );
 }
