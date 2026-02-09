@@ -49,6 +49,8 @@ export interface Application {
   roundId?: string;
   aiAnalysis?: any;
   notes?: any[];
+  candidate?: any;
+  parsedResume?: any;
   candidatePreferences?: any;
   teamReviews?: any[];
   evaluations?: any[];

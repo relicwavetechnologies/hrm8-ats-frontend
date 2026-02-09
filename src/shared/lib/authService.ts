@@ -118,7 +118,10 @@ class AuthService {
   async resetPassword(data: { token: string; password: string }) {
     return apiClient.post<{ message: string }>('/api/auth/reset-password', data);
   }
+
+  async acceptLeadConversionInvite(data: { token: string; password: string }) {
+    return apiClient.post<{ user: User }>('/api/auth/lead-conversion/accept', data);
+  }
 }
 
 export const authService = new AuthService();
-
