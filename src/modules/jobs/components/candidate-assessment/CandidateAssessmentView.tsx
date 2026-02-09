@@ -103,8 +103,10 @@ export function CandidateAssessmentView({
         onKeyDown={handleKeyDown}
         aria-describedby={undefined}
       >
-        {/* Screen reader only title for accessibility */}
-        <SheetTitle className="sr-only">Candidate Assessment - {fullApplication.candidateName}</SheetTitle>
+        <SheetTitle className="sr-only">Candidate Assessment - {fullApplication.candidateName || "Candidate"}</SheetTitle>
+        <SheetDescription className="sr-only">
+          Assessment details for {fullApplication.candidateName || "Candidate"}
+        </SheetDescription>
         <div ref={containerRef} className="flex flex-col h-full relative overflow-hidden">
           {/* Compact Header */}
           <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
@@ -184,7 +186,7 @@ export function CandidateAssessmentView({
                     <CandidateNotesPanel
                       applicationId={fullApplication.id}
                       jobId={fullApplication.jobId || ''}
-                      candidateName={fullApplication.candidateName || fullApplication.candidate?.first_name + ' ' + fullApplication.candidate?.last_name}
+                      candidateName={fullApplication.candidateName || "Candidate"}
                       jobTitle={jobTitle}
                     />
                   </div>
