@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { QuickActionsToolbar } from "./QuickActionsToolbar";
 import { OverviewTab } from "./tabs/OverviewTab";
@@ -17,6 +17,10 @@ import { ActivityTimelineTab } from "./tabs/ActivityTimelineTab";
 import { VotingTab } from "./tabs/VotingTab";
 import { ComparisonTab } from "./tabs/ComparisonTab";
 import { ResumeAnnotationsTab } from "./tabs/ResumeAnnotationsTab";
+import { EmailTab } from "./tabs/EmailTab";
+import { CallLogsTab } from "./tabs/CallLogsTab";
+import { SmsTab } from "./tabs/SmsTab";
+import { SlackTab } from "./tabs/SlackTab";
 import { useActivityNotifications } from "@/shared/hooks/useActivityNotifications";
 import { useCandidatePresence } from "@/shared/hooks/useCandidatePresence";
 import { CandidatePresenceIndicator } from "./CandidatePresenceIndicator";
@@ -194,9 +198,9 @@ export function CandidateAssessmentView({
                   {/* Bottom - Existing Tabs */}
                   <div className="flex-1 overflow-hidden">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                      <div className="border-b px-4 bg-muted/20 flex-shrink-0">
-                        <ScrollArea className="w-full whitespace-nowrap overflow-auto">
-                          <TabsList className="h-10 bg-transparent">
+                      <div className="border-b px-2 bg-muted/20 flex-shrink-0">
+                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+                          <TabsList className="h-10 bg-transparent inline-flex w-max gap-1 whitespace-nowrap">
                             <TabsTrigger value="overview" className="gap-1.5 text-xs">
                               <FileText className="h-3.5 w-3.5" />
                               Overview
@@ -238,8 +242,24 @@ export function CandidateAssessmentView({
                                 </Badge>
                               )}
                             </TabsTrigger>
+                            <TabsTrigger value="email" className="gap-1.5 text-xs">
+                              <Mail className="h-3.5 w-3.5" />
+                              Email
+                            </TabsTrigger>
+                            <TabsTrigger value="calls" className="gap-1.5 text-xs">
+                              <Phone className="h-3.5 w-3.5" />
+                              Calls
+                            </TabsTrigger>
+                            <TabsTrigger value="sms" className="gap-1.5 text-xs">
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              SMS
+                            </TabsTrigger>
+                            <TabsTrigger value="slack" className="gap-1.5 text-xs">
+                              <Hash className="h-3.5 w-3.5" />
+                              Slack
+                            </TabsTrigger>
                           </TabsList>
-                        </ScrollArea>
+                        </div>
                       </div>
 
                       <ScrollArea className="flex-1">
@@ -299,6 +319,22 @@ export function CandidateAssessmentView({
 
                           <TabsContent value="activity" className="mt-0">
                             <ActivityTimelineTab application={fullApplication} />
+                          </TabsContent>
+
+                          <TabsContent value="email" className="mt-0">
+                            <EmailTab application={fullApplication} />
+                          </TabsContent>
+
+                          <TabsContent value="calls" className="mt-0">
+                            <CallLogsTab application={fullApplication} />
+                          </TabsContent>
+
+                          <TabsContent value="sms" className="mt-0">
+                            <SmsTab application={fullApplication} />
+                          </TabsContent>
+
+                          <TabsContent value="slack" className="mt-0">
+                            <SlackTab application={fullApplication} />
                           </TabsContent>
                         </div>
                       </ScrollArea>
