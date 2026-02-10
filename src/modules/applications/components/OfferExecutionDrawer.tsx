@@ -17,6 +17,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { toast } from "sonner";
 import { Send, Edit2, ChevronDown, ChevronUp, Briefcase, MapPin, DollarSign, Calendar, Mail } from "lucide-react";
 import { offerService } from "@/shared/lib/offerService";
+import { jobRoundService } from "@/shared/lib/jobRoundService";
 import { Application } from "@/shared/types/application";
 import { Job } from "@/shared/types/job";
 import { jobService } from "@/shared/lib/jobService";
@@ -107,9 +108,47 @@ export function OfferExecutionDrawer({
   const [sendingSingle, setSendingSingle] = useState<Record<string, boolean>>({});
   const [job, setJob] = useState<Job | null>(null);
   const [isLoadingJob, setIsLoadingJob] = useState(false);
+  const [offerConfig, setOfferConfig] = useState<OfferExecutionDrawerProps["defaultConfig"] | null>(null);
   const [selectedApplications, setSelectedApplications] = useState<Set<string>>(new Set());
   const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
   const [offerDrafts, setOfferDrafts] = useState<Record<string, OfferDraft>>({});
+
+  // Resolve effective config: prop override, or fetched from API
+  const effectiveConfig = defaultConfig ?? offerConfig;
+
+  // Fetch offer config from API when drawer opens (if not provided via prop)
+  useEffect(() => {
+    if (!open || !jobId || !roundId || defaultConfig) {
+      setOfferConfig(null);
+      return;
+    }
+    let cancelled = false;
+    jobRoundService.getOfferConfig(jobId, roundId).then((res) => {
+      if (cancelled) return;
+      if (res.success && res.data) {
+        const c = res.data;
+        setOfferConfig({
+          templateId: c.defaultTemplateId,
+          salary: c.defaultSalary ? parseFloat(c.defaultSalary) : undefined,
+          salaryCurrency: c.defaultSalaryCurrency,
+          salaryPeriod: c.defaultSalaryPeriod,
+          workLocation: c.defaultWorkLocation,
+          workArrangement: c.defaultWorkArrangement as "on-site" | "remote" | "hybrid",
+          benefits: c.defaultBenefits
+            ? (typeof c.defaultBenefits === "string"
+              ? c.defaultBenefits.split(",").map((b) => b.trim())
+              : [])
+            : undefined,
+          vacationDays: c.defaultVacationDays ? parseInt(c.defaultVacationDays, 10) : undefined,
+          expiryDays: c.defaultExpiryDays ? parseInt(c.defaultExpiryDays, 10) : undefined,
+          customMessage: c.defaultCustomMessage,
+        });
+      } else {
+        setOfferConfig(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [open, jobId, roundId, defaultConfig]);
 
   // Fetch job data when drawer opens
   useEffect(() => {
@@ -151,16 +190,16 @@ export function OfferExecutionDrawer({
       // Initialize offer drafts with default config and job data
       const drafts: Record<string, OfferDraft> = {};
       const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + (defaultConfig?.expiryDays || 7));
+      expiryDate.setDate(expiryDate.getDate() + (effectiveConfig?.expiryDays || 7));
       const startDate = new Date();
       startDate.setDate(startDate.getDate() + 30); // Default 30 days from now
 
       // Calculate default salary - use config, then job max, then job min, else 0
-      const defaultSalary = defaultConfig?.salary || job?.salaryMax || job?.salaryMin || 0;
-      const defaultSalaryPeriod = defaultConfig?.salaryPeriod || job?.salaryPeriod || "annual";
-      const defaultWorkArrangement = defaultConfig?.workArrangement 
+      const defaultSalary = effectiveConfig?.salary || job?.salaryMax || job?.salaryMin || 0;
+      const defaultSalaryPeriod = effectiveConfig?.salaryPeriod || job?.salaryPeriod || "annual";
+      const defaultWorkArrangement = effectiveConfig?.workArrangement 
         || (job ? mapWorkArrangement(job.workArrangement) : "remote");
-      const defaultWorkLocation = defaultConfig?.workLocation || job?.location || "";
+      const defaultWorkLocation = effectiveConfig?.workLocation || job?.location || "";
       const defaultOfferType = job ? mapEmploymentTypeToOfferType(job.employmentType) : "full-time";
       
       // Get job title - prefer job.title if available, then prop, then app.jobTitle
@@ -179,17 +218,17 @@ export function OfferExecutionDrawer({
           candidateEmail: app.candidateEmail || "",
           jobTitle: jobTitle, // Use the job title we determined above
           salary: defaultSalary,
-          salaryCurrency: defaultConfig?.salaryCurrency || job?.salaryCurrency || "USD",
+          salaryCurrency: effectiveConfig?.salaryCurrency || job?.salaryCurrency || "USD",
           salaryPeriod: defaultSalaryPeriod,
           workLocation: defaultWorkLocation,
           workArrangement: defaultWorkArrangement,
-          benefits: defaultConfig?.benefits || [],
-          vacationDays: defaultConfig?.vacationDays,
+          benefits: effectiveConfig?.benefits || [],
+          vacationDays: effectiveConfig?.vacationDays,
           probationPeriod: undefined,
           bonusStructure: undefined,
           equityOptions: undefined,
           offerType: defaultOfferType,
-          customMessage: defaultConfig?.customMessage,
+          customMessage: effectiveConfig?.customMessage,
           expiryDate: expiryDate.toISOString().split('T')[0],
           startDate: startDate.toISOString().split('T')[0],
         };
@@ -197,7 +236,7 @@ export function OfferExecutionDrawer({
       setOfferDrafts(drafts);
       console.log('[OfferExecutionDrawer] Drafts initialized with jobTitle:', jobTitle);
     }
-  }, [open, applications, defaultConfig, job, isLoadingJob]);
+  }, [open, applications, effectiveConfig, job, isLoadingJob]);
 
   const toggleSelection = (applicationId: string) => {
     const newSelected = new Set(selectedApplications);
@@ -275,7 +314,7 @@ export function OfferExecutionDrawer({
         equityOptions: draft.equityOptions,
         customMessage: draft.customMessage,
         expiryDate: draft.expiryDate,
-        templateId: defaultConfig?.templateId,
+        templateId: effectiveConfig?.templateId,
       });
 
       if (!createResponse.success) {

@@ -9,8 +9,9 @@ import { Badge } from "@/shared/components/ui/badge";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Separator } from "@/shared/components/ui/separator";
-import { Loader2, ChevronLeft, ChevronRight, Save, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Save, MessageSquare, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { apiClient } from "@/shared/lib/api";
+import { assessmentService } from "@/shared/lib/assessmentService";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -68,6 +69,14 @@ interface GradingData {
       photo?: string;
     }
   }>;
+  assessmentConfig?: { evaluation_mode?: string };
+  assessment_vote?: Array<{
+    id: string;
+    user_id: string;
+    vote: string;
+    comment?: string | null;
+    user?: { id: string; first_name: string; last_name: string };
+  }>;
 }
 
 export function AssessmentGradingDialog({
@@ -85,8 +94,28 @@ export function AssessmentGradingDialog({
   const [gradeComment, setGradeComment] = useState("");
   const [overallComment, setOverallComment] = useState("");
   const [submittingGrade, setSubmittingGrade] = useState(false);
+  const [submittingVote, setSubmittingVote] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
+
+  const isVotingMode = (data?.assessmentConfig?.evaluation_mode ?? "GRADING") === "VOTING";
+
+  const handleSaveVote = async (vote: "APPROVE" | "REJECT") => {
+    setSubmittingVote(true);
+    try {
+      const res = await assessmentService.saveVote(assessmentId, vote, gradeComment);
+      if (res.success) {
+        toast.success(`Vote (${vote}) saved`);
+        await fetchData();
+        if (onGraded) onGraded();
+      }
+    } catch (error) {
+      console.error("Failed to save vote", error);
+      toast.error("Failed to save vote");
+    } finally {
+      setSubmittingVote(false);
+    }
+  };
 
   const handleFinalize = async () => {
      // ...
@@ -238,16 +267,24 @@ export function AssessmentGradingDialog({
           <>
             <SheetHeader className="p-6 pb-2 border-b">
               <SheetTitle>
-                Grading: {data.application.candidate.first_name} {data.application.candidate.last_name}
+                {isVotingMode ? "Vote" : "Grading"}: {data.application.candidate.first_name} {data.application.candidate.last_name}
               </SheetTitle>
               <div className="flex items-center gap-4">
                 <div className="flex items-center text-sm text-muted-foreground">
                   {data.application.candidate.email}
                 </div>
-                {averageScore && (
-                  <Badge variant={Number(averageScore) >= 70 ? "success" : "secondary"}>
-                    Avg Score: {averageScore}
-                  </Badge>
+                {isVotingMode ? (
+                  data.assessment_vote && data.assessment_vote.length > 0 && (
+                    <Badge variant="outline">
+                      {data.assessment_vote.filter((v) => v.vote === "APPROVE").length} approve / {data.assessment_vote.filter((v) => v.vote === "REJECT").length} reject
+                    </Badge>
+                  )
+                ) : (
+                  averageScore && (
+                    <Badge variant={Number(averageScore) >= 70 ? "success" : "secondary"}>
+                      Avg Score: {averageScore}
+                    </Badge>
+                  )
                 )}
               </div>
             </SheetHeader>
@@ -293,8 +330,7 @@ export function AssessmentGradingDialog({
 
                     <Separator />
 
-                    {!readOnly && (
-                       // ... Grading Form ...
+                    {!readOnly && !isVotingMode && (
                       <>
                         <div className="space-y-4">
                           <h4 className="font-semibold flex items-center gap-2">
@@ -334,46 +370,110 @@ export function AssessmentGradingDialog({
                             </Button>
                           </div>
                         </div>
-
                         <Separator />
                       </>
                     )}
 
-                    {/* Other Grades */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-sm text-muted-foreground">{readOnly ? "Evaluations" : "Previous Grades"}</h4>
-            {(() => {
-                        const question = data.assessment_question[currentQuestionIndex];
-                        const response = data.assessment_response.find(r => r.question_id === question.id);
-                        
-                        if (!response || !response.assessment_grade || response.assessment_grade.length === 0) {
-                          return <p className="text-sm text-muted-foreground italic">No grades yet</p>;
-                        }
-
-                        const grades = response.assessment_grade;
-                           return (
-                <div className="space-y-4">
-                  {grades.map(grade => (
-                    <div key={grade.id} className="bg-muted/40 p-4 rounded-xl text-sm border border-border/40 shadow-sm">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                              {grade.user?.first_name?.[0] || (grade.user?.email?.[0]?.toUpperCase() || 'U')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-semibold text-foreground/80">
-                            {grade.user ? (grade.user.first_name ? `${grade.user.first_name} ${grade.user.last_name || ''}` : (grade.user.email || 'Recruiter')) : 'Unknown User'}
-                          </span>
+                    {!readOnly && isVotingMode && (
+                      <>
+                        <div className="space-y-4">
+                          <h4 className="font-semibold flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4" />
+                            Your Vote
+                          </h4>
+                          <div className="space-y-2">
+                            <Label>Comment (optional)</Label>
+                            <Textarea 
+                              value={gradeComment}
+                              onChange={(e) => setGradeComment(e.target.value)}
+                              placeholder="Add a comment..."
+                              className="resize-none"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="flex gap-3">
+                            <Button 
+                              variant="default" 
+                              onClick={() => handleSaveVote("APPROVE")} 
+                              disabled={submittingVote}
+                              className="gap-2"
+                            >
+                              {submittingVote && <Loader2 className="h-4 w-4 animate-spin" />}
+                              <ThumbsUp className="h-4 w-4" />
+                              Approve
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              onClick={() => handleSaveVote("REJECT")} 
+                              disabled={submittingVote}
+                              className="gap-2"
+                            >
+                              {submittingVote && <Loader2 className="h-4 w-4 animate-spin" />}
+                              <ThumbsDown className="h-4 w-4" />
+                              Reject
+                            </Button>
+                          </div>
                         </div>
-                        <Badge variant="outline" className="bg-background/50 font-mono">{grade.score}/100</Badge>
-                      </div>
-                      {grade.comment && <p className="text-muted-foreground pl-8">{grade.comment}</p>}
+                        <Separator />
+                      </>
+                    )}
+
+                    {/* Other Grades / Votes */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-sm text-muted-foreground">
+              {isVotingMode ? "Votes" : readOnly ? "Evaluations" : "Previous Grades"}
+            </h4>
+            {isVotingMode && data.assessment_vote && data.assessment_vote.length > 0 ? (
+              <div className="space-y-4">
+                {data.assessment_vote.map((v) => (
+                  <div key={v.id} className="bg-muted/40 p-4 rounded-xl text-sm border border-border/40">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">
+                        {v.user ? `${v.user.first_name || ""} ${v.user.last_name || ""}`.trim() || "Unknown" : "Unknown"}
+                      </span>
+                      <Badge variant={v.vote === "APPROVE" ? "default" : "destructive"}>
+                        {v.vote === "APPROVE" ? <ThumbsUp className="h-3 w-3 mr-1" /> : <ThumbsDown className="h-3 w-3 mr-1" />}
+                        {v.vote}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
+                    {v.comment && <p className="text-muted-foreground mt-2 text-xs">{v.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : isVotingMode ? (
+              <p className="text-sm text-muted-foreground italic">No votes yet</p>
+            ) : (
+              (() => {
+                const question = data.assessment_question[currentQuestionIndex];
+                const response = data.assessment_response.find(r => r.question_id === question.id);
+                if (!response || !response.assessment_grade || response.assessment_grade.length === 0) {
+                  return <p className="text-sm text-muted-foreground italic">No grades yet</p>;
+                }
+                const grades = response.assessment_grade;
+                return (
+                  <div className="space-y-4">
+                    {grades.map(grade => (
+                      <div key={grade.id} className="bg-muted/40 p-4 rounded-xl text-sm border border-border/40 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                {grade.user?.first_name?.[0] || (grade.user?.email?.[0]?.toUpperCase() || 'U')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-semibold text-foreground/80">
+                              {grade.user ? (grade.user.first_name ? `${grade.user.first_name} ${grade.user.last_name || ''}` : (grade.user.email || 'Recruiter')) : 'Unknown User'}
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="bg-background/50 font-mono">{grade.score}/100</Badge>
+                        </div>
+                        {grade.comment && <p className="text-muted-foreground pl-8">{grade.comment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()
+            )}
           </div>
                   </div>
                 </ScrollArea>

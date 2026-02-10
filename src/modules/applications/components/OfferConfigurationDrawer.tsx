@@ -16,9 +16,8 @@ import { Separator } from "@/shared/components/ui/separator";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { toast } from "sonner";
 import { Save, FileText } from "lucide-react";
-import { offerService } from "@/shared/lib/offerService";
 import { jobService } from "@/shared/lib/jobService";
-import { Job } from "@/shared/types/job";
+import { jobRoundService } from "@/shared/lib/jobRoundService";
 import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
 
 // Helper function to map job work arrangement to offer work arrangement
@@ -51,8 +50,7 @@ export function OfferConfigurationDrawer({
   onSuccess,
 }: OfferConfigurationDrawerProps) {
   const [saving, setSaving] = useState(false);
-  const [job, setJob] = useState<Job | null>(null);
-  const [isLoadingJob, setIsLoadingJob] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Configuration state
   const [autoSend, setAutoSend] = useState(false);
@@ -67,80 +65,59 @@ export function OfferConfigurationDrawer({
   const [defaultExpiryDays, setDefaultExpiryDays] = useState<string>("7");
   const [defaultCustomMessage, setDefaultCustomMessage] = useState("");
 
-  // Fetch job data when drawer opens
+  // Load existing configuration from API; fallback to job data when empty
   useEffect(() => {
-    if (!open) {
-      // Reset job when drawer closes
-      setJob(null);
-      return;
-    }
+    if (!open || !jobId || !roundId) return;
 
-    if (!jobId || job) {
-      return; // Already have job or no jobId
-    }
+    let cancelled = false;
+    setLoading(true);
 
-    const fetchJob = async () => {
-      setIsLoadingJob(true);
+    const load = async () => {
       try {
-        const response = await jobService.getJobById(jobId);
-        if (response.success && response.data) {
-          const mappedJob = mapBackendJobToFrontend(response.data.job || response.data);
-          setJob(mappedJob);
+        const offerRes = await jobRoundService.getOfferConfig(jobId, roundId);
+        if (cancelled) return;
+        if (offerRes.success && offerRes.data) {
+          const c = offerRes.data;
+          setAutoSend(c.autoSend ?? false);
+          setDefaultTemplateId(c.defaultTemplateId || "");
+          setDefaultSalary(c.defaultSalary || "");
+          setDefaultSalaryCurrency(c.defaultSalaryCurrency || "USD");
+          setDefaultSalaryPeriod(c.defaultSalaryPeriod || "annual");
+          setDefaultWorkLocation(c.defaultWorkLocation || "");
+          setDefaultWorkArrangement((c.defaultWorkArrangement as "on-site" | "remote" | "hybrid") || "remote");
+          setDefaultBenefits(c.defaultBenefits || "");
+          setDefaultVacationDays(c.defaultVacationDays || "");
+          setDefaultExpiryDays(c.defaultExpiryDays || "7");
+          setDefaultCustomMessage(c.defaultCustomMessage || "");
+        } else {
+          // Fallback to job data
+          const jobRes = await jobService.getJobById(jobId);
+          if (cancelled) return;
+          if (jobRes.success && jobRes.data?.job) {
+            const mapped = mapBackendJobToFrontend(jobRes.data.job);
+            const j = mapped;
+            setDefaultSalary(String(j.salaryMax || j.salaryMin || 0));
+            setDefaultSalaryCurrency(j.salaryCurrency || "USD");
+            setDefaultSalaryPeriod(j.salaryPeriod || "annual");
+            setDefaultWorkLocation(j.location || "");
+            setDefaultWorkArrangement(mapWorkArrangement(j.workArrangement));
+          }
         }
-      } catch (error) {
-        console.error('Failed to fetch job:', error);
+      } catch (e) {
+        if (!cancelled) console.error('Failed to load offer config:', e);
       } finally {
-        setIsLoadingJob(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchJob();
-  }, [open, jobId]);
+    load();
+    return () => { cancelled = true; };
+  }, [open, jobId, roundId]);
 
-  // Load existing configuration from localStorage (or API if available)
-  // If no saved config exists, populate from job data
-  const loadConfiguration = useCallback(() => {
-    const key = `offer_config_${jobId}_${roundId}`;
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      try {
-        const config = JSON.parse(saved);
-        setAutoSend(config.autoSend ?? false);
-        setDefaultTemplateId(config.defaultTemplateId || "");
-        setDefaultSalary(config.defaultSalary || "");
-        setDefaultSalaryCurrency(config.defaultSalaryCurrency || "USD");
-        setDefaultSalaryPeriod(config.defaultSalaryPeriod || "annual");
-        setDefaultWorkLocation(config.defaultWorkLocation || "");
-        setDefaultWorkArrangement(config.defaultWorkArrangement || "remote");
-        setDefaultBenefits(config.defaultBenefits || "");
-        setDefaultVacationDays(config.defaultVacationDays || "");
-        setDefaultExpiryDays(config.defaultExpiryDays || "7");
-        setDefaultCustomMessage(config.defaultCustomMessage || "");
-      } catch (e) {
-        console.error('Failed to load offer config:', e);
-      }
-    } else if (job) {
-      // No saved configuration, populate from job data
-      const defaultSalary = job.salaryMax || job.salaryMin || 0;
-      setDefaultSalary(defaultSalary.toString());
-      setDefaultSalaryCurrency(job.salaryCurrency || "USD");
-      setDefaultSalaryPeriod(job.salaryPeriod || "annual");
-      setDefaultWorkLocation(job.location || "");
-      setDefaultWorkArrangement(mapWorkArrangement(job.workArrangement));
-      // Other fields remain at their defaults
-    }
-  }, [jobId, roundId, job]);
-
-  useEffect(() => {
-    if (open) {
-      loadConfiguration();
-    }
-  }, [open, loadConfiguration]);
-
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
     try {
-      const config = {
+      const res = await jobRoundService.updateOfferConfig(jobId, roundId, {
         autoSend,
         defaultTemplateId,
         defaultSalary,
@@ -152,14 +129,14 @@ export function OfferConfigurationDrawer({
         defaultVacationDays,
         defaultExpiryDays,
         defaultCustomMessage,
-      };
-      
-      const key = `offer_config_${jobId}_${roundId}`;
-      localStorage.setItem(key, JSON.stringify(config));
-      
-      toast.success("Offer configuration saved");
-      onSuccess?.();
-      onOpenChange(false);
+      });
+      if (res.success) {
+        toast.success("Offer configuration saved");
+        onSuccess?.();
+        onOpenChange(false);
+      } else {
+        throw new Error(res.error);
+      }
     } catch (error) {
       console.error('Failed to save offer config:', error);
       toast.error("Failed to save configuration");

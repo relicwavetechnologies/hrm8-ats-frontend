@@ -29,11 +29,13 @@ import { jobService } from "@/shared/lib/jobService";
 import { interviewService, CreateInterviewConfigRequest } from "@/shared/lib/interviewService";
 import { assessmentService, AssessmentQuestion, CreateAssessmentRequest } from "@/shared/lib/assessmentService";
 import { toast } from "sonner";
-import { Save, AlertCircle, Plus, Sparkles, Loader2, Settings2, Video, FileCheck, Mail } from "lucide-react";
+import { Save, AlertCircle, Plus, Sparkles, Loader2, Settings2, Video, FileCheck, Mail, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import type { JobRole } from "@/shared/types/job";
+import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
+import { Job } from "@/shared/types/job";
 
-export type RoundConfigTab = "general" | "interview" | "assessment" | "email";
+export type RoundConfigTab = "general" | "interview" | "assessment" | "email" | "offer";
 
 interface RoundConfigDrawerProps {
   open: boolean;
@@ -79,6 +81,9 @@ function normAssessmentConfig(c: any): any {
     provider: c.provider ?? "native",
     instructions: c.instructions ?? "",
     questions: c.questions ?? [],
+    evaluationMode: c.evaluation_mode ?? c.evaluationMode ?? "GRADING",
+    votingRule: c.voting_rule ?? c.votingRule ?? "MAJORITY",
+    minApprovalsCount: c.min_approvals_count ?? c.minApprovalsCount ?? 1,
   };
 }
 
@@ -114,6 +119,9 @@ export function RoundConfigDrawer({
 
   // Assessment (ASSESSMENT rounds)
   const [assessmentEnabled, setAssessmentEnabled] = useState(false);
+  const [evaluationMode, setEvaluationMode] = useState<"GRADING" | "VOTING">("GRADING");
+  const [votingRule, setVotingRule] = useState<"UNANIMOUS" | "MAJORITY" | "MIN_APPROVALS">("MAJORITY");
+  const [minApprovalsCount, setMinApprovalsCount] = useState<number>(1);
   const [autoAssign, setAutoAssign] = useState(true);
   const [assessmentAutoMoveOnPass, setAssessmentAutoMoveOnPass] = useState(false);
   const [autoRejectOnFail, setAutoRejectOnFail] = useState(false);
@@ -124,6 +132,7 @@ export function RoundConfigDrawer({
   const [provider, setProvider] = useState("native");
   const [instructions, setInstructions] = useState("");
   const [questions, setQuestions] = useState<AssessmentQuestion[]>([]);
+  const [assessmentAiGenerating, setAssessmentAiGenerating] = useState(false);
 
   // Email
   const [enabled, setEnabled] = useState(false);
@@ -135,6 +144,20 @@ export function RoundConfigDrawer({
   const [aiTone, setAiTone] = useState("professional");
   const [aiGenerating, setAiGenerating] = useState(false);
 
+  // Offer (OFFER fixed round)
+  const [offerAutoSend, setOfferAutoSend] = useState(false);
+  const [offerTemplateId, setOfferTemplateId] = useState("");
+  const [offerSalary, setOfferSalary] = useState("");
+  const [offerCurrency, setOfferCurrency] = useState("USD");
+  const [offerSalaryPeriod, setOfferSalaryPeriod] = useState("annual");
+  const [offerWorkLocation, setOfferWorkLocation] = useState("");
+  const [offerWorkArrangement, setOfferWorkArrangement] = useState<"on-site" | "remote" | "hybrid">("remote");
+  const [offerBenefits, setOfferBenefits] = useState("");
+  const [offerVacationDays, setOfferVacationDays] = useState("");
+  const [offerExpiryDays, setOfferExpiryDays] = useState("7");
+  const [offerCustomMessage, setOfferCustomMessage] = useState("");
+  const [offerJob, setOfferJob] = useState<Job | null>(null);
+
   const [loadedRoles, setLoadedRoles] = useState<JobRole[]>([]);
   const [jobTitleFromApi, setJobTitleFromApi] = useState("");
   const effectiveRoles = roles?.length ? roles : loadedRoles;
@@ -145,6 +168,7 @@ export function RoundConfigDrawer({
   const isCustomRound = round && !round.isFixed;
   /** Assessment tab only for custom assessment rounds (with tests); not for fixed NEW/OFFER/HIRED/REJECTED */
   const isCustomAssessment = isAssessment && isCustomRound;
+  const isOfferRound = round?.fixedKey === "OFFER";
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -202,7 +226,7 @@ export function RoundConfigDrawer({
     if (round.isFixed && round.fixedKey) {
       const m: Record<string, string> = {
         NEW: "New applications land here. Configure who can manage them and automated emails.",
-        OFFER: "Ready to extend an offer. Configure permissions and automated emails.",
+        OFFER: "Ready to extend an offer. Configure auto-send, default offer template, and automated emails.",
         HIRED: "Final stage. Configure permissions and automated emails.",
         REJECTED: "Rejected candidates. Configure permissions and automated emails.",
       };
@@ -274,6 +298,9 @@ export function RoundConfigDrawer({
         setAutoMoveOnPass(Boolean(c?.autoMoveOnPass));
         if (c) {
           setAssessmentEnabled(c.enabled);
+          setEvaluationMode((c.evaluationMode ?? "GRADING") as "GRADING" | "VOTING");
+          setVotingRule((c.votingRule ?? "MAJORITY") as "UNANIMOUS" | "MAJORITY" | "MIN_APPROVALS");
+          setMinApprovalsCount(c.minApprovalsCount ?? 1);
           setAutoAssign(c.autoAssign ?? true);
           setAssessmentAutoMoveOnPass(c.autoMoveOnPass ?? false);
           setAutoRejectOnFail(c.autoRejectOnFail ?? false);
@@ -284,6 +311,43 @@ export function RoundConfigDrawer({
           setProvider(c.provider ?? "native");
           setInstructions(c.instructions ?? "");
           setQuestions(c.questions ?? []);
+        }
+      }
+
+      // Offer config (API)
+      if (round.fixedKey === "OFFER") {
+        const offerRes = await jobRoundService.getOfferConfig(jobId, round.id);
+        if (offerRes.success && offerRes.data) {
+          const c = offerRes.data;
+          setOfferAutoSend(c.autoSend ?? false);
+          setOfferTemplateId(c.defaultTemplateId || "");
+          setOfferSalary(c.defaultSalary || "");
+          setOfferCurrency(c.defaultSalaryCurrency || "USD");
+          setOfferSalaryPeriod(c.defaultSalaryPeriod || "annual");
+          setOfferWorkLocation(c.defaultWorkLocation || "");
+          setOfferWorkArrangement(
+            (c.defaultWorkArrangement as "on-site" | "remote" | "hybrid") || "remote"
+          );
+          setOfferBenefits(c.defaultBenefits || "");
+          setOfferVacationDays(c.defaultVacationDays || "");
+          setOfferExpiryDays(c.defaultExpiryDays || "7");
+          setOfferCustomMessage(c.defaultCustomMessage || "");
+        } else {
+          // Fetch job for defaults when no saved config
+          const res = await jobService.getJobById(jobId);
+          if (res.success && res.data?.job) {
+            const mapped = mapBackendJobToFrontend(res.data.job);
+            setOfferJob(mapped);
+            const j = mapped;
+            const sal = j.salaryMax || j.salaryMin || 0;
+            setOfferSalary(sal.toString());
+            setOfferCurrency(j.salaryCurrency || "USD");
+            setOfferSalaryPeriod(j.salaryPeriod || "annual");
+            setOfferWorkLocation(j.location || "");
+            setOfferWorkArrangement(
+              (j.workArrangement?.toLowerCase() === "hybrid" ? "hybrid" : j.workArrangement?.toLowerCase() === "remote" ? "remote" : "on-site") as "on-site" | "remote" | "hybrid"
+            );
+          }
         }
       }
     } catch (e) {
@@ -331,6 +395,39 @@ export function RoundConfigDrawer({
       toast.error(e instanceof Error ? e.message : "Failed to create template with AI");
     } finally {
       setAiGenerating(false);
+    }
+  };
+
+  const handleGenerateAssessmentQuestionsWithAI = async () => {
+    const title = effectiveJobTitle || "this role";
+    setAssessmentAiGenerating(true);
+    try {
+      let jobDescription: string | undefined;
+      try {
+        const res = await jobService.getJobById(jobId);
+        if (res.success && res.data?.job?.description) {
+          jobDescription = res.data.job.description;
+        }
+      } catch {
+        /* ignore */
+      }
+      const generated = await assessmentService.generateQuestionsWithAI({
+        jobTitle: title,
+        jobDescription,
+        questionCount: 5,
+      });
+      const mapped: AssessmentQuestion[] = generated.map((q, i) => ({
+        questionText: q.questionText,
+        type: q.type ?? "LONG_ANSWER",
+        options: q.options,
+        order: questions.length + i,
+      }));
+      setQuestions((prev) => [...prev, ...mapped]);
+      toast.success(`Generated ${mapped.length} questions. Review and edit as needed.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate questions");
+    } finally {
+      setAssessmentAiGenerating(false);
     }
   };
 
@@ -384,13 +481,16 @@ export function RoundConfigDrawer({
       if (isCustomAssessment) {
         const assessmentPayload: CreateAssessmentRequest = {
           enabled: assessmentEnabled,
+          evaluationMode,
+          votingRule: evaluationMode === "VOTING" ? votingRule : undefined,
+          minApprovalsCount: evaluationMode === "VOTING" ? minApprovalsCount : undefined,
           autoAssign,
           auto_move_on_pass: assessmentAutoMoveOnPass,
           auto_reject_on_fail: autoRejectOnFail,
           auto_reject_on_deadline: autoRejectOnDeadline,
           deadlineDays: deadlineDays || undefined,
           timeLimitMinutes: timeLimitMinutes || undefined,
-          passThreshold: assessmentPassThreshold || undefined,
+          passThreshold: evaluationMode === "GRADING" ? (assessmentPassThreshold || undefined) : undefined,
           provider,
           questions: questions.length > 0 ? questions : undefined,
           instructions: instructions || undefined,
@@ -403,6 +503,22 @@ export function RoundConfigDrawer({
       }
 
       await jobRoundService.updateEmailConfig(jobId, round.id, { enabled, templateId: selectedTemplateId });
+
+      if (round.fixedKey === "OFFER") {
+        await jobRoundService.updateOfferConfig(jobId, round.id, {
+          autoSend: offerAutoSend,
+          defaultTemplateId: offerTemplateId,
+          defaultSalary: offerSalary,
+          defaultSalaryCurrency: offerCurrency,
+          defaultSalaryPeriod: offerSalaryPeriod,
+          defaultWorkLocation: offerWorkLocation,
+          defaultWorkArrangement: offerWorkArrangement,
+          defaultBenefits: offerBenefits,
+          defaultVacationDays: offerVacationDays,
+          defaultExpiryDays: offerExpiryDays,
+          defaultCustomMessage: offerCustomMessage,
+        });
+      }
 
       toast.success("Configuration saved");
       onSuccess?.();
@@ -417,7 +533,13 @@ export function RoundConfigDrawer({
 
   if (!round) return null;
 
-  const visibleTabs = ["general", ...(isInterview ? ["interview"] : []), ...(isCustomAssessment ? ["assessment"] : []), "email"];
+  const visibleTabs = [
+    "general",
+    ...(isInterview ? ["interview"] : []),
+    ...(isCustomAssessment ? ["assessment"] : []),
+    ...(isOfferRound ? ["offer"] : []),
+    "email",
+  ];
   const defaultTab = visibleTabs.includes(activeTab) ? activeTab : "general";
 
   return (
@@ -451,6 +573,12 @@ export function RoundConfigDrawer({
                 <TabsTrigger value="assessment" className="gap-1.5 text-xs">
                   <FileCheck className="h-3.5 w-3.5" />
                   Assessment
+                </TabsTrigger>
+              )}
+              {isOfferRound && (
+                <TabsTrigger value="offer" className="gap-1.5 text-xs">
+                  <FileText className="h-3.5 w-3.5" />
+                  Offer
                 </TabsTrigger>
               )}
               <TabsTrigger value="email" className="gap-1.5 text-xs">
@@ -665,6 +793,78 @@ export function RoundConfigDrawer({
                     {assessmentEnabled && (
                       <>
                         <Separator />
+                        <div className="space-y-2">
+                          <Label>Evaluation method</Label>
+                          <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="evaluationMode"
+                                checked={evaluationMode === "GRADING"}
+                                onChange={() => setEvaluationMode("GRADING")}
+                                className="h-4 w-4"
+                              />
+                              <span>Grading</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="evaluationMode"
+                                checked={evaluationMode === "VOTING"}
+                                onChange={() => setEvaluationMode("VOTING")}
+                                className="h-4 w-4"
+                              />
+                              <span>Voting</span>
+                            </label>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {evaluationMode === "GRADING"
+                              ? "Evaluators assign numeric scores; pass is based on threshold."
+                              : "Evaluators vote Approve/Reject; outcome based on voting rule."}
+                          </p>
+                        </div>
+                        {evaluationMode === "VOTING" && (
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Voting rule</Label>
+                              <Select value={votingRule} onValueChange={(v) => setVotingRule(v as "UNANIMOUS" | "MAJORITY" | "MIN_APPROVALS")}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="UNANIMOUS">Unanimous (all must approve)</SelectItem>
+                                  <SelectItem value="MAJORITY">Majority (more approve than reject)</SelectItem>
+                                  <SelectItem value="MIN_APPROVALS">Minimum approvals (at least N approve)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {votingRule === "MIN_APPROVALS" && (
+                              <div className="space-y-2">
+                                <Label>Minimum approvals required</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={minApprovalsCount}
+                                  onChange={(e) => setMinApprovalsCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {evaluationMode === "GRADING" && (
+                          <div className="space-y-2">
+                            <Label>Pass threshold (%)</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={assessmentPassThreshold ?? ""}
+                              onChange={(e) => setAssessmentPassThreshold(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                              placeholder="70"
+                            />
+                          </div>
+                        )}
+                        <Separator />
                         <div className="flex items-center justify-between">
                           <Label>Auto-assign to new applicants</Label>
                           <Switch checked={autoAssign} onCheckedChange={setAutoAssign} />
@@ -704,17 +904,6 @@ export function RoundConfigDrawer({
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Pass threshold (%)</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={assessmentPassThreshold ?? ""}
-                            onChange={(e) => setAssessmentPassThreshold(e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                            placeholder="70"
-                          />
-                        </div>
-                        <div className="space-y-2">
                           <Label>Provider</Label>
                           <Select value={provider} onValueChange={setProvider}>
                             <SelectTrigger>
@@ -741,14 +930,30 @@ export function RoundConfigDrawer({
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <Label>Questions</Label>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setQuestions([...questions, { questionText: "", type: "MULTIPLE_CHOICE", options: ["", "", ""], order: questions.length }])}
-                            >
-                              <Plus className="h-4 w-4 mr-1" /> Add
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleGenerateAssessmentQuestionsWithAI}
+                                disabled={assessmentAiGenerating}
+                              >
+                                {assessmentAiGenerating ? (
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Sparkles className="h-4 w-4 mr-1" />
+                                )}
+                                {assessmentAiGenerating ? " Generating…" : " Generate with AI"}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setQuestions([...questions, { questionText: "", type: "MULTIPLE_CHOICE", options: ["", "", ""], order: questions.length }])}
+                              >
+                                <Plus className="h-4 w-4 mr-1" /> Add
+                              </Button>
+                            </div>
                           </div>
                           {questions.length === 0 ? (
                             <p className="text-sm text-muted-foreground py-4">No questions. Add at least one when assessment is enabled.</p>
@@ -796,6 +1001,156 @@ export function RoundConfigDrawer({
                         </div>
                       </>
                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+
+            {isOfferRound && (
+              <TabsContent value="offer" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Auto-Send Settings</CardTitle>
+                    <CardDescription>
+                      Automatically send offers to candidates when they&apos;re moved to this round
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="offer-auto-send">Enable Auto-Send</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Automatically create and send offers using the default template
+                        </p>
+                      </div>
+                      <Switch
+                        id="offer-auto-send"
+                        checked={offerAutoSend}
+                        onCheckedChange={setOfferAutoSend}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Default Offer Template</CardTitle>
+                    <CardDescription>Default values used when creating offers</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Template</Label>
+                      <Select value={offerTemplateId} onValueChange={setOfferTemplateId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="template-ft-001">Full-Time Standard</SelectItem>
+                          <SelectItem value="template-pt-001">Part-Time Standard</SelectItem>
+                          <SelectItem value="template-contract">Contract Standard</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Default Salary</Label>
+                        <Input
+                          type="number"
+                          value={offerSalary}
+                          onChange={(e) => setOfferSalary(e.target.value)}
+                          placeholder="e.g., 100000"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Currency</Label>
+                        <Select value={offerCurrency} onValueChange={setOfferCurrency}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                            <SelectItem value="CAD">CAD</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Salary Period</Label>
+                        <Select value={offerSalaryPeriod} onValueChange={setOfferSalaryPeriod}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="annual">Annual</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="hourly">Hourly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Vacation Days</Label>
+                        <Input
+                          type="number"
+                          value={offerVacationDays}
+                          onChange={(e) => setOfferVacationDays(e.target.value)}
+                          placeholder="e.g., 20"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Work Location</Label>
+                      <Input
+                        value={offerWorkLocation}
+                        onChange={(e) => setOfferWorkLocation(e.target.value)}
+                        placeholder="e.g., San Francisco, CA or Remote"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Work Arrangement</Label>
+                      <Select
+                        value={offerWorkArrangement}
+                        onValueChange={(v: "on-site" | "remote" | "hybrid") => setOfferWorkArrangement(v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="remote">Remote</SelectItem>
+                          <SelectItem value="on-site">On-Site</SelectItem>
+                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Benefits (comma-separated)</Label>
+                      <Input
+                        value={offerBenefits}
+                        onChange={(e) => setOfferBenefits(e.target.value)}
+                        placeholder="Health Insurance, 401k, etc."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Offer Expiry (days)</Label>
+                      <Input
+                        type="number"
+                        value={offerExpiryDays}
+                        onChange={(e) => setOfferExpiryDays(e.target.value)}
+                        placeholder="7"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Default Custom Message</Label>
+                      <Textarea
+                        value={offerCustomMessage}
+                        onChange={(e) => setOfferCustomMessage(e.target.value)}
+                        placeholder="Optional message to include in offers"
+                        rows={3}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

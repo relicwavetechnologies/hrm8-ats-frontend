@@ -80,6 +80,34 @@ class JobRoundService {
   async updateEmailConfig(jobId: string, roundId: string, config: { enabled: boolean; templateId?: string }) {
     return apiClient.put<{ round: JobRound }>(`/api/jobs/${jobId}/rounds/${roundId}/email-config`, config);
   }
+
+  /**
+   * Get offer configuration for a round (OFFER round only)
+   */
+  async getOfferConfig(jobId: string, roundId: string) {
+    return apiClient.get<OfferConfig>(`/api/jobs/${jobId}/rounds/${roundId}/offer-config`);
+  }
+
+  /**
+   * Update offer configuration for a round (OFFER round only)
+   */
+  async updateOfferConfig(jobId: string, roundId: string, config: OfferConfig) {
+    return apiClient.put<OfferConfig>(`/api/jobs/${jobId}/rounds/${roundId}/offer-config`, config);
+  }
+}
+
+export interface OfferConfig {
+  autoSend?: boolean;
+  defaultTemplateId?: string;
+  defaultSalary?: string;
+  defaultSalaryCurrency?: string;
+  defaultSalaryPeriod?: string;
+  defaultWorkLocation?: string;
+  defaultWorkArrangement?: string;
+  defaultBenefits?: string;
+  defaultVacationDays?: string;
+  defaultExpiryDays?: string;
+  defaultCustomMessage?: string;
 }
 
 export const jobRoundService = new JobRoundService();
