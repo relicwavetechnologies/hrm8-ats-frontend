@@ -28,7 +28,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/shared/components/ui/dialog';
-import { RoundEmailConfigDrawer } from '@/modules/applications/components/RoundEmailConfigDrawer';
+import { RoundConfigDrawer } from '@/modules/applications/components/RoundConfigDrawer';
 
 const FIXED_ROUNDS_PREREQ = [
   { key: 'NEW', name: 'New', description: 'New applications land here. You move them manually to the next round.', color: 'bg-blue-50 dark:bg-blue-950/30' },
@@ -380,7 +380,7 @@ export function SetupRoundsCard({
         </Button>
       </div>
 
-      <RoundEmailConfigDrawer
+      <RoundConfigDrawer
         open={configDrawerOpen}
         onOpenChange={(open) => {
           setConfigDrawerOpen(open);
