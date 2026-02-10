@@ -51,14 +51,61 @@ class SettlementService {
     if (filters?.periodEnd) queryParams.append('periodEnd', filters.periodEnd);
 
     const query = queryParams.toString();
-    return apiClient.get<{ settlements: Settlement[] }>(`/api/hrm8/finance/settlements${query ? `?${query}` : ''}`);
+    const response = await apiClient.get<{ settlements: any[] }>(`/api/hrm8/finance/settlements${query ? `?${query}` : ''}`);
+    if (response.success && response.data?.settlements) {
+      response.data.settlements = response.data.settlements.map((s: any) => ({
+        id: s.id,
+        licenseeId: s.licensee_id,
+        licenseeName: s.licensee?.name,
+        periodStart: s.period_start,
+        periodEnd: s.period_end,
+        totalRevenue: s.total_revenue,
+        licenseeShare: s.licensee_share,
+        hrm8Share: s.hrm8_share,
+        status: s.status,
+        paymentDate: s.paid_at,
+        reference: s.payment_reference,
+        generatedAt: s.created_at,
+        licensee: s.licensee ? {
+          id: s.licensee.id,
+          name: s.licensee.name,
+          email: s.licensee.email,
+          revenueSharePercentage: s.licensee.revenue_share_percentage,
+        } : undefined,
+      }));
+    }
+    return response as any;
   }
 
   /**
    * Get settlement by ID
    */
   async getById(id: string) {
-    return apiClient.get<{ settlement: Settlement }>(`/api/hrm8/finance/settlements/${id}`);
+    const response = await apiClient.get<{ settlement: any }>(`/api/hrm8/finance/settlements/${id}`);
+    if (response.success && response.data?.settlement) {
+      const s = response.data.settlement;
+      response.data.settlement = {
+        id: s.id,
+        licenseeId: s.licensee_id,
+        licenseeName: s.licensee?.name,
+        periodStart: s.period_start,
+        periodEnd: s.period_end,
+        totalRevenue: s.total_revenue,
+        licenseeShare: s.licensee_share,
+        hrm8Share: s.hrm8_share,
+        status: s.status,
+        paymentDate: s.paid_at,
+        reference: s.payment_reference,
+        generatedAt: s.created_at,
+        licensee: s.licensee ? {
+          id: s.licensee.id,
+          name: s.licensee.name,
+          email: s.licensee.email,
+          revenueSharePercentage: s.licensee.revenue_share_percentage,
+        } : undefined,
+      };
+    }
+    return response as any;
   }
 
   /**
@@ -69,7 +116,31 @@ class SettlementService {
     periodStart: string;
     periodEnd: string;
   }) {
-    return apiClient.post<{ settlement: Settlement }>('/api/hrm8/finance/settlements/calculate', data);
+    const response = await apiClient.post<{ settlement: any }>('/api/hrm8/finance/settlements/calculate', data);
+    if (response.success && response.data?.settlement) {
+      const s = response.data.settlement;
+      response.data.settlement = {
+        id: s.id,
+        licenseeId: s.licensee_id,
+        licenseeName: s.licensee?.name,
+        periodStart: s.period_start,
+        periodEnd: s.period_end,
+        totalRevenue: s.total_revenue,
+        licenseeShare: s.licensee_share,
+        hrm8Share: s.hrm8_share,
+        status: s.status,
+        paymentDate: s.paid_at,
+        reference: s.payment_reference,
+        generatedAt: s.created_at,
+        licensee: s.licensee ? {
+          id: s.licensee.id,
+          name: s.licensee.name,
+          email: s.licensee.email,
+          revenueSharePercentage: s.licensee.revenue_share_percentage,
+        } : undefined,
+      };
+    }
+    return response as any;
   }
 
   /**
@@ -79,7 +150,31 @@ class SettlementService {
     paymentDate: string;
     reference: string;
   }) {
-    return apiClient.put<{ settlement: Settlement }>(`/api/hrm8/finance/settlements/${id}/pay`, data);
+    const response = await apiClient.put<{ settlement: any }>(`/api/hrm8/finance/settlements/${id}/pay`, data);
+    if (response.success && response.data?.settlement) {
+      const s = response.data.settlement;
+      response.data.settlement = {
+        id: s.id,
+        licenseeId: s.licensee_id,
+        licenseeName: s.licensee?.name,
+        periodStart: s.period_start,
+        periodEnd: s.period_end,
+        totalRevenue: s.total_revenue,
+        licenseeShare: s.licensee_share,
+        hrm8Share: s.hrm8_share,
+        status: s.status,
+        paymentDate: s.paid_at,
+        reference: s.payment_reference,
+        generatedAt: s.created_at,
+        licensee: s.licensee ? {
+          id: s.licensee.id,
+          name: s.licensee.name,
+          email: s.licensee.email,
+          revenueSharePercentage: s.licensee.revenue_share_percentage,
+        } : undefined,
+      };
+    }
+    return response as any;
   }
 
   /**
@@ -90,7 +185,18 @@ class SettlementService {
     if (licenseeId) queryParams.append('licenseeId', licenseeId);
 
     const query = queryParams.toString();
-    return apiClient.get<{ stats: SettlementStats }>(`/api/hrm8/finance/settlements/stats${query ? `?${query}` : ''}`);
+    const response = await apiClient.get<{ stats: any }>(`/api/hrm8/finance/settlements/stats${query ? `?${query}` : ''}`);
+    if (response.success && response.data?.stats) {
+      const s = response.data.stats;
+      response.data.stats = {
+        totalPending: s.total_pending ?? s.totalPending,
+        totalPaid: s.total_paid ?? s.totalPaid,
+        pendingCount: s.pending_count ?? s.pendingCount,
+        paidCount: s.paid_count ?? s.paidCount,
+        currentPeriodRevenue: s.current_period_revenue ?? s.currentPeriodRevenue,
+      };
+    }
+    return response as any;
   }
 }
 

@@ -44,10 +44,12 @@ export interface VideoInterview {
 
 export interface CreateVideoInterviewRequest {
   applicationId: string;
+  jobRoundId: string;
   scheduledDate: string; // ISO string
   duration: number;
-  type: 'VIDEO' | 'PHONE' | 'IN_PERSON';
-  interviewerIds: string[];
+  type: 'VIDEO' | 'PHONE' | 'IN_PERSON' | 'PANEL';
+  meetingLink?: string;
+  interviewerIds?: string[];
   notes?: string;
 }
 
@@ -75,7 +77,7 @@ class VideoInterviewService {
 
     const queryString = queryParams.toString();
     const endpoint = `/api/video-interviews${queryString ? `?${queryString}` : ''}`;
-    
+
     return apiClient.get<{ interviews: VideoInterview[] }>(endpoint);
   }
 
