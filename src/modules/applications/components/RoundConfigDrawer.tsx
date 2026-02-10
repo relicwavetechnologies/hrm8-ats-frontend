@@ -143,6 +143,8 @@ export function RoundConfigDrawer({
   const isInterview = round?.type === "INTERVIEW";
   const isAssessment = round?.type === "ASSESSMENT";
   const isCustomRound = round && !round.isFixed;
+  /** Assessment tab only for custom assessment rounds (with tests); not for fixed NEW/OFFER/HIRED/REJECTED */
+  const isCustomAssessment = isAssessment && isCustomRound;
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -193,6 +195,22 @@ export function RoundConfigDrawer({
     if (roundType === "ASSESSMENT") return "ASSESSMENT";
     if (roundType === "INTERVIEW") return "INTERVIEW";
     return undefined;
+  };
+
+  const getRoundConfigDescription = () => {
+    if (!round) return "Role, interview, assessment, and email settings";
+    if (round.isFixed && round.fixedKey) {
+      const m: Record<string, string> = {
+        NEW: "New applications land here. Configure who can manage them and automated emails.",
+        OFFER: "Ready to extend an offer. Configure permissions and automated emails.",
+        HIRED: "Final stage. Configure permissions and automated emails.",
+        REJECTED: "Rejected candidates. Configure permissions and automated emails.",
+      };
+      return m[round.fixedKey] ?? "Configure role, permissions, and automated emails.";
+    }
+    if (isInterview) return "Assign interviewers by role, set approval rules, and configure automated emails.";
+    if (isCustomAssessment) return "Set up assessment tests, auto-move rules, and automated emails.";
+    return "Role, permissions, and automated email settings";
   };
 
   const formatTemplateTypeLabel = (type: string | undefined) => {
@@ -339,7 +357,11 @@ export function RoundConfigDrawer({
       await jobRoundService.updateRound(jobId, round.id, {
         assignedRoleId: assignedRoleId || null,
         syncPermissions,
-        autoMoveOnPass: isInterview || isAssessment ? undefined : autoMoveOnPass,
+        autoMoveOnPass: round.isFixed
+          ? autoMoveOnPass
+          : isInterview || isCustomAssessment
+            ? undefined
+            : autoMoveOnPass,
         ...(isInterview && { requireAllInterviewers }),
       });
 
@@ -359,7 +381,7 @@ export function RoundConfigDrawer({
         await interviewService.configureInterview(jobId, round.id, interviewPayload);
       }
 
-      if (isAssessment) {
+      if (isCustomAssessment) {
         const assessmentPayload: CreateAssessmentRequest = {
           enabled: assessmentEnabled,
           autoAssign,
@@ -376,8 +398,8 @@ export function RoundConfigDrawer({
         await assessmentService.configureAssessment(jobId, round.id, assessmentPayload);
       }
 
-      if (!isInterview && !isAssessment && isCustomRound) {
-        await jobRoundService.updateRound(jobId, round.id, { autoMoveOnPass: isAssessment ? assessmentAutoMoveOnPass : autoMoveOnPass });
+      if (!isInterview && !isCustomAssessment && isCustomRound) {
+        await jobRoundService.updateRound(jobId, round.id, { autoMoveOnPass });
       }
 
       await jobRoundService.updateEmailConfig(jobId, round.id, { enabled, templateId: selectedTemplateId });
@@ -395,32 +417,7 @@ export function RoundConfigDrawer({
 
   if (!round) return null;
 
-  const tabList = (
-    <TabsList className="grid w-full grid-cols-4" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-      <TabsTrigger value="general" className="gap-1.5 text-xs">
-        <Settings2 className="h-3.5 w-3.5" />
-        General
-      </TabsTrigger>
-      {isInterview && (
-        <TabsTrigger value="interview" className="gap-1.5 text-xs">
-          <Video className="h-3.5 w-3.5" />
-          Interview
-        </TabsTrigger>
-      )}
-      {isAssessment && (
-        <TabsTrigger value="assessment" className="gap-1.5 text-xs">
-          <FileCheck className="h-3.5 w-3.5" />
-          Assessment
-        </TabsTrigger>
-      )}
-      <TabsTrigger value="email" className="gap-1.5 text-xs">
-        <Mail className="h-3.5 w-3.5" />
-        Email
-      </TabsTrigger>
-    </TabsList>
-  );
-
-  const visibleTabs = ["general", ...(isInterview ? ["interview"] : []), ...(isAssessment ? ["assessment"] : []), "email"];
+  const visibleTabs = ["general", ...(isInterview ? ["interview"] : []), ...(isCustomAssessment ? ["assessment"] : []), "email"];
   const defaultTab = visibleTabs.includes(activeTab) ? activeTab : "general";
 
   return (
@@ -429,7 +426,7 @@ export function RoundConfigDrawer({
         open={open}
         onOpenChange={onOpenChange}
         title={`Configure: ${round.name}`}
-        description="Role, interview, assessment, and email settings"
+        description={getRoundConfigDescription()}
         width="2xl"
       >
         {loading ? (
@@ -450,7 +447,7 @@ export function RoundConfigDrawer({
                   Interview
                 </TabsTrigger>
               )}
-              {isAssessment && (
+              {isCustomAssessment && (
                 <TabsTrigger value="assessment" className="gap-1.5 text-xs">
                   <FileCheck className="h-3.5 w-3.5" />
                   Assessment
@@ -463,13 +460,17 @@ export function RoundConfigDrawer({
             </TabsList>
 
             <TabsContent value="general" className="space-y-4 mt-4">
-              {effectiveRoles.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Role & permissions</CardTitle>
-                    <CardDescription>Assign a role and who can move candidates in this round</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Role & permissions</CardTitle>
+                  <CardDescription>
+                    {effectiveRoles.length > 0
+                      ? "Assign a role and who can move candidates in this round"
+                      : "Control who can move and manage candidates in this round"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {effectiveRoles.length > 0 && (
                     <div className="space-y-2">
                       <Label>Assign role (optional)</Label>
                       <Select value={assignedRoleId || "_none_"} onValueChange={(v) => setAssignedRoleId(v === "_none_" ? "" : v)}>
@@ -485,55 +486,69 @@ export function RoundConfigDrawer({
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground">
+                        For interview rounds: members with this role are auto-assigned as interviewers.
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-2">
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="sync-permissions"
+                      checked={syncPermissions}
+                      onCheckedChange={(c) => setSyncPermissions(c === true)}
+                    />
+                    <Label htmlFor="sync-permissions" className="text-sm font-normal cursor-pointer">
+                      All hiring team roles can move and manage candidates in this round
+                    </Label>
+                  </div>
+                  {isInterview && assignedRoleId && (
+                    <div className="flex items-center space-x-2 pt-2 border-t">
                       <Checkbox
-                        id="sync-permissions"
-                        checked={syncPermissions}
-                        onCheckedChange={(c) => setSyncPermissions(c === true)}
+                        id="require-all"
+                        checked={requireAllInterviewers}
+                        onCheckedChange={(c) => setRequireAllInterviewers(c === true)}
                       />
-                      <Label htmlFor="sync-permissions" className="text-sm font-normal cursor-pointer">
-                        All hiring team roles can move / manage in this round
-                      </Label>
-                    </div>
-                    {isInterview && assignedRoleId && (
-                      <div className="flex items-center space-x-2 pt-2 border-t">
-                        <Checkbox
-                          id="require-all"
-                          checked={requireAllInterviewers}
-                          onCheckedChange={(c) => setRequireAllInterviewers(c === true)}
-                        />
+                      <div>
                         <Label htmlFor="require-all" className="text-sm font-normal cursor-pointer">
-                          Require approval from all assigned interviewers before candidate can progress
+                          Require all assigned interviewers to approve before the candidate can move to the next round
                         </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          When on: the candidate cannot move (auto or manual) until everyone assigned from the role has submitted their feedback.
+                        </p>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-              {isCustomRound && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Stage progression</CardTitle>
-                    <CardDescription>Auto-move candidate to next round when they pass</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="auto-move"
-                        checked={isAssessment ? assessmentAutoMoveOnPass : autoMoveOnPass}
-                        onCheckedChange={(v) => {
-                          if (isAssessment) setAssessmentAutoMoveOnPass(v);
-                          else setAutoMoveOnPass(v);
-                        }}
-                      />
-                      <Label htmlFor="auto-move" className="text-sm font-normal cursor-pointer">
-                        Auto-move on pass
-                      </Label>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Stage progression</CardTitle>
+                  <CardDescription>
+                    {round.isFixed
+                      ? "Automatically move the candidate to the next round when they pass this stage"
+                      : isInterview
+                        ? "Automatically move the candidate to the next round when they pass the interview"
+                        : isCustomAssessment
+                          ? "Automatically move the candidate to the next round when their assessment score meets the pass threshold"
+                          : "Automatically move the candidate to the next round when they pass"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="auto-move"
+                      checked={isCustomAssessment ? assessmentAutoMoveOnPass : autoMoveOnPass}
+                      onCheckedChange={(v) => {
+                        if (isCustomAssessment) setAssessmentAutoMoveOnPass(v);
+                        else setAutoMoveOnPass(v);
+                      }}
+                    />
+                    <Label htmlFor="auto-move" className="text-sm font-normal cursor-pointer">
+                      Auto-move on pass
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {isInterview && (
@@ -790,7 +805,9 @@ export function RoundConfigDrawer({
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Automated email</CardTitle>
-                  <CardDescription>Send an email when a candidate enters this stage</CardDescription>
+                  <CardDescription>
+                    Send an email automatically when a candidate enters this stage (e.g., new application received, moved to interview, etc.)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between rounded-lg border p-4">
