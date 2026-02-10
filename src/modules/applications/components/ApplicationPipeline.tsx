@@ -15,10 +15,8 @@ import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-ass
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { ChevronDown, Plus, Trash2, GripVertical, Settings, CalendarClock, FileSearch, Send, Star, Users, Play, Mail } from "lucide-react";
 import { CreateRoundDialog } from "./CreateRoundDialog";
-import { RoundEmailConfigDrawer } from "./RoundEmailConfigDrawer";
-import { AssessmentConfigurationDrawer } from "./AssessmentConfigurationDrawer";
+import { RoundConfigDrawer, RoundConfigTab } from "./RoundConfigDrawer";
 import { AssessmentReviewDrawer } from "./AssessmentReviewDrawer";
-import { InterviewConfigurationDrawer } from "./InterviewConfigurationDrawer";
 import { InterviewScheduleDrawer } from "./InterviewScheduleDrawer";
 import { RoundInterviewsDrawer } from "./RoundInterviewsDrawer";
 import { InitialScreeningDrawer } from "./InitialScreeningDrawer";
@@ -441,9 +439,9 @@ export function ApplicationPipeline({
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [createRoundDialogOpen, setCreateRoundDialogOpen] = useState(false);
-  const [assessmentConfigDrawerOpen, setAssessmentConfigDrawerOpen] = useState(false);
-  const [interviewConfigDrawerOpen, setInterviewConfigDrawerOpen] = useState(false);
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [selectedRoundForConfig, setSelectedRoundForConfig] = useState<JobRound | null>(null);
+  const [initialConfigTab, setInitialConfigTab] = useState<RoundConfigTab>("general");
   const [selectedRoundForInterviews, setSelectedRoundForInterviews] = useState<JobRound | null>(null);
   const [interviewScheduleDrawerOpen, setInterviewScheduleDrawerOpen] = useState(false);
   const [selectedApplicationForInterviews, setSelectedApplicationForInterviews] = useState<Application | null>(null);
@@ -454,8 +452,6 @@ export function ApplicationPipeline({
   const [selectedRoundForOffer, setSelectedRoundForOffer] = useState<JobRound | null>(null);
   const [assessmentReviewDrawerOpen, setAssessmentReviewDrawerOpen] = useState(false);
   const [selectedRoundForReview, setSelectedRoundForReview] = useState<JobRound | null>(null);
-  const [roundEmailConfigDrawerOpen, setRoundEmailConfigDrawerOpen] = useState(false);
-  const [selectedRoundForEmailConfig, setSelectedRoundForEmailConfig] = useState<JobRound | null>(null);
   const [jobData, setJobData] = useState<any>(null);
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
@@ -1237,7 +1233,8 @@ export function ApplicationPipeline({
     const round = rounds.find(r => r.id === roundId);
     if (round) {
       setSelectedRoundForConfig(round);
-      setAssessmentConfigDrawerOpen(true);
+      setInitialConfigTab("assessment");
+      setConfigDrawerOpen(true);
     }
   };
 
@@ -1250,7 +1247,8 @@ export function ApplicationPipeline({
     const round = rounds.find(r => r.id === roundId);
     if (round) {
       setSelectedRoundForConfig(round);
-      setInterviewConfigDrawerOpen(true);
+      setInitialConfigTab("interview");
+      setConfigDrawerOpen(true);
     }
   };
 
@@ -1362,8 +1360,9 @@ export function ApplicationPipeline({
   };
 
   const handleConfigureEmail = (round: JobRound) => {
-    setSelectedRoundForEmailConfig(round);
-    setRoundEmailConfigDrawerOpen(true);
+    setSelectedRoundForConfig(round);
+    setInitialConfigTab("email");
+    setConfigDrawerOpen(true);
   };
 
   const selectedIds = enableMultiSelect ? (selectedApplicationIds || []) : selectedForComparison;
@@ -1526,14 +1525,17 @@ export function ApplicationPipeline({
 
       {jobId && (
         <>
-          <RoundEmailConfigDrawer
-            open={roundEmailConfigDrawerOpen}
-            onOpenChange={setRoundEmailConfigDrawerOpen}
-            jobId={jobId || ''}
-            round={selectedRoundForEmailConfig}
-            onSuccess={() => {
-              // Maybe refresh something or toast
+          <RoundConfigDrawer
+            open={configDrawerOpen}
+            onOpenChange={(open) => {
+              setConfigDrawerOpen(open);
+              if (!open) setSelectedRoundForConfig(null);
             }}
+            jobId={jobId || ''}
+            round={selectedRoundForConfig}
+            jobTitle={jobTitle}
+            initialTab={initialConfigTab}
+            onSuccess={loadRounds}
           />
 
           <CreateRoundDialog
@@ -1541,31 +1543,6 @@ export function ApplicationPipeline({
             onOpenChange={setCreateRoundDialogOpen}
             onSuccess={handleRoundCreated}
             jobId={jobId}
-          />
-        </>
-      )}
-
-      {jobId && selectedRoundForConfig && (
-        <>
-          <AssessmentConfigurationDrawer
-            open={assessmentConfigDrawerOpen}
-            onOpenChange={setAssessmentConfigDrawerOpen}
-            jobId={jobId}
-            roundId={selectedRoundForConfig.id}
-            roundName={selectedRoundForConfig.name}
-            onSuccess={() => {
-              loadRounds();
-            }}
-          />
-          <InterviewConfigurationDrawer
-            open={interviewConfigDrawerOpen}
-            onOpenChange={setInterviewConfigDrawerOpen}
-            jobId={jobId}
-            roundId={selectedRoundForConfig.id}
-            roundName={selectedRoundForConfig.name}
-            onSuccess={() => {
-              loadRounds();
-            }}
           />
         </>
       )}
@@ -1596,7 +1573,8 @@ export function ApplicationPipeline({
           jobTitle={jobTitle}
           onConfigureRound={() => {
             setSelectedRoundForConfig(selectedRoundForInterviews);
-            setInterviewConfigDrawerOpen(true);
+            setInitialConfigTab("interview");
+            setConfigDrawerOpen(true);
           }}
         />
       )}

@@ -82,9 +82,7 @@ import { useAuth } from "@/app/providers/AuthContext";
 import { HiringTeamTab } from "@/modules/jobs/components/team/HiringTeamTab";
 import { JobRound, jobRoundService } from "@/shared/lib/jobRoundService";
 import { RoundDetailView } from "@/modules/applications/components/RoundDetailView";
-import { AssessmentConfigurationDrawer } from "@/modules/applications/components/AssessmentConfigurationDrawer";
-import { InterviewConfigurationDrawer } from "@/modules/applications/components/InterviewConfigurationDrawer";
-import { RoundEmailConfigDrawer } from "@/modules/applications/components/RoundEmailConfigDrawer";
+import { RoundConfigDrawer, RoundConfigTab } from "@/modules/applications/components/RoundConfigDrawer";
 import { JobMessagesTab } from "@/modules/jobs/components/JobMessagesTab";
 import { MessageSquarePlus } from "lucide-react";
 
@@ -107,33 +105,34 @@ export default function JobDetail() {
   const [allApplications, setAllApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
-  const [assessmentConfigDrawerOpen, setAssessmentConfigDrawerOpen] = useState(false);
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [selectedRoundForConfig, setSelectedRoundForConfig] = useState<JobRound | null>(null);
+  const [initialConfigTab, setInitialConfigTab] = useState<RoundConfigTab>("general");
 
   const handleConfigureAssessment = (roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
       setSelectedRoundForConfig(round);
-      setAssessmentConfigDrawerOpen(true);
+      setInitialConfigTab("assessment");
+      setConfigDrawerOpen(true);
     }
   };
-
-  const [interviewConfigDrawerOpen, setInterviewConfigDrawerOpen] = useState(false);
 
   const handleConfigureInterview = (roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
       setSelectedRoundForConfig(round);
-      setInterviewConfigDrawerOpen(true);
+      setInitialConfigTab("interview");
+      setConfigDrawerOpen(true);
     }
   };
 
-  const [roundEmailConfigDrawerOpen, setRoundEmailConfigDrawerOpen] = useState(false);
   const handleConfigureEmail = (roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
       setSelectedRoundForConfig(round);
-      setRoundEmailConfigDrawerOpen(true);
+      setInitialConfigTab("email");
+      setConfigDrawerOpen(true);
     }
   };
 
@@ -1409,30 +1408,19 @@ export default function JobDetail() {
         </div>
       </Tabs>
 
-      {/* Assessment Configuration Drawer */}
-      {selectedRoundForConfig && (
-        <AssessmentConfigurationDrawer
-          open={assessmentConfigDrawerOpen}
-          onOpenChange={setAssessmentConfigDrawerOpen}
-          jobId={jobId || ''}
-          roundId={selectedRoundForConfig.id}
-          roundName={selectedRoundForConfig.name}
-          onSuccess={() => {
-            // Refresh if needed, e.g. if config changes affect something visible immediately
-            // Often config is backend only, so no refresh needed unless we show status
-          }}
-        />
-      )}
-
-      {selectedRoundForConfig && (
-        <InterviewConfigurationDrawer
-          open={interviewConfigDrawerOpen}
-          onOpenChange={setInterviewConfigDrawerOpen}
-          jobId={jobId || ''}
-          roundId={selectedRoundForConfig.id}
-          roundName={selectedRoundForConfig.name}
-        />
-      )}
+      {/* Round Configuration Drawer (unified) */}
+      <RoundConfigDrawer
+        open={configDrawerOpen}
+        onOpenChange={(open) => {
+          setConfigDrawerOpen(open);
+          if (!open) setSelectedRoundForConfig(null);
+        }}
+        jobId={jobId || ''}
+        round={selectedRoundForConfig}
+        jobTitle={job?.title}
+        initialTab={initialConfigTab}
+        onSuccess={handleJobUpdate}
+      />
 
       {/* Job Edit Drawer */}
       {jobId && (
@@ -1535,21 +1523,6 @@ export default function JobDetail() {
           jobId={job.id}
         />
       )}
-
-      {/* Round Email Configuration Drawer */}
-      {selectedRoundForConfig && (
-        <RoundEmailConfigDrawer
-          open={roundEmailConfigDrawerOpen}
-          onOpenChange={setRoundEmailConfigDrawerOpen}
-          jobId={jobId || ''}
-          round={selectedRoundForConfig}
-          onSuccess={() => {
-            // Refresh job details if needed
-            handleJobUpdate();
-          }}
-        />
-      )}
-
 
     </DashboardPageLayout>
   );

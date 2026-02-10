@@ -27,7 +27,6 @@ import {
     ChatTagsCard,
     ChatApplicationConfigCard,
     ChatScreeningQuestionsCard,
-    ChatHiringTeamCard,
     ChatLogisticsCard,
     ChatReviewCard,
     ChatPlaceholderCard,
@@ -110,19 +109,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 const job = (response.data as { job?: { id: string }; id?: string }).job ?? response.data;
                 const newJobId = (job as { id?: string }).id ?? (response.data as { id?: string }).id;
 
-                // Handle Hiring Team Invites if any (role + optional roles[] for per-job roles)
-                if (jobData.hiringTeam && jobData.hiringTeam.length > 0) {
-                    await Promise.all(jobData.hiringTeam.map(member =>
-                        import('@/shared/lib/jobService').then(m => m.jobService.inviteTeamMember(newJobId, {
-                            email: member.email,
-                            name: member.name,
-                            role: member.role,
-                            ...(member.roles?.length ? { roles: member.roles } : {}),
-                        }))
-                    ));
-                }
-
-                // Open Post-Job Setup drawer (production-grade flow)
+                // Open Post-Job Setup drawer (hiring team is configured there)
                 setCreatedJobId(newJobId);
                 setCreatedJobTitle(jobData.title || undefined);
                 setSetupDrawerOpen(true);
@@ -322,14 +309,6 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                                 }))
                             }
                         })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'hiring-team':
-                return (
-                    <ChatHiringTeamCard
-                        teamMembers={jobData.hiringTeam || []}
-                        onChange={(members) => setJobData({ hiringTeam: members })}
                         onContinue={nextStep}
                     />
                 );

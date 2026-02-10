@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { FileText, List, Users, Calendar, Check, CreditCard, ArrowRight, Settings, HelpCircle } from 'lucide-react';
+import { FileText, List, Calendar, Check, CreditCard, ArrowRight, Settings, HelpCircle } from 'lucide-react';
 
 interface ChatPlaceholderCardProps {
     stepId: string;
@@ -17,7 +17,6 @@ const stepIcons: Record<string, React.ElementType> = {
     'responsibilities': List,
     'application-config': Settings,
     'screening-questions': HelpCircle,
-    'hiring-team': Users,
     'logistics': Calendar,
     'review': Check,
     'payment': CreditCard,
@@ -29,7 +28,6 @@ const stepDescriptions: Record<string, string> = {
     'responsibilities': 'Outline the main responsibilities of this position.',
     'application-config': 'Configure what information candidates should provide.',
     'screening-questions': 'Add custom screening questions for candidates.',
-    'hiring-team': 'Add team members who will be involved in hiring.',
     'logistics': 'Set the application deadline and visibility settings.',
     'review': 'Review all the details before publishing your job post.',
     'payment': 'Complete payment to publish your job listing.',
@@ -41,7 +39,6 @@ const stepTitles: Record<string, string> = {
     'responsibilities': 'Responsibilities',
     'application-config': 'Application Settings',
     'screening-questions': 'Screening Questions',
-    'hiring-team': 'Hiring Team',
     'logistics': 'Close Date & Visibility',
     'review': 'Review & Submit',
     'payment': 'Payment',

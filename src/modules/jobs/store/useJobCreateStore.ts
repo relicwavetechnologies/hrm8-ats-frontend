@@ -4,21 +4,20 @@ import { JobFormData } from '@/shared/types/job';
 
 // Define the steps in order
 export const WIZARD_STEPS = [
-  'document-upload', // NEW: First step - upload JD for smart parsing
+  'document-upload', // First step - upload JD for smart parsing
   'service-type',
-  'basic-details', // Title + Department
-  'location',      // Location + Work Arrangement
-  'role-details',  // Employment Type + Experience
+  'basic-details',   // Title + Department
+  'location',       // Location + Work Arrangement
+  'role-details',   // Employment Type + Experience
   'vacancies',
   'compensation',
   'description',
   'requirements',
   'responsibilities',
-  'tags', // NEW: Tags step
+  'tags',
   'application-config',
   'screening-questions',
-  'hiring-team',
-  'logistics',     // Close Date + Visibility
+  'logistics',      // Close Date + Visibility
   'review',
   'payment'
 ] as const;

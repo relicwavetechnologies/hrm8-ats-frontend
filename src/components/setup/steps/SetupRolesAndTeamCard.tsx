@@ -12,7 +12,8 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Mail, ArrowRight, Loader2, AlertCircle, RefreshCw, UserPlus, Users, Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { JobRole, HiringTeamMember } from '@/shared/types/job';
 import { jobService } from '@/shared/lib/jobService';
-import { getEmployees } from '@/modules/employees/apiService';
+import { getEmployees as getEmployeesFromApi } from '@/modules/employees/apiService';
+import { getEmployees as getEmployeesFromStorage } from '@/shared/lib/employeeStorage';
 import { userService, CompanyUser } from '@/shared/lib/userService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { Checkbox } from '@/shared/components/ui/checkbox';
@@ -126,30 +127,33 @@ export function SetupRolesAndTeamCard({
         onRolesLoaded(rolesList);
       }
       try {
-        let users: CompanyUser[] = [];
+        const toCompanyUser = (e: { id: string; email: string; firstName?: string; lastName?: string; createdAt?: string }) => ({
+          id: e.id,
+          email: e.email,
+          name: `${(e.firstName || '').trim()} ${(e.lastName || '').trim()}`.trim() || e.email,
+          role: 'MEMBER',
+          status: 'active',
+          createdAt: e.createdAt || new Date().toISOString(),
+        });
+        const byEmail = new Map<string, CompanyUser>();
         try {
-          const employees = await getEmployees();
-          users = employees.map((e) => ({
-            id: e.id,
-            email: e.email,
-            name: `${(e.firstName || '').trim()} ${(e.lastName || '').trim()}`.trim() || e.email,
-            role: 'MEMBER',
-            status: 'active',
-            createdAt: e.createdAt || new Date().toISOString(),
-          }));
+          const apiEmployees = await getEmployeesFromApi();
+          apiEmployees.forEach((e) => byEmail.set(e.email.toLowerCase(), toCompanyUser(e)));
         } catch {
-          // Fallback: same endpoint under different client (e.g. different response shape)
-          const companyUsersList = await userService.getCompanyUsers();
-          users = companyUsersList.map((u) => ({
-            id: u.id,
-            email: u.email,
-            name: u.name || u.email,
-            role: u.role || 'MEMBER',
-            status: u.status || 'active',
-            createdAt: u.createdAt || new Date().toISOString(),
-          }));
+          try {
+            const companyUsersList = await userService.getCompanyUsers();
+            companyUsersList.forEach((u) => byEmail.set(u.email.toLowerCase(), { ...u, role: u.role || 'MEMBER', status: u.status || 'active' }));
+          } catch {
+            // continue
+          }
         }
-        setCompanyUsers(users);
+        const storageEmployees = getEmployeesFromStorage();
+        storageEmployees.forEach((e) => {
+          const key = (e.email || '').toLowerCase();
+          if (!key) return;
+          if (!byEmail.has(key)) byEmail.set(key, toCompanyUser({ id: e.id, email: e.email, firstName: e.firstName, lastName: e.lastName, createdAt: e.createdAt }));
+        });
+        setCompanyUsers(Array.from(byEmail.values()));
       } catch {
         setCompanyUsers([]);
       }

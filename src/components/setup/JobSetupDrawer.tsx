@@ -180,6 +180,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           onContinue={nextStep}
           onBack={prevStep}
           setupType={setupType ?? undefined}
+          jobTitle={jobTitle}
         />
       );
     }

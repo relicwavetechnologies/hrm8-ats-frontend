@@ -10,8 +10,11 @@ export interface JobRound {
   type: JobRoundType;
   isFixed: boolean;
   fixedKey?: string | null;
-  /** When set (Simple Flow), members with this job role are auto-assigned as round interviewers */
   assignedRoleId?: string | null;
+  /** When true, all hiring team roles can move/manage in this round */
+  syncPermissions?: boolean;
+  /** When true, automatically move candidate to next round on pass (fixed and custom rounds) */
+  autoMoveOnPass?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,8 +22,9 @@ export interface JobRound {
 export interface CreateJobRoundRequest {
   name: string;
   type: JobRoundType;
-  /** When set (Simple Flow), members with this job role are auto-assigned as round interviewers */
   assignedRoleId?: string;
+  syncPermissions?: boolean;
+  autoMoveOnPass?: boolean;
 }
 
 export interface UpdateJobRoundRequest {
@@ -28,6 +32,10 @@ export interface UpdateJobRoundRequest {
   type?: JobRoundType;
   order?: number;
   assignedRoleId?: string | null;
+  syncPermissions?: boolean;
+  autoMoveOnPass?: boolean;
+  /** For INTERVIEW rounds: require approval from all assigned interviewers before progression */
+  requireAllInterviewers?: boolean;
 }
 
 class JobRoundService {
