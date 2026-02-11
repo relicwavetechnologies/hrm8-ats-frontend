@@ -24,7 +24,6 @@ import { OfferConfigurationDrawer } from "./OfferConfigurationDrawer";
 import { OfferExecutionDrawer } from "./OfferExecutionDrawer";
 import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/jobRoundService";
 import { jobService } from "@/shared/lib/jobService";
-import { offerService } from "@/shared/lib/offerService";
 import { MoveStageDialog } from "./MoveStageDialog";
 
 interface ApplicationPipelineProps {
@@ -1038,26 +1037,8 @@ export function ApplicationPipeline({
           }
         }
 
-        // 3. Post-Move Logic (Reloads, Auto-Offer)
+        // 3. Post-Move Logic (Reloads) - offer auto-send is handled by backend
         await loadRounds();
-
-        // Check if moved to OFFER round and auto-send is enabled
-        const offerRound = rounds.find(r => r.isFixed && r.fixedKey === 'OFFER');
-        // using fixedKey to match targetRound might be safer if IDs differ
-        if (offerRound && targetRound.fixedKey === 'OFFER' && jobId) {
-          const configKey = `offer_config_${jobId}_${offerRound.id}`;
-          const savedConfig = localStorage.getItem(configKey);
-          if (savedConfig) {
-            try {
-              const config = JSON.parse(savedConfig);
-              if (config.autoSend) {
-                await autoSendOffer(application, config);
-              }
-            } catch (e) {
-              console.error('Failed to parse offer config:', e);
-            }
-          }
-        }
 
         if (providedApplications !== undefined) {
           toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
@@ -1087,64 +1068,6 @@ export function ApplicationPipeline({
     }
   };
 
-  const autoSendOffer = async (application: Application, config: any) => {
-    try {
-      console.log('Auto-sending offer for application:', application.id, 'with config:', config);
-
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + (parseInt(config.defaultExpiryDays) || 7));
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() + 30);
-
-      const offerData = {
-        applicationId: application.id,
-        offerType: "full-time",
-        salary: parseFloat(config.defaultSalary) || 0,
-        salaryCurrency: config.defaultSalaryCurrency || "USD",
-        salaryPeriod: config.defaultSalaryPeriod || "annual",
-        startDate: startDate.toISOString().split('T')[0],
-        workLocation: config.defaultWorkLocation || "",
-        workArrangement: config.defaultWorkArrangement || "remote",
-        benefits: config.defaultBenefits
-          ? (typeof config.defaultBenefits === 'string'
-            ? config.defaultBenefits.split(',').map((b: string) => b.trim())
-            : config.defaultBenefits)
-          : [],
-        vacationDays: config.defaultVacationDays ? parseInt(config.defaultVacationDays) : undefined,
-        customMessage: config.defaultCustomMessage,
-        expiryDate: expiryDate.toISOString().split('T')[0],
-        templateId: config.defaultTemplateId,
-      };
-
-      console.log('Creating offer with data:', offerData);
-      const createResponse = await offerService.createOffer(application.id, offerData);
-
-      if (createResponse.success && createResponse.data) {
-        console.log('Offer created successfully:', createResponse.data.id);
-        const sendResponse = await offerService.sendOffer(createResponse.data.id);
-        if (sendResponse.success) {
-          console.log('Offer sent successfully');
-          toast.success(`Offer auto-sent to ${application.candidateName}`);
-        } else {
-          console.error('Failed to send offer:', sendResponse.error);
-          toast.error(`Failed to send offer to ${application.candidateName}`, {
-            description: sendResponse.error || 'Please try manually'
-          });
-        }
-      } else {
-        console.error('Failed to create offer:', createResponse.error);
-        toast.error(`Failed to create offer for ${application.candidateName}`, {
-          description: createResponse.error || 'Please try manually'
-        });
-      }
-    } catch (error) {
-      console.error('Failed to auto-send offer:', error);
-      toast.error(`Failed to auto-send offer to ${application.candidateName}`, {
-        description: error instanceof Error ? error.message : 'Please try manually'
-      });
-    }
-  };
-
   const handleConfigureOffer = (roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
@@ -1159,20 +1082,6 @@ export function ApplicationPipeline({
       setSelectedRoundForOffer(round);
       setOfferExecutionDrawerOpen(true);
     }
-  };
-
-  const getOfferConfig = (roundId: string) => {
-    if (!jobId) return undefined;
-    const configKey = `offer_config_${jobId}_${roundId}`;
-    const saved = localStorage.getItem(configKey);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return undefined;
-      }
-    }
-    return undefined;
   };
 
   const handleApplicationClick = (application: Application) => {
@@ -1645,7 +1554,6 @@ export function ApplicationPipeline({
             roundId={selectedRoundForOffer.id}
             applications={getApplicationsForRound(selectedRoundForOffer)}
             jobTitle={jobTitle}
-            defaultConfig={getOfferConfig(selectedRoundForOffer.id)}
             onSuccess={() => {
               loadApplications();
             }}

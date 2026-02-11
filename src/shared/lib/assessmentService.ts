@@ -33,6 +33,9 @@ export interface AssessmentQuestion {
 
 export interface CreateAssessmentRequest {
   enabled: boolean;
+  evaluationMode?: "GRADING" | "VOTING";
+  votingRule?: "UNANIMOUS" | "MAJORITY" | "MIN_APPROVALS";
+  minApprovalsCount?: number;
   autoAssign?: boolean;
   deadlineDays?: number;
   timeLimitMinutes?: number;
@@ -64,6 +67,35 @@ class AssessmentService {
       `/api/jobs/${jobId}/rounds/${roundId}/assessment-config`,
       config
     );
+  }
+
+  /**
+   * Submit a vote (APPROVE/REJECT) for an assessment (voting mode)
+   */
+  async saveVote(assessmentId: string, vote: "APPROVE" | "REJECT", comment?: string) {
+    return apiClient.post<{ message: string }>(`/api/assessments/${assessmentId}/vote`, { vote, comment });
+  }
+
+  /**
+   * Generate assessment questions using AI
+   */
+  async generateQuestionsWithAI(params: {
+    jobTitle: string;
+    jobDescription?: string;
+    questionCount?: number;
+  }) {
+    const res = await apiClient.post<{ questions: AssessmentQuestion[] }>(
+      "/api/ai/assessment-questions/generate",
+      {
+        jobTitle: params.jobTitle,
+        jobDescription: params.jobDescription ?? undefined,
+        questionCount: params.questionCount ?? 5,
+      }
+    );
+    if (!res.success || !res.data?.questions) {
+      throw new Error(res.error || "Failed to generate questions");
+    }
+    return res.data.questions;
   }
 }
 
