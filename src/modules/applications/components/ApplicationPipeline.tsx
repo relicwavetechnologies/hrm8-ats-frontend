@@ -962,15 +962,20 @@ export function ApplicationPipeline({
       return;
     }
 
-    // 4. Open Confirmation Dialog
-    setPendingMoveApplication(application);
-    setPendingTargetRound(targetRound);
-    setIsMoveStageDialogOpen(true);
+    // 4. Open Confirmation Dialog or Execute Immediately
+    if (isSimpleFlow) {
+      // In Simple Flow, skip the dialog and execute immediately without comment
+      await executeMoveToRound("", application, targetRound);
+    } else {
+      setPendingMoveApplication(application);
+      setPendingTargetRound(targetRound);
+      setIsMoveStageDialogOpen(true);
+    }
   };
 
-  const executeMoveToRound = async (comment: string) => {
-    const application = pendingMoveApplication;
-    const targetRound = pendingTargetRound;
+  const executeMoveToRound = async (comment: string, appOverride?: Application, roundOverride?: JobRound) => {
+    const application = appOverride || pendingMoveApplication;
+    const targetRound = roundOverride || pendingTargetRound;
 
     if (!application || !targetRound) return;
 
@@ -1437,7 +1442,7 @@ export function ApplicationPipeline({
                   key={round.id}
                   round={round}
                   allRounds={rounds}
-                  applications={applications.filter((app) => app.roundId === round.id)}
+                  applications={getApplicationsForRound(round)}
                   onApplicationClick={handleApplicationClick}
                   isCompareMode={isCompareMode}
                   selectedForComparison={selectedForComparison}
@@ -1519,9 +1524,7 @@ export function ApplicationPipeline({
 
             if (currentRoundIndex !== -1 && currentRoundIndex < rounds.length - 1) {
               const nextRound = rounds[currentRoundIndex + 1];
-              setPendingMoveApplication(selectedApplication);
-              setPendingTargetRound(nextRound);
-              setIsMoveStageDialogOpen(true);
+              handleMoveToRound(selectedApplication.id, nextRound.id);
             } else {
               toast.error("No next stage available");
             }
