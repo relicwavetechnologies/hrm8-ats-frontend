@@ -72,6 +72,7 @@ function SortableRoundColumn({
   onExecuteOffer,
   onOpenAssessmentDrawer,
   onConfigureEmail,
+  isSimpleFlow,
 }: {
   round: JobRound;
   applications: Application[];
@@ -92,6 +93,7 @@ function SortableRoundColumn({
   onExecuteOffer?: (roundId: string) => void;
   onOpenAssessmentDrawer?: (round: JobRound) => void;
   onConfigureEmail?: (round: JobRound) => void;
+  isSimpleFlow?: boolean;
   dragHandleProps?: any;
 }) {
   const {
@@ -134,6 +136,7 @@ function SortableRoundColumn({
         onExecuteOffer={onExecuteOffer}
         onOpenAssessmentDrawer={onOpenAssessmentDrawer}
         onConfigureEmail={onConfigureEmail}
+        isSimpleFlow={isSimpleFlow}
         dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
       />
     </div>
@@ -161,6 +164,7 @@ function StageColumn({
   onConfigureOffer,
   onOpenAssessmentDrawer,
   onConfigureEmail,
+  isSimpleFlow,
   dragHandleProps,
 }: {
   round: JobRound;
@@ -182,6 +186,7 @@ function StageColumn({
   onExecuteOffer?: (roundId: string) => void;
   onOpenAssessmentDrawer?: (round: JobRound) => void;
   onConfigureEmail?: (round: JobRound) => void;
+  isSimpleFlow?: boolean;
   dragHandleProps?: any;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -236,7 +241,7 @@ function StageColumn({
               <Badge variant="outline" className="text-xs h-6 px-2 rounded-full">
                 {applications.length}
               </Badge>
-              {onConfigureEmail && (
+              {onConfigureEmail && !isSimpleFlow && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -268,7 +273,7 @@ function StageColumn({
                   )}
                 </>
               )}
-              {!round.isFixed && round.type === 'ASSESSMENT' && (
+              {!round.isFixed && round.type === 'ASSESSMENT' && !isSimpleFlow && (
                 <>
                   {onOpenAssessmentDrawer && (
                     <Button
@@ -302,7 +307,7 @@ function StageColumn({
               )}
               {!round.isFixed && round.type === 'INTERVIEW' && (
                 <>
-                  {onConfigureInterview && (
+                  {onConfigureInterview && !isSimpleFlow && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -334,7 +339,7 @@ function StageColumn({
               )}
               {round.isFixed && round.fixedKey === 'OFFER' && (
                 <>
-                  {onConfigureOffer && (
+                  {onConfigureOffer && !isSimpleFlow && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -1449,6 +1454,7 @@ export function ApplicationPipeline({
                   onExecuteOffer={handleExecuteOffer}
                   onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
                   onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
+                  isSimpleFlow={isSimpleFlow}
                 />
               ))}
             </SortableContext>
