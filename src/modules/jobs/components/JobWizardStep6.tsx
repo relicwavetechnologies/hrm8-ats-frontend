@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { JobFormData } from '@/shared/types/job';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TermsAndConditions } from './TermsAndConditions';
 import { calculateTotalJobCost } from '@/shared/lib/paymentService';
-import { Rocket, DollarSign, AlertCircle, Info, Megaphone, CheckCircle2 } from 'lucide-react';
+import { pricingService, type JobPriceCalculation } from '@/shared/lib/pricingService';
+import { Rocket, DollarSign, AlertCircle, Info, Megaphone, CheckCircle2, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { RECRUITMENT_SERVICES } from '@/shared/lib/subscriptionConfig';
@@ -15,19 +16,65 @@ interface JobWizardStep6Props {
   form: UseFormReturn<JobFormData>;
 }
 
+function mapServiceTypeToApi(serviceType: string): string {
+  const map: Record<string, string> = {
+    'shortlisting': 'SHORTLISTING',
+    'full-service': 'FULL',
+    'executive-search': 'EXECUTIVE_SEARCH',
+  };
+  return map[serviceType] || 'FULL';
+}
+
 export function JobWizardStep6({ form }: JobWizardStep6Props) {
   const formData = form.watch();
   const { user } = useAuth();
 
   const [termsAccepted, setTermsAccepted] = useState(formData.termsAccepted || false);
+  const [jobPriceCalc, setJobPriceCalc] = useState<JobPriceCalculation | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
 
   const isSelfManaged = formData.serviceType === 'self-managed' || formData.serviceType === 'rpo';
 
-  const costBreakdown = calculateTotalJobCost(
+  // Fetch recruitment price from pricing API when not self-managed
+  useEffect(() => {
+    if (isSelfManaged) {
+      setJobPriceCalc(null);
+      return;
+    }
+    const salaryMax = formData.salaryMax || formData.salaryMin || 50000;
+    if (!salaryMax || salaryMax <= 0) {
+      setJobPriceCalc(null);
+      return;
+    }
+    setPriceLoading(true);
+    pricingService
+      .calculateJobPrice(salaryMax, mapServiceTypeToApi(formData.serviceType))
+      .then((result) => {
+        setJobPriceCalc(result);
+      })
+      .catch(() => {
+        setJobPriceCalc(null);
+      })
+      .finally(() => {
+        setPriceLoading(false);
+      });
+  }, [formData.serviceType, formData.salaryMax, formData.salaryMin, isSelfManaged]);
+
+  const legacyCostBreakdown = calculateTotalJobCost(
     user?.companyId || '',
     formData.serviceType,
     { min: formData.salaryMin || 0, max: formData.salaryMax || 0 }
   );
+
+  // Use API price for recruitment cost when available, else fall back to legacy
+  const recruitmentCost = jobPriceCalc ? jobPriceCalc.price : legacyCostBreakdown.upfrontRecruitmentCost;
+  const recruitmentCurrency = jobPriceCalc?.currency || 'USD';
+  const costBreakdown = {
+    ...legacyCostBreakdown,
+    upfrontRecruitmentCost: recruitmentCost,
+    recruitmentServiceCost: recruitmentCost,
+    totalUpfront: legacyCostBreakdown.jobPostingCost + recruitmentCost,
+  };
 
   const serviceName = RECRUITMENT_SERVICES[formData.serviceType as keyof typeof RECRUITMENT_SERVICES]?.name || '';
 
@@ -101,11 +148,18 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
                 <div>
                   <p className="font-medium">Recruitment Service</p>
                   <p className="text-sm text-muted-foreground">
-                    {serviceName} - Full payment
+                    {serviceName}
+                    {jobPriceCalc?.isExecutiveSearch && jobPriceCalc?.band && (
+                      <> · Executive Search {jobPriceCalc.band}</>
+                    )}
                   </p>
                 </div>
                 <p className="text-lg font-semibold">
-                  ${costBreakdown.upfrontRecruitmentCost}
+                  {priceLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    pricingService.formatPrice(costBreakdown.upfrontRecruitmentCost, recruitmentCurrency)
+                  )}
                 </p>
               </div>
             )}
@@ -114,9 +168,14 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
             <div className="flex justify-between items-center pt-3">
               <p className="text-lg font-semibold">Total Due Now</p>
               <p className="text-2xl font-bold text-primary">
-                {costBreakdown.totalUpfront === 0 ? 'FREE' : `$${costBreakdown.totalUpfront}`}
+                {costBreakdown.totalUpfront === 0
+                  ? 'FREE'
+                  : priceLoading
+                    ? '...'
+                    : pricingService.formatPrice(costBreakdown.totalUpfront, recruitmentCurrency)}
               </p>
             </div>
+
 
           </CardContent>
         </Card>

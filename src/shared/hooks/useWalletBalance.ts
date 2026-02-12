@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/shared/lib/api';
+import { pricingService } from '@/shared/lib/pricingService';
 
 export interface WalletBalance {
     balance: number;
@@ -24,34 +25,59 @@ export function useWalletBalance() {
         }
     });
 
-    const checkBalanceForJob = useCallback(async (servicePackage: string): Promise<WalletCheckResult> => {
-        // This could also be an API call if we add the specific check endpoint
-        // For now we'll rely on the backend error 402, but pre-checking is nice UX
+    const checkBalanceForJob = useCallback(async (
+        servicePackage: string,
+        salaryMax?: number
+    ): Promise<WalletCheckResult> => {
+        const currentBalance = typeof balanceData === 'number' ? balanceData : (balanceData as any)?.data ?? 0;
 
-        // Map service packages to prices (client-side estimation, backend is source of truth)
-        const prices: Record<string, number> = {
-            'self-managed': 0,
-            'shortlisting': 1990,
-            'full-service': 5990,
-            'executive-search': 9990
-        };
+        if (servicePackage === 'self-managed' || servicePackage === 'rpo') {
+            return {
+                canPost: true,
+                balance: currentBalance,
+                required: 0,
+                shortfall: 0,
+                currency: 'USD'
+            };
+        }
 
-        const required = prices[servicePackage] || 0;
-        // Handle the case where balanceData might be the full response object or just the number depending on API
-        // Based on wallet.controller.ts: return res.json({ success: true, data: balance });
-        const currentBalance = typeof balanceData === 'number' ? balanceData : (balanceData as any)?.data || 0;
+        try {
+            // Use dynamic pricing API for accurate regional prices
+            const salaryForCalc = salaryMax ?? 100000; // fallback for exec search band detection
+            const priceResult = await pricingService.calculateJobPrice(
+                salaryForCalc,
+                servicePackage === 'shortlisting' ? 'SHORTLISTING' : servicePackage === 'executive-search' ? 'EXECUTIVE_SEARCH' : 'FULL'
+            );
+            const required = priceResult.price;
+            const currency = priceResult.currency;
 
-        return {
-            canPost: currentBalance >= required,
-            balance: currentBalance,
-            required,
-            shortfall: Math.max(0, required - currentBalance),
-            currency: 'USD'
-        };
+            return {
+                canPost: currentBalance >= required,
+                balance: currentBalance,
+                required,
+                shortfall: Math.max(0, required - currentBalance),
+                currency
+            };
+        } catch {
+            // Fallback to safe upper bound if API fails (avoid blocking user)
+            const fallbackPrices: Record<string, number> = {
+                shortlisting: 1990,
+                'full-service': 5990,
+                executive-search: 9990
+            };
+            const required = fallbackPrices[servicePackage] ?? 5990;
+            return {
+                canPost: currentBalance >= required,
+                balance: currentBalance,
+                required,
+                shortfall: Math.max(0, required - currentBalance),
+                currency: 'USD'
+            };
+        }
     }, [balanceData]);
 
     return {
-        balance: typeof balanceData === 'number' ? balanceData : (balanceData as any)?.data || 0,
+        balance: typeof balanceData === 'number' ? balanceData : (balanceData as any)?.data ?? 0,
         isLoading,
         refetch,
         checkBalanceForJob

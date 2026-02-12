@@ -24,6 +24,7 @@ import { WalletBalance } from "@/modules/wallet/components/WalletBalance";
 import { TransactionList } from "@/modules/wallet/components/TransactionList";
 import { SubscriptionUpgradeDialog } from "@/modules/wallet/components/SubscriptionUpgradeDialog";
 import { WalletRechargeDialog } from "@/modules/wallet/components/WalletRechargeDialog";
+import { PricingDisplay } from "@/modules/subscription/components/PricingDisplay";
 import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 
@@ -218,6 +219,9 @@ export function SubscriptionManagementPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Available Plans (dynamic pricing from API) */}
+            <PricingDisplay />
 
             {/* Recent Transactions */}
             <TransactionList

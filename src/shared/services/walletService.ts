@@ -146,8 +146,10 @@ class WalletService {
         jobQuota?: number;
         autoRenew?: boolean;
     }) {
-        const response = await fetch(`${this.baseUrl}/subscription`, {
+        // Use /api/subscriptions (SubscriptionService) - credits wallet with dynamic regional pricing
+        const response = await fetch(`${this.apiUrl}/api/subscriptions`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(subscriptionData),
         });

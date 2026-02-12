@@ -1,4 +1,4 @@
-import { apiClient } from "./api/apiClient";
+import { apiClient } from "./api";
 
 export interface SubscriptionTier {
   planType: string;
