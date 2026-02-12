@@ -58,10 +58,11 @@ export interface JobAssignmentInfo {
 }
 
 class JobAllocationService {
-  async assignConsultant(jobId: string, consultantId: string, assignmentSource?: string) {
+  async assignConsultant(jobId: string, consultantId: string, assignmentSource?: string, reason?: string) {
     return apiClient.post(`/api/hrm8/jobs/${jobId}/assign-consultant`, {
       consultantId,
-      assignmentSource
+      assignmentSource,
+      reason,
     });
   }
 
@@ -108,9 +109,10 @@ class JobAllocationService {
     return apiClient.get<JobAssignmentInfo>(`/api/hrm8/jobs/${jobId}/assignment-info`);
   }
 
-  async autoAssign(jobId: string) {
+  async autoAssign(jobId: string, reason?: string) {
     return apiClient.post<{ consultantId?: string; job: any; consultants: any[] }>(
-      `/api/hrm8/jobs/${jobId}/auto-assign`
+      `/api/hrm8/jobs/${jobId}/auto-assign`,
+      reason ? { reason } : undefined
     );
   }
 

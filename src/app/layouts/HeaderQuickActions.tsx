@@ -21,16 +21,18 @@ export function HeaderQuickActions() {
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Button
-              variant="gradient"
+              variant="default"
               onClick={() => navigate('/ats/jobs?action=create')}
               className={cn(
+                // Sleeker design with less rounded corners
+                "rounded-lg shadow-sm hover:shadow-md transition-all",
                 // Show text on large screens, icon-only on medium
-                "lg:px-4 lg:gap-2",
-                "md:h-10 md:w-10 md:p-0 lg:h-10 lg:w-auto"
+                "lg:px-3.5 lg:gap-2",
+                "md:h-9 md:w-9 md:p-0 lg:h-9 lg:w-auto"
               )}
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden lg:inline font-semibold">Post Job</span>
+              <span className="hidden lg:inline font-medium">Post Job</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="lg:hidden">

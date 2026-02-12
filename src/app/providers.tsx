@@ -6,6 +6,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
+import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/shared/components/ui/sonner';
 import { AuthProvider, useAuth } from './providers/AuthContext';
 import { CandidateAuthProvider, useCandidateAuth } from '@/contexts/CandidateAuthContext';
@@ -34,36 +35,39 @@ interface ProvidersProps {
  * All application providers in the correct order:
  * 1. BrowserRouter (routing)
  * 2. HelmetProvider (SEO/meta tags)
- * 3. QueryClientProvider (data fetching)
- * 4. AuthProvider (main company auth)
- * 5. CandidateAuthProvider (candidate authentication)
- * 6. ConsultantAuthProvider (consultant authentication)
- * 7. Hrm8AuthProvider (global admin/licensee authentication)
- * 8. CurrencyFormatProvider (currency formatting)
- * 9. WebSocketProvider (real-time communication - requires any auth)
+ * 3. ThemeProvider (theme management)
+ * 4. QueryClientProvider (data fetching)
+ * 5. AuthProvider (main company auth)
+ * 6. CandidateAuthProvider (candidate authentication)
+ * 7. ConsultantAuthProvider (consultant authentication)
+ * 8. Hrm8AuthProvider (global admin/licensee authentication)
+ * 9. CurrencyFormatProvider (currency formatting)
+ * 10. WebSocketProvider (real-time communication - requires any auth)
  */
 export function Providers({ children }: ProvidersProps) {
     return (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <HelmetProvider>
-                <QueryClientProvider client={queryClient}>
-                    <ErrorBoundary>
-                        <AuthProvider>
-                            <CandidateAuthProvider>
-                                <ConsultantAuthProvider>
-                                    <Hrm8AuthProvider>
-                                        <CurrencyFormatProvider>
-                                            <WebSocketWrapper>
-                                                {children}
-                                                <Toaster />
-                                            </WebSocketWrapper>
-                                        </CurrencyFormatProvider>
-                                    </Hrm8AuthProvider>
-                                </ConsultantAuthProvider>
-                            </CandidateAuthProvider>
-                        </AuthProvider>
-                    </ErrorBoundary>
-                </QueryClientProvider>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                    <QueryClientProvider client={queryClient}>
+                        <ErrorBoundary>
+                            <AuthProvider>
+                                <CandidateAuthProvider>
+                                    <ConsultantAuthProvider>
+                                        <Hrm8AuthProvider>
+                                            <CurrencyFormatProvider>
+                                                <WebSocketWrapper>
+                                                    {children}
+                                                    <Toaster />
+                                                </WebSocketWrapper>
+                                            </CurrencyFormatProvider>
+                                        </Hrm8AuthProvider>
+                                    </ConsultantAuthProvider>
+                                </CandidateAuthProvider>
+                            </AuthProvider>
+                        </ErrorBoundary>
+                    </QueryClientProvider>
+                </ThemeProvider>
             </HelmetProvider>
         </BrowserRouter>
     );

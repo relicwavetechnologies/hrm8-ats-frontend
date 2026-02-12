@@ -44,7 +44,19 @@ class RegionService {
   }
 
   async getById(id: string) {
-    return apiClient.get<{ region: Region }>(`/api/hrm8/regions/${id}`);
+    const response = await apiClient.get<{ region: Region } | Region>(`/api/hrm8/regions/${id}`);
+    if (
+      response.success &&
+      response.data &&
+      typeof response.data === 'object' &&
+      !('region' in (response.data as Record<string, unknown>))
+    ) {
+      return {
+        ...response,
+        data: { region: response.data as Region },
+      };
+    }
+    return response as any;
   }
 
   async create(data: {
@@ -57,11 +69,31 @@ class RegionService {
     ownerType?: 'HRM8' | 'LICENSEE';
     licenseeId?: string;
   }) {
-    return apiClient.post<{ region: Region }>('/api/hrm8/regions', data);
+    const apiData = {
+      name: data.name,
+      code: data.code,
+      country: data.country,
+      state_province: data.stateProvince,
+      city: data.city,
+      boundaries: data.boundaries,
+      owner_type: data.ownerType,
+      licensee_id: data.licenseeId,
+    };
+    return apiClient.post<{ region: Region }>('/api/hrm8/regions', apiData);
   }
 
   async update(id: string, data: Partial<Region>) {
-    return apiClient.put<{ region: Region }>(`/api/hrm8/regions/${id}`, data);
+    const apiData: Record<string, any> = {};
+    if (data.name !== undefined) apiData.name = data.name;
+    if (data.code !== undefined) apiData.code = data.code;
+    if (data.country !== undefined) apiData.country = data.country;
+    if (data.stateProvince !== undefined) apiData.state_province = data.stateProvince;
+    if (data.city !== undefined) apiData.city = data.city;
+    if (data.boundaries !== undefined) apiData.boundaries = data.boundaries;
+    if (data.ownerType !== undefined) apiData.owner_type = data.ownerType;
+    if (data.licenseeId !== undefined) apiData.licensee_id = data.licenseeId;
+    if (data.isActive !== undefined) apiData.is_active = data.isActive;
+    return apiClient.put<{ region: Region }>(`/api/hrm8/regions/${id}`, apiData);
   }
 
   async delete(id: string) {
@@ -97,13 +129,12 @@ class RegionService {
     auditNote?: string;
   }) {
     return apiClient.post<{ region: Region; transferredCounts: Record<string, number> }>(
-      `/api/hrm8/regions/${regionId}/transfer`,
+      `/api/hrm8/regions/${regionId}/transfer-ownership`,
       data
     );
   }
 }
 
 export const regionService = new RegionService();
-
 
 

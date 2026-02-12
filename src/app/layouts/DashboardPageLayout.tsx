@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelector } from '@/modules/dashboard/components/DashboardSelector';
 import { useCurrentDashboard } from '@/shared/hooks/useCurrentDashboard';
 import { OnboardingReminderBanner } from '@/modules/onboarding/components/OnboardingReminderBanner';
@@ -19,7 +18,6 @@ export function DashboardPageLayout({
   subtitle,
   actions,
   children,
-  breadcrumbActions,
   fullWidth = true,
   dashboardActions
 }: DashboardPageLayoutProps) {
@@ -27,8 +25,6 @@ export function DashboardPageLayout({
 
   return (
     <>
-      <DashboardHeader breadcrumbActions={breadcrumbActions} />
-
       {/* Onboarding Reminder Banner - shows when profile is incomplete */}
       <OnboardingReminderBanner />
 
