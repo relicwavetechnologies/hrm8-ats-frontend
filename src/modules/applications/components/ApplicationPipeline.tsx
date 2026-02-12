@@ -71,6 +71,7 @@ function SortableRoundColumn({
   onExecuteOffer,
   onOpenAssessmentDrawer,
   onConfigureEmail,
+  isSimpleFlow,
 }: {
   round: JobRound;
   applications: Application[];
@@ -91,6 +92,7 @@ function SortableRoundColumn({
   onExecuteOffer?: (roundId: string) => void;
   onOpenAssessmentDrawer?: (round: JobRound) => void;
   onConfigureEmail?: (round: JobRound) => void;
+  isSimpleFlow?: boolean;
   dragHandleProps?: any;
 }) {
   const {
@@ -133,6 +135,7 @@ function SortableRoundColumn({
         onExecuteOffer={onExecuteOffer}
         onOpenAssessmentDrawer={onOpenAssessmentDrawer}
         onConfigureEmail={onConfigureEmail}
+        isSimpleFlow={isSimpleFlow}
         dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
       />
     </div>
@@ -160,6 +163,7 @@ function StageColumn({
   onConfigureOffer,
   onOpenAssessmentDrawer,
   onConfigureEmail,
+  isSimpleFlow,
   dragHandleProps,
 }: {
   round: JobRound;
@@ -181,6 +185,7 @@ function StageColumn({
   onExecuteOffer?: (roundId: string) => void;
   onOpenAssessmentDrawer?: (round: JobRound) => void;
   onConfigureEmail?: (round: JobRound) => void;
+  isSimpleFlow?: boolean;
   dragHandleProps?: any;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -235,7 +240,7 @@ function StageColumn({
               <Badge variant="outline" className="text-xs h-6 px-2 rounded-full">
                 {applications.length}
               </Badge>
-              {onConfigureEmail && (
+              {onConfigureEmail && !isSimpleFlow && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -267,7 +272,7 @@ function StageColumn({
                   )}
                 </>
               )}
-              {!round.isFixed && round.type === 'ASSESSMENT' && (
+              {!round.isFixed && round.type === 'ASSESSMENT' && !isSimpleFlow && (
                 <>
                   {onOpenAssessmentDrawer && (
                     <Button
@@ -301,7 +306,7 @@ function StageColumn({
               )}
               {!round.isFixed && round.type === 'INTERVIEW' && (
                 <>
-                  {onConfigureInterview && (
+                  {onConfigureInterview && !isSimpleFlow && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -333,7 +338,7 @@ function StageColumn({
               )}
               {round.isFixed && round.fixedKey === 'OFFER' && (
                 <>
-                  {onConfigureOffer && (
+                  {onConfigureOffer && !isSimpleFlow && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -956,15 +961,20 @@ export function ApplicationPipeline({
       return;
     }
 
-    // 4. Open Confirmation Dialog
-    setPendingMoveApplication(application);
-    setPendingTargetRound(targetRound);
-    setIsMoveStageDialogOpen(true);
+    // 4. Open Confirmation Dialog or Execute Immediately
+    if (isSimpleFlow) {
+      // In Simple Flow, skip the dialog and execute immediately without comment
+      await executeMoveToRound("", application, targetRound);
+    } else {
+      setPendingMoveApplication(application);
+      setPendingTargetRound(targetRound);
+      setIsMoveStageDialogOpen(true);
+    }
   };
 
-  const executeMoveToRound = async (comment: string) => {
-    const application = pendingMoveApplication;
-    const targetRound = pendingTargetRound;
+  const executeMoveToRound = async (comment: string, appOverride?: Application, roundOverride?: JobRound) => {
+    const application = appOverride || pendingMoveApplication;
+    const targetRound = roundOverride || pendingTargetRound;
 
     if (!application || !targetRound) return;
 
@@ -1341,7 +1351,7 @@ export function ApplicationPipeline({
                   key={round.id}
                   round={round}
                   allRounds={rounds}
-                  applications={applications.filter((app) => app.roundId === round.id)}
+                  applications={getApplicationsForRound(round)}
                   onApplicationClick={handleApplicationClick}
                   isCompareMode={isCompareMode}
                   selectedForComparison={selectedForComparison}
@@ -1358,6 +1368,7 @@ export function ApplicationPipeline({
                   onExecuteOffer={handleExecuteOffer}
                   onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
                   onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
+                  isSimpleFlow={isSimpleFlow}
                 />
               ))}
             </SortableContext>
@@ -1422,9 +1433,7 @@ export function ApplicationPipeline({
 
             if (currentRoundIndex !== -1 && currentRoundIndex < rounds.length - 1) {
               const nextRound = rounds[currentRoundIndex + 1];
-              setPendingMoveApplication(selectedApplication);
-              setPendingTargetRound(nextRound);
-              setIsMoveStageDialogOpen(true);
+              handleMoveToRound(selectedApplication.id, nextRound.id);
             } else {
               toast.error("No next stage available");
             }

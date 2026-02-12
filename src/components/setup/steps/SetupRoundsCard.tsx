@@ -200,26 +200,28 @@ export function SetupRoundsCard({
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium uppercase text-muted-foreground">Custom rounds</Label>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setName('');
-              setAssignedRoleId('');
-              if (isSimple) {
-                setInterviewKind(true);
-                setType('INTERVIEW');
-              } else {
-                setType('ASSESSMENT');
-                setSyncPermissions(true);
-                setAutoMoveOnPass(false);
-              }
-              setDialogOpen(true);
-            }}
-            className="gap-1"
-          >
-            <Plus className="h-4 w-4" /> Add round
-          </Button>
+          {!isSimple && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setName('');
+                setAssignedRoleId('');
+                if (isSimple) {
+                  setInterviewKind(true);
+                  setType('INTERVIEW');
+                } else {
+                  setType('ASSESSMENT');
+                  setSyncPermissions(true);
+                  setAutoMoveOnPass(false);
+                }
+                setDialogOpen(true);
+              }}
+              className="gap-1"
+            >
+              <Plus className="h-4 w-4" /> Add round
+            </Button>
+          )}
         </div>
         <div className="space-y-2">
           {customRounds.length === 0 ? (
