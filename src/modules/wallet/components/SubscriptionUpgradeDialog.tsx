@@ -1,10 +1,11 @@
 /**
  * Subscription Upgrade Dialog
  * Dialog for upgrading/purchasing subscription plans with wallet credit
+ * Uses dynamic pricing from API when available; falls back to static plans
  */
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Dialog,
     DialogContent,
@@ -17,6 +18,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Check, Sparkles, Loader2 } from "lucide-react";
 import { walletService } from "@/shared/services/walletService";
+import { pricingService } from "@/shared/lib/pricingService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useStripeIntegration } from "@/shared/hooks/useStripeIntegration";
 import { StripePromptDialog } from "@/modules/settings/components/integrations/StripePromptDialog";
@@ -28,7 +30,19 @@ interface SubscriptionUpgradeDialogProps {
     currentPlan?: string;
 }
 
-const SUBSCRIPTION_PLANS = [
+/** Plan metadata (features, quota) - API provides price/currency */
+const PLAN_METADATA: Record<string, { name: string; jobQuota: number | null; features: string[]; recommended: boolean }> = {
+    FREE: { name: 'ATS Lite', jobQuota: 1, features: ['1 Active Job', 'Basic ATS', 'Email Support'], recommended: false },
+    PAYG: { name: 'Pay As You Go', jobQuota: 1, features: ['1 Active Job', 'Pay per job'], recommended: false },
+    SMALL: { name: 'Small Plan', jobQuota: 5, features: ['5 Jobs/month', 'Full ATS', 'AI Screening', 'Priority Support'], recommended: true },
+    MEDIUM: { name: 'Medium Plan', jobQuota: 25, features: ['25 Jobs/month', 'Everything in Small', 'Advanced Analytics'], recommended: false },
+    LARGE: { name: 'Large Plan', jobQuota: 50, features: ['50 Jobs/month', 'Everything in Medium', 'Custom Integrations'], recommended: false },
+    ENTERPRISE: { name: 'Enterprise', jobQuota: null, features: ['Unlimited Jobs', 'Everything in Large', 'Custom SLA'], recommended: false },
+    CUSTOM: { name: 'Custom Enterprise', jobQuota: null, features: ['Unlimited Jobs', 'Custom SLA', 'White-label'], recommended: false },
+    RPO: { name: 'RPO', jobQuota: null, features: ['Volume hiring', 'Dedicated team'], recommended: false },
+};
+
+const FALLBACK_PLANS = [
     {
         id: 'free',
         name: 'ATS Lite',
@@ -76,6 +90,18 @@ const SUBSCRIPTION_PLANS = [
     },
 ];
 
+type PlanForDisplay = {
+    id: string;
+    planType: string;
+    name: string;
+    price: number;
+    currency: string;
+    billingCycle: 'MONTHLY';
+    jobQuota: number | null;
+    features: string[];
+    recommended: boolean;
+};
+
 export function SubscriptionUpgradeDialog({
     open,
     onClose,
@@ -86,17 +112,53 @@ export function SubscriptionUpgradeDialog({
     const queryClient = useQueryClient();
     const { showPrompt, setShowPrompt, redirectPath, checkStripeRequired } = useStripeIntegration();
 
+    const { data: apiTiers, isLoading: tiersLoading } = useQuery({
+        queryKey: ['pricing', 'subscription-tiers'],
+        queryFn: () => pricingService.getSubscriptionTiers(),
+        enabled: open,
+    });
+
+    const plans = useMemo((): PlanForDisplay[] => {
+        if (apiTiers && apiTiers.length > 0) {
+            return apiTiers.map((tier) => {
+                const meta = PLAN_METADATA[tier.planType] ?? { name: tier.name, jobQuota: null, features: [], recommended: false };
+                return {
+                    id: tier.planType.toLowerCase(),
+                    planType: tier.planType,
+                    name: meta.name,
+                    price: tier.price,
+                    currency: tier.currency,
+                    billingCycle: 'MONTHLY' as const,
+                    jobQuota: meta.jobQuota,
+                    features: meta.features,
+                    recommended: meta.recommended,
+                };
+            });
+        }
+        return FALLBACK_PLANS.map((p) => ({
+            id: p.id,
+            planType: p.id.toUpperCase().replace(/-/g, '_'),
+            name: p.name,
+            price: p.price,
+            currency: 'USD',
+            billingCycle: p.billingCycle,
+            jobQuota: p.jobQuota,
+            features: p.features,
+            recommended: p.recommended,
+        }));
+    }, [apiTiers]);
+
     const upgradeMutation = useMutation({
         mutationFn: async (planId: string) => {
-            const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+            const plan = plans.find(p => p.id === planId || p.planType.toLowerCase() === planId.toLowerCase());
             if (!plan) throw new Error('Invalid plan selected');
 
             return walletService.createSubscription({
-                planType: planId.toUpperCase().replace(/-/g, '_'),
+                planType: plan.planType,
                 name: plan.name,
                 basePrice: plan.price,
                 billingCycle: plan.billingCycle,
-                jobQuota: plan.jobQuota || undefined,
+                jobQuota: plan.jobQuota ?? undefined,
                 autoRenew: true,
             });
         },
@@ -151,10 +213,9 @@ export function SubscriptionUpgradeDialog({
                 </DialogHeader>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
-                    {SUBSCRIPTION_PLANS.map((plan) => {
+                    {(tiersLoading ? FALLBACK_PLANS.map(p => ({ id: p.id, planType: p.id.toUpperCase().replace(/-/g, '_'), name: p.name, price: p.price, currency: 'USD', billingCycle: p.billingCycle, jobQuota: p.jobQuota, features: p.features, recommended: p.recommended })) : plans).map((plan) => {
                         const isCurrent = currentPlan?.toLowerCase() === plan.id;
                         const isDisabled = upgradeMutation.isPending;
-
                         return (
                             <Card
                                 key={plan.id}
@@ -180,7 +241,7 @@ export function SubscriptionUpgradeDialog({
                                     <CardTitle className="text-xl">{plan.name}</CardTitle>
                                     <CardDescription>
                                         <span className="text-3xl font-bold text-foreground">
-                                            ${plan.price}
+                                            {pricingService.formatPrice(plan.price, plan.currency)}
                                         </span>
                                         <span className="text-muted-foreground">/month</span>
                                     </CardDescription>
@@ -231,7 +292,7 @@ export function SubscriptionUpgradeDialog({
                                 </CardContent>
                             </Card>
                         );
-                    })}
+                    }) }
                 </div>
 
                 <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">

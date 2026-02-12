@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Info } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { usePublicCategories } from "@/shared/hooks/useJobCategoriesTags";
+import { JobPricingCalculator } from "./JobPricingCalculator";
 interface JobWizardStep1Props {
   form: UseFormReturn<JobFormData>;
   companyAssignmentMode?: 'AUTO_RULES_ONLY' | 'MANUAL_ONLY';
@@ -565,6 +566,13 @@ export function JobWizardStep1({
             "{form.watch("salaryDescription")}"
           </p>}
         </div>}
+
+        {/* Recruitment service pricing (when paid service selected) */}
+        {form.watch("serviceType") && form.watch("serviceType") !== 'self-managed' && form.watch("serviceType") !== 'rpo' && (form.watch("salaryMax") || form.watch("salaryMin")) && (
+          <JobPricingCalculator
+            salaryMax={form.watch("salaryMax") || form.watch("salaryMin") || 0}
+          />
+        )}
       </div>
     </div>
 

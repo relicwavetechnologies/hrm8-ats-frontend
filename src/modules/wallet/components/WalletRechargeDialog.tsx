@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Dialog,
     DialogContent,
@@ -19,6 +19,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Loader2, Wallet, AlertCircle, CreditCard } from "lucide-react";
 import { walletService } from "@/shared/services/walletService";
+import { pricingService } from "@/shared/lib/pricingService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useStripeIntegration } from "@/shared/hooks/useStripeIntegration";
 
@@ -41,6 +42,13 @@ export function WalletRechargeDialog({
     const queryClient = useQueryClient();
     const { showPrompt, checkStripeRequired } = useStripeIntegration();
 
+    const { data: currencyData } = useQuery({
+        queryKey: ['pricing', 'company-currency'],
+        queryFn: () => pricingService.getCompanyCurrency(),
+        enabled: open,
+    });
+    const currency = currencyData?.billingCurrency ?? 'USD';
+
     const rechargeMutation = useMutation({
         mutationFn: async (rechargeAmount: number) => {
             return walletService.rechargeWallet({
@@ -55,7 +63,7 @@ export function WalletRechargeDialog({
 
             toast({
                 title: "Recharge Successful",
-                description: data.message || `Your wallet has been credited with $${parseFloat(amount).toFixed(2)}`,
+                description: data.message || `Your wallet has been credited with ${pricingService.formatPrice(parseFloat(amount), currency)}`,
             });
 
             // Log URL redirect for debugging
@@ -108,7 +116,7 @@ export function WalletRechargeDialog({
         if (numericAmount < 10) {
             toast({
                 title: "Minimum Amount Required",
-                description: "Minimum recharge amount is $10.",
+                description: `Minimum recharge amount is ${pricingService.formatPrice(10, currency)}.`,
                 variant: "destructive",
             });
             return;
@@ -139,13 +147,13 @@ export function WalletRechargeDialog({
                     <Alert>
                         <Wallet className="h-4 w-4" />
                         <AlertDescription>
-                            Current Balance: <span className="font-semibold">${currentBalance.toFixed(2)}</span>
+                            Current Balance: <span className="font-semibold">{pricingService.formatPrice(currentBalance, currency)}</span>
                         </AlertDescription>
                     </Alert>
 
                     {/* Preset Amounts */}
                     <div className="space-y-2">
-                        <Label>Quick Select Amount (USD)</Label>
+                        <Label>Quick Select Amount ({currency})</Label>
                         <div className="grid grid-cols-3 gap-2">
                             {PRESET_AMOUNTS.map((preset) => (
                                 <Button
@@ -155,7 +163,7 @@ export function WalletRechargeDialog({
                                     onClick={() => handlePresetClick(preset)}
                                     className="w-full"
                                 >
-                                    ${preset}
+                                    {pricingService.formatPrice(preset, currency)}
                                 </Button>
                             ))}
                         </div>
@@ -163,13 +171,13 @@ export function WalletRechargeDialog({
 
                     {/* Custom Amount */}
                     <div className="space-y-2">
-                        <Label htmlFor="amount">Or Enter Custom Amount (USD)</Label>
+                        <Label htmlFor="amount">Or Enter Custom Amount ({currency})</Label>
                         <Input
                             id="amount"
                             type="number"
                             step="0.01"
                             min="10"
-                            placeholder="Enter amount (min. $10)"
+                            placeholder={`Enter amount (min. ${pricingService.formatPrice(10, currency)})`}
                             value={amount}
                             onChange={(e) => {
                                 setAmount(e.target.value);
@@ -178,7 +186,7 @@ export function WalletRechargeDialog({
                             required
                         />
                         <p className="text-xs text-muted-foreground">
-                            Minimum recharge: $10
+                            Minimum recharge: {pricingService.formatPrice(10, currency)}
                         </p>
                     </div>
 
@@ -187,8 +195,8 @@ export function WalletRechargeDialog({
                         <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
                             <AlertCircle className="h-4 w-4 text-green-600" />
                             <AlertDescription className="text-green-700 dark:text-green-400">
-                                New Balance: <span className="font-semibold">${newBalance.toFixed(2)}</span>
-                                {' '}(+${numericAmount.toFixed(2)})
+                                New Balance: <span className="font-semibold">{pricingService.formatPrice(newBalance, currency)}</span>
+                                {' '}(+{pricingService.formatPrice(numericAmount, currency)})
                             </AlertDescription>
                         </Alert>
                     )}
@@ -222,7 +230,7 @@ export function WalletRechargeDialog({
                             ) : (
                                 <>
                                     <CreditCard className="h-4 w-4 mr-2" />
-                                    Add ${numericAmount.toFixed(2)}
+                                    Add {pricingService.formatPrice(numericAmount, currency)}
                                 </>
                             )}
                         </Button>
