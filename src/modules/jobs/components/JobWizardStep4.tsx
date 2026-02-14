@@ -37,7 +37,7 @@ export function JobWizardStep4({ form, jobId }: JobWizardStep4Props) {
 
   const handleAddQuestion = (question: ApplicationQuestion) => {
     const currentQuestions = form.getValues('applicationForm.questions') || [];
-    
+
     if (editingQuestion) {
       // Update existing question
       const updatedQuestions = currentQuestions.map((q) =>
@@ -74,7 +74,7 @@ export function JobWizardStep4({ form, jobId }: JobWizardStep4Props) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     if (!over || active.id === over.id) return;
 
     const oldIndex = questions.findIndex((q) => q.id === active.id);
@@ -90,14 +90,14 @@ export function JobWizardStep4({ form, jobId }: JobWizardStep4Props) {
       id: `question-${Date.now()}`,
       order: questions.length + 1,
     };
-    
+
     form.setValue('applicationForm.questions', [...questions, newQuestion]);
-    
+
     // Increment usage count if it's a library question
     if ((libraryQuestion as any).libraryId) {
       incrementQuestionUsage((libraryQuestion as any).libraryId);
     }
-    
+
     setLibraryBrowserOpen(false);
     toast({
       title: "Question Added",
@@ -112,7 +112,7 @@ export function JobWizardStep4({ form, jobId }: JobWizardStep4Props) {
       id: q.id || `question-${Date.now()}-${index}`,
       order: currentQuestions.length + index + 1,
     }));
-    
+
     form.setValue('applicationForm.questions', [...currentQuestions, ...newQuestions]);
   };
 
@@ -124,7 +124,7 @@ export function JobWizardStep4({ form, jobId }: JobWizardStep4Props) {
       savedAt: new Date().toISOString(),
       usageCount: 0,
     });
-    
+
     toast({
       title: "Question Saved",
       description: "Question added to your library for future use",

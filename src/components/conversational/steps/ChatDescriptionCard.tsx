@@ -4,13 +4,19 @@ import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
 import { Badge } from '@/shared/components/ui/badge';
-import { FileText, Sparkles, ArrowRight, X } from 'lucide-react';
+import { FileText, Sparkles, ArrowRight, X, Loader2 } from 'lucide-react';
 
 interface ChatDescriptionCardProps {
     description: string;
     onChange: (value: string) => void;
     onContinue: () => void;
     isParsed?: boolean;
+    /** All job fields filled so far (for AI context) */
+    jobData?: Record<string, unknown>;
+    /** Company context string for AI (name, about, etc.) */
+    companyContext?: string;
+    /** Generate description with AI using context; returns suggested description text */
+    onGenerateDescription?: (currentDescription: string) => Promise<string>;
 }
 
 export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
@@ -18,10 +24,36 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
     onChange,
     onContinue,
     isParsed,
+    jobData: _jobData,
+    companyContext: _companyContext,
+    onGenerateDescription,
 }) => {
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
 
     const canContinue = description.trim().length >= 50;
+
+    const handleAiAssist = async () => {
+        if (!onGenerateDescription) {
+            setAiSuggestion('We are looking for a passionate individual to join our growing team. You will be responsible for driving key initiatives and collaborating with cross-functional teams to deliver high-quality results...');
+            setShowAiSuggestion(true);
+            return;
+        }
+        setAiLoading(true);
+        setAiError(null);
+        setShowAiSuggestion(true);
+        setAiSuggestion(null);
+        try {
+            const suggested = await onGenerateDescription(description);
+            setAiSuggestion(suggested || null);
+        } catch (e) {
+            setAiError(e instanceof Error ? e.message : 'Failed to generate suggestion');
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
@@ -52,9 +84,10 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                             variant="ghost"
                             size="sm"
                             className="text-primary gap-1"
-                            onClick={() => setShowAiSuggestion(true)}
+                            onClick={handleAiAssist}
+                            disabled={aiLoading}
                         >
-                            <Sparkles className="h-3 w-3" />
+                            {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                             AI Assist
                         </Button>
                     </div>
@@ -74,25 +107,50 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                             <span className="text-xs font-semibold text-primary flex items-center gap-1">
                                 <Sparkles className="h-3 w-3" /> AI Suggestion
                             </span>
-                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setShowAiSuggestion(false)}>
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setShowAiSuggestion(false); setAiError(null); }}>
                                 <span className="sr-only">Dismiss</span>
                                 <X className="h-3 w-3" />
                             </Button>
                         </div>
-                        <p className="text-sm text-muted-foreground italic">
-                            "We are looking for a passionate individual to join our growing team. You will be responsible for driving key initiatives and collaborating with cross-functional teams to deliver high-quality results..."
-                        </p>
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            className="w-full text-xs"
-                            onClick={() => {
-                                onChange(description + (description ? "\n\n" : "") + "We are looking for a passionate individual to join our growing team. You will be responsible for driving key initiatives and collaborating with cross-functional teams to deliver high-quality results...");
-                                setShowAiSuggestion(false);
-                            }}
-                        >
-                            Append to Description
-                        </Button>
+                        {aiLoading && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" /> Generating using company context and your job details...
+                            </p>
+                        )}
+                        {aiError && (
+                            <p className="text-sm text-destructive">{aiError}</p>
+                        )}
+                        {!aiLoading && aiSuggestion && (
+                            <>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{aiSuggestion}</p>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="flex-1 text-xs"
+                                        onClick={() => {
+                                            onChange(aiSuggestion);
+                                            setShowAiSuggestion(false);
+                                            setAiSuggestion(null);
+                                        }}
+                                    >
+                                        Replace Description
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="flex-1 text-xs"
+                                        onClick={() => {
+                                            onChange(description + (description ? "\n\n" : "") + aiSuggestion);
+                                            setShowAiSuggestion(false);
+                                            setAiSuggestion(null);
+                                        }}
+                                    >
+                                        Append to Description
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 

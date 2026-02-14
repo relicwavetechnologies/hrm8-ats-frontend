@@ -665,7 +665,10 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         console.log('📢 Publishing job (backend handles payment):', finalJobId);
 
         try {
-          const publishResponse = await jobService.publishJob(finalJobId!);
+          const publishResponse = await jobService.publishJob(finalJobId!, {
+            saveAsTemplate: data.saveAsTemplate,
+            templateName: data.templateName
+          });
           console.log('✅ Publish response:', publishResponse);
 
           // Check for failure (ApiClient catches errors and returns success: false)
@@ -1198,6 +1201,15 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
             </div>
           </SheetContent>
         </Sheet>
+
+        <InsufficientBalanceModal
+          open={showBalanceModal}
+          onOpenChange={setShowBalanceModal}
+          requiredAmount={balanceErrorData?.required ?? 0}
+          currentBalance={balanceErrorData?.balance ?? 0}
+          shortfall={balanceErrorData?.shortfall ?? 0}
+          currency={balanceErrorData?.currency ?? 'USD'}
+        />
 
         {savedJobData && (
           <PostPublishFlow

@@ -24,11 +24,10 @@ export default function StripeMockCheckout() {
 
         try {
             // Call backend to process payment and credit wallet
-            const response = await fetch('/api/integrations/stripe/mock-payment-success', {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const response = await fetch(`${apiUrl}/api/integrations/stripe/mock-payment-success`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
                     sessionId,
@@ -45,7 +44,7 @@ export default function StripeMockCheckout() {
 
             // Redirect back to subscriptions page after 2 seconds
             setTimeout(() => {
-                navigate('/subscriptions?success=true');
+                navigate('/subscriptions?subscription_success=true');
             }, 2000);
         } catch (error) {
             console.error('Mock payment error:', error);

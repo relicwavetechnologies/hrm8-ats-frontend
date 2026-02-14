@@ -5,12 +5,16 @@ import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TermsAndConditions } from './TermsAndConditions';
 import { calculateTotalJobCost } from '@/shared/lib/paymentService';
 import { pricingService, type JobPriceCalculation } from '@/shared/lib/pricingService';
-import { Rocket, DollarSign, AlertCircle, Info, Megaphone, CheckCircle2, Loader2 } from 'lucide-react';
+import { Rocket, DollarSign, AlertCircle, Info, Megaphone, CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { RECRUITMENT_SERVICES } from '@/shared/lib/subscriptionConfig';
 import { Badge } from '@/shared/components/ui/badge';
 import { useAuth } from '@/app/providers/AuthContext';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/shared/components/ui/form';
 
 interface JobWizardStep6Props {
   form: UseFormReturn<JobFormData>;
@@ -239,6 +243,63 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Save as Template Option */}
+      <Card className="border-primary/20">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Save as Template</CardTitle>
+          </div>
+          <CardDescription>
+            Save this job configuration as a template to reuse for future postings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <FormField
+            control={form.control}
+            name="saveAsTemplate"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm font-medium cursor-pointer">
+                    Save this job as a template
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    You can easily create new jobs using this template from the sidebar.
+                  </p>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          {formData.saveAsTemplate && (
+            <FormField
+              control={form.control}
+              name="templateName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Template Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. Senior Frontend Engineer Template"
+                      {...field}
+                      defaultValue={field.value || `${formData.title} Template`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

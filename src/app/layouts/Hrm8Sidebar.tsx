@@ -34,7 +34,7 @@ import {
 } from "@/shared/components/ui/sidebar";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
-import { useHrm8Auth } from "@/app/providers/AuthContext";
+import { useHrm8Auth } from "@/contexts/Hrm8AuthContext";
 import { Hrm8SidebarFooter } from "./Hrm8SidebarFooter";
 
 const menuItems = [
@@ -43,8 +43,9 @@ const menuItems = [
   { path: "/hrm8/regions", label: "Regions", icon: MapPin, adminOnly: true },
   { path: "/hrm8/licensees", label: "Licensees", icon: Users, adminOnly: true },
   { path: "/hrm8/staff", label: "Staff", icon: UserCog },
-  { path: "/hrm8/jobs", label: "Job Allocation", icon: Briefcase },
-  { path: "/hrm8/job-board", label: "Jobs", icon: Briefcase, adminOnly: true },
+  { path: "/ats/jobs", label: "Job Allocation", icon: Briefcase },
+  { path: "/ats/job-templates", label: "Job Templates", icon: FileText },
+  { path: "/ats/job-board", label: "Jobs", icon: Briefcase, adminOnly: true },
   { path: "/hrm8/leads", label: "Leads", icon: Target },
   { path: "/hrm8/sales-pipeline", label: "Pipeline", icon: BarChart3 },
   { path: "/hrm8/commissions", label: "Commissions", icon: DollarSign },

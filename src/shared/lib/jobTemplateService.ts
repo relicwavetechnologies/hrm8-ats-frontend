@@ -37,6 +37,19 @@ export interface GetTemplatesFilters {
   search?: string;
 }
 
+export const templateCategories = [
+  "Engineering",
+  "Product",
+  "Design",
+  "Marketing",
+  "Sales",
+  "Operations",
+  "Finance",
+  "HR",
+  "Customer Support",
+  "Custom"
+];
+
 class JobTemplateService {
   /**
    * Create template from existing job
@@ -66,15 +79,28 @@ class JobTemplateService {
 
     const queryString = queryParams.toString();
     const endpoint = `/api/job-templates${queryString ? `?${queryString}` : ''}`;
-    
-    return apiClient.get<JobTemplate[]>(endpoint);
+
+    // Adjust to handle the { templates: [...] } wrapper
+    const response = await apiClient.get<{ templates: JobTemplate[] }>(endpoint);
+    return {
+      success: response.success,
+      data: response.data?.templates,
+      error: response.error,
+      status: response.status
+    };
   }
 
   /**
    * Get template by ID
    */
   async getTemplate(id: string) {
-    return apiClient.get<JobTemplate>(`/api/job-templates/${id}`);
+    const response = await apiClient.get<{ template: JobTemplate }>(`/api/job-templates/${id}`);
+    return {
+      success: response.success,
+      data: response.data?.template,
+      error: response.error,
+      status: response.status
+    };
   }
 
   /**
@@ -104,6 +130,59 @@ class JobTemplateService {
   async recordUsage(id: string) {
     return apiClient.post<JobTemplate>(`/api/job-templates/${id}/use`);
   }
+
+  /**
+   * Generate a structured template using AI from a broad prompt
+   */
+  async generateTemplateWithAI(prompt: string) {
+    const response = await apiClient.post<{
+      name: string;
+      description: string;
+      category: string;
+      jobData: any
+    }>('/api/job-templates/generate-ai', { prompt });
+
+    return response;
+  }
 }
 
 export const jobTemplateService = new JobTemplateService();
+
+/**
+ * Functional wrappers for backward compatibility
+ */
+export const createJobTemplate = (data: any) => {
+  return jobTemplateService.createTemplate({
+    name: data.name,
+    description: data.description,
+    category: data.category,
+    isShared: data.isShared,
+    jobData: data.data || {}
+  });
+};
+
+export const getJobTemplates = async (category?: string) => {
+  const response = await jobTemplateService.getTemplates({ category });
+  return response.data || [];
+};
+
+export const getJobTemplate = async (id: string) => {
+  const response = await jobTemplateService.getTemplate(id);
+  return response.data;
+};
+
+export const deleteJobTemplate = async (id: string) => {
+  const response = await jobTemplateService.deleteTemplate(id);
+  return response.success;
+};
+
+export const incrementTemplateUsage = async (id: string) => {
+  return jobTemplateService.recordUsage(id);
+};
+
+export const getMostUsedTemplates = async (limit: number = 5) => {
+  const templates = await getJobTemplates();
+  return templates
+    .sort((a, b) => b.usageCount - a.usageCount)
+    .slice(0, limit);
+};

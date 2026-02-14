@@ -44,7 +44,9 @@ class ApiClient {
           success: false,
           error: data.error || `HTTP ${response.status}: ${response.statusText}`,
           details: data.details,
-        };
+          status: response.status,
+          data: data.data,
+        } as ApiResponse<T>;
       }
 
       return data as ApiResponse<T>;

@@ -74,7 +74,7 @@ export function QuestionEvaluationSettings({
   // Sync local state with prop when evaluation changes externally
   useEffect(() => {
     setLocalEvaluation(evaluation || {});
-     
+
   }, [evaluation]);
 
   const hasOptions = ['multiple_choice', 'checkbox', 'dropdown'].includes(questionType);
@@ -83,10 +83,10 @@ export function QuestionEvaluationSettings({
   const updateEvaluation = (newEvaluation: QuestionEvaluationSettings) => {
     // Remove properties that are undefined, null, or have enabled: false
     const cleaned: Partial<QuestionEvaluationSettings> = {};
-    
+
     Object.entries(newEvaluation).forEach(([key, value]) => {
       if (value === undefined || value === null) return;
-      
+
       // If it's an object with enabled property, only include if enabled is true
       if (typeof value === 'object' && value !== null && 'enabled' in value) {
         if (value.enabled === true) {
@@ -96,7 +96,7 @@ export function QuestionEvaluationSettings({
         (cleaned as any)[key] = value;
       }
     });
-    
+
     const finalEvaluation = Object.keys(cleaned).length > 0 ? (cleaned as QuestionEvaluationSettings) : undefined;
     setLocalEvaluation(finalEvaluation || {});
     onChange(finalEvaluation);
@@ -230,7 +230,7 @@ export function QuestionEvaluationSettings({
     });
   };
 
-  const hasEvaluationEnabled = 
+  const hasEvaluationEnabled =
     localEvaluation.mandatory?.enabled ||
     localEvaluation.scoring?.enabled ||
     localEvaluation.autoTagging?.enabled ||

@@ -153,34 +153,49 @@ export function SubscriptionUpgradeDialog({
             const plan = plans.find(p => p.id === planId || p.planType.toLowerCase() === planId.toLowerCase());
             if (!plan) throw new Error('Invalid plan selected');
 
-            return walletService.createSubscription({
+            const isFree = plan.price <= 0;
+
+            if (isFree) {
+                return walletService.createSubscription({
+                    planType: plan.planType,
+                    name: plan.name,
+                    basePrice: 0,
+                    billingCycle: plan.billingCycle,
+                    jobQuota: plan.jobQuota ?? undefined,
+                    autoRenew: true,
+                });
+            }
+
+            // Paid plans: Stripe checkout (production-grade) – redirects to Stripe; webhook creates subscription
+            await walletService.createSubscriptionCheckout({
                 planType: plan.planType,
                 name: plan.name,
-                basePrice: plan.price,
+                amount: plan.price,
                 billingCycle: plan.billingCycle,
                 jobQuota: plan.jobQuota ?? undefined,
-                autoRenew: true,
             });
         },
-        onSuccess: (data) => {
+        onSuccess: (data, planId) => {
+            const plan = plans.find(p => p.id === planId || p.planType.toLowerCase() === planId.toLowerCase());
+            const isFree = plan?.price <= 0;
+
             queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
-            toast({
-                title: "Subscription Activated",
-                description: data.message || "Your new subscription has been activated and your wallet has been credited.",
-            });
-
-            onClose();
+            if (isFree) {
+                toast({
+                    title: "Subscription Activated",
+                    description: data?.message || "Your plan has been activated.",
+                });
+                onClose();
+            }
         },
         onError: (error: any) => {
-            // Check if error is due to Stripe not connected (402)
             if (error.response?.status === 402 || error.errorCode === 'STRIPE_NOT_CONNECTED') {
-                // StripePromptDialog will be shown automatically
                 return;
             }
-
             toast({
                 title: "Upgrade Failed",
                 description: error.message || "Failed to upgrade subscription.",

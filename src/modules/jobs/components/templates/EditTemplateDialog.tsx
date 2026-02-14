@@ -18,11 +18,9 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { jobTemplateService, JobTemplate } from "@/shared/lib/jobTemplateService";
+import { jobTemplateService, JobTemplate, templateCategories } from "@/shared/lib/jobTemplateService";
 import { useToast } from "@/shared/hooks/use-toast";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-
-const templateCategories = ['ENGINEERING', 'PRODUCT', 'DESIGN', 'MARKETING', 'SALES', 'OPERATIONS', 'HR', 'FINANCE', 'EXECUTIVE', 'OTHER'];
 
 interface EditTemplateDialogProps {
   template: JobTemplate;

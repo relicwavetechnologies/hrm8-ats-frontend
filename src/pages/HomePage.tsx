@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -21,50 +21,35 @@ export default function HomePage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(true);
-  const [companyStats, setCompanyStats] = useState<any>(null);
-  const [walletBalance, setWalletBalance] = useState<any>(null);
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
-  const [activeSubscription, setActiveSubscription] = useState<any>(null);
+  const { data: dashboardData, isLoading: loading } = useQuery({
+    queryKey: ['dashboard', 'home', user?.companyId],
+    queryFn: async () => {
+      if (!user?.companyId) return null;
+      const [statsResult, balanceResult, subsResult, activeSubResult] = await Promise.allSettled([
+        companyService.getCompanyStats(user.companyId),
+        walletService.getBalance(),
+        walletService.getSubscriptions(),
+        fetch(`/api/companies/${user.companyId}/subscription/active`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        }).then(res => res.ok ? res.json() : { success: false, data: null })
+      ]);
+      return {
+        companyStats: statsResult.status === 'fulfilled' ? statsResult.value : null,
+        walletBalance: balanceResult.status === 'fulfilled' ? balanceResult.value : { balance: 0, totalCredits: 0, totalDebits: 0, status: 'ACTIVE' },
+        subscriptions: (subsResult.status === 'fulfilled' && Array.isArray(subsResult.value)) ? subsResult.value : [],
+        activeSubscription: (activeSubResult.status === 'fulfilled' && activeSubResult.value) ? (activeSubResult.value as { data?: unknown })?.data ?? null : null,
+      };
+    },
+    enabled: !!user?.companyId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user?.companyId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-        const [stats, balance, subs, activeSub] = await Promise.all([
-          companyService.getCompanyStats(user.companyId),
-          walletService.getBalance().catch(() => ({ balance: 0, totalCredits: 0, totalDebits: 0, status: 'ACTIVE' })),
-          walletService.getSubscriptions().catch(() => []),
-          fetch(`${API_URL}/api/companies/${user.companyId}/subscription/active`, {
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-          }).then(res => res.ok ? res.json() : { success: false, data: null }).catch(() => ({ success: false, data: null }))
-        ]);
-
-        setCompanyStats(stats);
-        setWalletBalance(balance);
-        setSubscriptions(subs);
-        setActiveSubscription(activeSub?.data || null);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-        toast({
-          title: "Error loading dashboard",
-          description: "Failed to load some dashboard data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user?.companyId, toast]);
+  const companyStats = dashboardData?.companyStats ?? null;
+  const walletBalance = dashboardData?.walletBalance ?? { balance: 0, totalCredits: 0, totalDebits: 0, status: 'ACTIVE' };
+  const subscriptions = dashboardData?.subscriptions ?? [];
+  const activeSubscription = dashboardData?.activeSubscription ?? null;
 
   if (loading) {
     return (

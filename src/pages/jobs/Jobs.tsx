@@ -1,15 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, Filter, X, Zap, Eye } from "lucide-react";
+import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, Filter, X, Zap, Eye, FileEdit, Check } from "lucide-react";
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { jobService } from "@/shared/lib/jobService";
 import { Job } from "@/shared/types/job";
 import { useJobPostingPermission } from "@/shared/hooks/useJobPostingPermission";
-import { mapBackendJobToFrontend, mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
+import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { useAuth } from "@/app/providers/AuthContext";
 import { FormDrawer } from "@/shared/components/ui/form-drawer";
 import { JobWizard } from "@/modules/jobs/components/JobWizard";
@@ -31,15 +31,16 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { WarningConfirmationDialog } from "@/shared/components/ui/warning-confirmation-dialog";
 import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
 import { JobsFilterBar } from "@/modules/jobs/components/JobsFilterBar";
-import { getCountryFromLocation, expandRegionsToCountries, REGION_COUNTRY_MAP, getRegionForCountry } from "@/shared/lib/countryRegions";
+import { getCountryFromLocation, getRegionForCountry } from "@/shared/lib/countryRegions";
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
+import { useJobsList } from "@/shared/hooks/useJobsList";
 
 import { AdvancedFilterBuilder } from "@/modules/jobs/components/filters/AdvancedFilterBuilder";
 import { SavedFiltersPanel } from "@/modules/jobs/components/filters/SavedFiltersPanel";
 import { BulkActionsToolbar } from "@/modules/jobs/components/bulk/BulkActionsToolbar";
 import { FilterCriteria, SavedFilter } from "@/shared/lib/savedFiltersService";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible";
-import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
+import { Collapsible, CollapsibleContent } from "@/shared/components/ui/collapsible";
+import { JobsPageSkeleton } from "@/modules/jobs/components/JobsPageSkeleton";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -49,6 +50,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/shared/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 
 export default function Jobs() {
   const { toast } = useToast();
@@ -64,15 +66,6 @@ export default function Jobs() {
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [editingJobIdForEdit, setEditingJobIdForEdit] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalJobs, setTotalJobs] = useState(0);
-  const [backendStats, setBackendStats] = useState<{
-    total: number;
-    active: number;
-    filled: number;
-    applicants: number;
-  } | null>(null);
 
   // Filter states
   const [searchValue, setSearchValue] = useState("");
@@ -91,67 +84,29 @@ export default function Jobs() {
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<Job | null>(null);
   const [pendingFromTemplate, setPendingFromTemplate] = useState(false);
+  /** Toggle between Jobs list and Drafts list */
+  const [viewMode, setViewMode] = useState<'jobs' | 'drafts'>('jobs');
+  /** When opening wizard from a draft, pass step so wizard opens at correct step */
+  const [editingDraftStep, setEditingDraftStep] = useState<number>(1);
 
-  // Fetch jobs from API
+  const jobsPage = 1;
+  const {
+    jobs,
+    total: totalJobs,
+    stats: backendStats,
+    isLoading: jobsLoading,
+    error: jobsError,
+  } = useJobsList(selectedStatus, jobsPage, refreshKey);
+
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoading(true);
-        // Build filters object
-        const filters: { status?: any } = {};
-        if (selectedStatus !== 'all') {
-          // Convert frontend status format to backend format
-          const statusMap: Record<string, string> = {
-            'draft': 'DRAFT',
-            'open': 'OPEN',
-            'closed': 'CLOSED',
-            'on-hold': 'ON_HOLD',
-            'filled': 'FILLED',
-            'cancelled': 'CANCELLED',
-            'template': 'TEMPLATE',
-          };
-          filters.status = statusMap[selectedStatus] || selectedStatus.toUpperCase();
-        }
-        const response = await jobService.getJobs(filters);
-
-        if (response.success && response.data) {
-          // Destructure response data safely as per typed interface
-          const { jobs: jobsList, total, stats } = response.data;
-
-          if (stats) {
-            setBackendStats(stats);
-          }
-
-          if (total !== undefined) {
-            setTotalJobs(total);
-          }
-
-          // Handle potentially missing jobs array
-          const jobsData = Array.isArray(jobsList) ? jobsList : [];
-          const mappedJobs = jobsData.map(mapBackendJobToFrontend);
-          setJobs(mappedJobs);
-        } else {
-          console.error('[Jobs Page] Fetch failed:', response.error);
-          toast({
-            title: 'Error',
-            description: response.error || 'Failed to fetch jobs',
-            variant: 'destructive',
-          });
-        }
-      } catch (error) {
-        console.error('[Jobs Page] Exception:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch jobs',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobs();
-  }, [refreshKey, selectedStatus, toast]);
+    if (jobsError) {
+      toast({
+        title: 'Error',
+        description: jobsError.message || 'Failed to fetch jobs',
+        variant: 'destructive',
+      });
+    }
+  }, [jobsError, toast]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -246,9 +201,24 @@ export default function Jobs() {
       }));
   }, [jobs]);
 
-  // Apply all filters
-  const filteredJobs = useMemo(() => {
+  // Split drafts vs non-draft jobs
+  const draftJobs = useMemo(() => {
     return jobs.filter(job => {
+      const status = typeof job.status === 'string' ? job.status.toLowerCase() : job.status;
+      return status === 'draft';
+    });
+  }, [jobs]);
+
+  const nonDraftJobs = useMemo(() => {
+    return jobs.filter(job => {
+      const status = typeof job.status === 'string' ? job.status.toLowerCase() : job.status;
+      return status !== 'draft';
+    });
+  }, [jobs]);
+
+  // Apply all filters (for jobs table only; drafts table uses draftJobs with minimal filters)
+  const filteredJobs = useMemo(() => {
+    return nonDraftJobs.filter(job => {
       // Search filter
       if (searchValue) {
         const searchLower = searchValue.toLowerCase();
@@ -314,7 +284,15 @@ export default function Jobs() {
 
       return true;
     });
-  }, [jobs, searchValue, selectedConsultant, selectedLocation, selectedService, selectedStatus, advancedFilters]);
+  }, [nonDraftJobs, searchValue, selectedConsultant, selectedLocation, selectedService, selectedStatus, advancedFilters]);
+
+  const filteredDrafts = useMemo(() => {
+    if (!searchValue) return draftJobs;
+    const searchLower = searchValue.toLowerCase();
+    return draftJobs.filter(job =>
+      [job.title, job.department, job.location].some(f => (f || '').toLowerCase().includes(searchLower))
+    );
+  }, [draftJobs, searchValue]);
 
   const handleDelete = (id: string) => {
     setJobToDelete(id);
@@ -387,6 +365,7 @@ export default function Jobs() {
   const handleContinueWithDraft = () => {
     if (pendingDraft) {
       setEditingJobId(pendingDraft.id);
+      setEditingDraftStep(Math.max(1, pendingDraft.draftStep ?? 1));
       setDrawerOpen(true);
       toast({
         title: "Draft loaded",
@@ -421,6 +400,49 @@ export default function Jobs() {
   const handleDrawerClose = () => {
     setDrawerOpen(false);
     setEditingJobId(null);
+    setEditingDraftStep(1);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleContinueDraft = (draft: Job) => {
+    setEditingJobId(draft.id);
+    setEditingDraftStep(Math.max(1, draft.draftStep ?? 1));
+    setDrawerOpen(true);
+    toast({
+      title: "Draft opened",
+      description: `Continuing at step ${Math.max(1, draft.draftStep ?? 1)}.`,
+      duration: 3000,
+    });
+  };
+
+  const handleSaveAsTemplate = async (job: Job) => {
+    try {
+      const templateName = prompt('Enter a name for this template:', `${job.title || 'Untitled'} Template`);
+
+      if (!templateName) return; // User cancelled
+
+      const response = await jobService.saveAsTemplate(job.id, templateName);
+
+      if (response.success) {
+        toast({
+          title: "Template saved",
+          description: `"${templateName}" has been saved as a template.`,
+        });
+        setRefreshKey(prev => prev + 1);
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Failed to save template",
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save template",
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleApplyAdvancedFilters = (filters: FilterCriteria) => {
@@ -509,9 +531,12 @@ export default function Jobs() {
         try {
           const response = await jobService.getJobById(editingJobId);
           if (response.success && response.data) {
-            // Map backend job to form data format
-            const formData = mapBackendJobToFormData(response.data);
+            const jobPayload = (response.data as any).job ?? response.data;
+            const formData = mapBackendJobToFormData(jobPayload);
             setEditingJobData(formData);
+            const rawStep = jobPayload?.draftStep ?? jobPayload?.draft_step;
+            const step = rawStep != null ? Math.max(1, Number(rawStep) || 1) : 1;
+            setEditingDraftStep(step);
           }
         } catch (error) {
           toast({
@@ -522,13 +547,14 @@ export default function Jobs() {
         }
       } else {
         setEditingJobData(null);
+        setEditingDraftStep(1);
       }
     };
 
     fetchJobData();
   }, [editingJobId, toast]);
 
-  const columns: Column<Job>[] = [
+  const columns = useMemo((): Column<Job>[] => [
     {
       key: 'name',
       label: 'Job Title',
@@ -707,7 +733,88 @@ export default function Jobs() {
         </div>
       )
     },
-  ];
+  ], [navigate, user, profileSummary, handleEditJob, handleDelete]);
+
+  const draftColumns = useMemo((): Column<Job>[] => [
+    {
+      key: 'title',
+      label: 'Title',
+      sortable: true,
+      render: (job) => (
+        <div className="font-medium truncate max-w-[280px]">
+          {job.title?.trim() || 'Untitled draft'}
+        </div>
+      ),
+    },
+    {
+      key: 'updatedAt',
+      label: 'Last updated',
+      sortable: true,
+      render: (job) => (
+        <span className="text-sm text-muted-foreground">
+          {formatRelativeDate(job.updatedAt)}
+        </span>
+      ),
+    },
+    {
+      key: 'draftStep',
+      label: 'Step',
+      render: (job) => {
+        const raw = job.draftStep ?? (job as any).draft_step;
+        const step = Math.max(1, Number(raw) || 1);
+        return (
+          <span className="text-sm text-muted-foreground">
+            Step {step}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      width: '240px',
+      render: (job) => (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => handleContinueDraft(job)}
+            className="gap-1"
+          >
+            <FileEdit className="h-4 w-4" />
+            Continue
+          </Button>
+          <Button
+            size="sm"
+            variant={job.savedAsTemplate ? "ghost" : "outline"}
+            onClick={() => handleSaveAsTemplate(job)}
+            className="gap-1"
+            disabled={job.savedAsTemplate}
+          >
+            {job.savedAsTemplate ? (
+              <>
+                <Check className="h-4 w-4 text-green-500" />
+                Saved
+              </>
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                Save as Template
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => handleDelete(job.id)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ], [handleContinueDraft, handleSaveAsTemplate, handleDelete]);
 
   return (
     <DashboardPageLayout
@@ -732,8 +839,8 @@ export default function Jobs() {
             </p>
           </div>
         )}
-        {loading ? (
-          <DashboardSkeleton />
+        {(permissionLoading || (jobsLoading && jobs.length === 0)) ? (
+          <JobsPageSkeleton />
         ) : (
           <>
             <AtsPageHeader
@@ -893,7 +1000,7 @@ export default function Jobs() {
               </CollapsibleContent>
             </Collapsible>
 
-            {selectedJobs.length > 0 && (
+            {viewMode === 'jobs' && selectedJobs.length > 0 && (
               <BulkActionsToolbar
                 selectedCount={selectedJobs.length}
                 onClearSelection={() => setSelectedJobs([])}
@@ -901,24 +1008,46 @@ export default function Jobs() {
               />
             )}
 
-            <DataTable
-              data={filteredJobs}
-              columns={columns}
-              searchable={false}
-              selectable
-              onSelectedRowsChange={setSelectedJobs}
-              onRowClick={(job) => {
-                navigate(`/ats/jobs/${job.id}`);
-              }}
-              emptyMessage="No jobs found"
-              tableId="jobs"
-            />
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'jobs' | 'drafts')} className="w-full">
+              <TabsList className="grid w-full max-w-[240px] grid-cols-2 mb-4">
+                <TabsTrigger value="jobs">Jobs</TabsTrigger>
+                <TabsTrigger value="drafts">Drafts</TabsTrigger>
+              </TabsList>
+
+              {viewMode === 'jobs' && (
+                <DataTable
+                  data={filteredJobs}
+                  columns={columns}
+                  searchable={false}
+                  selectable
+                  onSelectedRowsChange={setSelectedJobs}
+                  onRowClick={(job) => {
+                    navigate(`/ats/jobs/${job.id}`);
+                  }}
+                  emptyMessage="No jobs found"
+                  tableId="jobs"
+                />
+              )}
+
+              {viewMode === 'drafts' && (
+                <DataTable
+                  data={filteredDrafts}
+                  columns={draftColumns}
+                  searchable={false}
+                  selectable={false}
+                  onRowClick={() => { }}
+                  emptyMessage="No drafts. Close the job wizard and choose “Save draft” to create one."
+                  tableId="drafts"
+                />
+              )}
+            </Tabs>
 
             <JobCreateDrawer
               open={drawerOpen}
               onOpenChange={handleDrawerClose}
               jobId={editingJobId}
               initialData={editingJobData}
+              initialDraftStep={editingDraftStep}
             />
 
             <WarningConfirmationDialog

@@ -1,16 +1,14 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
-  Plus,
+  Sparkles,
   Search,
   Star,
-  TrendingUp,
   FileText,
   Edit,
   Copy,
@@ -18,7 +16,6 @@ import {
   MoreVertical,
   Filter,
   Users,
-  Building2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -33,21 +30,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { 
+import {
   WarningConfirmationDialog
 } from "@/shared/components/ui/warning-confirmation-dialog";
 import { jobService } from "@/shared/lib/jobService";
 import { jobTemplateService, JobTemplate } from "@/shared/lib/jobTemplateService";
-import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { Job } from "@/shared/types/job";
 import { useToast } from "@/shared/hooks/use-toast";
 import { useAuth } from "@/app/providers/AuthContext";
-import { CreateTemplateDialog } from "@/modules/jobs/components/templates/CreateTemplateDialog";
+import { CreateTemplateWithAIDialog } from "@/modules/jobs/components/templates/CreateTemplateWithAIDialog";
 import { EditTemplateDialog } from "@/modules/jobs/components/templates/EditTemplateDialog";
 import { formatDistanceToNow } from "date-fns";
 import { templateCategories } from "@/shared/lib/jobTemplateService";
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
-import { transformJobFormDataToCreateRequest } from "@/shared/lib/jobFormTransformers";
 import { TemplatesPageSkeleton } from "@/modules/jobs/components/templates/TemplatesPageSkeleton";
 
 export default function JobTemplates() {
@@ -57,7 +52,6 @@ export default function JobTemplates() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"recent" | "popular" | "name">("recent");
-  const [showMyTemplates, setShowMyTemplates] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<JobTemplate | null>(null);
   const [templates, setTemplates] = useState<JobTemplate[]>([]);
@@ -67,56 +61,47 @@ export default function JobTemplates() {
   const { draftJob: existingDraft, refetch: refetchDraft } = useDraftJob();
   const [latestDraft, setLatestDraft] = useState<Job | null>(null);
 
+  const fetchTemplates = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await jobTemplateService.getTemplates({
+        category: selectedCategory !== "all" ? selectedCategory : undefined,
+        search: searchQuery || undefined,
+      });
+      if (response.success && response.data) {
+        setTemplates(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch templates",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCategory, searchQuery, toast]);
+
   // Fetch templates from backend
   useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        setLoading(true);
-        const response = await jobTemplateService.getTemplates({
-          category: selectedCategory !== "all" ? selectedCategory : undefined,
-          search: searchQuery || undefined,
-        });
-        if (response.success && response.data) {
-          setTemplates(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching templates:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch templates",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTemplates();
-  }, [toast, selectedCategory, searchQuery]);
+  }, [fetchTemplates]);
 
-  const allTemplates = templates;
-  const popularTemplates = [...templates].sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0)).slice(0, 10);
+  // Client-side sorting
+  const sortedTemplates = useMemo(() => {
+    let result = [...templates];
 
-  // Filter templates (client-side filtering for my templates and sorting)
-  const filteredTemplates = useMemo(() => {
-    let filtered = allTemplates;
-
-    // My templates filter
-    if (showMyTemplates) {
-      filtered = filtered.filter((t) => t.createdBy === user?.id);
-    }
-
-    // Sort
     switch (sortBy) {
       case "popular":
-        filtered = [...filtered].sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
+        result.sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
         break;
       case "name":
-        filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+        result.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case "recent":
       default:
-        filtered = [...filtered].sort((a, b) => {
+        result.sort((a, b) => {
           const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
           const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
           return bTime - aTime;
@@ -124,27 +109,16 @@ export default function JobTemplates() {
         break;
     }
 
-    return filtered;
-  }, [allTemplates, sortBy, showMyTemplates, user]);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    return {
-      total: allTemplates.length,
-      myTemplates: allTemplates.filter((t) => t.createdBy === user?.id).length,
-      shared: allTemplates.length, // All templates are shared within company
-      totalUsage: allTemplates.reduce((sum, t) => sum + (t.usageCount || 0), 0),
-    };
-  }, [allTemplates, user]);
-
+    return result;
+  }, [templates, sortBy]);
 
   const handleUseTemplate = async (template: JobTemplate) => {
     setTemplateToUse(template);
-    
+
     // Refetch to get the latest draft before showing dialog
     const draft = await refetchDraft();
     setLatestDraft(draft);
-    
+
     setUseTemplateDialogOpen(true);
   };
 
@@ -154,7 +128,7 @@ export default function JobTemplates() {
     try {
       // Get template data formatted for job creation
       const templateDataResponse = await jobTemplateService.getTemplateJobData(templateToUse.id);
-      
+
       if (!templateDataResponse.success || !templateDataResponse.data) {
         throw new Error('Failed to get template data');
       }
@@ -182,7 +156,7 @@ export default function JobTemplates() {
 
       setUseTemplateDialogOpen(false);
       setTemplateToUse(null);
-      
+
       // Navigate to jobs page to open the draft, with flag to indicate it's from template
       navigate('/ats/jobs?action=create&fromTemplate=true');
     } catch (error) {
@@ -227,234 +201,121 @@ export default function JobTemplates() {
 
   return (
     <DashboardPageLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-8 space-y-8 max-w-7xl mx-auto">
         {loading ? (
           <TemplatesPageSkeleton />
         ) : (
           <>
-          {/* Header */}
-          <div className="text-base font-semibold flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Job Templates</h1>
-            <p className="text-muted-foreground">
-              Create and manage reusable job posting templates
-            </p>
-          </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Template
-          </Button>
-        </div>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h1 className="text-4xl font-extrabold tracking-tight">Job Templates</h1>
+                <p className="text-lg text-muted-foreground">
+                  Build your library of recurring templates to hire faster.
+                </p>
+              </div>
+              <Button size="lg" onClick={() => setCreateDialogOpen(true)} className="gap-2 shadow-lg hover:shadow-primary/20 transition-all duration-300">
+                <Sparkles className="h-5 w-5" />
+                Create Template with AI
+              </Button>
+            </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Templates</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.myTemplates} created by you
-              </p>
-            </CardContent>
-          </Card>
+            {/* Filters and Search */}
+            <div className="flex flex-col lg:flex-row gap-4 items-center bg-card p-4 rounded-xl border shadow-sm">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search templates by name, title or department..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12 bg-muted/20 border-none rounded-lg text-base"
+                />
+              </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Shared Templates</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.shared}</div>
-              <p className="text-xs text-muted-foreground">
-                Available to team
-              </p>
-            </CardContent>
-          </Card>
+              <div className="flex gap-3 w-full lg:w-auto">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-full sm:w-[200px] h-12 rounded-lg border-muted/50 bg-muted/5">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {templateCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsage}</div>
-              <p className="text-xs text-muted-foreground">
-                Times used
-              </p>
-            </CardContent>
-          </Card>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="w-full sm:w-[180px] h-12 rounded-lg border-muted/50 bg-muted/5">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">Most Recent</SelectItem>
+                    <SelectItem value="popular">Most Popular</SelectItem>
+                    <SelectItem value="name">Name (A-Z)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Categories</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{templateCategories.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Template categories
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search templates..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {templateCategories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Most Recent</SelectItem>
-              <SelectItem value="popular">Most Popular</SelectItem>
-              <SelectItem value="name">Name (A-Z)</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant={showMyTemplates ? "default" : "outline"}
-            onClick={() => setShowMyTemplates(!showMyTemplates)}
-          >
-            My Templates
-          </Button>
-        </div>
-
-        {/* Templates Tabs */}
-        <Tabs defaultValue="all" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="all">
-              All Templates ({filteredTemplates.length})
-            </TabsTrigger>
-            <TabsTrigger value="popular">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Popular
-            </TabsTrigger>
-            {templateCategories.slice(0, 3).map((category) => (
-              <TabsTrigger key={category} value={category}>
-                {category}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value="all" className="space-y-4">
-            <TemplateGrid
-              templates={filteredTemplates}
-              onEdit={handleEdit}
-              onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
-              onUseTemplate={handleUseTemplate}
-            />
-          </TabsContent>
-
-          <TabsContent value="popular" className="space-y-4">
-            <TemplateGrid
-              templates={popularTemplates}
-              onEdit={handleEdit}
-              onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
-              onUseTemplate={handleUseTemplate}
-            />
-          </TabsContent>
-
-          {templateCategories.slice(0, 3).map((category) => (
-            <TabsContent key={category} value={category} className="space-y-4">
+            {/* Template Grid */}
+            <div className="pt-2">
               <TemplateGrid
-                templates={filteredTemplates.filter((t) => t.category === category || t.jobData?.department === category)}
+                templates={sortedTemplates}
                 onEdit={handleEdit}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
                 onUseTemplate={handleUseTemplate}
               />
-            </TabsContent>
-          ))}
-        </Tabs>
+            </div>
 
-        <CreateTemplateDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
+            <CreateTemplateWithAIDialog
+              open={createDialogOpen}
+              onOpenChange={setCreateDialogOpen}
+              onSuccess={fetchTemplates}
+            />
 
-        {editingTemplate && (
-          <EditTemplateDialog
-            template={editingTemplate}
-            open={!!editingTemplate}
-            onOpenChange={(open) => {
-              if (!open) {
-                setEditingTemplate(null);
-                // Refetch templates after editing
-                const fetchTemplates = async () => {
-                  try {
-                    const response = await jobTemplateService.getTemplates({
-                      category: selectedCategory !== "all" ? selectedCategory : undefined,
-                      search: searchQuery || undefined,
-                    });
-                    if (response.success && response.data) {
-                      setTemplates(response.data);
-                    }
-                  } catch (error) {
-                    console.error('Error fetching templates:', error);
+            {editingTemplate && (
+              <EditTemplateDialog
+                template={editingTemplate}
+                open={!!editingTemplate}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setEditingTemplate(null);
+                    fetchTemplates();
                   }
-                };
-                fetchTemplates();
-              }
-            }}
-          />
-        )}
+                }}
+              />
+            )}
 
-        <WarningConfirmationDialog
-          open={useTemplateDialogOpen}
-          onOpenChange={(open) => {
-            setUseTemplateDialogOpen(open);
-            if (!open) {
-              setTemplateToUse(null);
-              setLatestDraft(null);
-            }
-          }}
-          onConfirm={confirmUseTemplate}
-          type="warning"
-          title="Use Template?"
-          description={
-            latestDraft
-              ? `You have an existing draft job: "${latestDraft.title || 'Untitled Job'}". Using this template will overwrite your current draft with the template data. Any changes you made to the draft will be lost.`
-              : "This will create a new draft job using the template data."
-          }
-          confirmLabel={latestDraft ? 'Overwrite Draft & Use Template' : 'Use Template'}
-        />
+            <WarningConfirmationDialog
+              open={useTemplateDialogOpen}
+              onOpenChange={(open) => {
+                setUseTemplateDialogOpen(open);
+                if (!open) {
+                  setTemplateToUse(null);
+                  setLatestDraft(null);
+                }
+              }}
+              onConfirm={confirmUseTemplate}
+              type="warning"
+              title="Use Template?"
+              description={
+                latestDraft
+                  ? `You have an existing draft job: "${latestDraft.title || 'Untitled Job'}". Using this template will overwrite your current draft with the template data. Any changes you made to the draft will be lost.`
+                  : "This will create a new draft job using the template data."
+              }
+              confirmLabel={latestDraft ? 'Overwrite Draft & Use Template' : 'Use Template'}
+            />
           </>
         )}
       </div>
     </DashboardPageLayout>
   );
 }
-
 interface TemplateGridProps {
   templates: JobTemplate[];
   onEdit: (template: JobTemplate) => void;
@@ -533,9 +394,9 @@ function TemplateGrid({ templates, onEdit, onDuplicate, onDelete, onUseTemplate 
             <div className="flex items-center justify-between text-sm">
               <Badge variant="secondary">{template.category || template.jobData?.department || "Uncategorized"}</Badge>
               <Badge variant="secondary" className="text-xs">
-                  <Users className="h-3 w-3 mr-1" />
-                  Shared
-                </Badge>
+                <Users className="h-3 w-3 mr-1" />
+                Shared
+              </Badge>
             </div>
 
             <div className="space-y-2 text-sm text-muted-foreground">
@@ -545,16 +406,16 @@ function TemplateGrid({ templates, onEdit, onDuplicate, onDelete, onUseTemplate 
                   {template.jobData?.title || "N/A"}
                 </span>
               </div>
-              <div className="text-base font-semibold flex items-center justify-between">
+              <div className="flex items-center justify-between">
+                <span>Created:</span>
+                <span className="font-medium text-foreground">
+                  {template.createdAt && !isNaN(new Date(template.createdAt).getTime()) ? formatDistanceToNow(new Date(template.createdAt), { addSuffix: true }) : 'recently'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span>Usage count:</span>
                 <span className="font-medium text-foreground">
                   {template.usageCount || 0} times
-                </span>
-              </div>
-              <div className="text-base font-semibold flex items-center justify-between">
-                <span>Created:</span>
-                <span className="font-medium text-foreground">
-                  {formatDistanceToNow(new Date(template.createdAt), { addSuffix: true })}
                 </span>
               </div>
             </div>
@@ -563,7 +424,7 @@ function TemplateGrid({ templates, onEdit, onDuplicate, onDelete, onUseTemplate 
               <div className="pt-3 border-t">
                 <p className="text-sm text-muted-foreground">Template includes:</p>
                 <ul className="mt-2 space-y-1 text-sm">
-                  {template.jobData.title && (
+                  {template.jobData?.title && (
                     <li className="flex items-center gap-2">
                       <span className="text-primary">•</span>
                       <span>Job Title: {template.jobData.title}</span>
@@ -594,7 +455,8 @@ function TemplateGrid({ templates, onEdit, onDuplicate, onDelete, onUseTemplate 
             </Button>
           </CardContent>
         </Card>
-      ))}
-    </div>
+      ))
+      }
+    </div >
   );
 }
