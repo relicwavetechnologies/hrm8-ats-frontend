@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,25 +12,45 @@ import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { FileText, Star, Search, TrendingUp } from "lucide-react";
-import { 
-  getJobTemplates, 
-  getMostUsedTemplates, 
+import {
+  getJobTemplates,
+  getMostUsedTemplates,
   incrementTemplateUsage,
   templateCategories,
-  JobTemplate 
+  JobTemplate
 } from "@/shared/lib/jobTemplateService";
 
 interface JobTemplatesDialogProps {
   onSelectTemplate: (template: JobTemplate) => void;
 }
-
 export function JobTemplatesDialog({ onSelectTemplate }: JobTemplatesDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [open, setOpen] = useState(false);
+  const [allTemplates, setAllTemplates] = useState<JobTemplate[]>([]);
+  const [popularTemplates, setPopularTemplates] = useState<JobTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const allTemplates = getJobTemplates();
-  const popularTemplates = getMostUsedTemplates();
+  useEffect(() => {
+    if (open) {
+      const fetchTemplates = async () => {
+        setIsLoading(true);
+        try {
+          const [all, popular] = await Promise.all([
+            getJobTemplates(),
+            getMostUsedTemplates()
+          ]);
+          setAllTemplates(all);
+          setPopularTemplates(popular);
+        } catch (error) {
+          console.error("Failed to fetch templates:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchTemplates();
+    }
+  }, [open]);
 
   const filteredTemplates = allTemplates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,8 +59,8 @@ export function JobTemplatesDialog({ onSelectTemplate }: JobTemplatesDialogProps
     return matchesSearch && matchesCategory;
   });
 
-  const handleSelectTemplate = (template: JobTemplate) => {
-    incrementTemplateUsage(template.id);
+  const handleSelectTemplate = async (template: JobTemplate) => {
+    await incrementTemplateUsage(template.id);
     onSelectTemplate(template);
     setOpen(false);
   };
@@ -87,23 +107,31 @@ export function JobTemplatesDialog({ onSelectTemplate }: JobTemplatesDialogProps
             </TabsList>
 
             <TabsContent value="all" className="space-y-3 mt-4">
-              <TemplateList 
-                templates={filteredTemplates} 
-                onSelect={handleSelectTemplate}
-              />
+              {isLoading ? (
+                <div className="text-center py-8">Loading templates...</div>
+              ) : (
+                <TemplateList
+                  templates={filteredTemplates}
+                  onSelect={handleSelectTemplate}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="popular" className="space-y-3 mt-4">
-              <TemplateList 
-                templates={popularTemplates} 
-                onSelect={handleSelectTemplate}
-              />
+              {isLoading ? (
+                <div className="text-center py-8">Loading templates...</div>
+              ) : (
+                <TemplateList
+                  templates={popularTemplates}
+                  onSelect={handleSelectTemplate}
+                />
+              )}
             </TabsContent>
 
             {templateCategories.map(category => (
               <TabsContent key={category} value={category} className="space-y-3 mt-4">
-                <TemplateList 
-                  templates={filteredTemplates.filter(t => t.category === category)} 
+                <TemplateList
+                  templates={filteredTemplates.filter(t => t.category === category)}
                   onSelect={handleSelectTemplate}
                 />
               </TabsContent>
@@ -115,11 +143,11 @@ export function JobTemplatesDialog({ onSelectTemplate }: JobTemplatesDialogProps
   );
 }
 
-function TemplateList({ 
-  templates, 
-  onSelect 
-}: { 
-  templates: JobTemplate[]; 
+function TemplateList({
+  templates,
+  onSelect
+}: {
+  templates: JobTemplate[];
   onSelect: (template: JobTemplate) => void;
 }) {
   if (templates.length === 0) {

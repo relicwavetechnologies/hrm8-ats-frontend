@@ -24,11 +24,11 @@ import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import VerifyCompanyPage from '@/pages/auth/VerifyCompanyPage';
 
 // Dev Pages
-import StripeMockCheckoutPage from '@/pages/dev/StripeMockCheckoutPage';
 
 // Lazy load module pages for code splitting
 const HomePage = lazy(() => import('@/pages/HomePage'));
 const JobsPage = lazy(() => import('@/pages/jobs/Jobs'));
+const JobTemplatesPage = lazy(() => import('@/pages/jobs/JobTemplates'));
 const JobDetailPage = lazy(() => import('@/pages/jobs/JobDetail'));
 const CandidatesPage = lazy(() => import('@/pages/candidates/Candidates'));
 const ApplicationsPage = lazy(() => import('@/pages/applications/Applications'));
@@ -139,6 +139,11 @@ export function AppRoutes() {
                 <Route path="/ats/jobs" element={
                     <Suspense fallback={<PageLoader />}>
                         <JobsPage />
+                    </Suspense>
+                } />
+                <Route path="/ats/job-templates" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <JobTemplatesPage />
                     </Suspense>
                 } />
                 <Route path="/ats/jobs/:jobId" element={

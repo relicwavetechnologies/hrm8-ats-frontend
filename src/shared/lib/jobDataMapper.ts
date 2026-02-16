@@ -57,6 +57,12 @@ function normalizeEmploymentType(employmentType: string): 'full-time' | 'part-ti
   return 'full-time'; // default
 }
 
+function _normalizeDraftStep(value: unknown): number {
+  if (value == null) return 1;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
 /**
  * Map backend job to frontend Job interface
  */
@@ -148,6 +154,8 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     videoInterviewingEnabled: backendJob.videoInterviewingEnabled || false,
     setupType: backendJob.setupType,
     managementType: backendJob.managementType,
+    savedAsTemplate: backendJob.savedAsTemplate ?? false,
+    draftStep: _normalizeDraftStep(backendJob.draftStep ?? backendJob.draft_step),
   };
 }
 
@@ -200,9 +208,7 @@ export function mapBackendJobToFormData(backendJob: any): Partial<JobFormData> {
         website: { included: false, required: false },
       },
     },
-    status: normalizedJob.status === 'closed' || normalizedJob.status === 'filled' || normalizedJob.status === 'on-hold'
-      ? 'draft'
-      : normalizedJob.status,
+    status: (normalizedJob.status === 'open' ? 'open' : 'draft') as 'draft' | 'open',
     jobBoardDistribution: normalizedJob.jobBoardDistribution || [],
     videoInterviewingEnabled: normalizedJob.videoInterviewingEnabled || false,
   };

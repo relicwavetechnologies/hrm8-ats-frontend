@@ -95,6 +95,8 @@ export interface Job {
   archived?: boolean;
   archivedAt?: string;
   archivedBy?: string;
+  /** Wizard step index (1-based) when saved as draft */
+  draftStep?: number;
   hiringTeam?: HiringTeamMember[];
   applicationForm?: ApplicationFormConfig;
 

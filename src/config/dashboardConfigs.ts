@@ -337,6 +337,12 @@ export const hrm8DashboardConfig: DashboardConfig = {
         icon: Briefcase,
       },
       {
+        id: "job-templates",
+        path: "/ats/job-templates",
+        label: "Job Templates",
+        icon: FileText,
+      },
+      {
         id: "job-board",
         path: "/hrm8/job-board",
         label: "Jobs",
@@ -508,6 +514,12 @@ export const consultant360DashboardConfig: DashboardConfig = {
         path: "/consultant360/jobs",
         label: "My Jobs",
         icon: Briefcase,
+      },
+      {
+        id: "job-templates",
+        path: "/ats/job-templates",
+        label: "Job Templates",
+        icon: FileText,
       },
       // Sales section
       {

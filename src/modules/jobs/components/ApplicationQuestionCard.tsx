@@ -113,8 +113,8 @@ export function ApplicationQuestionCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="text-xs bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700"
                     >
                       <Sparkles className="h-3 w-3 mr-1" />
@@ -172,7 +172,7 @@ export function ApplicationQuestionCard({
             <Copy className="h-4 w-4 mr-2" />
             Duplicate
           </DropdownMenuItem>
-          
+
           {onSaveToLibrary && (
             <>
               <DropdownMenuSeparator />
@@ -182,7 +182,7 @@ export function ApplicationQuestionCard({
               </DropdownMenuItem>
             </>
           )}
-          
+
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => onDelete(question.id)}

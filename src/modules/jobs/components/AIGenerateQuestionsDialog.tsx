@@ -114,7 +114,7 @@ export function AIGenerateQuestionsDialog({
 
   const handleAddSelected = () => {
     const selectedQuestions = generatedQuestions.filter((q) => selectedQuestionIds.has(q.id));
-    
+
     if (selectedQuestions.length === 0) {
       toast({
         title: 'No Questions Selected',
@@ -129,7 +129,7 @@ export function AIGenerateQuestionsDialog({
       title: 'Questions Added',
       description: `Added ${selectedQuestions.length} question${selectedQuestions.length > 1 ? 's' : ''} to your form`,
     });
-    
+
     // Reset and close
     setGeneratedQuestions([]);
     setSelectedQuestionIds(new Set());
@@ -310,9 +310,8 @@ export function AIGenerateQuestionsDialog({
 
               {/* Current Question Card */}
               <Card
-                className={`transition-colors ${
-                  selectedQuestionIds.has(currentQuestion.id) ? 'border-primary bg-primary/5' : ''
-                }`}
+                className={`transition-colors ${selectedQuestionIds.has(currentQuestion.id) ? 'border-primary bg-primary/5' : ''
+                  }`}
               >
                 <CardContent className="p-6">
                   <div className="space-y-4">
@@ -335,11 +334,11 @@ export function AIGenerateQuestionsDialog({
                         )}
                       </div>
                     </div>
-                    
+
                     {currentQuestion.description && (
                       <p className="text-sm text-muted-foreground">{currentQuestion.description}</p>
                     )}
-                    
+
                     {currentQuestion.options && currentQuestion.options.length > 0 && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Options:</Label>
@@ -384,13 +383,12 @@ export function AIGenerateQuestionsDialog({
                     <button
                       key={index}
                       onClick={() => setCurrentQuestionIndex(index)}
-                      className={`h-2 w-2 rounded-full transition-colors ${
-                        index === currentQuestionIndex
+                      className={`h-2 w-2 rounded-full transition-colors ${index === currentQuestionIndex
                           ? 'bg-primary'
                           : selectedQuestionIds.has(generatedQuestions[index].id)
-                          ? 'bg-primary/30'
-                          : 'bg-muted'
-                      }`}
+                            ? 'bg-primary/30'
+                            : 'bg-muted'
+                        }`}
                       aria-label={`Go to question ${index + 1}`}
                     />
                   ))}

@@ -5,6 +5,7 @@
 
 import { apiClient } from './api';
 import { Job, JobFormData } from '@/shared/types/job';
+export type { Job, JobFormData };
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'VISITOR';
 export type JobStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'ON_HOLD' | 'FILLED' | 'CANCELLED' | 'TEMPLATE';
@@ -44,6 +45,8 @@ export interface CreateJobRequest {
   servicePackage?: string;
   closeDate?: string;
   experienceLevel?: string;
+  /** When false, creates job as DRAFT (for save-draft flow) */
+  publishImmediately?: boolean;
 }
 
 export interface UpdateJobRequest extends Partial<CreateJobRequest> {
@@ -62,6 +65,8 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
   servicePackage?: string;
   setupType?: 'simple' | 'advanced';
   managementType?: string;
+  /** Wizard step (1-based) when saving as draft */
+  draftStep?: number;
 }
 
 export interface GetJobsFilters {
@@ -71,6 +76,8 @@ export interface GetJobsFilters {
   hiringMode?: HiringMode;
   includeArchived?: boolean; // If true, includes archived jobs. If false/undefined, excludes them
   onlyArchived?: boolean; // If true, returns only archived jobs
+  page?: number;
+  limit?: number;
 }
 
 class JobService {
@@ -92,6 +99,8 @@ class JobService {
     if (filters?.hiringMode) queryParams.append('hiringMode', filters.hiringMode);
     if (filters?.includeArchived !== undefined) queryParams.append('includeArchived', filters.includeArchived.toString());
     if (filters?.onlyArchived) queryParams.append('onlyArchived', 'true');
+    if (filters?.page != null) queryParams.append('page', String(filters.page));
+    if (filters?.limit != null) queryParams.append('limit', String(filters.limit));
 
     const queryString = queryParams.toString();
     const endpoint = `/api/jobs${queryString ? `?${queryString}` : ''}`;

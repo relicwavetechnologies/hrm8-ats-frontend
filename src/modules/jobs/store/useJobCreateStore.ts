@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import { JobFormData } from '@/shared/types/job';
 
 // Define the steps in order
@@ -74,10 +74,7 @@ const INITIAL_JOB_DATA: Partial<JobFormData> = {
   }
 };
 
-export const useJobCreateStore = create<JobCreateState>()(
-  devtools(
-    persist(
-      (set, get) => ({
+const storeImpl = (set: any, get: any) => ({
         // Initial State
         currentStepId: 'document-upload',
         stepOrder: [...WIZARD_STEPS],
@@ -169,16 +166,6 @@ export const useJobCreateStore = create<JobCreateState>()(
           parsedFields: [],
           error: null
         })
-      }),
-      {
-        name: 'job-create-store',
-        partialize: (state) => ({
-          jobData: state.jobData,
-          currentStepId: state.currentStepId,
-          history: state.history,
-          parsedFields: state.parsedFields
-        }), // Persist these fields
-      }
-    )
-  )
-);
+      });
+
+export const useJobCreateStore = create<JobCreateState>()(devtools(storeImpl));

@@ -116,8 +116,8 @@ class JobService {
     /**
      * Publish job (change status from DRAFT to OPEN)
      */
-    async publishJob(id: string) {
-        return apiClient.post<Job>(`/api/jobs/${id}/publish`);
+    async publishJob(id: string, options?: { saveAsTemplate?: boolean; templateName?: string }) {
+        return apiClient.post<Job>(`/api/jobs/${id}/publish`, options);
     }
 
     /**
@@ -133,6 +133,27 @@ class JobService {
     async saveTemplate(id: string | null, data: CreateJobRequest) {
         const endpoint = id ? `/api/jobs/${id}/save-template` : `/api/jobs/new/save-template`;
         return apiClient.post<Job>(endpoint, data);
+    }
+
+    /**
+     * Get job templates
+     */
+    async getJobTemplates() {
+        return apiClient.get<{ templates: any[] }>('/api/job-templates');
+    }
+
+    /**
+     * Get job template by ID
+     */
+    async getJobTemplateById(id: string) {
+        return apiClient.get<{ template: any }>(`/api/job-templates/${id}`);
+    }
+
+    /**
+     * Delete job template
+     */
+    async deleteJobTemplate(id: string) {
+        return apiClient.delete(`/api/job-templates/${id}`);
     }
 
     /**

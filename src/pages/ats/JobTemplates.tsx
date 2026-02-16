@@ -41,7 +41,7 @@ import { jobTemplateService, JobTemplate } from "@/shared/lib/jobTemplateService
 import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { Job } from "@/shared/types/job";
 import { useToast } from "@/shared/hooks/use-toast";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/providers/AuthContext";
 import { CreateTemplateDialog } from "@/modules/jobs/components/templates/CreateTemplateDialog";
 import { EditTemplateDialog } from "@/modules/jobs/components/templates/EditTemplateDialog";
 import { formatDistanceToNow } from "date-fns";

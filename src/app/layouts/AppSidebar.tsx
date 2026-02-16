@@ -29,21 +29,12 @@ const atsNavItems = [
     url: "/ats/jobs",
     icon: Briefcase,
     isActive: true,
-    items: [
-      { title: "All Jobs", url: "/ats/jobs" },
-      { title: "Templates", url: "/jobs/templates" },
-      { title: "Automation", url: "/jobs/automation" },
-      { title: "Analytics", url: "/jobs/analytics" },
-    ]
   },
+  { title: "Job Templates", url: "/ats/job-templates", icon: FileText },
   {
     title: "Candidates",
     url: "/candidates",
     icon: Users,
-    subItems: [
-      { title: "All Candidates", url: "/candidates" },
-      { title: "Pipeline Board", url: "/candidates/pipeline" },
-    ]
   },
   { title: "Applications", url: "/applications", icon: FileCheck },
   { title: "Requisitions", url: "/requisitions", icon: ClipboardList },

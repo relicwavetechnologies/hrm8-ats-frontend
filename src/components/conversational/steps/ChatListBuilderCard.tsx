@@ -3,7 +3,7 @@ import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
-import { List, Plus, X, ArrowRight, Sparkles } from 'lucide-react';
+import { List, Plus, X, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 
 interface ChatListBuilderCardProps {
     title: string;
@@ -14,6 +14,8 @@ interface ChatListBuilderCardProps {
     isParsed?: boolean;
     placeholder?: string;
     minItems?: number;
+    /** For AI Assist: generate list items using full context */
+    onGenerateList?: (currentItems: string[]) => Promise<string[]>;
 }
 
 export const ChatListBuilderCard: React.FC<ChatListBuilderCardProps> = ({
@@ -25,8 +27,29 @@ export const ChatListBuilderCard: React.FC<ChatListBuilderCardProps> = ({
     isParsed,
     placeholder = 'Add an item...',
     minItems = 1,
+    onGenerateList,
 }) => {
     const [newItem, setNewItem] = useState('');
+    const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState<string[] | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+
+    const handleAiAssist = async () => {
+        if (!onGenerateList) return;
+        setAiLoading(true);
+        setAiError(null);
+        setShowAiSuggestion(true);
+        setAiSuggestion(null);
+        try {
+            const suggested = await onGenerateList(items);
+            setAiSuggestion(Array.isArray(suggested) ? suggested : []);
+        } catch (e) {
+            setAiError(e instanceof Error ? e.message : 'Failed to generate suggestion');
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     const handleAddItem = () => {
         if (newItem.trim()) {
@@ -63,12 +86,84 @@ export const ChatListBuilderCard: React.FC<ChatListBuilderCardProps> = ({
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{items.length} items added</span>
-                    {isParsed && (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            From JD
-                        </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {isParsed && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                From JD
+                            </Badge>
+                        )}
+                        {onGenerateList && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-primary gap-1"
+                                onClick={handleAiAssist}
+                                disabled={aiLoading}
+                            >
+                                {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                AI Assist
+                            </Button>
+                        )}
+                    </div>
                 </div>
+
+                {/* AI Suggestion panel */}
+                {showAiSuggestion && onGenerateList && (
+                    <div className="p-3 bg-muted/30 border rounded-lg space-y-2 animate-in fade-in zoom-in-95">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-primary flex items-center gap-1">
+                                <Sparkles className="h-3 w-3" /> AI Suggestion
+                            </span>
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setShowAiSuggestion(false); setAiError(null); }}>
+                                <span className="sr-only">Dismiss</span>
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </div>
+                        {aiLoading && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" /> Generating using company and job context...
+                            </p>
+                        )}
+                        {aiError && (
+                            <p className="text-sm text-destructive">{aiError}</p>
+                        )}
+                        {!aiLoading && aiSuggestion && aiSuggestion.length > 0 && (
+                            <>
+                                <ul className="text-sm text-muted-foreground space-y-1 max-h-[180px] overflow-y-auto list-decimal list-inside">
+                                    {aiSuggestion.map((s, i) => (
+                                        <li key={i}>{s}</li>
+                                    ))}
+                                </ul>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="flex-1 text-xs"
+                                        onClick={() => {
+                                            onChange(aiSuggestion);
+                                            setShowAiSuggestion(false);
+                                            setAiSuggestion(null);
+                                        }}
+                                    >
+                                        Replace list
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="flex-1 text-xs"
+                                        onClick={() => {
+                                            onChange([...items, ...aiSuggestion]);
+                                            setShowAiSuggestion(false);
+                                            setAiSuggestion(null);
+                                        }}
+                                    >
+                                        Append to list
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
 
                 {/* Existing Items */}
                 <div className="space-y-2 max-h-[250px] overflow-y-auto">
