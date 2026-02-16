@@ -4,8 +4,9 @@
  * Shows subscription details, usage, wallet balance, and upgrade options
  */
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -27,10 +28,47 @@ import { WalletRechargeDialog } from "@/modules/wallet/components/WalletRecharge
 import { PricingDisplay } from "@/modules/subscription/components/PricingDisplay";
 import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
+import { useToast } from "@/shared/hooks/use-toast";
 
 export function SubscriptionManagementPage() {
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
     const [showRechargeDialog, setShowRechargeDialog] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    const [justReturnedFromCheckout, setJustReturnedFromCheckout] = useState(false);
+
+    useEffect(() => {
+        const success = searchParams.get('success') || searchParams.get('subscription_success');
+        if (success === 'true') {
+            setJustReturnedFromCheckout(true);
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            setSearchParams({}, { replace: true });
+            toast({ title: "Payment successful", description: "Your subscription has been activated." });
+        }
+    }, [searchParams, queryClient, setSearchParams, toast]);
+
+    // Poll for subscription while webhook may still be processing (Stripe redirect often arrives before webhook)
+    useEffect(() => {
+        if (!justReturnedFromCheckout) return;
+        const interval = setInterval(() => {
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription', 'active'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        }, 2000);
+        const stop = setTimeout(() => {
+            clearInterval(interval);
+            setJustReturnedFromCheckout(false);
+        }, 15000); // Stop after 15s max
+        return () => {
+            clearInterval(interval);
+            clearTimeout(stop);
+        };
+    }, [justReturnedFromCheckout, queryClient]);
 
     // Fetch wallet balance
     const { data: walletData, isLoading: walletLoading } = useQuery({
@@ -42,16 +80,18 @@ export function SubscriptionManagementPage() {
         },
     });
 
-    // Fetch active subscription
+    // Fetch active subscription (from wallet subscriptions list)
     const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
         queryKey: ['wallet', 'subscription', 'active'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/subscriptions');
+            const response = await fetch('/api/wallet/subscriptions', { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to fetch subscriptions');
             const result = await response.json();
-            // Get the active subscription
-            return result.data?.find((sub: any) => sub.status === 'ACTIVE') || null;
+            const subs = result.data?.subscriptions ?? result.data ?? [];
+            const arr = Array.isArray(subs) ? subs : [];
+            return arr.find((sub: { status?: string }) => sub.status === 'ACTIVE') || null;
         },
+        refetchOnWindowFocus: true,
     });
 
     // Fetch recent transactions

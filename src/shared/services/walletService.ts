@@ -128,7 +128,8 @@ class WalletService {
             throw new Error('Failed to fetch subscriptions');
         }
         const data = await response.json();
-        return data.data;
+        const payload = data.data;
+        return Array.isArray(payload) ? payload : (payload?.subscriptions ?? []);
     }
 
     async getSubscription(subscriptionId: string) {
@@ -184,6 +185,45 @@ class WalletService {
         });
         if (!response.ok) throw new Error('Failed to cancel subscription');
         return response.json();
+    }
+
+    // Subscription purchase via Stripe (production-grade)
+    async createSubscriptionCheckout(data: {
+        planType: string;
+        name: string;
+        amount: number;
+        billingCycle?: string;
+        jobQuota?: number | null;
+    }) {
+        const url = `${this.apiUrl}/api/integrations/stripe/create-checkout-session`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                type: 'subscription',
+                amount: data.amount,
+                planType: data.planType,
+                planName: data.name,
+                billingCycle: data.billingCycle || 'MONTHLY',
+                jobQuota: data.jobQuota ?? undefined,
+                description: `${data.name} - $${data.amount.toFixed(2)}`,
+            }),
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            const e: any = new Error(err.message || 'Failed to create checkout');
+            e.response = { status: response.status };
+            e.errorCode = err.errorCode;
+            throw e;
+        }
+        const result = await response.json();
+        if (result.data?.url) {
+            window.location.href = result.data.url;
+        } else {
+            throw new Error('No checkout URL returned');
+        }
+        return result;
     }
 
     // Wallet Recharge
