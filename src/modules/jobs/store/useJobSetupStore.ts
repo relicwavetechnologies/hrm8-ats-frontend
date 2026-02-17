@@ -23,6 +23,7 @@ interface JobSetupState {
     setRounds: (rounds: JobRound[]) => void;
     addRound: (round: Partial<JobRound>) => void;
     updateRound: (index: number, updates: Partial<JobRound>) => void;
+    setCurrentStep: (step: number) => void;
     nextStep: () => void;
     prevStep: () => void;
     reset: () => void;
@@ -59,6 +60,10 @@ export const useJobSetupStore = create<JobSetupState>((set) => ({
     updateRound: (index, updates) =>
         set((state) => ({
             rounds: state.rounds.map((r, i) => i === index ? { ...r, ...updates } : r)
+        })),
+    setCurrentStep: (step) =>
+        set(() => ({
+            currentStep: Math.max(1, Math.min(6, Number.isFinite(step) ? Math.floor(step) : 1)),
         })),
     nextStep: () => set((state) => ({ currentStep: state.currentStep + 1 })),
     prevStep: () => set((state) => ({ currentStep: Math.max(1, state.currentStep - 1) })),

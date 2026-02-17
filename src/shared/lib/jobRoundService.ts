@@ -1,6 +1,12 @@
 import { apiClient } from './api';
 
-export type JobRoundType = 'ASSESSMENT' | 'INTERVIEW';
+/**
+ * Round types:
+ * - CUSTOM: Simple mode, manual-only non-interview rounds (no automation)
+ * - ASSESSMENT: Advanced mode, automated non-interview rounds (full automation support)
+ * - INTERVIEW: Both modes, role-managed interview rounds
+ */
+export type JobRoundType = 'CUSTOM' | 'ASSESSMENT' | 'INTERVIEW';
 
 export interface JobRound {
   id: string;

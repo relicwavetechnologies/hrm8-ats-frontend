@@ -24,9 +24,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2, Search, Eye, EyeOff, Building2, Globe, Users } from 'lucide-react';
 import { VerificationEmailCard } from '@/modules/auth/components/VerificationEmailCard';
 import { authService } from '@/shared/lib/authService';
-//@ts-expect-error
 import logoLight from "@/assets/logo-light.png";
-//@ts-expect-error
 import logoDark from "@/assets/logo-dark.png";
 import countries from 'world-countries';
 
@@ -529,11 +527,19 @@ export default function Register() {
               </form>
             </CardContent>
             <CardFooter className="flex flex-col space-y-2 pt-4">
-              <div className="text-sm text-center text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline font-medium">
-                  Sign in
-                </Link>
+              <div className="text-sm text-center text-muted-foreground space-y-2">
+                <div>
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-primary hover:underline font-medium">
+                    Sign in
+                  </Link>
+                </div>
+                <div>
+                  Employee?{' '}
+                  <Link to="/signup" className="text-primary hover:underline font-medium">
+                    Request access
+                  </Link>
+                </div>
               </div>
             </CardFooter>
           </Card>

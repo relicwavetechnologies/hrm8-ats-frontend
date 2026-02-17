@@ -6,28 +6,21 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash } from "lucide-react";
 import { Application } from "@/shared/types/application";
-import { QuickActionsToolbar } from "./QuickActionsToolbar";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { ExperienceSkillsTab } from "./tabs/ExperienceSkillsTab";
 import { QuestionnaireResponsesTab } from "./tabs/QuestionnaireResponsesTab";
-import { ScorecardsTab } from "./tabs/ScorecardsTab";
 import { InterviewsTab } from "./tabs/InterviewsTab";
 import { TeamReviewsTab } from "./tabs/TeamReviewsTab";
-import { ActivityTimelineTab } from "./tabs/ActivityTimelineTab";
-import { VotingTab } from "./tabs/VotingTab";
-import { ComparisonTab } from "./tabs/ComparisonTab";
 import { ResumeAnnotationsTab } from "./tabs/ResumeAnnotationsTab";
 import { EmailTab } from "./tabs/EmailTab";
 import { CallLogsTab } from "./tabs/CallLogsTab";
 import { SmsTab } from "./tabs/SmsTab";
 import { SlackTab } from "./tabs/SlackTab";
-import { useActivityNotifications } from "@/shared/hooks/useActivityNotifications";
-import { useCandidatePresence } from "@/shared/hooks/useCandidatePresence";
-import { CandidatePresenceIndicator } from "./CandidatePresenceIndicator";
+import { NotesTab } from "./tabs/NotesTab";
 import { useCursorTracking } from "@/shared/hooks/useCursorTracking";
 import { NotificationCenter } from "@/modules/notifications/components/NotificationCenter";
 import { CandidateInfoPanel } from "./CandidateInfoPanel";
-import { CandidateNotesPanel } from "./CandidateNotesPanel";
+import { CandidateNotesPanelEnhanced } from "./CandidateNotesPanelEnhanced";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/shared/components/ui/resizable";
 
 interface CandidateAssessmentViewProps {
@@ -41,6 +34,7 @@ interface CandidateAssessmentViewProps {
   jobTitle: string;
   nextStageName?: string;
   onMoveToNextStage?: () => void;
+  isSimpleFlow?: boolean;
 }
 
 export function CandidateAssessmentView({
@@ -54,6 +48,7 @@ export function CandidateAssessmentView({
   jobTitle,
   nextStageName,
   onMoveToNextStage,
+  isSimpleFlow,
 }: CandidateAssessmentViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const [fullApplication, setFullApplication] = useState<Application>(application);
@@ -75,14 +70,6 @@ export function CandidateAssessmentView({
     fetchFullDetails();
   }, [application.id, application.updatedAt, application]);
 
-  const { unreadCount } = useActivityNotifications(fullApplication);
-  const { activeUsers } = useCandidatePresence({
-    applicationId: fullApplication.id,
-    currentUserId: 'current-user',
-    currentUserName: 'You',
-    currentUserRole: 'Hiring Manager',
-    currentTab: activeTab,
-  });
   const { containerRef } = useCursorTracking({
     applicationId: fullApplication.id,
     currentUserId: 'current-user',
@@ -113,54 +100,18 @@ export function CandidateAssessmentView({
         </SheetDescription>
         <div ref={containerRef} className="flex flex-col h-full relative overflow-hidden">
           {/* Compact Header */}
-          <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
-            <div className="flex items-center justify-between p-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onPrevious}
-                  disabled={!hasPrevious}
-                  className="h-8 w-8"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-sm text-muted-foreground">
-                  Candidate Assessment
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onNext}
-                  disabled={!hasNext}
-                  className="h-8 w-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-3">
-                <CandidatePresenceIndicator
-                  activeUsers={activeUsers}
-                  currentUserId="current-user"
-                />
-                <NotificationCenter userId="current-user" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onOpenChange(false)}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="bg-background flex-shrink-0">
+            <div className="flex items-center justify-end py-1 px-2 gap-1">
+              <NotificationCenter userId="current-user" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className="h-7 w-7"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-
-            {/* Quick Actions Toolbar */}
-            <QuickActionsToolbar
-              application={fullApplication}
-              nextStageName={nextStageName}
-              onNextStage={onMoveToNextStage}
-            />
           </div>
 
           {/* Resizable 3-Panel Content Layout */}
@@ -186,12 +137,15 @@ export function CandidateAssessmentView({
               <ResizablePanel defaultSize={75} minSize={50}>
                 <div className="h-full flex flex-col overflow-hidden">
                   {/* Top - Notes Panel */}
-                  <div className="h-[260px] flex-shrink-0 border-b p-3">
-                    <CandidateNotesPanel
+                  <div className="h-[360px] flex-shrink-0 border-b p-2">
+                    <CandidateNotesPanelEnhanced
                       applicationId={fullApplication.id}
                       jobId={fullApplication.jobId || ''}
                       candidateName={fullApplication.candidateName || "Candidate"}
                       jobTitle={jobTitle}
+                      candidateEmail={fullApplication.candidateEmail}
+                      candidatePhone={fullApplication.candidatePhone}
+                      application={fullApplication}
                     />
                   </div>
 
@@ -205,6 +159,10 @@ export function CandidateAssessmentView({
                               <FileText className="h-3.5 w-3.5" />
                               Overview
                             </TabsTrigger>
+                            <TabsTrigger value="notes" className="gap-1.5 text-xs">
+                              <MessageSquare className="h-3.5 w-3.5" />
+                              Notes
+                            </TabsTrigger>
                             <TabsTrigger value="annotations" className="gap-1.5 text-xs">
                               <Highlighter className="h-3.5 w-3.5" />
                               Annotations
@@ -213,10 +171,6 @@ export function CandidateAssessmentView({
                               <MessageSquare className="h-3.5 w-3.5" />
                               Questionnaire
                             </TabsTrigger>
-                            <TabsTrigger value="scorecards" className="gap-1.5 text-xs">
-                              <ClipboardCheck className="h-3.5 w-3.5" />
-                              Scorecards
-                            </TabsTrigger>
                             <TabsTrigger value="interviews" className="gap-1.5 text-xs">
                               <Calendar className="h-3.5 w-3.5" />
                               Interviews
@@ -224,23 +178,6 @@ export function CandidateAssessmentView({
                             <TabsTrigger value="reviews" className="gap-1.5 text-xs">
                               <Users className="h-3.5 w-3.5" />
                               Team Reviews
-                            </TabsTrigger>
-                            <TabsTrigger value="voting" className="gap-1.5 text-xs">
-                              <Vote className="h-3.5 w-3.5" />
-                              Voting
-                            </TabsTrigger>
-                            <TabsTrigger value="comparison" className="gap-1.5 text-xs">
-                              <GitCompare className="h-3.5 w-3.5" />
-                              Compare
-                            </TabsTrigger>
-                            <TabsTrigger value="activity" className="gap-1.5 text-xs">
-                              <Activity className="h-3.5 w-3.5" />
-                              Activity
-                              {unreadCount > 0 && (
-                                <Badge variant="destructive" className="ml-1 h-4 min-w-4 rounded-full px-1 text-[10px]">
-                                  {unreadCount}
-                                </Badge>
-                              )}
                             </TabsTrigger>
                             <TabsTrigger value="email" className="gap-1.5 text-xs">
                               <Mail className="h-3.5 w-3.5" />
@@ -268,16 +205,16 @@ export function CandidateAssessmentView({
                             <OverviewTab application={fullApplication} />
                           </TabsContent>
 
+                          <TabsContent value="notes" className="mt-0">
+                            <NotesTab application={fullApplication} />
+                          </TabsContent>
+
                           <TabsContent value="experience" className="mt-0">
                             <ExperienceSkillsTab application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="questionnaire" className="mt-0">
                             <QuestionnaireResponsesTab application={fullApplication} />
-                          </TabsContent>
-
-                          <TabsContent value="scorecards" className="mt-0">
-                            <ScorecardsTab application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="interviews" className="mt-0">
@@ -302,23 +239,8 @@ export function CandidateAssessmentView({
                             />
                           </TabsContent>
 
-                          <TabsContent value="voting" className="mt-0">
-                            <VotingTab
-                              candidateId={fullApplication.id}
-                              candidateName={fullApplication.candidateName}
-                            />
-                          </TabsContent>
-
-                          <TabsContent value="comparison" className="mt-0">
-                            <ComparisonTab />
-                          </TabsContent>
-
                           <TabsContent value="annotations" className="mt-0">
                             <ResumeAnnotationsTab candidateId={fullApplication.id} />
-                          </TabsContent>
-
-                          <TabsContent value="activity" className="mt-0">
-                            <ActivityTimelineTab application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="email" className="mt-0">

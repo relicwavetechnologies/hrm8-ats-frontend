@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export function AdminWalletDashboard() {
     // Fetch global wallet stats

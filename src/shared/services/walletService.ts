@@ -58,7 +58,7 @@ export interface AddOnServiceRequest {
 }
 
 class WalletService {
-    private apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    private apiUrl = import.meta.env.VITE_API_URL || '';
     private baseUrl = `${this.apiUrl}/api/wallet`;
 
     // Wallet Balance & Account

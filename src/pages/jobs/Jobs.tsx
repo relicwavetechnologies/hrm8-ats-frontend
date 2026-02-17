@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useSearchParams, useNavigate, useMatch } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
@@ -15,6 +15,8 @@ import { FormDrawer } from "@/shared/components/ui/form-drawer";
 import { JobWizard } from "@/modules/jobs/components/JobWizard";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
 import { JobCreateDrawer } from "@/components/conversational/JobCreateDrawer";
+import { JobSetupDrawer } from "@/components/setup/JobSetupDrawer";
+import { ManagedRecruitmentCheckoutDialog } from "@/modules/jobs/components/ManagedRecruitmentCheckoutDialog";
 import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
 import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
 import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
@@ -88,6 +90,23 @@ export default function Jobs() {
   const [viewMode, setViewMode] = useState<'jobs' | 'drafts'>('jobs');
   /** When opening wizard from a draft, pass step so wizard opens at correct step */
   const [editingDraftStep, setEditingDraftStep] = useState<number>(1);
+  /** Job Setup Drawer state */
+  const [setupDrawerOpen, setSetupDrawerOpen] = useState(false);
+  const [setupJobId, setSetupJobId] = useState<string | null>(null);
+  const [setupJobTitle, setSetupJobTitle] = useState<string | undefined>(undefined);
+  const [managedCheckoutOpen, setManagedCheckoutOpen] = useState(false);
+  const [managedCheckoutCompleted, setManagedCheckoutCompleted] = useState(false);
+
+  const managedCheckoutMatch = useMatch('/jobs/:jobId/managed-recruitment-checkout');
+  const managedCheckoutJobId = managedCheckoutMatch?.params.jobId ?? null;
+  const managedCheckoutServiceParam = searchParams.get('serviceType');
+  const managedCheckoutFromSetup = searchParams.get('fromSetup') === '1';
+  const managedCheckoutServiceType: 'shortlisting' | 'full-service' | 'executive-search' | undefined =
+    managedCheckoutServiceParam === 'shortlisting' ||
+      managedCheckoutServiceParam === 'full-service' ||
+      managedCheckoutServiceParam === 'executive-search'
+      ? managedCheckoutServiceParam
+      : undefined;
 
   const jobsPage = 1;
   const {
@@ -155,6 +174,13 @@ export default function Jobs() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    setManagedCheckoutOpen(Boolean(managedCheckoutJobId));
+    if (managedCheckoutJobId) {
+      setManagedCheckoutCompleted(false);
+    }
+  }, [managedCheckoutJobId]);
 
   // Extract unique consultants and countries
   const uniqueConsultants = useMemo(() => {
@@ -701,6 +727,30 @@ export default function Jobs() {
       )
     },
     {
+      key: 'setup',
+      label: 'Setup',
+      sortable: false,
+      width: "120px",
+      render: (job) => {
+        const isSetupComplete = job.setupType && job.managementType;
+        return (
+          <div className="flex items-center gap-2">
+            {isSetupComplete ? (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Check className="h-3 w-3 mr-1" />
+                Complete
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                <Clock className="h-3 w-3 mr-1" />
+                Pending
+              </Badge>
+            )}
+          </div>
+        );
+      }
+    },
+    {
       key: 'actions',
       label: 'Actions',
       width: "80px",
@@ -1022,7 +1072,18 @@ export default function Jobs() {
                   selectable
                   onSelectedRowsChange={setSelectedJobs}
                   onRowClick={(job) => {
-                    navigate(`/ats/jobs/${job.id}`);
+                    // Check if job setup is complete
+                    const isSetupComplete = job.setupType && job.managementType;
+
+                    if (!isSetupComplete) {
+                      // Setup not complete, open JobSetupDrawer
+                      setSetupJobId(job.id);
+                      setSetupJobTitle(job.title);
+                      setSetupDrawerOpen(true);
+                    } else {
+                      // Setup complete, navigate to job details
+                      navigate(`/ats/jobs/${job.id}`);
+                    }
                   }}
                   emptyMessage="No jobs found"
                   tableId="jobs"
@@ -1119,6 +1180,56 @@ export default function Jobs() {
                 jobId={editingJobIdForEdit}
                 onSuccess={() => {
                   setRefreshKey(prev => prev + 1);
+                }}
+              />
+            )}
+
+            {/* Job Setup Drawer */}
+            <JobSetupDrawer
+              open={setupDrawerOpen}
+              onOpenChange={(open) => {
+                setSetupDrawerOpen(open);
+                if (!open) {
+                  setSetupJobId(null);
+                  setSetupJobTitle(undefined);
+                  // Refresh jobs list after setup is complete
+                  setRefreshKey(prev => prev + 1);
+                }
+              }}
+              jobId={setupJobId}
+              jobTitle={setupJobTitle}
+            />
+
+            {managedCheckoutJobId && (
+              <ManagedRecruitmentCheckoutDialog
+                open={managedCheckoutOpen}
+                onOpenChange={(open) => {
+                  setManagedCheckoutOpen(open);
+                  if (!open) {
+                    if (!managedCheckoutCompleted && managedCheckoutFromSetup && managedCheckoutJobId) {
+                      const sourceJob = jobs.find((item) => item.id === managedCheckoutJobId);
+                      setSetupJobId(managedCheckoutJobId);
+                      setSetupJobTitle(sourceJob?.title);
+                      setSetupDrawerOpen(true);
+                    }
+                    setSearchParams({}, { replace: true });
+                    navigate('/jobs', { replace: true });
+                    setRefreshKey(prev => prev + 1);
+                  }
+                }}
+                jobId={managedCheckoutJobId}
+                initialServiceType={managedCheckoutServiceType}
+                onSuccess={(upgradedJob) => {
+                  setManagedCheckoutCompleted(true);
+                  setRefreshKey(prev => prev + 1);
+                  const targetJob = upgradedJob || jobs.find(j => j.id === managedCheckoutJobId);
+                  if (targetJob) {
+                    setSetupJobId(targetJob.id);
+                    setSetupJobTitle(targetJob.title);
+                    setSetupDrawerOpen(true);
+                  }
+                  setSearchParams({}, { replace: true });
+                  navigate('/jobs', { replace: true });
                 }}
               />
             )}

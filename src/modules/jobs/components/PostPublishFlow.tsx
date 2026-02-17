@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Job } from "@/shared/types/job";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
@@ -52,6 +53,7 @@ export function PostPublishFlow({
   onSaveTemplate,
   onComplete,
 }: PostPublishFlowProps) {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<FlowStep>("tools");
   const [showJobTargetDialog, setShowJobTargetDialog] = useState(false);
@@ -188,7 +190,7 @@ export function PostPublishFlow({
   const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search') => {
     onOpenChange(false);
     setShowUpgradeDialog(false);
-    window.location.href = `/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`;
+    navigate(`/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
   };
 
   const renderToolsStep = () => (

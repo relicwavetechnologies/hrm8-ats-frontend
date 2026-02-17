@@ -4,6 +4,7 @@
  * define hiring roles/team per job, and configure rounds with optional role-based interviewer assignment.
  */
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Drawer,
   DrawerContent,
@@ -18,7 +19,9 @@ import { useJobSetupStore } from '@/modules/jobs/store/useJobSetupStore';
 import { jobService } from '@/shared/lib/jobService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { SetupFlowTypeCard } from './steps/SetupFlowTypeCard';
-import { SetupRolesAndTeamCard } from './steps/SetupRolesAndTeamCard';
+import { SetupRolesCard } from './steps/SetupRolesCard';
+import { SetupTeamCard } from './steps/SetupTeamCard';
+import { SetupRoleDistributionCard } from './steps/SetupRoleDistributionCard';
 import { SetupRoundsCard } from './steps/SetupRoundsCard';
 import { SetupReviewCard } from './steps/SetupReviewCard';
 
@@ -30,11 +33,12 @@ interface JobSetupDrawerProps {
 }
 
 const SETUP_STEPS = [
-  { id: 1, title: 'Management type' },
-  { id: 2, title: 'Setup flow' },
-  { id: 3, title: 'Roles & team' },
-  { id: 4, title: 'Rounds' },
-  { id: 5, title: 'Review' },
+  { id: 1, title: 'Setup flow' },
+  { id: 2, title: 'Create roles' },
+  { id: 3, title: 'Add team' },
+  { id: 4, title: 'Distribute roles' },
+  { id: 5, title: 'Configure rounds' },
+  { id: 6, title: 'Review' },
 ];
 
 export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
@@ -43,6 +47,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   jobId,
   jobTitle,
 }) => {
+  const navigate = useNavigate();
   const {
     currentStep,
     managementType,
@@ -56,6 +61,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     setRoles,
     setTeam,
     setRounds,
+    setCurrentStep,
     nextStep,
     prevStep,
     reset,
@@ -83,6 +89,48 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     };
     load();
   }, [open, jobId, setRoles]);
+
+  useEffect(() => {
+    if (!open || !jobId) return;
+    const loadJobSetup = async () => {
+      try {
+        const res = await jobService.getJobById(jobId);
+        const job = res.success ? res.data?.job : null;
+        if (!job) return;
+
+        const isManaged = job.managementType === 'hrm8-managed' || (job.serviceType && job.serviceType !== 'self-managed');
+        if (isManaged) {
+          setManagementType('hrm8-managed');
+          setSetupType('advanced');
+          // If managed payment is completed, skip step-1 and continue directly
+          // into advanced setup steps.
+          if (String(job.paymentStatus || '').toUpperCase() === 'PAID') {
+            setCurrentStep(2);
+          } else {
+            setCurrentStep(1);
+          }
+          return;
+        }
+
+        if (job.managementType === 'self-managed') {
+          setManagementType('self-managed');
+        }
+        if (job.setupType === 'simple' || job.setupType === 'advanced') {
+          setSetupType(job.setupType);
+        }
+        setCurrentStep(1);
+      } catch (e) {
+        console.warn('Could not load job setup metadata:', e);
+      }
+    };
+    loadJobSetup();
+  }, [open, jobId, setManagementType, setSetupType, setCurrentStep]);
+
+  useEffect(() => {
+    if (managementType === 'hrm8-managed' && setupType !== 'advanced') {
+      setSetupType('advanced');
+    }
+  }, [managementType, setupType, setSetupType]);
 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -114,7 +162,13 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
   const effectiveJobId = jobId ?? storeJobId ?? null;
 
-  const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search') => {
+  const handleManagementTypeSelect = (type: 'self-managed' | 'hrm8-managed') => {
+    setManagementType(type);
+
+    if (type === 'self-managed') {
+      return;
+    }
+
     if (!effectiveJobId) {
       toast({
         title: 'Job not found',
@@ -125,37 +179,48 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     }
 
     onOpenChange(false);
-    window.location.href = `/jobs/${effectiveJobId}/managed-recruitment-checkout?serviceType=${serviceType}`;
+    navigate(`/jobs/${effectiveJobId}/managed-recruitment-checkout?fromSetup=1`);
   };
 
   const renderStep = () => {
+    // Step 1: Setup Flow Type (Simple vs Advanced)
     if (currentStep === 1) {
       return (
         <SetupFlowTypeCard
           managementType={managementType}
-          onManagementTypeSelect={(t) => {
-            setManagementType(t);
-            if (t === 'self-managed') {
-              nextStep();
-            }
-          }}
-          onManagedServiceSelect={handleManagedServiceSelect}
-        />
-      );
-    }
-    if (currentStep === 2) {
-      return (
-        <SetupFlowTypeCard
-          managementType={managementType ?? 'self-managed'}
           setupType={setupType}
+          onManagementTypeSelect={handleManagementTypeSelect}
           onSetupTypeSelect={(t) => {
             setSetupType(t);
+            if (!managementType) setManagementType('self-managed');
             nextStep();
           }}
-          onBack={prevStep}
         />
       );
     }
+
+    // Step 2: Create Roles
+    if (currentStep === 2) {
+      if (!effectiveJobId) {
+        return (
+          <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Job not found</p>
+            <p className="text-sm text-muted-foreground">Setup could not find the job. Close and open the job from the list to continue setup, or create a new job.</p>
+            <Button variant="outline" onClick={handleClose}>Close</Button>
+          </div>
+        );
+      }
+      return (
+        <SetupRolesCard
+          jobId={effectiveJobId}
+          roles={roles}
+          onRolesChange={setRoles}
+          onContinue={nextStep}
+        />
+      );
+    }
+
+    // Step 3: Add Team Members
     if (currentStep === 3) {
       if (!effectiveJobId) {
         return (
@@ -167,18 +232,41 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         );
       }
       return (
-        <SetupRolesAndTeamCard
+        <SetupTeamCard
           jobId={effectiveJobId}
-          roles={roles}
           team={team}
           onTeamChange={setTeam}
-          onRolesLoaded={setRoles}
           onContinue={nextStep}
           onBack={prevStep}
         />
       );
     }
+
+    // Step 4: Distribute Roles
     if (currentStep === 4) {
+      if (!effectiveJobId) {
+        return (
+          <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Job not found</p>
+            <p className="text-sm text-muted-foreground">Setup could not find the job. Close and open the job from the list to continue setup, or create a new job.</p>
+            <Button variant="outline" onClick={handleClose}>Close</Button>
+          </div>
+        );
+      }
+      return (
+        <SetupRoleDistributionCard
+          jobId={effectiveJobId}
+          team={team}
+          roles={roles}
+          onTeamChange={setTeam}
+          onContinue={nextStep}
+          onBack={prevStep}
+        />
+      );
+    }
+
+    // Step 5: Configure Rounds
+    if (currentStep === 5) {
       if (!effectiveJobId) {
         return (
           <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
@@ -201,7 +289,9 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         />
       );
     }
-    if (currentStep === 5) {
+
+    // Step 6: Review
+    if (currentStep === 6) {
       return (
         <SetupReviewCard
           managementType={managementType}
@@ -251,7 +341,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           <span className="text-sm text-muted-foreground">
             Step {currentStep} of {SETUP_STEPS.length}
           </span>
-          {currentStep > 1 && currentStep < 5 && (
+          {currentStep > 1 && currentStep < 6 && (
             <Button variant="ghost" onClick={prevStep}>Back</Button>
           )}
         </div>

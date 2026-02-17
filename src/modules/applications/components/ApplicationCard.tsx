@@ -55,13 +55,15 @@ interface ApplicationCardProps {
   variant?: 'default' | 'minimal';
   allRounds?: JobRound[];
   onMoveToRound?: (applicationId: string, roundId: string) => void;
+  isOptimisticMove?: boolean; // Visual state for optimistic updates
+  hasFailed?: boolean; // Visual state for failed moves
 }
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { ChevronDown, ArrowRight } from "lucide-react";
 
-export function ApplicationCard({ 
-  application, 
+export function ApplicationCard({
+  application,
   onClick,
   isCompareMode = false,
   isSelected = false,
@@ -74,7 +76,9 @@ export function ApplicationCard({
   onShortlistChange,
   variant = 'default',
   allRounds,
-  onMoveToRound
+  onMoveToRound,
+  isOptimisticMove = false,
+  hasFailed = false
 }: ApplicationCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -207,7 +211,13 @@ export function ApplicationCard({
         style={style}
         {...attributes}
         {...listeners}
-        className={`p-2.5 cursor-pointer hover:shadow-md transition-all relative group ${isSelected ? 'ring-2 ring-primary' : ''}`}
+        className={`p-2.5 cursor-pointer hover:shadow-md transition-all relative group ${
+          isSelected ? 'ring-2 ring-primary' : ''
+        } ${
+          isOptimisticMove ? 'opacity-70 animate-pulse' : ''
+        } ${
+          hasFailed ? 'border-destructive animate-shake' : ''
+        }`}
         onClick={onClick}
       >
         {/* Comparison Checkbox */}

@@ -259,6 +259,8 @@ export interface JobFormData {
   selectedPaymentMethod?: 'account' | 'credit_card';
   paymentInvoiceRequested?: boolean;
   termsAccepted?: boolean;
+  saveAsTemplate?: boolean;
+  templateName?: string;
 
   // Video Interviewing
   videoInterviewingEnabled?: boolean;

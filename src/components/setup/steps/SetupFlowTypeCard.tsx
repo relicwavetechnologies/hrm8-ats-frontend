@@ -5,7 +5,7 @@
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { ArrowRight, Briefcase, Building2, Zap, Sliders, Users, Star, Crown, Check } from 'lucide-react';
+import { ArrowRight, Briefcase, Building2, Wallet, Zap, Sliders } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 interface SetupFlowTypeCardProps {
@@ -13,7 +13,6 @@ interface SetupFlowTypeCardProps {
   setupType?: 'simple' | 'advanced' | null;
   onManagementTypeSelect?: (value: 'self-managed' | 'hrm8-managed') => void;
   onSetupTypeSelect?: (value: 'simple' | 'advanced') => void;
-  onManagedServiceSelect?: (value: 'shortlisting' | 'full-service' | 'executive-search') => void;
   onBack?: () => void;
 }
 
@@ -27,7 +26,7 @@ const MANAGEMENT_OPTIONS = [
   {
     id: 'hrm8-managed' as const,
     name: 'HRM8-Managed',
-    description: 'HRM8 handles recruitment; you focus on interviews and decisions.',
+    description: 'Choose a managed service, pay from wallet, then continue with advanced setup.',
     icon: Building2,
   },
 ];
@@ -47,40 +46,14 @@ const SETUP_OPTIONS = [
   },
 ];
 
-const MANAGED_SERVICE_OPTIONS = [
-  {
-    id: 'shortlisting' as const,
-    name: 'Shortlisting Service',
-    price: 'Wallet based',
-    description: 'HRM8 consultants screen applicants and deliver a curated shortlist.',
-    icon: Users,
-  },
-  {
-    id: 'full-service' as const,
-    name: 'Full Service Recruitment',
-    price: 'Wallet based',
-    description: 'HRM8 runs end-to-end recruitment and hands over qualified finalists.',
-    icon: Star,
-  },
-  {
-    id: 'executive-search' as const,
-    name: 'Executive Search',
-    price: 'Wallet based',
-    description: 'Senior search process for leadership roles with consultant ownership.',
-    icon: Crown,
-  },
-];
-
 export const SetupFlowTypeCard: React.FC<SetupFlowTypeCardProps> = ({
   managementType,
   setupType,
   onManagementTypeSelect,
   onSetupTypeSelect,
-  onManagedServiceSelect,
   onBack,
 }) => {
   const isStep2 = onSetupTypeSelect != null && managementType === 'self-managed';
-  const showManagedServices = managementType === 'hrm8-managed' && onManagedServiceSelect != null;
 
   if (isStep2) {
     return (
@@ -163,38 +136,20 @@ export const SetupFlowTypeCard: React.FC<SetupFlowTypeCardProps> = ({
         })}
       </div>
 
-      {showManagedServices && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">
-            Choose HRM8 managed service
-          </p>
-          <div className="flex flex-col gap-3">
-            {MANAGED_SERVICE_OPTIONS.map((opt) => {
-              const Icon = opt.icon;
-              return (
-                <Card
-                  key={opt.id}
-                  className="relative cursor-pointer transition-all duration-300 p-5 hover:shadow-lg border hover:border-primary/50"
-                  onClick={() => onManagedServiceSelect(opt.id)}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="font-semibold">{opt.name}</p>
-                        <span className="text-xs font-medium text-primary">{opt.price}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">{opt.description}</p>
-                    </div>
-                    <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  </div>
-                </Card>
-              );
-            })}
+      {managementType === 'hrm8-managed' && (
+        <Card className="border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Wallet className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Next step: managed service checkout</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                You will see service options with pricing, pay from wallet, and continue directly to advanced setup.
+              </p>
+            </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

@@ -35,7 +35,7 @@ interface WebSocketProviderProps {
 
 // WebSocket URL construction
 const getWebSocketUrl = (): string => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
   return apiUrl.replace(/^http/, 'ws');
 };
 
@@ -384,4 +384,3 @@ export function useWebSocket() {
   }
   return context;
 }
-
