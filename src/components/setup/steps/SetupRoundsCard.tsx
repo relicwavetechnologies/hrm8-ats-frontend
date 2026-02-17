@@ -8,7 +8,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Badge } from '@/shared/components/ui/badge';
-import { Layers, Plus, ArrowRight, Loader2, Video, FileCheck, Settings2 } from 'lucide-react';
+import { Layers, Plus, ArrowRight, Loader2, Video, FileCheck, Settings2, GripVertical, Trash2 } from 'lucide-react';
 import { JobRole } from '@/shared/types/job';
 import { jobRoundService, JobRound, JobRoundType } from '@/shared/lib/jobRoundService';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -29,12 +29,119 @@ import {
   DialogFooter,
 } from '@/shared/components/ui/dialog';
 import { RoundConfigDrawer } from '@/modules/applications/components/RoundConfigDrawer';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-const FIXED_ROUNDS_PREREQ = [
-  { key: 'NEW', name: 'New', description: 'New applications land here. You move them manually to the next round.', color: 'bg-blue-50 dark:bg-blue-950/30' },
-  { key: 'OFFER', name: 'Offer', description: 'Ready to extend an offer. Manual step in Simple flow.', color: 'bg-green-50 dark:bg-green-950/30' },
-  { key: 'HIRED', name: 'Hired', description: 'Candidate accepted. Final stage.', color: 'bg-emerald-50 dark:bg-emerald-950/30' },
-] as const;
+const FIXED_ROUNDS = {
+  NEW: { key: 'NEW', name: 'New', description: 'Entry point - all applications start here', color: 'bg-blue-50 dark:bg-blue-950/30', order: 1 },
+  OFFER: { key: 'OFFER', name: 'Offer', description: 'Ready to extend job offer', color: 'bg-green-50 dark:bg-green-950/30', order: 999 },
+  HIRED: { key: 'HIRED', name: 'Hired', description: 'Candidate accepted the offer', color: 'bg-emerald-50 dark:bg-emerald-950/30', order: 1000 },
+  REJECTED: { key: 'REJECTED', name: 'Rejected', description: 'Application was not successful', color: 'bg-red-50 dark:bg-red-950/30', order: 1001 },
+} as const;
+
+// Sortable Round Item Component
+interface SortableRoundItemProps {
+  round: JobRound;
+  roles: JobRole[];
+  isSimple: boolean;
+  onDelete: (roundId: string) => void;
+  onConfigure?: (round: JobRound) => void;
+  isDeleting: boolean;
+}
+
+function SortableRoundItem({ round, roles, isSimple, onDelete, onConfigure, isDeleting }: SortableRoundItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: round.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 p-3 rounded-lg border bg-background"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+      >
+        <GripVertical className="h-5 w-5" />
+      </div>
+
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {round.type === 'INTERVIEW' ? (
+          <Video className="h-5 w-5 text-muted-foreground shrink-0" />
+        ) : (
+          <FileCheck className="h-5 w-5 text-muted-foreground shrink-0" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{round.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {round.type === 'INTERVIEW' && round.assignedRoleId
+              ? `Interview · Role: ${roles.find((x) => x.id === round.assignedRoleId)?.name ?? round.assignedRoleId}`
+              : round.type}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {!isSimple && onConfigure && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onConfigure(round)}
+            className="gap-1"
+          >
+            <Settings2 className="h-4 w-4" />
+            Configure
+          </Button>
+        )}
+        <Badge variant={round.type === 'INTERVIEW' ? 'default' : 'secondary'}>
+          {round.type}
+        </Badge>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(round.id)}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 interface SetupRoundsCardProps {
   jobId: string;
@@ -65,7 +172,7 @@ export function SetupRoundsCard({
   const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState('');
-  /** Simple only: when true = interview round (with role), when false = normal round (ASSESSMENT) */
+  /** Simple only: when true = interview round (with role), when false = CUSTOM round (manual) */
   const [interviewKind, setInterviewKind] = useState(true);
   const [type, setType] = useState<JobRoundType>(isSimple ? 'INTERVIEW' : 'ASSESSMENT');
   const [assignedRoleId, setAssignedRoleId] = useState<string>('');
@@ -73,6 +180,15 @@ export function SetupRoundsCard({
   const [syncPermissions, setSyncPermissions] = useState(true);
   const [autoMoveOnPass, setAutoMoveOnPass] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingRoundId, setDeletingRoundId] = useState<string | null>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +257,67 @@ export function SetupRoundsCard({
     }
   };
 
+  const handleDeleteRound = async (roundId: string) => {
+    const round = rounds.find((r) => r.id === roundId);
+    if (!round) return;
+
+    setDeletingRoundId(roundId);
+    try {
+      const res = await jobRoundService.deleteRound(jobId, roundId);
+      if (res.success) {
+        const updatedRounds = rounds.filter((r) => r.id !== roundId);
+        onRoundsChange(updatedRounds);
+        toast({ title: 'Round deleted', description: `"${round.name}" has been removed.` });
+      } else {
+        throw new Error(res.error || 'Failed to delete round');
+      }
+    } catch (e) {
+      toast({
+        title: 'Error',
+        description: e instanceof Error ? e.message : 'Failed to delete round',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingRoundId(null);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = customRounds.findIndex((r) => r.id === active.id);
+    const newIndex = customRounds.findIndex((r) => r.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedRounds = arrayMove(customRounds, oldIndex, newIndex);
+
+    // Update local state immediately for smooth UX
+    onRoundsChange(reorderedRounds);
+
+    // Update order in backend
+    try {
+      // Update each round's order based on new position
+      const updates = reorderedRounds.map((round, index) => {
+        const newOrder = index + 2; // Start from 2 (NEW is 1, custom rounds are 2+)
+        return jobRoundService.updateRound(jobId, round.id, { order: newOrder });
+      });
+
+      await Promise.all(updates);
+      toast({ title: 'Order updated', description: 'Round sequence saved.' });
+    } catch (e) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save round order. Please try again.',
+        variant: 'destructive',
+      });
+      // Reload rounds to restore correct order
+      refetchRounds();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -161,106 +338,111 @@ export function SetupRoundsCard({
       </div>
 
       <Card className="p-5 space-y-4">
-        <Label className="text-xs font-medium uppercase text-muted-foreground">Pipeline overview</Label>
-        <p className="text-sm text-muted-foreground">Your pipeline always includes these stages:</p>
-        <ul className="space-y-2">
-          {FIXED_ROUNDS_PREREQ.map((r) => (
-            <li key={r.key} className={`flex gap-3 p-3 rounded-lg ${r.color}`}>
-              <span className="font-medium text-sm shrink-0">{r.name}</span>
-              <span className="text-sm text-muted-foreground">{r.description}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      {!isSimple && allRounds.length > 0 && (
-        <Card className="p-5 space-y-4">
-          <Label className="text-xs font-medium uppercase text-muted-foreground">Configure rounds (role, permissions, email)</Label>
-          <p className="text-sm text-muted-foreground">Set role, who can move, and email template for each stage.</p>
-          <div className="space-y-2">
-            {allRounds.map((r) => (
-              <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border">
-                <div className="flex items-center gap-3">
-                  {r.type === 'INTERVIEW' ? <Video className="h-5 w-5 text-muted-foreground shrink-0" /> : <FileCheck className="h-5 w-5 text-muted-foreground shrink-0" />}
-                  <div>
-                    <p className="text-sm font-medium">{r.name}</p>
-                    <p className="text-xs text-muted-foreground">{r.isFixed ? 'Fixed stage' : r.type}</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => { setConfigRound(r); setConfigDrawerOpen(true); }} className="gap-1">
-                  <Settings2 className="h-4 w-4" />
-                  Configure
-                </Button>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium uppercase text-muted-foreground">Custom rounds</Label>
-          {!isSimple && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setName('');
-                setAssignedRoleId('');
-                if (isSimple) {
-                  setInterviewKind(true);
-                  setType('INTERVIEW');
-                } else {
-                  setType('ASSESSMENT');
-                  setSyncPermissions(true);
-                  setAutoMoveOnPass(false);
-                }
-                setDialogOpen(true);
-              }}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" /> Add round
-            </Button>
-          )}
+          <Label className="text-xs font-medium uppercase text-muted-foreground">Your Pipeline</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setName('');
+              setAssignedRoleId('');
+              if (isSimple) {
+                setInterviewKind(true);
+                setType('INTERVIEW');
+              } else {
+                setType('ASSESSMENT');
+                setSyncPermissions(true);
+                setAutoMoveOnPass(false);
+              }
+              setDialogOpen(true);
+            }}
+            className="gap-1"
+          >
+            <Plus className="h-4 w-4" /> Add round
+          </Button>
         </div>
+        <p className="text-sm text-muted-foreground">
+          Candidates flow through these stages. Drag custom rounds to reorder them.
+        </p>
+
         <div className="space-y-2">
-          {customRounds.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4">No custom rounds yet. Add one to get started.</p>
-          ) : (
-            customRounds.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg border"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {r.type === 'INTERVIEW' ? (
-                    <Video className="h-5 w-5 text-muted-foreground shrink-0" />
-                  ) : (
-                    <FileCheck className="h-5 w-5 text-muted-foreground shrink-0" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{r.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {r.type === 'INTERVIEW' && r.assignedRoleId
-                        ? `Interview · Role: ${roles.find((x) => x.id === r.assignedRoleId)?.name ?? r.assignedRoleId}`
-                        : r.type}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {!isSimple && (
-                    <Button variant="ghost" size="sm" onClick={() => { setConfigRound(r); setConfigDrawerOpen(true); }} className="gap-1">
-                      <Settings2 className="h-4 w-4" />
-                      Configure
-                    </Button>
-                  )}
-                  <Badge variant={r.type === 'INTERVIEW' ? 'default' : 'secondary'}>
-                    {r.type}
-                  </Badge>
-                </div>
+          {/* 1. NEW - Fixed entry point */}
+          <div className={`flex gap-3 p-3 rounded-lg ${FIXED_ROUNDS.NEW.color} border-2 border-dashed`}>
+            <div className="flex items-center gap-3 flex-1">
+              <Badge variant="outline" className="shrink-0">START</Badge>
+              <div>
+                <p className="font-medium text-sm">{FIXED_ROUNDS.NEW.name}</p>
+                <p className="text-xs text-muted-foreground">{FIXED_ROUNDS.NEW.description}</p>
               </div>
-            ))
+            </div>
+          </div>
+
+          {/* 2. Custom Rounds - Draggable */}
+          {customRounds.length === 0 ? (
+            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                No custom rounds yet. Click "Add round" to create your interview or assessment stages.
+              </p>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={customRounds.map((r) => r.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {customRounds.map((r) => (
+                    <SortableRoundItem
+                      key={r.id}
+                      round={r}
+                      roles={roles}
+                      isSimple={isSimple}
+                      onDelete={handleDeleteRound}
+                      onConfigure={!isSimple ? (round) => { setConfigRound(round); setConfigDrawerOpen(true); } : undefined}
+                      isDeleting={deletingRoundId === r.id}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
+
+          {/* 3. OFFER - Fixed */}
+          <div className={`flex gap-3 p-3 rounded-lg ${FIXED_ROUNDS.OFFER.color} border-2 border-dashed`}>
+            <div className="flex items-center gap-3 flex-1">
+              <Badge variant="outline" className="shrink-0">FIXED</Badge>
+              <div>
+                <p className="font-medium text-sm">{FIXED_ROUNDS.OFFER.name}</p>
+                <p className="text-xs text-muted-foreground">{FIXED_ROUNDS.OFFER.description}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. HIRED - Fixed */}
+          <div className={`flex gap-3 p-3 rounded-lg ${FIXED_ROUNDS.HIRED.color} border-2 border-dashed`}>
+            <div className="flex items-center gap-3 flex-1">
+              <Badge variant="outline" className="shrink-0">FIXED</Badge>
+              <div>
+                <p className="font-medium text-sm">{FIXED_ROUNDS.HIRED.name}</p>
+                <p className="text-xs text-muted-foreground">{FIXED_ROUNDS.HIRED.description}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. REJECTED - Fixed */}
+          <div className={`flex gap-3 p-3 rounded-lg ${FIXED_ROUNDS.REJECTED.color} border-2 border-dashed`}>
+            <div className="flex items-center gap-3 flex-1">
+              <Badge variant="outline" className="shrink-0">FIXED</Badge>
+              <div>
+                <p className="font-medium text-sm">{FIXED_ROUNDS.REJECTED.name}</p>
+                <p className="text-xs text-muted-foreground">{FIXED_ROUNDS.REJECTED.description}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -293,7 +475,7 @@ export function SetupRoundsCard({
                   onCheckedChange={(checked) => {
                     const on = checked === true;
                     setInterviewKind(on);
-                    setType(on ? 'INTERVIEW' : 'ASSESSMENT');
+                    setType(on ? 'INTERVIEW' : 'CUSTOM');
                     if (!on) setAssignedRoleId('');
                   }}
                 />

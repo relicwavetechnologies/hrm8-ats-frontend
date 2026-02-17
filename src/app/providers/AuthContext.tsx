@@ -42,6 +42,14 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; email?: string; needsPassword?: boolean; error?: string }>;
   refreshProfileSummary: () => Promise<CompanyProfileSummary | null>;
   snoozeOnboardingReminder: (hours?: number) => void;
+  employeeSignup: (data: {
+    firstName: string;
+    lastName: string;
+    businessEmail: string;
+    password: string;
+    acceptTerms: boolean;
+    companyDomain?: string;
+  }) => Promise<{ success: boolean; requestId?: string; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -364,6 +372,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(ONBOARDING_SKIP_KEY, expiresAt);
   };
 
+  const employeeSignup = async (data: {
+    firstName: string;
+    lastName: string;
+    businessEmail: string;
+    password: string;
+    acceptTerms: boolean;
+    companyDomain?: string;
+  }): Promise<{ success: boolean; requestId?: string; message?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authService.employeeSignup(data);
+      if (response.success && response.data) {
+        toast({
+          title: 'Access Requested!',
+          description: response.data.message || 'Your request for access has been submitted successfully. Please wait for company admin approval.',
+        });
+        return {
+          success: true,
+          requestId: response.data.requestId,
+          message: response.data.message
+        };
+      } else {
+        toast({
+          title: 'Signup failed',
+          description: response.error || 'Failed to request access',
+          variant: 'destructive',
+        });
+        return { success: false, message: response.error };
+      }
+    } catch (error) {
+      toast({
+        title: 'Signup failed',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive',
+      });
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -377,6 +426,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyCompany,
         refreshProfileSummary,
         snoozeOnboardingReminder,
+        employeeSignup,
       }}
     >
       {children}

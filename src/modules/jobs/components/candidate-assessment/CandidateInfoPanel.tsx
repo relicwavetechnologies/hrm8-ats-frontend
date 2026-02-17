@@ -84,9 +84,9 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
   const parsedResume = application.parsedResume;
   const aiAnalysis = application.aiAnalysis;
 
-  const candidateName = application.candidateName || 
+  const candidateName = application.candidateName ||
     (candidate ? `${candidate.firstName} ${candidate.lastName}` : 'Unknown');
-  
+
   const initials = candidateName
     .split(' ')
     .map((n) => n[0])
@@ -129,9 +129,9 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
   return (
     <div className="h-full flex flex-col bg-muted/20">
       {/* Candidate Header - Consolidated from CandidateProfileHeader */}
-      <div className="p-4 border-b bg-background flex-shrink-0">
-        <div className="flex items-start gap-3">
-          <Avatar className="h-14 w-14 border-2 border-primary/20 flex-shrink-0">
+      <div className="p-3 border-b bg-background flex-shrink-0">
+        <div className="flex items-start gap-2.5">
+          <Avatar className="h-12 w-12 border-2 border-primary/20 flex-shrink-0">
             <AvatarImage src={application.candidatePhoto || application.candidate?.photo} />
             <AvatarFallback className="text-lg bg-primary/10 text-primary font-semibold">
               {initials}
@@ -169,7 +169,7 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
         {/* Contact Info Row */}
         <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground flex-wrap">
           {application.candidateEmail && (
-            <a 
+            <a
               href={`mailto:${application.candidateEmail}`}
               className="flex items-center gap-1 hover:text-foreground transition-colors"
             >
@@ -213,11 +213,10 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                 onClick={() => setRating(star)}
               >
                 <Star
-                  className={`h-3.5 w-3.5 ${
-                    star <= rating
+                  className={`h-3.5 w-3.5 ${star <= rating
                       ? "fill-yellow-500 text-yellow-500"
                       : "text-muted-foreground"
-                  }`}
+                    }`}
                 />
               </Button>
             ))}
@@ -495,9 +494,9 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                     <p className="text-xs text-muted-foreground mt-1">Match Score</p>
                   </div>
                 </div>
-                <Progress 
-                  value={aiAnalysis?.overallScore || application.aiMatchScore || 0} 
-                  className="h-2 mt-2" 
+                <Progress
+                  value={aiAnalysis?.overallScore || application.aiMatchScore || 0}
+                  className="h-2 mt-2"
                 />
               </CardContent>
             </Card>

@@ -27,6 +27,17 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/shared/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { JobSetupDrawer } from "@/components/setup/JobSetupDrawer";
 import { JobBoardPublicPreview } from "./JobBoardPublicPreview";
 import { ExternalPromotionDialog } from "./ExternalPromotionDialog";
 import { PostPublishFlow } from "./PostPublishFlow";
@@ -66,6 +77,9 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [companyAssignmentMode, setCompanyAssignmentMode] = useState<JobAssignmentMode>('AUTO_RULES_ONLY');
+  const [showTemplateNameDialog, setShowTemplateNameDialog] = useState(false);
+  const [templateNameInput, setTemplateNameInput] = useState('');
+  const [showJobSetupDrawer, setShowJobSetupDrawer] = useState(false);
 
   const [loadingCompanySettings, setLoadingCompanySettings] = useState(true);
 
@@ -517,6 +531,13 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
   const onSubmit = async (data: JobFormData) => {
     console.log('📋 Form submitted!', { step, totalSteps, data: { ...data, description: data.description?.substring(0, 50) + '...' } });
 
+    // If saveAsTemplate is checked but no template name yet, show dialog first
+    if (data.saveAsTemplate && !data.templateName) {
+      setTemplateNameInput(data.title ? `${data.title} Template` : '');
+      setShowTemplateNameDialog(true);
+      return; // Don't proceed with publish yet
+    }
+
     setIsPublishing(true);
 
     try {
@@ -665,10 +686,7 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         console.log('📢 Publishing job (backend handles payment):', finalJobId);
 
         try {
-          const publishResponse = await jobService.publishJob(finalJobId!, {
-            saveAsTemplate: data.saveAsTemplate,
-            templateName: data.templateName
-          });
+          const publishResponse = await jobService.publishJob(finalJobId!);
           console.log('✅ Publish response:', publishResponse);
 
           // Check for failure (ApiClient catches errors and returns success: false)
@@ -693,6 +711,33 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
           // Success flow
           const publishedJob = publishResponse.data;
           if (!publishedJob) throw new Error('No data received from publish endpoint');
+
+          // Ensure the job status is OPEN (in case publishJob didn't update it)
+          await jobService.updateJob(finalJobId!, { status: 'OPEN' });
+
+          // If user wants to save as template, create it now
+          if (data.saveAsTemplate && data.templateName) {
+            try {
+              const category = data.department || undefined;
+              await jobTemplateService.createFromJob(
+                finalJobId!,
+                data.templateName.trim(),
+                undefined,
+                category
+              );
+              toast({
+                title: 'Template Saved',
+                description: `"${data.templateName}" has been saved as a template.`,
+              });
+            } catch (error) {
+              console.error('Failed to save template:', error);
+              toast({
+                title: 'Template Save Failed',
+                description: 'Job was published but template could not be saved.',
+                variant: 'destructive',
+              });
+            }
+          }
 
           // Get company name from auth context
           const companyName = user?.companyName || "Your Company";
@@ -737,8 +782,8 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
           // Store job data for post-launch tools
           setSavedJobData(jobData);
 
-          // Show post-launch tools dialog
-          setShowPostLaunchTools(true);
+          // Open Job Setup Drawer instead of post-launch tools
+          setShowJobSetupDrawer(true);
           setIsPublishing(false);
           return;
 
@@ -925,6 +970,25 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
       scrollContainer.scrollLeft = 0;
     }
     setStep(Math.max(step - 1, 1));
+  };
+
+  const handleTemplateNameSubmit = async () => {
+    if (!templateNameInput.trim()) {
+      toast({
+        title: "Template Name Required",
+        description: "Please enter a name for your template",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set the template name in the form
+    form.setValue('templateName', templateNameInput.trim());
+    setShowTemplateNameDialog(false);
+
+    // Now proceed with publishing
+    const formData = form.getValues();
+    await onSubmit(formData);
   };
 
   return (
@@ -1239,6 +1303,70 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
                 onSuccess(savedJobData);
               }
             }}
+          />
+        )}
+
+        {/* Template Name Dialog */}
+        <Dialog open={showTemplateNameDialog} onOpenChange={setShowTemplateNameDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save as Template</DialogTitle>
+              <DialogDescription>
+                Enter a name for this job template. This will help you quickly create similar jobs in the future.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="template-name">Template Name</Label>
+                <Input
+                  id="template-name"
+                  placeholder="e.g., Senior Frontend Engineer Template"
+                  value={templateNameInput}
+                  onChange={(e) => setTemplateNameInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleTemplateNameSubmit();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowTemplateNameDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleTemplateNameSubmit}
+                disabled={!templateNameInput.trim()}
+              >
+                Continue to Publish
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Job Setup Drawer */}
+        {savedJobData && (
+          <JobSetupDrawer
+            open={showJobSetupDrawer}
+            onOpenChange={(open) => {
+              setShowJobSetupDrawer(open);
+              if (!open) {
+                if (onSuccess) {
+                  onSuccess(savedJobData);
+                }
+                // Reload to refresh jobs list and remove draft
+                window.location.reload();
+              }
+            }}
+            jobId={savedJobData.id}
+            jobTitle={savedJobData.title}
           />
         )}
       </form>

@@ -18,7 +18,9 @@ import { useJobSetupStore } from '@/modules/jobs/store/useJobSetupStore';
 import { jobService } from '@/shared/lib/jobService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { SetupFlowTypeCard } from './steps/SetupFlowTypeCard';
-import { SetupRolesAndTeamCard } from './steps/SetupRolesAndTeamCard';
+import { SetupRolesCard } from './steps/SetupRolesCard';
+import { SetupTeamCard } from './steps/SetupTeamCard';
+import { SetupRoleDistributionCard } from './steps/SetupRoleDistributionCard';
 import { SetupRoundsCard } from './steps/SetupRoundsCard';
 import { SetupReviewCard } from './steps/SetupReviewCard';
 
@@ -30,11 +32,12 @@ interface JobSetupDrawerProps {
 }
 
 const SETUP_STEPS = [
-  { id: 1, title: 'Management type' },
-  { id: 2, title: 'Setup flow' },
-  { id: 3, title: 'Roles & team' },
-  { id: 4, title: 'Rounds' },
-  { id: 5, title: 'Review' },
+  { id: 1, title: 'Setup flow' },
+  { id: 2, title: 'Create roles' },
+  { id: 3, title: 'Add team' },
+  { id: 4, title: 'Distribute roles' },
+  { id: 5, title: 'Configure rounds' },
+  { id: 6, title: 'Review' },
 ];
 
 export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
@@ -115,30 +118,44 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   const effectiveJobId = jobId ?? storeJobId ?? null;
 
   const renderStep = () => {
+    // Step 1: Setup Flow Type (Simple vs Advanced)
     if (currentStep === 1) {
-      return (
-        <SetupFlowTypeCard
-          managementType={managementType}
-          onManagementTypeSelect={(t) => {
-            setManagementType(t);
-            nextStep();
-          }}
-        />
-      );
-    }
-    if (currentStep === 2) {
       return (
         <SetupFlowTypeCard
           managementType={managementType ?? 'self-managed'}
           setupType={setupType}
           onSetupTypeSelect={(t) => {
             setSetupType(t);
+            // Default to self-managed if not set
+            if (!managementType) setManagementType('self-managed');
             nextStep();
           }}
-          onBack={prevStep}
         />
       );
     }
+
+    // Step 2: Create Roles
+    if (currentStep === 2) {
+      if (!effectiveJobId) {
+        return (
+          <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Job not found</p>
+            <p className="text-sm text-muted-foreground">Setup could not find the job. Close and open the job from the list to continue setup, or create a new job.</p>
+            <Button variant="outline" onClick={handleClose}>Close</Button>
+          </div>
+        );
+      }
+      return (
+        <SetupRolesCard
+          jobId={effectiveJobId}
+          roles={roles}
+          onRolesChange={setRoles}
+          onContinue={nextStep}
+        />
+      );
+    }
+
+    // Step 3: Add Team Members
     if (currentStep === 3) {
       if (!effectiveJobId) {
         return (
@@ -150,18 +167,41 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         );
       }
       return (
-        <SetupRolesAndTeamCard
+        <SetupTeamCard
           jobId={effectiveJobId}
-          roles={roles}
           team={team}
           onTeamChange={setTeam}
-          onRolesLoaded={setRoles}
           onContinue={nextStep}
           onBack={prevStep}
         />
       );
     }
+
+    // Step 4: Distribute Roles
     if (currentStep === 4) {
+      if (!effectiveJobId) {
+        return (
+          <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Job not found</p>
+            <p className="text-sm text-muted-foreground">Setup could not find the job. Close and open the job from the list to continue setup, or create a new job.</p>
+            <Button variant="outline" onClick={handleClose}>Close</Button>
+          </div>
+        );
+      }
+      return (
+        <SetupRoleDistributionCard
+          jobId={effectiveJobId}
+          team={team}
+          roles={roles}
+          onTeamChange={setTeam}
+          onContinue={nextStep}
+          onBack={prevStep}
+        />
+      );
+    }
+
+    // Step 5: Configure Rounds
+    if (currentStep === 5) {
       if (!effectiveJobId) {
         return (
           <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
@@ -184,7 +224,9 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         />
       );
     }
-    if (currentStep === 5) {
+
+    // Step 6: Review
+    if (currentStep === 6) {
       return (
         <SetupReviewCard
           managementType={managementType}
@@ -234,7 +276,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           <span className="text-sm text-muted-foreground">
             Step {currentStep} of {SETUP_STEPS.length}
           </span>
-          {currentStep > 1 && currentStep < 5 && (
+          {currentStep > 1 && currentStep < 6 && (
             <Button variant="ghost" onClick={prevStep}>Back</Button>
           )}
         </div>

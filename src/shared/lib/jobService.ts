@@ -241,6 +241,10 @@ class JobService {
     );
   }
 
+  async deleteJobRole(jobId: string, roleId: string) {
+    return apiClient.delete<{ message: string }>(`/api/jobs/${jobId}/roles/${roleId}`);
+  }
+
   // Hiring Team Management
 
   async getHiringTeam(jobId: string) {

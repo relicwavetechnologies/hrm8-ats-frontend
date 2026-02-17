@@ -22,6 +22,7 @@ import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import VerifyCompanyPage from '@/pages/auth/VerifyCompanyPage';
+import SignupPage from '@/pages/auth/SignupPage';
 
 // Dev Pages
 
@@ -98,6 +99,7 @@ export function AppRoutes() {
             {/* Public Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/verify-company" element={<VerifyCompanyPage />} />

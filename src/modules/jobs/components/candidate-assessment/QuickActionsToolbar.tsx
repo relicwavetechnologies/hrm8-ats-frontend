@@ -30,9 +30,10 @@ interface QuickActionsToolbarProps {
   application: Application;
   nextStageName?: string;
   onNextStage?: () => void;
+  isSimpleFlow?: boolean;
 }
 
-export function QuickActionsToolbar({ application, nextStageName, onNextStage }: QuickActionsToolbarProps) {
+export function QuickActionsToolbar({ application, nextStageName, onNextStage, isSimpleFlow }: QuickActionsToolbarProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -145,27 +146,31 @@ export function QuickActionsToolbar({ application, nextStageName, onNextStage }:
           Message
         </Button>
 
-        {/* Assign Assessment */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => handleAction("Assign Assessment")}
-        >
-          <ClipboardCheck className="h-4 w-4" />
-          Assign Assessment
-        </Button>
+        {/* Assign Assessment - Hidden in Simple Flow */}
+        {!isSimpleFlow && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => handleAction("Assign Assessment")}
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            Assign Assessment
+          </Button>
+        )}
 
-        {/* Request Background Check */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => handleAction("Background Check")}
-        >
-          <Shield className="h-4 w-4" />
-          Background Check
-        </Button>
+        {/* Request Background Check - Hidden in Simple Flow */}
+        {!isSimpleFlow && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => handleAction("Background Check")}
+          >
+            <Shield className="h-4 w-4" />
+            Background Check
+          </Button>
+        )}
 
         {/* Make Offer (conditional) */}
         {(application.stage === "Final Round" || application.stage === "Reference Check") && (

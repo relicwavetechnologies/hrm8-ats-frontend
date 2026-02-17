@@ -17,6 +17,7 @@ import { useJobConversation } from './useJobConversation';
 import { jobService } from '@/shared/lib/jobService';
 import { jobDescriptionService } from '@/shared/lib/jobDescriptionService';
 import { screeningQuestionService } from '@/shared/lib/screeningQuestionService';
+import { jobTemplateService } from '@/shared/lib/jobTemplateService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/app/providers/AuthContext';
 import { companyProfileService } from '@/shared/lib/companyProfileService';
@@ -29,6 +30,16 @@ import {
     AlertDialogFooter,
     AlertDialogCancel,
 } from '@/shared/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/shared/components/ui/dialog';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import {
     ChatServiceTypeCard,
     ChatBasicDetailsCard,
@@ -72,6 +83,9 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     const [createdJobTitle, setCreatedJobTitle] = useState<string | undefined>(undefined);
     const [showSaveDraftDialog, setShowSaveDraftDialog] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
+    const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+    const [showTemplateNameDialog, setShowTemplateNameDialog] = useState(false);
+    const [templateNameInput, setTemplateNameInput] = useState('');
 
     useEffect(() => {
         if (open && initialData) {
@@ -199,6 +213,13 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     };
 
     const handleSubmitJob = async () => {
+        // If saveAsTemplate is checked but no template name yet, show dialog first
+        if (saveAsTemplate && !templateNameInput) {
+            setTemplateNameInput(jobData.title ? `${jobData.title} Template` : '');
+            setShowTemplateNameDialog(true);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             // Transform JobFormData to CreateJobRequest
@@ -221,44 +242,102 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 hideSalary: jobData.hideSalary,
 
                 // Content
-                // Map requirements/responsibilities objects to string arrays if needed, 
-                // but our backend service expects them as arrays. JobFormData has object array with IDs.
                 requirements: jobData.requirements?.map(r => typeof r === 'string' ? r : r.text) || [],
                 responsibilities: jobData.responsibilities?.map(r => typeof r === 'string' ? r : r.text) || [],
                 tags: jobData.tags || [],
 
                 // Config
                 applicationForm: jobData.applicationForm,
-                // Hiring Mode defaults
                 hiringMode: 'SELF_MANAGED',
                 visibility: jobData.visibility,
                 stealth: jobData.stealth,
                 closeDate: jobData.closeDate,
                 termsAccepted: jobData.termsAccepted,
                 termsAcceptedAt: jobData.termsAccepted ? new Date() : undefined,
+                status: 'DRAFT', // Explicitly set as DRAFT initially
             };
 
-            const response = await import('@/shared/lib/jobService').then(m => m.jobService.createJob(payload));
+            // Create the job first
+            const createResponse = await import('@/shared/lib/jobService').then(m => m.jobService.createJob(payload));
 
-            if (response.success && response.data) {
-                const job = (response.data as { job?: { id: string }; id?: string }).job ?? response.data;
-                const newJobId = (job as { id?: string }).id ?? (response.data as { id?: string }).id;
+            if (createResponse.success && createResponse.data) {
+                const job = (createResponse.data as { job?: { id: string }; id?: string }).job ?? createResponse.data;
+                const newJobId = (job as { id?: string }).id ?? (createResponse.data as { id?: string }).id;
 
-                // Open Post-Job Setup drawer (hiring team is configured there)
+                if (!newJobId) {
+                    throw new Error('Failed to get job ID');
+                }
+
+                // Now publish the job (this will change status from DRAFT to OPEN)
+                const publishResponse = await jobService.publishJob(newJobId);
+
+                if (!publishResponse.success) {
+                    throw new Error(publishResponse.error || 'Failed to publish job');
+                }
+
+                // Ensure the job status is OPEN (in case publishJob didn't update it)
+                await jobService.updateJob(newJobId, { status: 'OPEN' });
+
+                // If user wants to save as template, create it now
+                if (saveAsTemplate && templateNameInput) {
+                    try {
+                        const category = jobData.department || undefined;
+                        await jobTemplateService.createFromJob(
+                            newJobId,
+                            templateNameInput.trim(),
+                            undefined,
+                            category
+                        );
+                        toast({
+                            title: 'Template Saved',
+                            description: `"${templateNameInput}" has been saved as a template.`,
+                        });
+                    } catch (error) {
+                        console.error('Failed to save template:', error);
+                        toast({
+                            title: 'Template Save Failed',
+                            description: 'Job was published but template could not be saved.',
+                            variant: 'destructive',
+                        });
+                    }
+                }
+
+                // Success! Open Job Setup Drawer
                 setCreatedJobId(newJobId);
                 setCreatedJobTitle(jobData.title || undefined);
                 setSetupDrawerOpen(true);
                 reset();
+                setSaveAsTemplate(false);
+                setTemplateNameInput('');
                 onOpenChange(false);
             } else {
-                throw new Error(response.error || 'Failed to create job');
+                throw new Error(createResponse.error || 'Failed to create job');
             }
         } catch (error) {
             console.error('Job creation failed:', error);
-            // Show error toast?
+            toast({
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Failed to publish job',
+                variant: 'destructive',
+            });
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleTemplateNameSubmit = async () => {
+        if (!templateNameInput.trim()) {
+            toast({
+                title: 'Template Name Required',
+                description: 'Please enter a name for your template',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        setShowTemplateNameDialog(false);
+        // Now proceed with publishing
+        await handleSubmitJob();
     };
 
     const renderStepCard = () => {
@@ -510,6 +589,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         isSubmitting={isSubmitting}
                         termsAccepted={jobData.termsAccepted}
                         onTermsAcceptedChange={(v) => setJobData({ termsAccepted: v })}
+                        saveAsTemplate={saveAsTemplate}
+                        onSaveAsTemplateChange={setSaveAsTemplate}
                     />
                 );
             default:
@@ -608,12 +689,57 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 if (!open) {
                     setCreatedJobId(null);
                     setCreatedJobTitle(undefined);
+                    // Reload to refresh jobs list and remove draft
                     window.location.reload();
                 }
             }}
             jobId={createdJobId}
             jobTitle={createdJobTitle}
         />
+
+        <Dialog open={showTemplateNameDialog} onOpenChange={setShowTemplateNameDialog}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Save as Template</DialogTitle>
+                    <DialogDescription>
+                        Enter a name for this job template. This will help you quickly create similar jobs in the future.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="template-name">Template Name</Label>
+                        <Input
+                            id="template-name"
+                            placeholder="e.g., Senior Frontend Engineer Template"
+                            value={templateNameInput}
+                            onChange={(e) => setTemplateNameInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleTemplateNameSubmit();
+                                }
+                            }}
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowTemplateNameDialog(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handleTemplateNameSubmit}
+                        disabled={!templateNameInput.trim()}
+                    >
+                        Continue to Publish
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
         </>
     );
 };

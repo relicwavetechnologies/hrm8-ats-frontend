@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, DragOverEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -51,7 +51,7 @@ const pipelineStages: { stage: ApplicationStage; label: string; color: string }[
 ];
 
 // Sortable Round Column Wrapper - allows dragging round columns to reorder
-function SortableRoundColumn({
+const SortableRoundColumn = React.memo(function SortableRoundColumn({
   round,
   applications,
   onApplicationClick,
@@ -72,6 +72,8 @@ function SortableRoundColumn({
   onOpenAssessmentDrawer,
   onConfigureEmail,
   isSimpleFlow,
+  optimisticMoves,
+  failedMoves,
 }: {
   round: JobRound;
   applications: Application[];
@@ -93,6 +95,8 @@ function SortableRoundColumn({
   onOpenAssessmentDrawer?: (round: JobRound) => void;
   onConfigureEmail?: (round: JobRound) => void;
   isSimpleFlow?: boolean;
+  optimisticMoves: Map<string, string>;
+  failedMoves: Set<string>;
   dragHandleProps?: any;
 }) {
   const {
@@ -136,14 +140,24 @@ function SortableRoundColumn({
         onOpenAssessmentDrawer={onOpenAssessmentDrawer}
         onConfigureEmail={onConfigureEmail}
         isSimpleFlow={isSimpleFlow}
+        optimisticMoves={optimisticMoves}
+        failedMoves={failedMoves}
         dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
       />
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.round.id === nextProps.round.id &&
+    prevProps.applications === nextProps.applications &&
+    prevProps.isSimpleFlow === nextProps.isSimpleFlow &&
+    prevProps.optimisticMoves === nextProps.optimisticMoves &&
+    prevProps.failedMoves === nextProps.failedMoves
+  );
+});
 
 // Stage Column Component with Droppable
-function StageColumn({
+const StageColumn = React.memo(function StageColumn({
   round,
   applications,
   onApplicationClick,
@@ -164,6 +178,8 @@ function StageColumn({
   onOpenAssessmentDrawer,
   onConfigureEmail,
   isSimpleFlow,
+  optimisticMoves,
+  failedMoves,
   dragHandleProps,
 }: {
   round: JobRound;
@@ -186,6 +202,8 @@ function StageColumn({
   onOpenAssessmentDrawer?: (round: JobRound) => void;
   onConfigureEmail?: (round: JobRound) => void;
   isSimpleFlow?: boolean;
+  optimisticMoves: Map<string, string>;
+  failedMoves: Set<string>;
   dragHandleProps?: any;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -403,6 +421,8 @@ function StageColumn({
                         }
                       }}
                       onViewInterviews={onViewInterviews}
+                      isOptimisticMove={optimisticMoves.has(application.id)}
+                      hasFailed={failedMoves.has(application.id)}
                     />
                   </div>
                 ))}
@@ -419,7 +439,15 @@ function StageColumn({
       </Card>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.round.id === nextProps.round.id &&
+    prevProps.applications === nextProps.applications &&
+    prevProps.isOver === nextProps.isOver &&
+    prevProps.optimisticMoves === nextProps.optimisticMoves &&
+    prevProps.failedMoves === nextProps.failedMoves
+  );
+});
 
 export function ApplicationPipeline({
   jobId,
@@ -436,59 +464,157 @@ export function ApplicationPipeline({
 }: ApplicationPipelineProps) {
   // Service layer - switches between employer and consultant APIs
   const appService = isConsultantView ? ConsultantCandidateService : applicationService;
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeRoundId, setActiveRoundId] = useState<string | null>(null);
+
+  // Core state
   const [applications, setApplications] = useState<Application[]>([]);
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [rounds, setRounds] = useState<JobRound[]>([]);
-  const [createRoundDialogOpen, setCreateRoundDialogOpen] = useState(false);
-  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
-  const [selectedRoundForConfig, setSelectedRoundForConfig] = useState<JobRound | null>(null);
-  const [initialConfigTab, setInitialConfigTab] = useState<RoundConfigTab>("general");
-  const [selectedRoundForInterviews, setSelectedRoundForInterviews] = useState<JobRound | null>(null);
-  const [interviewScheduleDrawerOpen, setInterviewScheduleDrawerOpen] = useState(false);
-  const [selectedApplicationForInterviews, setSelectedApplicationForInterviews] = useState<Application | null>(null);
-  const [screeningDrawerOpen, setScreeningDrawerOpen] = useState(false);
-  const [selectedRoundForScreening, setSelectedRoundForScreening] = useState<JobRound | null>(null);
-  const [offerConfigDrawerOpen, setOfferConfigDrawerOpen] = useState(false);
-  const [offerExecutionDrawerOpen, setOfferExecutionDrawerOpen] = useState(false);
-  const [selectedRoundForOffer, setSelectedRoundForOffer] = useState<JobRound | null>(null);
-  const [assessmentReviewDrawerOpen, setAssessmentReviewDrawerOpen] = useState(false);
-  const [selectedRoundForReview, setSelectedRoundForReview] = useState<JobRound | null>(null);
   const [jobData, setJobData] = useState<any>(null);
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
 
-  // Move Dialog State
-  const [isMoveStageDialogOpen, setIsMoveStageDialogOpen] = useState(false);
-  const [pendingMoveApplication, setPendingMoveApplication] = useState<Application | null>(null);
-  const [pendingTargetRound, setPendingTargetRound] = useState<JobRound | null>(null);
-  const [pendingIsMoving, setPendingIsMoving] = useState(false);
+  // Optimistic update state - for instant UI feedback
+  const [optimisticMoves, setOptimisticMoves] = useState<Map<string, string>>(new Map());
+  const [failedMoves, setFailedMoves] = useState<Set<string>>(new Set());
 
-  // Load rounds and job data when jobId changes
+  // Drawer state consolidation
+  type DrawerState = {
+    type: 'config' | 'assessment' | 'interview' | 'screening' | 'offer-config' | 'offer-exec' | null;
+    round: JobRound | null;
+    application: Application | null;
+    initialTab?: RoundConfigTab;
+  };
+  const [drawerState, setDrawerState] = useState<DrawerState>({
+    type: null,
+    round: null,
+    application: null,
+  });
+
+  // Move dialog state consolidation
+  const [moveDialogState, setMoveDialogState] = useState({
+    open: false,
+    application: null as Application | null,
+    targetRound: null as JobRound | null,
+    isMoving: false,
+  });
+
+  // UI state consolidation
+  const [uiState, setUIState] = useState({
+    createRoundDialogOpen: false,
+    detailPanelOpen: false,
+    selectedApplication: null as Application | null,
+    activeId: null as string | null,
+    activeRoundId: null as string | null,
+  });
+
+  // Legacy state aliases for backward compatibility (to avoid breaking existing code)
+  const activeId = uiState.activeId;
+  const setActiveId = (id: string | null) => setUIState(prev => ({ ...prev, activeId: id }));
+  const activeRoundId = uiState.activeRoundId;
+  const setActiveRoundId = (id: string | null) => setUIState(prev => ({ ...prev, activeRoundId: id }));
+  const selectedApplication = uiState.selectedApplication;
+  const setSelectedApplication = (app: Application | null) => setUIState(prev => ({ ...prev, selectedApplication: app }));
+  const detailPanelOpen = uiState.detailPanelOpen;
+  const setDetailPanelOpen = (open: boolean) => setUIState(prev => ({ ...prev, detailPanelOpen: open }));
+  const createRoundDialogOpen = uiState.createRoundDialogOpen;
+  const setCreateRoundDialogOpen = (open: boolean) => setUIState(prev => ({ ...prev, createRoundDialogOpen: open }));
+
+  // Drawer state aliases
+  const configDrawerOpen = drawerState.type === 'config';
+  const setConfigDrawerOpen = (open: boolean) => {
+    if (!open) setDrawerState({ type: null, round: null, application: null });
+  };
+  const selectedRoundForConfig = drawerState.type === 'config' ? drawerState.round : null;
+  const setSelectedRoundForConfig = (round: JobRound | null) => {
+    if (round) setDrawerState(prev => ({ ...prev, round }));
+  };
+  const initialConfigTab = drawerState.initialTab || 'general';
+  const setInitialConfigTab = (tab: RoundConfigTab) => {
+    setDrawerState(prev => ({ ...prev, initialTab: tab }));
+  };
+
+  const interviewScheduleDrawerOpen = drawerState.type === 'interview';
+  const setInterviewScheduleDrawerOpen = (open: boolean) => {
+    if (!open) setDrawerState({ type: null, round: null, application: null });
+  };
+  const selectedApplicationForInterviews = drawerState.type === 'interview' ? drawerState.application : null;
+  const setSelectedApplicationForInterviews = (app: Application | null) => {
+    if (app) setDrawerState({ type: 'interview', round: null, application: app });
+  };
+
+  const selectedRoundForInterviews = drawerState.type === 'interview' ? drawerState.round : null;
+  const setSelectedRoundForInterviews = (round: JobRound | null) => {
+    if (round) setDrawerState({ type: 'interview', round, application: null });
+  };
+
+  const screeningDrawerOpen = drawerState.type === 'screening';
+  const setScreeningDrawerOpen = (open: boolean) => {
+    if (!open) setDrawerState({ type: null, round: null, application: null });
+  };
+  const selectedRoundForScreening = drawerState.type === 'screening' ? drawerState.round : null;
+  const setSelectedRoundForScreening = (round: JobRound | null) => {
+    if (round) setDrawerState({ type: 'screening', round, application: null });
+  };
+
+  const offerConfigDrawerOpen = drawerState.type === 'offer-config';
+  const setOfferConfigDrawerOpen = (open: boolean) => {
+    if (!open) setDrawerState({ type: null, round: null, application: null });
+  };
+  const offerExecutionDrawerOpen = drawerState.type === 'offer-exec';
+  const setOfferExecutionDrawerOpen = (open: boolean) => {
+    if (!open) setDrawerState({ type: null, round: null, application: null });
+  };
+  const selectedRoundForOffer = drawerState.type === 'offer-config' || drawerState.type === 'offer-exec' ? drawerState.round : null;
+  const setSelectedRoundForOffer = (round: JobRound | null) => {
+    if (round) setDrawerState(prev => ({ ...prev, round }));
+  };
+
+  const assessmentReviewDrawerOpen = drawerState.type === 'assessment';
+  const setAssessmentReviewDrawerOpen = (open: boolean) => {
+    if (!open) setDrawerState({ type: null, round: null, application: null });
+  };
+  const selectedRoundForReview = drawerState.type === 'assessment' ? drawerState.round : null;
+  const setSelectedRoundForReview = (round: JobRound | null) => {
+    if (round) setDrawerState({ type: 'assessment', round, application: null });
+  };
+
+  // Move dialog state aliases
+  const isMoveStageDialogOpen = moveDialogState.open;
+  const setIsMoveStageDialogOpen = (open: boolean) => setMoveDialogState(prev => ({ ...prev, open }));
+  const pendingMoveApplication = moveDialogState.application;
+  const setPendingMoveApplication = (app: Application | null) => setMoveDialogState(prev => ({ ...prev, application: app }));
+  const pendingTargetRound = moveDialogState.targetRound;
+  const setPendingTargetRound = (round: JobRound | null) => setMoveDialogState(prev => ({ ...prev, targetRound: round }));
+  const pendingIsMoving = moveDialogState.isMoving;
+  const setPendingIsMoving = (moving: boolean) => setMoveDialogState(prev => ({ ...prev, isMoving: moving }));
+
+  // Effect 1: Load initial data when jobId changes
   useEffect(() => {
-    if (jobId) {
-      loadRounds();
-      loadJobData();
-    }
+    if (!jobId) return;
+
+    // Parallel loading for speed
+    Promise.all([
+      loadRounds(),
+      loadJobData()
+    ]);
   }, [jobId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update applications when providedApplications changes (for filtering)
+  // Effect 2: Handle provided applications or load from API
   useEffect(() => {
     if (providedApplications !== undefined) {
-      setApplications(providedApplications);
-    } else {
+      // Merge optimistic moves with provided applications
+      // This prevents overwriting optimistic state when parent re-renders
+      const mergedApplications = providedApplications.map(app => {
+        const optimisticRoundId = optimisticMoves.get(app.id);
+        if (optimisticRoundId) {
+          return { ...app, roundId: optimisticRoundId };
+        }
+        return app;
+      });
+      setApplications(mergedApplications);
+    } else if (jobId) {
       loadApplications();
     }
   }, [providedApplications, jobId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Initial load when jobId is set and no providedApplications
-  useEffect(() => {
-    if (jobId && providedApplications === undefined) {
-      loadApplications();
-    }
-  }, [jobId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadJobData = async () => {
     if (!jobId) return;
@@ -601,61 +727,107 @@ export function ApplicationPipeline({
 
         // Map API applications to frontend Application type
         // Handle both pre-transformed consultant data and raw employer API data
-        const mappedApplications: Application[] = apiApplications.map((app: any) => ({
-          id: app.id,
-          candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
-          // Handle pre-transformed data (candidateName) or raw data (candidate.firstName/first_name)
-          candidateName: app.candidateName || (
-            (app.candidate?.firstName && app.candidate?.lastName)
-              ? `${app.candidate.firstName} ${app.candidate.lastName}`
-              : (app.candidate?.first_name && app.candidate?.last_name)
-                ? `${app.candidate.first_name} ${app.candidate.last_name}`
-                : 'Unknown Candidate'
-          ),
-          candidateEmail: app.candidateEmail || app.candidate?.email || '',
-          candidatePhoto: app.candidatePhoto || app.candidate?.photo,
-          jobId: app.jobId || app.job_id,
-          jobTitle: app.jobTitle || app.job?.title || 'Unknown Job',
-          employerName: app.employerName || app.job?.company?.name || 'Unknown Company',
-          appliedDate: app.appliedDate ? new Date(app.appliedDate) : (app.applied_date ? new Date(app.applied_date) : new Date()),
-          status: mapApplicationStatus(app.status),
-          stage: mapApplicationStage(app.stage),
-          roundId: roundMap[app.id],
-          resumeUrl: app.resumeUrl || app.resume_url || app.candidate?.resume_url,
-          coverLetterUrl: app.coverLetterUrl || app.cover_letter_url,
-          portfolioUrl: app.portfolioUrl || app.portfolio_url,
-          linkedInUrl: app.linkedInUrl || app.linked_in_url || app.candidate?.linked_in_url,
-          customAnswers: app.customAnswers || app.custom_answers || [],
-          isRead: app.isRead ?? app.is_read,
-          isNew: app.isNew ?? app.is_new,
-          tags: app.tags || [],
-          recruiterNotes: app.recruiterNotes || app.recruiter_notes,
-          notes: [],
-          activities: [],
-          interviews: [],
-          createdAt: app.createdAt ? new Date(app.createdAt) : (app.created_at ? new Date(app.created_at) : new Date()),
-          updatedAt: app.updatedAt ? new Date(app.updatedAt) : (app.updated_at ? new Date(app.updated_at) : new Date()),
-          shortlisted: app.shortlisted || false,
-          manuallyAdded: app.manuallyAdded || app.manually_added || false,
-          // Include AI scoring fields for ApplicationCard display
-          score: app.score,
-          aiMatchScore: app.aiMatchScore || app.aiScore || app.score, // Used by AIMatchBadge
-          aiAnalysis: app.aiAnalysis, // Used for recommendation badge and justification
-        }));
-        setApplications(mappedApplications);
+        const mappedApplications: Application[] = apiApplications.map((app: any) => {
+          const extractedRoundId = app.roundId || app.round_id || roundMap[app.id];
+
+          // Debug logging
+          if (!extractedRoundId) {
+            console.log('[ApplicationPipeline] No roundId found for application:', {
+              appId: app.id,
+              stage: app.stage,
+              hasDirectRoundId: !!app.roundId,
+              hasSnakeCaseRoundId: !!app.round_id,
+              hasRoundProgress: !!roundMap[app.id],
+              roundProgressKeys: Object.keys(roundMap)
+            });
+          }
+
+          return {
+            id: app.id,
+            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
+            // Handle pre-transformed data (candidateName) or raw data (candidate.firstName/first_name)
+            candidateName: app.candidateName || (
+              (app.candidate?.firstName && app.candidate?.lastName)
+                ? `${app.candidate.firstName} ${app.candidate.lastName}`
+                : (app.candidate?.first_name && app.candidate?.last_name)
+                  ? `${app.candidate.first_name} ${app.candidate.last_name}`
+                  : 'Unknown Candidate'
+            ),
+            candidateEmail: app.candidateEmail || app.candidate?.email || '',
+            candidatePhoto: app.candidatePhoto || app.candidate?.photo,
+            jobId: app.jobId || app.job_id,
+            jobTitle: app.jobTitle || app.job?.title || 'Unknown Job',
+            employerName: app.employerName || app.job?.company?.name || 'Unknown Company',
+            appliedDate: app.appliedDate ? new Date(app.appliedDate) : (app.applied_date ? new Date(app.applied_date) : new Date()),
+            status: mapApplicationStatus(app.status),
+            stage: mapApplicationStage(app.stage),
+            roundId: extractedRoundId, // Try direct field first, then fallback to roundProgress map
+            resumeUrl: app.resumeUrl || app.resume_url || app.candidate?.resume_url,
+            coverLetterUrl: app.coverLetterUrl || app.cover_letter_url,
+            portfolioUrl: app.portfolioUrl || app.portfolio_url,
+            linkedInUrl: app.linkedInUrl || app.linked_in_url || app.candidate?.linked_in_url,
+            customAnswers: app.customAnswers || app.custom_answers || [],
+            isRead: app.isRead ?? app.is_read,
+            isNew: app.isNew ?? app.is_new,
+            tags: app.tags || [],
+            recruiterNotes: app.recruiterNotes || app.recruiter_notes,
+            notes: [],
+            activities: [],
+            interviews: [],
+            createdAt: app.createdAt ? new Date(app.createdAt) : (app.created_at ? new Date(app.created_at) : new Date()),
+            updatedAt: app.updatedAt ? new Date(app.updatedAt) : (app.updated_at ? new Date(app.updated_at) : new Date()),
+            shortlisted: app.shortlisted || false,
+            manuallyAdded: app.manuallyAdded || app.manually_added || false,
+            // Include AI scoring fields for ApplicationCard display
+            score: app.score,
+            aiMatchScore: app.aiMatchScore || app.aiScore || app.score, // Used by AIMatchBadge
+            aiAnalysis: app.aiAnalysis, // Used for recommendation badge and justification
+          };
+        });
+
+        // Apply optimistic moves to prevent overwriting ongoing drag operations
+        const mergedApplications = mappedApplications.map(app => {
+          const optimisticRoundId = optimisticMoves.get(app.id);
+          if (optimisticRoundId) {
+            return { ...app, roundId: optimisticRoundId };
+          }
+          return app;
+        });
+
+        setApplications(mergedApplications);
         return undefined;
       } catch (error) {
         console.error('Failed to load applications:', error);
         // Fallback to mock data
         const allApps = getApplications();
         const filtered = allApps.filter(app => app.jobId === jobId);
-        setApplications(filtered);
+
+        // Apply optimistic moves
+        const mergedFiltered = filtered.map(app => {
+          const optimisticRoundId = optimisticMoves.get(app.id);
+          if (optimisticRoundId) {
+            return { ...app, roundId: optimisticRoundId };
+          }
+          return app;
+        });
+
+        setApplications(mergedFiltered);
         return undefined;
       }
     } else {
       // Fetch all from mock storage
       const allApps = getApplications();
-      setApplications(allApps);
+
+      // Apply optimistic moves
+      const mergedAllApps = allApps.map(app => {
+        const optimisticRoundId = optimisticMoves.get(app.id);
+        if (optimisticRoundId) {
+          return { ...app, roundId: optimisticRoundId };
+        }
+        return app;
+      });
+
+      setApplications(mergedAllApps);
       return undefined;
     }
   };
@@ -925,52 +1097,130 @@ export function ApplicationPipeline({
     // 2. Identify Current Round
     const currentRound = findRoundForApplication(application);
 
-    // 3. Validation Logic
-    let isAllowed = false;
+    // 3. Validation Logic - SKIP FOR SIMPLE FLOW (no restrictions)
+    if (!isSimpleFlow) {
+      let isAllowed = false;
 
-    // Rule: Can always move to Rejected
-    if (targetRound.isFixed && targetRound.fixedKey === 'REJECTED') {
-      isAllowed = true;
-    }
-    // Rule: Can move if we couldn't determine current round (safe fallback, or maybe restrict?)
-    // Let's allow it to avoid getting stuck
-    else if (!currentRound) {
-      isAllowed = true;
-    }
-    else {
-      const currentIndex = rounds.findIndex(r => r.id === currentRound.id);
-      const targetIndex = rounds.findIndex(r => r.id === targetRound.id);
-
-      // Rule: Can move to Next Round
-      if (targetIndex === currentIndex + 1) {
+      // Rule: Can always move to Rejected
+      if (targetRound.isFixed && targetRound.fixedKey === 'REJECTED') {
         isAllowed = true;
       }
-      // Rule: Can move BACKWARDS? User said "Restrict movement to only the *next* round".
-      // Usually moving back is allowed for corrections, but let's stick to the prompt's explicit instruction for now or at least warn.
-      // Prompt: "Restrict movement to only the *next* round"
-      // We will STRICTLY block skips.
-      // We will BLOCK backwards moves? 
-      // Let's block everything else for now to be strictly compliant.
-    }
+      // Rule: Can move if we couldn't determine current round (safe fallback)
+      else if (!currentRound) {
+        isAllowed = true;
+      }
+      else {
+        const currentIndex = rounds.findIndex(r => r.id === currentRound.id);
+        const targetIndex = rounds.findIndex(r => r.id === targetRound.id);
 
-    if (!isAllowed) {
-      toast.error("Process Restriction", {
-        description: "You can only move candidates to the immediate next round or to Rejected.",
-        duration: 4000,
-      });
-      return;
-    }
+        // Rule: Can move to Next Round (advanced flow restriction)
+        if (targetIndex === currentIndex + 1) {
+          isAllowed = true;
+        }
+      }
 
-    // 4. Open Confirmation Dialog or Execute Immediately
-    if (isSimpleFlow) {
-      // In Simple Flow, skip the dialog and execute immediately without comment
-      await executeMoveToRound("", application, targetRound);
-    } else {
+      if (!isAllowed) {
+        toast.error("Process Restriction", {
+          description: "You can only move candidates to the immediate next round or to Rejected.",
+          duration: 4000,
+        });
+        return;
+      }
+
+      // Advanced mode: Open Confirmation Dialog
       setPendingMoveApplication(application);
       setPendingTargetRound(targetRound);
       setIsMoveStageDialogOpen(true);
+    } else {
+      // Simple Flow: No restrictions, execute immediately
+      await executeMoveToRound("", application, targetRound);
     }
   };
+
+  // Helper: Refresh single application after rollback
+  const refreshSingleApplication = useCallback(async (appId: string) => {
+    try {
+      const response = await appService.getApplication(appId);
+      if (response.success && response.data?.application) {
+        const apiApp = response.data.application;
+
+        // Map the single application using same logic as loadApplications
+        const updatedApp: Application = {
+          id: apiApp.id,
+          candidateId: apiApp.candidateId || apiApp.candidate_id || apiApp.candidate?.id || (apiApp as any).candidate_id,
+          candidateName: apiApp.candidateName || (
+            (apiApp.candidate?.firstName && apiApp.candidate?.lastName)
+              ? `${apiApp.candidate.firstName} ${apiApp.candidate.lastName}`
+              : (apiApp.candidate?.first_name && apiApp.candidate?.last_name)
+                ? `${apiApp.candidate.first_name} ${apiApp.candidate.last_name}`
+                : 'Unknown Candidate'
+          ),
+          candidateEmail: apiApp.candidateEmail || apiApp.candidate?.email || '',
+          candidatePhoto: apiApp.candidatePhoto || apiApp.candidate?.photo,
+          jobId: apiApp.jobId || apiApp.job_id,
+          jobTitle: apiApp.jobTitle || apiApp.job?.title || 'Unknown Job',
+          employerName: apiApp.employerName || apiApp.job?.company?.name || 'Unknown Company',
+          appliedDate: apiApp.appliedDate ? new Date(apiApp.appliedDate) : (apiApp.applied_date ? new Date(apiApp.applied_date) : new Date()),
+          status: mapApplicationStatus(apiApp.status),
+          stage: mapApplicationStage(apiApp.stage),
+          roundId: (apiApp as any).roundId,
+          resumeUrl: apiApp.resumeUrl || apiApp.resume_url || apiApp.candidate?.resume_url,
+          coverLetterUrl: apiApp.coverLetterUrl || apiApp.cover_letter_url,
+          portfolioUrl: apiApp.portfolioUrl || apiApp.portfolio_url,
+          linkedInUrl: apiApp.linkedInUrl || apiApp.linked_in_url || apiApp.candidate?.linked_in_url,
+          customAnswers: apiApp.customAnswers || apiApp.custom_answers || [],
+          isRead: apiApp.isRead ?? apiApp.is_read,
+          isNew: apiApp.isNew ?? apiApp.is_new,
+          tags: apiApp.tags || [],
+          recruiterNotes: apiApp.recruiterNotes || apiApp.recruiter_notes,
+          notes: [],
+          activities: [],
+          interviews: [],
+          createdAt: apiApp.createdAt ? new Date(apiApp.createdAt) : (apiApp.created_at ? new Date(apiApp.created_at) : new Date()),
+          updatedAt: apiApp.updatedAt ? new Date(apiApp.updatedAt) : (apiApp.updated_at ? new Date(apiApp.updated_at) : new Date()),
+          shortlisted: apiApp.shortlisted || false,
+          manuallyAdded: apiApp.manuallyAdded || apiApp.manually_added || false,
+          score: apiApp.score,
+          aiMatchScore: apiApp.aiMatchScore || apiApp.aiScore || apiApp.score,
+          aiAnalysis: apiApp.aiAnalysis,
+        };
+
+        setApplications(prev => prev.map(app => app.id === appId ? updatedApp : app));
+      }
+    } catch (error) {
+      console.error('Failed to refresh single application:', error);
+    }
+  }, [appService]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Helper: Rollback optimistic move on error
+  const rollbackMove = useCallback((appId: string, errorMsg: string) => {
+    // Clear optimistic state
+    setOptimisticMoves(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(appId);
+      return newMap;
+    });
+
+    // Mark as failed for visual feedback
+    setFailedMoves(prev => new Set(prev).add(appId));
+
+    // Refresh the single application from server
+    refreshSingleApplication(appId);
+
+    // Show error toast
+    toast.error('Failed to move candidate', {
+      description: errorMsg,
+    });
+
+    // Clear failed state after animation
+    setTimeout(() => {
+      setFailedMoves(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(appId);
+        return newSet;
+      });
+    }, 2000);
+  }, [refreshSingleApplication]);
 
   const executeMoveToRound = async (comment: string, appOverride?: Application, roundOverride?: JobRound) => {
     const application = appOverride || pendingMoveApplication;
@@ -981,25 +1231,56 @@ export function ApplicationPipeline({
     const applicationId = application.id;
     const roundId = targetRound.id;
 
+    // Handle fallback IDs if needed
+    let actualRoundId = roundId;
+    if (roundId.startsWith('fixed-')) {
+      const parts = roundId.split('-');
+      if (parts.length >= 2) {
+        const fixedKey = parts[1];
+        const actualRound = rounds.find(r => r.isFixed && r.fixedKey === fixedKey);
+        if (actualRound) actualRoundId = actualRound.id;
+      }
+    }
+
+    // Simple Mode Fast Path - Optimistic Updates
+    if (isSimpleFlow) {
+      // 1. Optimistic update (instant UI response)
+      setOptimisticMoves(prev => new Map(prev).set(applicationId, actualRoundId));
+      setApplications(prev => prev.map(app =>
+        app.id === applicationId ? { ...app, roundId: actualRoundId } : app
+      ));
+
+      // 2. Quick success toast
+      toast.success(`Moved to ${targetRound.name}`, { duration: 800 });
+
+      // 3. Background API sync (non-blocking)
+      appService.moveToRound(applicationId, actualRoundId)
+        .then(response => {
+          if (response.success) {
+            // Clear optimistic state on success - local state is already correct
+            setOptimisticMoves(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(applicationId);
+              return newMap;
+            });
+
+            // DON'T trigger parent refresh - local state is already updated
+            // The optimistic update is the source of truth
+          } else {
+            rollbackMove(applicationId, response.error || 'Please try again');
+          }
+        })
+        .catch(() => {
+          rollbackMove(applicationId, 'Network error');
+        });
+
+      return; // Exit immediately - no waiting!
+    }
+
+    // Advanced Mode - Use dialog with full validation
     setPendingIsMoving(true);
 
     try {
-      // Logic from original handleMoveToRound 
-      // ... (Using targetRound directly since we already resolved it in validation)
-
-      let actualRoundId = roundId;
-      // Handle fallback IDs if needed (though rounds should be loaded)
-      // (Simplified from original because we trust rounds array mostly, but keeping fallback logic is safe)
-      if (roundId.startsWith('fixed-')) {
-        // ... existing logic ...
-        const parts = roundId.split('-');
-        if (parts.length >= 2) {
-          const fixedKey = parts[1];
-          const actualRound = rounds.find(r => r.isFixed && r.fixedKey === fixedKey);
-          if (actualRound) actualRoundId = actualRound.id;
-        }
-      }
-
       // Robust Date Formatter (DD/MM/YYYY, HH:mm:ss) - Deterministic
       const formatTimestamp = (date: Date) => {
         const d = date.getDate().toString().padStart(2, '0');
@@ -1012,19 +1293,14 @@ export function ApplicationPipeline({
       };
 
       // 1. Execute Move
-      // Cast appService to any if strictly typed interface is missing methods, or rely on it being the class instance
       const response = await appService.moveToRound(applicationId, actualRoundId);
 
       if (response.success) {
         // 2. Save Comment (if provided)
         if (comment && !isConsultantView) {
           try {
-            // Fetch latest application data to preserve existing notes
-            // If we use pendingMoveApplication directly, we rely on it being up-to-date, 
-            // but concurrent edits or stale state in kanban might cause data loss.
-            // Fetching fresh data is safer.
             const response = await (appService as any).getApplication(applicationId);
-            const latestApp = response.data?.application || response.application; // handle potentially different response shapes if needed
+            const latestApp = response.data?.application || response.application;
 
             const currentNotes = latestApp?.recruiterNotes || "";
             const timestamp = formatTimestamp(new Date());
@@ -1036,25 +1312,22 @@ export function ApplicationPipeline({
 
             await (appService as any).updateNotes(applicationId, appendText);
 
-            // CRITICAL: Update the selected application state so the drawer refetches/updates immediately
+            // Update selected application if it's the one being moved
             if (selectedApplication && selectedApplication.id === applicationId) {
               setSelectedApplication(latestApp);
             }
           } catch (err) {
             console.error("Failed to append move note", err);
-            // Fallback: try to act on what we have or just log error. 
-            // We should not block the move success UI, so catching here is good.
           }
         }
 
-        // 3. Post-Move Logic (Reloads) - offer auto-send is handled by backend
-        await loadRounds();
-
+        // 3. Refresh data
         if (providedApplications !== undefined) {
           toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
           onApplicationMoved?.();
         } else {
-          await loadApplications();
+          // Only refresh the single application, not all
+          await refreshSingleApplication(applicationId);
           toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
         }
 
@@ -1078,21 +1351,19 @@ export function ApplicationPipeline({
     }
   };
 
-  const handleConfigureOffer = (roundId: string) => {
+  const handleConfigureOffer = useCallback((roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
-      setSelectedRoundForOffer(round);
-      setOfferConfigDrawerOpen(true);
+      setDrawerState({ type: 'offer-config', round, application: null });
     }
-  };
+  }, [rounds]);
 
-  const handleExecuteOffer = (roundId: string) => {
+  const handleExecuteOffer = useCallback((roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
-      setSelectedRoundForOffer(round);
-      setOfferExecutionDrawerOpen(true);
+      setDrawerState({ type: 'offer-exec', round, application: null });
     }
-  };
+  }, [rounds]);
 
   const handleApplicationClick = (application: Application) => {
     setSelectedApplication(application);
@@ -1123,7 +1394,7 @@ export function ApplicationPipeline({
 
   const activeApplication = activeId ? applications.find((app) => app.id === activeId) : null;
 
-  const handleDeleteRound = async (roundId: string) => {
+  const handleDeleteRound = useCallback(async (roundId: string) => {
     if (!jobId) return;
 
     if (!confirm('Are you sure you want to delete this round? This action cannot be undone.')) {
@@ -1142,63 +1413,56 @@ export function ApplicationPipeline({
       console.error('Failed to delete round:', error);
       toast.error('Failed to delete round');
     }
-  };
+  }, [jobId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRoundCreated = () => {
     loadRounds();
   };
 
-  const handleConfigureAssessment = (roundId: string) => {
+  const handleConfigureAssessment = useCallback((roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
-      setSelectedRoundForConfig(round);
-      setInitialConfigTab("assessment");
-      setConfigDrawerOpen(true);
+      setDrawerState({ type: 'config', round, application: null, initialTab: 'assessment' });
     }
-  };
+  }, [rounds]);
 
-  const handleOpenAssessmentReview = (round: JobRound) => {
-    setSelectedRoundForReview(round);
-    setAssessmentReviewDrawerOpen(true);
-  };
+  const handleOpenAssessmentReview = useCallback((round: JobRound) => {
+    setDrawerState({ type: 'assessment', round, application: null });
+  }, []);
 
-  const handleConfigureInterview = (roundId: string) => {
+  const handleConfigureInterview = useCallback((roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
-      setSelectedRoundForConfig(round);
-      setInitialConfigTab("interview");
-      setConfigDrawerOpen(true);
+      setDrawerState({ type: 'config', round, application: null, initialTab: 'interview' });
     }
-  };
+  }, [rounds]);
 
-  const handleViewInterviews = (application: Application) => {
-    setSelectedApplicationForInterviews(application);
-    setInterviewScheduleDrawerOpen(true);
-  };
+  const handleViewInterviews = useCallback((application: Application) => {
+    setDrawerState({ type: 'interview', round: null, application });
+  }, []);
 
-  const handleViewRoundInterviews = (roundId: string) => {
+  const handleViewRoundInterviews = useCallback((roundId: string) => {
     console.log('handleViewRoundInterviews called with roundId:', roundId);
     console.log('Current jobId:', jobId);
     const round = rounds.find((r) => r.id === roundId);
     console.log('Found round:', round);
     if (round) {
-      setSelectedRoundForInterviews(round);
+      setDrawerState({ type: 'interview', round, application: null });
       console.log('Set selectedRoundForInterviews to:', round);
       console.log('Drawer should open with jobId:', jobId);
     } else {
       console.error('Round not found with id:', roundId);
     }
-  };
+  }, [jobId, rounds]);
 
-  const handleOpenScreening = (round: JobRound) => {
+  const handleOpenScreening = useCallback((round: JobRound) => {
     console.log('Opening screening drawer for round:', round);
-    setSelectedRoundForScreening(round);
-    setScreeningDrawerOpen(true);
+    setDrawerState({ type: 'screening', round, application: null });
     // Ensure job data is loaded if not already
     if (!jobData && jobId) {
       loadJobData();
     }
-  };
+  }, [jobData, jobId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedRoundForInterviews) {
@@ -1209,49 +1473,38 @@ export function ApplicationPipeline({
   }, [selectedRoundForInterviews, jobId]);
 
   // Map applications to rounds using ApplicationRoundProgress data
-  const getApplicationsForRound = (round: JobRound) => {
-    return applications.filter((app) => {
-      // Check if application has a round mapping
-      const appRoundId = app.roundId;
+  // Memoized for performance - only recalculates when applications, rounds, or optimistic moves change
+  const getApplicationsForRound = useMemo(() => {
+    // Build lookup map: O(n+m) instead of O(n*m)
+    const roundMap = new Map<string, Application[]>();
+    rounds.forEach(round => roundMap.set(round.id, []));
 
-      if (appRoundId) {
-        // Use round progress mapping if available
-        return appRoundId === round.id;
-      }
+    // Single pass through applications
+    applications.forEach(app => {
+      // Check for optimistic move first (takes precedence)
+      const appRoundId = optimisticMoves.get(app.id) || app.roundId;
 
-      // Fallback to name-based matching for applications without round progress
-      // This handles new applications or legacy data
-      const roundName = round.name.toLowerCase();
-      const stageName = app.stage.toLowerCase();
-
-      // For fixed rounds, try to match by stage
-      if (round.isFixed) {
-        if (round.fixedKey === 'NEW' && (stageName.includes('new') || !appRoundId)) {
-          return true; // New applications without round progress go to "New"
-        }
-        if (round.fixedKey === 'OFFER' && stageName.includes('offer')) return true;
-        if (round.fixedKey === 'HIRED' && stageName.includes('hired')) return true;
-        if (round.fixedKey === 'REJECTED' && stageName.includes('rejected')) return true;
-      }
-
-      // 1. Try direct match
-      if (stageName.includes(roundName) || roundName.includes(stageName)) {
-        return true;
-      }
-
-      // 2. Try matching via pipelineStages labels
-      // e.g. "Resume Review" stage has label "Screening" -> matches "Screening" round
-      const stageConfig = pipelineStages.find(s => s.stage === app.stage);
-      if (stageConfig) {
-        const labelName = stageConfig.label.toLowerCase();
-        if (roundName.includes(labelName) || labelName.includes(roundName)) {
-          return true;
+      if (appRoundId && roundMap.has(appRoundId)) {
+        roundMap.get(appRoundId)!.push(app);
+      } else {
+        // Fallback to name-based matching for applications without round progress
+        const matchedRound = findRoundForApplication(app);
+        if (matchedRound && roundMap.has(matchedRound.id)) {
+          roundMap.get(matchedRound.id)!.push(app);
+        } else {
+          console.warn('[ApplicationPipeline] Could not find round for application:', {
+            appId: app.id,
+            stage: app.stage,
+            roundId: app.roundId,
+            availableRounds: rounds.map(r => ({ id: r.id, name: r.name, fixedKey: r.fixedKey }))
+          });
         }
       }
-
-      return false;
     });
-  };
+
+    // Return a function that looks up the round
+    return (round: JobRound) => roundMap.get(round.id) || [];
+  }, [applications, rounds, optimisticMoves]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate pipeline statistics
   const totalApplications = applications.length;
@@ -1278,11 +1531,9 @@ export function ApplicationPipeline({
     }
   };
 
-  const handleConfigureEmail = (round: JobRound) => {
-    setSelectedRoundForConfig(round);
-    setInitialConfigTab("email");
-    setConfigDrawerOpen(true);
-  };
+  const handleConfigureEmail = useCallback((round: JobRound) => {
+    setDrawerState({ type: 'config', round, application: null, initialTab: 'email' });
+  }, []);
 
   const selectedIds = enableMultiSelect ? (selectedApplicationIds || []) : selectedForComparison;
 
@@ -1369,6 +1620,8 @@ export function ApplicationPipeline({
                   onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
                   onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
                   isSimpleFlow={isSimpleFlow}
+                  optimisticMoves={optimisticMoves}
+                  failedMoves={failedMoves}
                 />
               ))}
             </SortableContext>
@@ -1390,6 +1643,8 @@ export function ApplicationPipeline({
                       selectedForComparison={[]}
                       onStageChange={() => { }}
                       allRounds={rounds}
+                      optimisticMoves={optimisticMoves}
+                      failedMoves={failedMoves}
                     />
                   </div>
                 );
@@ -1413,6 +1668,7 @@ export function ApplicationPipeline({
           onPrevious={handlePrevious}
           hasNext={hasNext}
           hasPrevious={hasPrevious}
+          isSimpleFlow={isSimpleFlow}
 
           // Next Stage Logic
           nextStageName={(() => {

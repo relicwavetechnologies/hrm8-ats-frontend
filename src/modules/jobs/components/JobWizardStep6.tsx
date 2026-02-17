@@ -5,16 +5,13 @@ import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TermsAndConditions } from './TermsAndConditions';
 import { calculateTotalJobCost } from '@/shared/lib/paymentService';
 import { pricingService, type JobPriceCalculation } from '@/shared/lib/pricingService';
-import { Rocket, DollarSign, AlertCircle, Info, Megaphone, CheckCircle2, Loader2, FileText } from 'lucide-react';
+import { Rocket, DollarSign, Info, Megaphone, CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { RECRUITMENT_SERVICES } from '@/shared/lib/subscriptionConfig';
-import { Badge } from '@/shared/components/ui/badge';
 import { useAuth } from '@/app/providers/AuthContext';
 import { Checkbox } from '@/shared/components/ui/checkbox';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/shared/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl } from '@/shared/components/ui/form';
 
 interface JobWizardStep6Props {
   form: UseFormReturn<JobFormData>;
@@ -272,32 +269,12 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
                     Save this job as a template
                   </FormLabel>
                   <p className="text-xs text-muted-foreground">
-                    You can easily create new jobs using this template from the sidebar.
+                    When publishing, you'll be asked to provide a template name.
                   </p>
                 </div>
               </FormItem>
             )}
           />
-
-          {formData.saveAsTemplate && (
-            <FormField
-              control={form.control}
-              name="templateName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Template Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. Senior Frontend Engineer Template"
-                      {...field}
-                      defaultValue={field.value || `${formData.title} Template`}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </CardContent>
       </Card>
     </div>
