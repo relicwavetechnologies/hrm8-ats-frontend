@@ -181,6 +181,7 @@ export function SubscriptionUpgradeDialog({
 
             queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription', 'active'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
@@ -223,7 +224,7 @@ export function SubscriptionUpgradeDialog({
                 <DialogHeader>
                     <DialogTitle className="text-2xl">Choose Your Plan</DialogTitle>
                     <DialogDescription>
-                        Select a subscription plan to unlock more features. Your wallet will be credited with the subscription amount.
+                        Select a subscription plan to unlock ATS access and monthly job posting quota.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -312,8 +313,8 @@ export function SubscriptionUpgradeDialog({
 
                 <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
                     <p className="text-sm text-muted-foreground">
-                        <strong>How it works:</strong> When you subscribe, your virtual wallet will be credited with the subscription amount.
-                        Job postings will be deducted from your wallet balance automatically.
+                        <strong>How it works:</strong> Subscription controls job posting quota and perks.
+                        Wallet is used only when you select HRM8 managed recruitment services.
                     </p>
                 </div>
             </DialogContent>

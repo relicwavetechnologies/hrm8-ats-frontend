@@ -114,6 +114,20 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
   const effectiveJobId = jobId ?? storeJobId ?? null;
 
+  const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search') => {
+    if (!effectiveJobId) {
+      toast({
+        title: 'Job not found',
+        description: 'Cannot continue to managed services without a valid job.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    onOpenChange(false);
+    window.location.href = `/jobs/${effectiveJobId}/managed-recruitment-checkout?serviceType=${serviceType}`;
+  };
+
   const renderStep = () => {
     if (currentStep === 1) {
       return (
@@ -121,8 +135,11 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           managementType={managementType}
           onManagementTypeSelect={(t) => {
             setManagementType(t);
-            nextStep();
+            if (t === 'self-managed') {
+              nextStep();
+            }
           }}
+          onManagedServiceSelect={handleManagedServiceSelect}
         />
       );
     }

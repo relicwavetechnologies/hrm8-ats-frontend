@@ -129,11 +129,17 @@ class WalletService {
         }
         const data = await response.json();
         const payload = data.data;
-        return Array.isArray(payload) ? payload : (payload?.subscriptions ?? []);
+        if (Array.isArray(payload)) return payload;
+        if (Array.isArray(payload?.subscriptions)) return payload.subscriptions;
+        if (Array.isArray(payload?.subscriptions?.subscriptions)) return payload.subscriptions.subscriptions;
+        return [];
     }
 
     async getSubscription(subscriptionId: string) {
-        const response = await fetch(`${this.baseUrl}/subscription/${subscriptionId}`);
+        const response = await fetch(`${this.baseUrl}/subscriptions/${subscriptionId}`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch subscription');
         const data = await response.json();
         return data.data;
@@ -147,7 +153,7 @@ class WalletService {
         jobQuota?: number;
         autoRenew?: boolean;
     }) {
-        // Use /api/subscriptions (SubscriptionService) - credits wallet with dynamic regional pricing
+        // Use /api/subscriptions (SubscriptionService) - creates subscription snapshot + quota
         const response = await fetch(`${this.apiUrl}/api/subscriptions`, {
             method: 'POST',
             credentials: 'include',
@@ -167,8 +173,9 @@ class WalletService {
     }
 
     async renewSubscription(subscriptionId: string) {
-        const response = await fetch(`${this.baseUrl}/subscription/${subscriptionId}/renew`, {
+        const response = await fetch(`${this.baseUrl}/subscriptions/${subscriptionId}/renew`, {
             method: 'POST',
+            credentials: 'include',
         });
         if (!response.ok) {
             const error = await response.json();
@@ -178,8 +185,9 @@ class WalletService {
     }
 
     async cancelSubscription(subscriptionId: string, reason?: string) {
-        const response = await fetch(`${this.baseUrl}/subscription/${subscriptionId}/cancel`, {
+        const response = await fetch(`${this.baseUrl}/subscriptions/${subscriptionId}/cancel`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reason }),
         });
@@ -196,6 +204,7 @@ class WalletService {
         jobQuota?: number | null;
     }) {
         const url = `${this.apiUrl}/api/integrations/stripe/create-checkout-session`;
+        const origin = window.location.origin;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -208,6 +217,8 @@ class WalletService {
                 billingCycle: data.billingCycle || 'MONTHLY',
                 jobQuota: data.jobQuota ?? undefined,
                 description: `${data.name} - $${data.amount.toFixed(2)}`,
+                successUrl: `${origin}/subscriptions?subscription_success=true`,
+                cancelUrl: `${origin}/subscriptions?canceled=true`,
             }),
         });
         if (!response.ok) {
@@ -286,8 +297,9 @@ class WalletService {
 
     // Add-on Services
     async purchaseAddOnService(request: AddOnServiceRequest) {
-        const response = await fetch(`${this.baseUrl}/subscription/addon-service`, {
+        const response = await fetch(`${this.baseUrl}/addons`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request),
         });
@@ -310,15 +322,19 @@ class WalletService {
 
     // Consultant Earnings & Withdrawals
     async getEarnings() {
-        const response = await fetch(`${this.baseUrl}/earnings`);
+        const response = await fetch(`${this.baseUrl}/earnings`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch earnings');
         const data = await response.json();
         return data.data;
     }
 
     async requestWithdrawal(request: WithdrawalRequest) {
-        const response = await fetch(`${this.baseUrl}/withdrawal/request`, {
+        const response = await fetch(`${this.baseUrl}/withdrawals`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request),
         });
@@ -334,7 +350,10 @@ class WalletService {
         if (params?.limit) queryParams.append('limit', params.limit.toString());
         if (params?.offset) queryParams.append('offset', params.offset.toString());
 
-        const response = await fetch(`${this.baseUrl}/withdrawal/history?${queryParams}`);
+        const response = await fetch(`${this.baseUrl}/withdrawals?${queryParams}`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch withdrawal history');
         const data = await response.json();
         return data.data;
@@ -342,8 +361,9 @@ class WalletService {
 
     // Refunds
     async requestRefund(request: RefundRequest) {
-        const response = await fetch(`${this.baseUrl}/refund/request`, {
+        const response = await fetch(`${this.baseUrl}/refunds`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(request),
         });
@@ -356,7 +376,10 @@ class WalletService {
         if (params?.limit) queryParams.append('limit', params.limit.toString());
         if (params?.offset) queryParams.append('offset', params.offset.toString());
 
-        const response = await fetch(`${this.baseUrl}/refund/history?${queryParams}`);
+        const response = await fetch(`${this.baseUrl}/refunds?${queryParams}`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch refund history');
         const data = await response.json();
         return data.data;
@@ -368,7 +391,10 @@ class WalletService {
         if (params?.limit) queryParams.append('limit', params.limit.toString());
         if (params?.offset) queryParams.append('offset', params.offset.toString());
 
-        const response = await fetch(`${this.baseUrl}/admin/withdrawals/pending?${queryParams}`);
+        const response = await fetch(`${this.baseUrl}/admin/withdrawals/pending?${queryParams}`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch pending withdrawals');
         const data = await response.json();
         return data.data;
@@ -377,6 +403,7 @@ class WalletService {
     async approveWithdrawal(withdrawalId: string, data: { paymentReference?: string; adminNotes?: string }) {
         const response = await fetch(`${this.baseUrl}/admin/withdrawals/${withdrawalId}/approve`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
@@ -387,6 +414,7 @@ class WalletService {
     async rejectWithdrawal(withdrawalId: string, reason: string) {
         const response = await fetch(`${this.baseUrl}/admin/withdrawals/${withdrawalId}/reject`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reason }),
         });
@@ -399,7 +427,10 @@ class WalletService {
         if (params?.limit) queryParams.append('limit', params.limit.toString());
         if (params?.offset) queryParams.append('offset', params.offset.toString());
 
-        const response = await fetch(`${this.baseUrl}/admin/refunds/pending?${queryParams}`);
+        const response = await fetch(`${this.baseUrl}/admin/refunds/pending?${queryParams}`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch pending refunds');
         const data = await response.json();
         return data.data;
@@ -408,6 +439,7 @@ class WalletService {
     async approveRefund(refundId: string, adminNotes?: string) {
         const response = await fetch(`${this.baseUrl}/admin/refunds/${refundId}/approve`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ adminNotes }),
         });
@@ -418,6 +450,7 @@ class WalletService {
     async rejectRefund(refundId: string, reason: string) {
         const response = await fetch(`${this.baseUrl}/admin/refunds/${refundId}/reject`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reason }),
         });
@@ -426,7 +459,10 @@ class WalletService {
     }
 
     async getWalletStats() {
-        const response = await fetch(`${this.baseUrl}/admin/stats`);
+        const response = await fetch(`${this.baseUrl}/admin/stats`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
         if (!response.ok) throw new Error('Failed to fetch wallet stats');
         const data = await response.json();
         return data.data;

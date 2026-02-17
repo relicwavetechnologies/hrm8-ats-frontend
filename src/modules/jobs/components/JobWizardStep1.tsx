@@ -16,7 +16,6 @@ import { AddDepartmentDialog } from "@/modules/jobs/components/AddDepartmentDial
 import { AddLocationDialog } from "@/modules/jobs/components/AddLocationDialog";
 import { PositionDescriptionUpload } from "./PositionDescriptionUpload";
 import { useToast } from "@/shared/hooks/use-toast";
-import { ServiceTypeSelector } from "./ServiceTypeSelector";
 import { Separator } from "@/shared/components/ui/separator";
 import { useCompanyProfile } from "@/shared/hooks/useCompanyProfile";
 import { CompanyProfileLocation } from "@/shared/types/companyProfile";
@@ -109,34 +108,6 @@ export function JobWizardStep1({
     await refreshProfile();
   };
   return <div className="space-y-6">
-    {/* Service Type Selection Section */}
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold">Choose Your Recruitment Service</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Select the level of support you need from HRM8
-        </p>
-      </div>
-
-      <FormField
-        control={form.control}
-        name="serviceType"
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <ServiceTypeSelector
-                value={field.value}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-
-    <Separator className="my-8" />
-
     {/* Basic Details Section */}
     <div className="flex items-center justify-between">
       <div>

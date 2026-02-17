@@ -83,7 +83,7 @@ export const useJobConversation = () => {
 
         let botResponse = "";
 
-        if (currentStepId === 'service-type' || currentStepId === 'basic-details') {
+        if (currentStepId === 'basic-details') {
             setJobData({ title: content });
             botResponse = "Great! And which **Department** should this be assigned to?";
             nextStep();

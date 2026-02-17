@@ -45,6 +45,7 @@ export function SubscriptionManagementPage() {
             setJustReturnedFromCheckout(true);
             queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription', 'active'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
             setSearchParams({}, { replace: true });
@@ -74,7 +75,7 @@ export function SubscriptionManagementPage() {
     const { data: walletData, isLoading: walletLoading } = useQuery({
         queryKey: ['wallet', 'balance'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/balance');
+            const response = await fetch('/api/wallet/balance', { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to fetch wallet balance');
             return response.json();
         },
@@ -84,12 +85,11 @@ export function SubscriptionManagementPage() {
     const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
         queryKey: ['wallet', 'subscription', 'active'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/subscriptions', { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch subscriptions');
+            // Use authoritative subscription endpoint (includes quota/usage/full plan fields)
+            const response = await fetch('/api/subscriptions/active', { credentials: 'include' });
+            if (!response.ok) throw new Error('Failed to fetch active subscription');
             const result = await response.json();
-            const subs = result.data?.subscriptions ?? result.data ?? [];
-            const arr = Array.isArray(subs) ? subs : [];
-            return arr.find((sub: { status?: string }) => sub.status === 'ACTIVE') || null;
+            return result?.data?.subscription ?? null;
         },
         refetchOnWindowFocus: true,
     });
@@ -98,7 +98,7 @@ export function SubscriptionManagementPage() {
     const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
         queryKey: ['wallet', 'transactions'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/transactions?limit=10');
+            const response = await fetch('/api/wallet/transactions?limit=10', { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to fetch transactions');
             return response.json();
         },

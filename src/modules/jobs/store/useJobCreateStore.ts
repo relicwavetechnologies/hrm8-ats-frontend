@@ -5,7 +5,6 @@ import { JobFormData } from '@/shared/types/job';
 // Define the steps in order
 export const WIZARD_STEPS = [
   'document-upload', // First step - upload JD for smart parsing
-  'service-type',
   'basic-details',   // Title + Department
   'location',       // Location + Work Arrangement
   'role-details',   // Employment Type + Experience
@@ -53,6 +52,7 @@ interface JobCreateState extends StepsState {
 }
 
 const INITIAL_JOB_DATA: Partial<JobFormData> = {
+  serviceType: 'self-managed',
   status: 'draft',
   employmentType: 'full-time',
   experienceLevel: 'mid',

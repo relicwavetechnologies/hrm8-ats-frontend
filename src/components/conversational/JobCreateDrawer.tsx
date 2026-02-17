@@ -30,7 +30,6 @@ import {
     AlertDialogCancel,
 } from '@/shared/components/ui/alert-dialog';
 import {
-    ChatServiceTypeCard,
     ChatBasicDetailsCard,
     ChatLocationCard,
     ChatCompensationCard,
@@ -109,6 +108,34 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
     const draftStepIndex = WIZARD_STEPS.indexOf(currentStepId) + 1;
 
+    const mapServiceTypeToHiringMode = (serviceType?: string): 'SELF_MANAGED' | 'SHORTLISTING' | 'FULL_SERVICE' | 'EXECUTIVE_SEARCH' => {
+        switch (serviceType) {
+            case 'shortlisting':
+                return 'SHORTLISTING';
+            case 'full-service':
+            case 'rpo':
+                return 'FULL_SERVICE';
+            case 'executive-search':
+                return 'EXECUTIVE_SEARCH';
+            default:
+                return 'SELF_MANAGED';
+        }
+    };
+
+    const mapServiceTypeToServicePackage = (serviceType?: string): 'self-managed' | 'shortlisting' | 'full-service' | 'executive-search' => {
+        switch (serviceType) {
+            case 'shortlisting':
+                return 'shortlisting';
+            case 'full-service':
+            case 'rpo':
+                return 'full-service';
+            case 'executive-search':
+                return 'executive-search';
+            default:
+                return 'self-managed';
+        }
+    };
+
     const buildDraftPayload = () => ({
         title: jobData.title || 'Untitled draft',
         description: jobData.description || '',
@@ -148,12 +175,14 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     toast({ title: 'Error', description: res.error || 'Failed to save draft', variant: 'destructive' });
                 }
             } else {
+                const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
+                const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
                 const createRes = await jobService.createJob({
                     title: payload.title,
                     description: payload.description,
                     department: payload.department ?? '',
                     location: payload.location,
-                    hiringMode: 'SELF_MANAGED',
+                    hiringMode,
                     workArrangement: (payload.workArrangement ?? 'on-site').toUpperCase().replace('-', '_') as any,
                     employmentType: (payload.employmentType ?? 'full-time').toUpperCase().replace('-', '_') as any,
                     numberOfVacancies: payload.numberOfVacancies,
@@ -166,6 +195,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     visibility: payload.visibility,
                     stealth: payload.stealth,
                     closeDate: payload.closeDate,
+                    servicePackage,
                     publishImmediately: false,
                 });
                 if (createRes.success && createRes.data) {
@@ -201,6 +231,9 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     const handleSubmitJob = async () => {
         setIsSubmitting(true);
         try {
+            const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
+            const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
+
             // Transform JobFormData to CreateJobRequest
             const payload: any = {
                 title: jobData.title || 'Untitled Job',
@@ -229,8 +262,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
                 // Config
                 applicationForm: jobData.applicationForm,
-                // Hiring Mode defaults
-                hiringMode: 'SELF_MANAGED',
+                hiringMode,
+                servicePackage,
                 visibility: jobData.visibility,
                 stealth: jobData.stealth,
                 closeDate: jobData.closeDate,
@@ -243,8 +276,53 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
             if (response.success && response.data) {
                 const job = (response.data as { job?: { id: string }; id?: string }).job ?? response.data;
                 const newJobId = (job as { id?: string }).id ?? (response.data as { id?: string }).id;
+                if (!newJobId) {
+                    throw new Error('Failed to create job ID');
+                }
 
-                // Open Post-Job Setup drawer (hiring team is configured there)
+                const publishResponse = await import('@/shared/lib/jobService').then(m => m.jobService.publishJob(newJobId));
+                if (!publishResponse.success) {
+                    const status = publishResponse.status;
+                    const errorMsg = (publishResponse as any).error || 'Failed to publish job';
+
+                    if (status === 402) {
+                        if (errorMsg.toLowerCase().includes('subscription required')) {
+                            toast({
+                                title: 'Subscription Required',
+                                description: 'You need an active subscription to publish jobs.',
+                                variant: 'destructive',
+                            });
+                            return;
+                        }
+                        if (errorMsg.toLowerCase().includes('quota exhausted')) {
+                            toast({
+                                title: 'Job Quota Exhausted',
+                                description: 'Your subscription quota is full. Please upgrade your plan.',
+                                variant: 'destructive',
+                            });
+                            return;
+                        }
+                        toast({
+                            title: 'Insufficient Wallet Balance',
+                            description: 'Top up your wallet to use HRM8 managed services.',
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+
+                    if (status === 503) {
+                        toast({
+                            title: 'No Consultant Available',
+                            description: 'No consultant is currently available for this service. Please try again later.',
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+
+                    throw new Error(errorMsg);
+                }
+
+                // Open setup only after job is published and OPEN.
                 setCreatedJobId(newJobId);
                 setCreatedJobTitle(jobData.title || undefined);
                 setSetupDrawerOpen(true);
@@ -255,7 +333,11 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
             }
         } catch (error) {
             console.error('Job creation failed:', error);
-            // Show error toast?
+            toast({
+                title: 'Publish Failed',
+                description: error instanceof Error ? error.message : 'Failed to create and publish job.',
+                variant: 'destructive',
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -287,16 +369,6 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         onSkip={nextStep}
                         isUploading={isUploadingDoc}
                         uploadComplete={uploadComplete}
-                    />
-                );
-            case 'service-type':
-                return (
-                    <ChatServiceTypeCard
-                        currentValue={jobData.serviceType}
-                        onSelect={(val) => {
-                            setJobData({ serviceType: val });
-                            nextStep();
-                        }}
                     />
                 );
             case 'basic-details':

@@ -100,7 +100,7 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
           Submit & Activate
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Complete payment (if required) and activate your job posting. It will be live on HRM8 internal job board and your careers page.
+          Publish using your subscription quota. If you selected an HRM8 managed service, wallet funds are also required.
         </p>
       </div>
 
@@ -124,10 +124,10 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Payment Required
+              Service Payment (HRM8 Managed)
             </CardTitle>
             <CardDescription>
-              Complete payment to activate your job posting
+              Publishing uses quota. Wallet is charged only for managed services.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -189,13 +189,13 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
       {costBreakdown.totalUpfront > 0 && !isSelfManaged && (
         <Alert className="border-2 border-primary/30 bg-primary/5">
           <Info className="h-5 w-5 text-primary" />
-          <AlertTitle className="text-base font-semibold">Payment Required</AlertTitle>
+          <AlertTitle className="text-base font-semibold">Managed Service Payment</AlertTitle>
           <AlertDescription className="text-base mt-2">
             <p className="mb-2">
-              When you click "Pay & Publish", you will be redirected to a secure payment page to complete your payment via Stripe.
+              HRM8 managed services are paid from your wallet balance at publish time.
             </p>
             <p className="text-sm text-muted-foreground">
-              Your job will be published automatically after successful payment.
+              If wallet balance is low, top up and retry. Subscription quota is still required for publishing.
             </p>
           </AlertDescription>
         </Alert>
@@ -220,13 +220,13 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
               No Payment Required
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Your job posting is free and will be activated immediately upon submission.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Publishing uses subscription quota with no extra service charge for self-managed jobs.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
       <TermsAndConditions
         accepted={termsAccepted}
