@@ -20,6 +20,7 @@ import { usePermissions } from "@/shared/hooks/usePermissions";
 const mainNavItems = [
   { title: "Home", url: "/home", icon: Home },
   { title: "Dashboards", url: "/dashboard/overview", icon: LayoutGrid },
+  { title: "Connect Google", url: "/integrations?tab=calendar", icon: Plug },
 ];
 
 // ATS (Applicant Tracking System) Section
@@ -149,6 +150,7 @@ const hrManagementNavItems = [
 const managementNavItems = [
   { title: "Users", url: "/users", icon: UsersRound },
   { title: "Finance", url: "/finance", icon: Banknote },
+  { title: "Connect Google", url: "/integrations?tab=calendar", icon: CalendarDays },
   { title: "Integrations", url: "/integrations", icon: Plug },
   { title: "Reports", url: "/reports", icon: FileBarChart },
 ];
@@ -158,6 +160,7 @@ const integrationsNavItems = [
   { title: "Advanced Analytics", url: "/advanced-analytics", icon: BarChart2 },
   { title: "Recruitment Integration", url: "/recruitment-integration", icon: Users },
   { title: "Enhanced Learning", url: "/enhanced-learning", icon: GraduationCap },
+  { title: "Connect Google", url: "/integrations?tab=calendar", icon: CalendarDays },
   { title: "Integrations", url: "/integrations", icon: Plug },
 ];
 

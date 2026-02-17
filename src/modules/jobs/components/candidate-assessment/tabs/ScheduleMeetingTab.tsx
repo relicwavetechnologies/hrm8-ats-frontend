@@ -136,13 +136,15 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
   // Fetch hiring team
   useEffect(() => {
     const fetchHiringTeam = async () => {
-      if (!application.jobId) return;
+      let jobId = application.jobId || (application as any).job?.id;
+      if (!jobId) return;
+
       try {
-        const response = await apiClient.get<{ members: HiringTeamMember[] }>(
-          `/api/jobs/${application.jobId}/team`
+        const response = await apiClient.get<HiringTeamMember[]>(
+          `/api/jobs/${jobId}/team`
         );
-        if (response.success && response.data?.members) {
-          setHiringTeam(response.data.members);
+        if (response.success && response.data) {
+          setHiringTeam(response.data);
         }
       } catch (error) {
         console.error('Failed to fetch hiring team:', error);
@@ -150,7 +152,7 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
     };
 
     fetchHiringTeam();
-  }, [application.jobId]);
+  }, [application.jobId, (application as any).job?.id]);
 
   // Fetch calendar connection status for all hiring team members
   useEffect(() => {

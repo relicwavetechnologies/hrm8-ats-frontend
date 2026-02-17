@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -9,6 +9,7 @@ import {
   disconnectCalendarIntegration,
   syncCalendar,
   getCalendarIntegration,
+  fetchIntegrationStatus,
   type CalendarProvider,
 } from "@/shared/lib/integrations/calendarIntegrationService";
 
@@ -23,6 +24,14 @@ export function CalendarIntegrationCard({ provider, name, description }: Calenda
   const [integration, setIntegration] = useState(getCalendarIntegration(provider));
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      const status = await fetchIntegrationStatus(provider);
+      setIntegration(status);
+    };
+    checkStatus();
+  }, [provider]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
