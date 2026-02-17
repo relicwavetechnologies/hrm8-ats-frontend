@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
@@ -8,7 +7,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group';
 import { Label } from '@/shared/components/ui/label';
-import { Loader2, Calendar, Clock, Video, Phone, Building2, Users, AlertCircle, ChevronDown, Check, Circle, Wifi, WifiOff } from 'lucide-react';
+import { Loader2, Calendar, Video, Phone, Building2, Users, ChevronDown, History } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiClient } from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/use-toast';
@@ -17,13 +16,11 @@ import { DateTimePicker } from '@/shared/components/ui/date-time-picker';
 import {
   meetingTemplates,
   durationOptions,
-  getMeetingTypeIcon,
-  getMeetingTypeColor,
   type MeetingType,
 } from '@/shared/lib/meetingTemplates';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
-import { History } from 'lucide-react';
 import { AvailabilityGrid } from './AvailabilityGrid';
+import { MergedCalendarDrawer } from './MergedCalendarDrawer';
 
 interface ScheduleMeetingTabProps {
   application: Application;
@@ -107,6 +104,7 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
   const [interviewerPopoverOpen, setInterviewerPopoverOpen] = useState(false);
   const [phoneCallMode, setPhoneCallMode] = useState<PhoneCallMode>('meet');
   const [calendarStatuses, setCalendarStatuses] = useState<Record<string, boolean>>({});
+  const [calendarDrawerOpen, setCalendarDrawerOpen] = useState(false);
   const { toast } = useToast();
 
   const candidateName = application.candidateName || 'Candidate';
@@ -226,11 +224,25 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
       );
 
       if (response.success && response.data?.interview) {
-        toast({
-          title: 'Meeting scheduled!',
-          description: `${selectedType} meeting scheduled with ${candidateName}`,
-        });
-        setInterviews((prev) => [response.data.interview, ...prev]);
+        const inv = response.data.interview;
+        const meetFailed = (inv as any)._meetLinkFailed;
+        const meetLinkError = (inv as any)._meetLinkError as string | undefined;
+
+        if (meetFailed) {
+          toast({
+            title: 'Meeting scheduled (without Meet link)',
+            description: meetLinkError || 'Google Meet link could not be generated. Make sure your Google Calendar is connected.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Meeting scheduled!',
+            description: inv.meeting_link
+              ? `${selectedType} meeting scheduled — Google Meet link generated`
+              : `${selectedType} meeting scheduled with ${candidateName}`,
+          });
+        }
+        setInterviews((prev) => [inv, ...prev]);
         // Reset form
         setSelectedDate(undefined);
         setNotes('');
@@ -254,41 +266,20 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
   const selectedMemberDetails = hiringTeam.filter((m) => selectedInterviewers.includes(m.userId));
 
   return (
-    <div className="flex flex-col h-full space-y-2 py-2 overflow-hidden">
+    <div className="flex flex-col h-full space-y-1.5 py-1.5 overflow-hidden text-xs">
       {/* Header Row */}
-      <div className="flex items-center justify-between px-1 gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight flex-shrink-0">Schedule:</span>
-          <div className="bg-primary/10 px-2 py-0.5 rounded-full flex items-center gap-1.5 truncate border border-primary/20">
-            <Calendar className="h-2.5 w-2.5 text-primary" />
-            <span className="text-[10px] font-bold text-primary truncate">{candidateName}</span>
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tight flex-shrink-0">Scheduling for:</span>
+            <span className="text-[10px] font-semibold text-primary truncate max-w-[120px]">{candidateName}</span>
           </div>
-        </div>
-        <Button
-          onClick={handleSchedule}
-          disabled={!selectedDate || isScheduling}
-          className="h-7 px-3 text-[11px] font-bold shadow-sm"
-          size="sm"
-        >
-          {isScheduling ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3 w-3" />
-              <span>Schedule</span>
-            </div>
-          )}
-        </Button>
-      </div>
 
-      {/* Toolbar 1: Templates & History */}
-      <div className="flex items-center gap-2 px-1 border-b pb-1">
-        <div className="flex-1 max-w-[160px]">
           <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-            <SelectTrigger className="text-[11px] h-7 bg-transparent border-none hover:bg-muted/50 p-0 px-2 [&>span]:truncate">
+            <SelectTrigger className="h-6 w-[140px] text-[10px] bg-transparent border-transparent hover:bg-muted/50 p-0 px-2 [&>span]:truncate focus:ring-0">
               <div className="flex items-center gap-1.5 overflow-hidden">
-                <Video className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                <SelectValue placeholder="Meeting Presets" />
+                <Video className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <SelectValue placeholder="Load Preset..." />
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -301,66 +292,69 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
           </Select>
         </div>
 
-        <div className="h-4 w-px bg-muted-foreground/20" />
-
-        {/* History Popover */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-[11px] hover:bg-muted/50">
-              <History className="h-3.5 w-3.5" />
-              Upcoming
-              {interviews.length > 0 && (
-                <Badge variant="secondary" className="px-1 h-3.5 min-w-[14px] text-[9px]">
-                  {interviews.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 shadow-xl border-muted" side="bottom" align="end">
-            <div className="p-3 border-b bg-muted/30">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Scheduled Interviews</h4>
-            </div>
-            <ScrollArea className="h-[300px]">
-              <div className="p-2 space-y-2">
-                {isLoading ? (
-                  <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                ) : interviews.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-muted-foreground">No meetings scheduled</div>
-                ) : (
-                  interviews.map((interview) => {
-                    const Icon = getMeetingIcon(interview.type);
-                    return (
-                      <div key={interview.id} className="p-2.5 bg-muted/20 rounded border text-[11px] space-y-1.5">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-1.5">
-                            <Icon className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-semibold uppercase text-[9px]">{interview.type}</span>
-                          </div>
-                          <Badge variant="outline" className={`text-[8px] h-3.5 px-1 ${getStatusColor(interview.status)}`}>{interview.status}</Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span>{format(new Date(interview.scheduled_date), 'MMM d, yyyy • h:mm a')}</span>
-                        </div>
-                        {interview.notes && <p className="text-muted-foreground italic text-[10px] bg-muted/30 p-1.5 rounded truncate">{interview.notes}</p>}
-                      </div>
-                    );
-                  })
-                )}
+        <div className="flex items-center gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full hover:bg-muted">
+                <History className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0 shadow-xl border-muted" side="bottom" align="end">
+              <div className="p-2 border-b bg-muted/30">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Scheduled Interviews</h4>
               </div>
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
+              <ScrollArea className="h-[240px]">
+                <div className="p-1 space-y-1">
+                  {isLoading ? (
+                    <div className="py-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+                  ) : interviews.length === 0 ? (
+                    <div className="py-6 text-center text-[10px] text-muted-foreground">No meetings scheduled</div>
+                  ) : (
+                    interviews.map((interview) => {
+                      const Icon = getMeetingIcon(interview.type);
+                      return (
+                        <div key={interview.id} className="p-2 bg-muted/20 rounded border text-[10px] space-y-1">
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-1.5">
+                              <Icon className="h-3 w-3 text-muted-foreground" />
+                              <span className="font-semibold uppercase text-[9px]">{interview.type}</span>
+                            </div>
+                            <Badge variant="outline" className={`text-[8px] h-3.5 px-1 ${getStatusColor(interview.status)}`}>{interview.status}</Badge>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Calendar className="h-2.5 w-2.5" />
+                            <span>{format(new Date(interview.scheduled_date), 'MMM d, h:mm a')}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            onClick={handleSchedule}
+            disabled={!selectedDate || isScheduling}
+            className="h-6 px-3 text-[10px] font-bold shadow-sm rounded-full"
+            size="sm"
+          >
+            {isScheduling ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Schedule'}
+          </Button>
+        </div>
       </div>
 
+      <div className="h-px bg-border/40 mx-1" />
+
       {/* Main Form Area */}
-      <div className="flex-1 min-h-0 px-1 pb-1 flex flex-col space-y-3 overflow-y-auto">
+      <div className="flex-1 min-h-0 px-1 pb-1 flex flex-col space-y-2 overflow-y-auto">
         {/* Type & Duration */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Type</label>
+          <div className="space-y-0.5">
+            <label className="text-[9px] font-semibold text-muted-foreground ml-1">Type</label>
             <Select value={selectedType} onValueChange={(v) => setSelectedType(v as MeetingType)}>
-              <SelectTrigger className="text-[11px] h-8 bg-muted/20">
+              <SelectTrigger className="text-[11px] h-7 bg-muted/30 border-muted-foreground/20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -371,10 +365,10 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Duration</label>
+          <div className="space-y-0.5">
+            <label className="text-[9px] font-semibold text-muted-foreground ml-1">Duration</label>
             <Select value={selectedDuration} onValueChange={setSelectedDuration}>
-              <SelectTrigger className="text-[11px] h-8 bg-muted/20">
+              <SelectTrigger className="text-[11px] h-7 bg-muted/30 border-muted-foreground/20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -388,160 +382,182 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
 
         {/* PHONE: Meet or Handle Yourself toggle */}
         {selectedType === 'PHONE' && (
-          <div className="bg-muted/30 rounded-lg p-2.5 border space-y-1.5">
-            <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <Phone className="h-2.5 w-2.5" /> Phone Call Setup
-            </label>
+          <div className="bg-muted/30 rounded p-1.5 border border-muted-foreground/10 flex items-center gap-3">
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide">Mode:</span>
             <RadioGroup
               value={phoneCallMode}
               onValueChange={(v) => setPhoneCallMode(v as PhoneCallMode)}
-              className="flex gap-4"
+              className="flex gap-3"
             >
               <div className="flex items-center gap-1.5">
-                <RadioGroupItem value="meet" id="phone-meet" className="h-3 w-3" />
-                <Label htmlFor="phone-meet" className="text-[11px] cursor-pointer">Use Google Meet</Label>
+                <RadioGroupItem value="meet" id="phone-meet" className="h-2.5 w-2.5" />
+                <Label htmlFor="phone-meet" className="text-[10px] cursor-pointer font-normal">Google Meet</Label>
               </div>
               <div className="flex items-center gap-1.5">
-                <RadioGroupItem value="self" id="phone-self" className="h-3 w-3" />
-                <Label htmlFor="phone-self" className="text-[11px] cursor-pointer">Handle ourselves</Label>
+                <RadioGroupItem value="self" id="phone-self" className="h-2.5 w-2.5" />
+                <Label htmlFor="phone-self" className="text-[10px] cursor-pointer font-normal">Manual</Label>
               </div>
             </RadioGroup>
           </div>
         )}
 
-        {/* Date Time Picker */}
-        <div className="space-y-1">
-          <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Date & Time</label>
-          <DateTimePicker
-            date={selectedDate}
-            onDateChange={setSelectedDate}
-            placeholder="Pick date & time"
-            disabled={isScheduling}
-            className="w-full h-8 px-3 text-[11px] bg-muted/20"
-          />
-        </div>
-
-        {/* Interviewers Multi-Select */}
-        <div className="space-y-1">
-          <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Interviewers</label>
-          <Popover open={interviewerPopoverOpen} onOpenChange={setInterviewerPopoverOpen}>
-            <PopoverTrigger asChild>
+        {/* Date & Time AND Interviewers Row */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Date Time Picker */}
+          <div className="space-y-0.5">
+            <label className="text-[9px] font-semibold text-muted-foreground ml-1">Date & Time</label>
+            <div className="flex gap-1">
+              <DateTimePicker
+                date={selectedDate}
+                onDateChange={setSelectedDate}
+                placeholder="Pick date & time"
+                disabled={isScheduling}
+                className="w-full h-7 px-2 text-[11px] bg-muted/30 border-muted-foreground/20"
+              />
               <Button
                 variant="outline"
-                role="combobox"
-                className="w-full h-8 justify-between text-[11px] bg-muted/20 border-input font-normal"
+                size="sm"
+                className="h-7 w-7 p-0 flex-shrink-0 bg-muted/30 border-muted-foreground/20"
+                onClick={() => setCalendarDrawerOpen(true)}
+                disabled={selectedInterviewers.length === 0}
+                title={selectedInterviewers.length === 0 ? 'Select interviewers first' : 'View merged calendar'}
               >
-                <span className="truncate">
-                  {selectedInterviewers.length === 0
-                    ? 'Select interviewers'
-                    : `${selectedInterviewers.length} selected`}
-                </span>
-                <ChevronDown className="h-3 w-3 ml-1 flex-shrink-0 text-muted-foreground" />
+                <Calendar className="h-3.5 w-3.5" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0 shadow-lg" align="start">
-              <div className="p-2 border-b">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Hiring Team</p>
-              </div>
-              <ScrollArea className="max-h-52">
-                <div className="p-1">
-                  {hiringTeam.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground text-center py-4">No team members found</p>
-                  ) : (
-                    hiringTeam.map((member) => {
-                      const isSelected = selectedInterviewers.includes(member.userId);
-                      const isConnected = calendarStatuses[member.userId] ?? false;
-                      const roleNames = member.roleDetails.map((r) => r.name).join(', ') || 'Member';
-
-                      return (
-                        <div
-                          key={member.userId}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer"
-                          onClick={() => toggleInterviewer(member.userId)}
-                        >
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleInterviewer(member.userId)}
-                            className="h-3.5 w-3.5 flex-shrink-0"
-                          />
-                          {/* Avatar */}
-                          <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[9px] font-bold text-primary">{getInitials(member.name)}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-medium truncate">{member.name}</p>
-                            <p className="text-[9px] text-muted-foreground truncate">{roleNames}</p>
-                          </div>
-                          {/* Calendar connection dot */}
-                          <div
-                            className={`h-2 w-2 rounded-full flex-shrink-0 ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}
-                            title={isConnected ? 'Calendar connected' : 'Calendar not connected'}
-                          />
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-              {selectedInterviewers.length > 0 && (
-                <div className="p-2 border-t">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full h-6 text-[10px] text-muted-foreground"
-                    onClick={() => setSelectedInterviewers([])}
-                  >
-                    Clear all
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
-
-          {/* Selected interviewer chips */}
-          {selectedMemberDetails.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {selectedMemberDetails.map((m) => (
-                <div
-                  key={m.userId}
-                  className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-full px-1.5 py-0.5"
-                >
-                  <div className="h-3.5 w-3.5 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-[7px] font-bold text-primary">{getInitials(m.name)}</span>
-                  </div>
-                  <span className="text-[9px] font-medium text-primary">{m.name.split(' ')[0]}</span>
-                  {!calendarStatuses[m.userId] && (
-                    <span className="text-[8px] text-amber-600" title="Calendar not connected">⚠</span>
-                  )}
-                </div>
-              ))}
             </div>
-          )}
+          </div>
+
+          {/* Interviewers Multi-Select */}
+          <div className="space-y-0.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] font-semibold text-muted-foreground ml-1">Interviewers</label>
+              {selectedInterviewers.length > 0 && (
+                <button
+                  className="text-[9px] text-muted-foreground hover:text-primary underline mr-1"
+                  onClick={() => setSelectedInterviewers([])}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <Popover open={interviewerPopoverOpen} onOpenChange={setInterviewerPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full h-7 justify-between text-[11px] bg-muted/30 border-muted-foreground/20 font-normal px-2"
+                >
+                  <span className="truncate">
+                    {selectedInterviewers.length === 0
+                      ? 'Select interviewers...'
+                      : `${selectedInterviewers.length} selected`}
+                  </span>
+                  <ChevronDown className="h-3 w-3 ml-1 flex-shrink-0 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0 shadow-lg" align="start">
+                <div className="p-2 border-b bg-muted/20">
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Hiring Team</p>
+                </div>
+                <ScrollArea className="max-h-48">
+                  <div className="p-1">
+                    {hiringTeam.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground text-center py-3">No team members found</p>
+                    ) : (
+                      hiringTeam.map((member) => {
+                        const isSelected = selectedInterviewers.includes(member.userId);
+                        const isConnected = calendarStatuses[member.userId] ?? false;
+
+                        return (
+                          <div
+                            key={member.userId}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                            onClick={() => toggleInterviewer(member.userId)}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleInterviewer(member.userId)}
+                              className="h-3 w-3 flex-shrink-0"
+                            />
+                            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-[8px] font-bold text-primary">{getInitials(member.name)}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] font-medium truncate">{member.name}</p>
+                            </div>
+                            <div
+                              className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}
+                              title={isConnected ? 'Calendar connected' : 'Calendar not connected'}
+                            />
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
-        {/* Availability Grid — shown when interviewers selected and date chosen */}
+        {/* Selected interviewer chips - Full Width */}
+        {selectedMemberDetails.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-0.5 min-h-[22px]">
+            {selectedMemberDetails.map((m) => (
+              <div
+                key={m.userId}
+                className="flex items-center gap-1 bg-background border border-border rounded-full px-1.5 py-0.5 shadow-sm"
+              >
+                <span className="text-[9px] font-medium">{m.name.split(' ')[0]}</span>
+                {!calendarStatuses[m.userId] && (
+                  <span className="text-[8px] text-amber-600" title="Calendar not connected">⚠</span>
+                )}
+                <button onClick={() => toggleInterviewer(m.userId)} className="hover:text-destructive">
+                  <span className="sr-only">Remove</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-50 hover:opacity-100"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Availability Grid */}
         {selectedInterviewers.length > 0 && useMeetLink && (
-          <AvailabilityGrid
-            interviewers={hiringTeam
-              .filter((m) => selectedInterviewers.includes(m.userId))
-              .map((m) => ({ userId: m.userId, name: m.name }))}
-            proposedTime={selectedDate}
-            duration={parseInt(selectedDuration)}
-          />
+          <div className="py-1">
+            <AvailabilityGrid
+              interviewers={hiringTeam
+                .filter((m) => selectedInterviewers.includes(m.userId))
+                .map((m) => ({ userId: m.userId, name: m.name }))}
+              proposedTime={selectedDate}
+              duration={parseInt(selectedDuration)}
+            />
+          </div>
         )}
 
         {/* Notes */}
-        <div className="flex-1 flex flex-col space-y-1 min-h-0">
-          <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider ml-1">Internal Notes</label>
+        <div className="flex-1 flex flex-col space-y-0.5 min-h-0">
+          <label className="text-[9px] font-semibold text-muted-foreground ml-1">Internal Notes</label>
           <Textarea
-            placeholder="Any special instructions for the interviewers?"
+            placeholder="Instructions for interviewers..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="flex-1 resize-none text-[11px] leading-relaxed p-3 focus-visible:ring-primary/20 min-h-[60px]"
+            className="flex-1 resize-none text-[10px] leading-relaxed p-2 focus-visible:ring-primary/20 min-h-[50px] bg-muted/30 border-muted-foreground/20"
             disabled={isScheduling}
           />
         </div>
       </div>
+
+      {/* Merged Calendar Drawer */}
+      <MergedCalendarDrawer
+        open={calendarDrawerOpen}
+        onOpenChange={setCalendarDrawerOpen}
+        interviewers={hiringTeam
+          .filter(m => selectedInterviewers.includes(m.userId))
+          .map(m => ({ userId: m.userId, name: m.name }))}
+        duration={parseInt(selectedDuration)}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+      />
     </div>
   );
 }

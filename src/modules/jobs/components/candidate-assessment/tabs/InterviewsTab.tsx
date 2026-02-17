@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Separator } from '@/shared/components/ui/separator';
@@ -8,13 +8,10 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Calendar,
   Clock,
-  MapPin,
   Video,
   Phone,
   Building2,
   Users,
-  Star,
-  FileText,
   ExternalLink,
   CheckCircle2,
   XCircle,
@@ -24,12 +21,23 @@ import {
   Send,
   Trash2,
   Loader2,
+  ChevronDown,
+  ChevronRight,
+  MoreHorizontal,
+  Copy,
+  Link
 } from 'lucide-react';
-import type { Application, Interview } from '@/shared/types/application';
+import type { Application } from '@/shared/types/application';
 import { cn } from '@/shared/lib/utils';
-import { format, isPast, isFuture, isToday } from 'date-fns';
+import { format, isFuture, isToday } from 'date-fns';
 import { apiClient } from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 
 interface InterviewNote {
   id: string;
@@ -38,6 +46,13 @@ interface InterviewNote {
   author_name: string;
   content: string;
   created_at: string;
+}
+
+interface HiringTeamMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
 }
 
 interface InterviewsTabProps {
@@ -60,14 +75,32 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
   const [loadingNotesFor, setLoadingNotesFor] = useState<Record<string, boolean>>({});
   const [addingNoteFor, setAddingNoteFor] = useState<Record<string, boolean>>({});
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
-  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [hiringTeam, setHiringTeam] = useState<HiringTeamMember[]>([]);
   const { toast } = useToast();
 
-  // Use interviews from application prop if available, otherwise fetch
   const { interviews: applicationInterviews } = application;
-  const hasApplicationInterviews = applicationInterviews && applicationInterviews.length > 0;
 
-  // Fetch scheduled interviews from the dedicated endpoint
+  useEffect(() => {
+    const fetchHiringTeam = async () => {
+      let jobId = application.jobId || (application as any).job?.id;
+      if (!jobId) return;
+
+      try {
+        const response = await apiClient.get<HiringTeamMember[]>(
+          `/api/jobs/${jobId}/team`
+        );
+        if (response.success && response.data) {
+          setHiringTeam(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch hiring team:', error);
+      }
+    };
+
+    fetchHiringTeam();
+  }, [application.id, (application as any).job?.id]);
+
   useEffect(() => {
     const fetchInterviews = async () => {
       if (!application.id) return;
@@ -90,7 +123,7 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
   }, [application.id]);
 
   const fetchNotesForInterview = useCallback(async (interviewId: string) => {
-    if (notesMap[interviewId] !== undefined) return; // already loaded
+    if (notesMap[interviewId] !== undefined) return;
     setLoadingNotesFor((prev) => ({ ...prev, [interviewId]: true }));
     try {
       const response = await apiClient.get<{ notes: InterviewNote[] }>(
@@ -106,12 +139,19 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
     }
   }, [application.id, notesMap]);
 
-  const toggleNotes = (interviewId: string) => {
-    const willExpand = !expandedNotes[interviewId];
-    setExpandedNotes((prev) => ({ ...prev, [interviewId]: willExpand }));
+  const toggleRow = (interviewId: string) => {
+    const willExpand = !expandedRows[interviewId];
+    setExpandedRows((prev) => ({ ...prev, [interviewId]: willExpand }));
     if (willExpand) {
       fetchNotesForInterview(interviewId);
     }
+  };
+
+  const getInterviewerName = (interviewer: string | any) => {
+    if (typeof interviewer !== 'string') return interviewer.name || 'Unknown';
+    // Try to find by userId first, then id
+    const member = hiringTeam.find(m => m.userId === interviewer || m.id === interviewer);
+    return member ? member.name : 'Unknown'; // Return 'Unknown' instead of ID to avoid confusion
   };
 
   const handleAddNote = async (interviewId: string) => {
@@ -152,10 +192,8 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
     }
   };
 
-  // Normalize scheduled interviews to a common shape
   const normalizeInterview = (i: any) => {
     if (i.scheduledDate !== undefined) {
-      // Application-prop style interview
       return {
         id: i.id,
         type: i.type || 'video',
@@ -171,7 +209,6 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
         rating: i.rating,
       };
     }
-    // API-fetched style (snake_case)
     return {
       id: i.id,
       type: i.type || 'VIDEO',
@@ -188,456 +225,255 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
     };
   };
 
-  // Prefer fetched interviews; fall back to application prop
   const rawInterviews = scheduledInterviews.length > 0 ? scheduledInterviews : (applicationInterviews || []);
-  const interviews = rawInterviews.map(normalizeInterview);
+  const interviews = rawInterviews.map(normalizeInterview).sort((a, b) => b.scheduledDate.getTime() - a.scheduledDate.getTime());
 
   if (isLoadingInterviews) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (interviews.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No Interviews Scheduled</h3>
-        <p className="text-sm text-muted-foreground max-w-md">
-          Interview schedules will appear here once they are set up for this candidate.
-        </p>
+      <div className="flex flex-col items-center justify-center py-12 text-center text-xs">
+        <Calendar className="h-8 w-8 text-muted-foreground/50 mb-2" />
+        <p className="font-medium text-muted-foreground">No interviews scheduled</p>
       </div>
     );
   }
 
-  // Categorize interviews
-  const upcomingInterviews = interviews.filter(
-    (i) => (i.status === 'scheduled' || i.status === 'SCHEDULED') && isFuture(i.scheduledDate)
-  );
-  const todayInterviews = interviews.filter(
-    (i) => (i.status === 'scheduled' || i.status === 'SCHEDULED') && isToday(i.scheduledDate)
-  );
-  const completedInterviews = interviews.filter(
-    (i) => i.status === 'completed' || i.status === 'COMPLETED'
-  );
-  const cancelledInterviews = interviews.filter(
-    (i) => i.status === 'cancelled' || i.status === 'CANCELLED' || i.status === 'no_show' || i.status === 'NO_SHOW'
-  );
+  const upcomingParams = interviews.filter(i => (i.status === 'scheduled' || i.status === 'SCHEDULED') && isFuture(i.scheduledDate));
+  const completedParams = interviews.filter(i => i.status === 'completed' || i.status === 'COMPLETED');
 
   const getInterviewIcon = (type: string) => {
     const t = type.toLowerCase();
-    if (t === 'phone') return <Phone className="h-4 w-4" />;
-    if (t === 'video') return <Video className="h-4 w-4" />;
-    if (t === 'onsite' || t === 'in_person') return <Building2 className="h-4 w-4" />;
-    if (t === 'panel') return <Users className="h-4 w-4" />;
-    return <Calendar className="h-4 w-4" />;
+    if (t === 'phone') return <Phone className="h-3.5 w-3.5" />;
+    if (t === 'video') return <Video className="h-3.5 w-3.5" />;
+    if (t === 'onsite' || t === 'in_person') return <Building2 className="h-3.5 w-3.5" />;
+    if (t === 'panel') return <Users className="h-3.5 w-3.5" />;
+    return <Calendar className="h-3.5 w-3.5" />;
   };
 
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
-    if (s === 'scheduled') return 'bg-blue-100 text-blue-700 border-blue-200';
-    if (s === 'completed') return 'bg-green-100 text-green-700 border-green-200';
-    if (s === 'cancelled') return 'bg-gray-100 text-gray-700 border-gray-200';
-    if (s === 'no_show') return 'bg-red-100 text-red-700 border-red-200';
-    return 'bg-muted text-muted-foreground';
+    if (s === 'scheduled') return 'text-blue-600 bg-blue-50 border-blue-100';
+    if (s === 'completed') return 'text-green-600 bg-green-50 border-green-100';
+    if (s === 'cancelled') return 'text-gray-500 bg-gray-50 border-gray-100 line-through';
+    if (s === 'no_show') return 'text-red-600 bg-red-50 border-red-100';
+    return 'text-muted-foreground bg-muted border-border';
   };
-
-  const getStatusIcon = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === 'completed') return <CheckCircle2 className="h-4 w-4" />;
-    if (s === 'cancelled') return <XCircle className="h-4 w-4" />;
-    if (s === 'no_show') return <AlertCircle className="h-4 w-4" />;
-    return <Clock className="h-4 w-4" />;
-  };
-
-  const renderStars = (rating: number) => (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={cn(
-            'h-4 w-4',
-            star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'
-          )}
-        />
-      ))}
-    </div>
-  );
-
-  const renderNotesSection = (interviewId: string, legacyNotes?: string) => {
-    const isExpanded = expandedNotes[interviewId];
-    const isLoadingNotes = loadingNotesFor[interviewId];
-    const notes = notesMap[interviewId] || [];
-    const isAddingNote = addingNoteFor[interviewId];
-    const noteInput = noteInputs[interviewId] || '';
-
-    return (
-      <>
-        <Separator />
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Interview Notes
-              {notes.length > 0 && (
-                <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
-              )}
-            </h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
-              onClick={() => toggleNotes(interviewId)}
-            >
-              {isExpanded ? 'Hide' : 'Show Notes'}
-            </Button>
-          </div>
-
-          {/* Legacy notes field */}
-          {legacyNotes && !isExpanded && (
-            <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-sm whitespace-pre-wrap">{legacyNotes}</p>
-            </div>
-          )}
-
-          {isExpanded && (
-            <div className="space-y-3">
-              {/* Add Note Form */}
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Add a note..."
-                  value={noteInput}
-                  onChange={(e) =>
-                    setNoteInputs((prev) => ({ ...prev, [interviewId]: e.target.value }))
-                  }
-                  className="flex-1 min-h-[60px] text-sm resize-none"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault();
-                      handleAddNote(interviewId);
-                    }
-                  }}
-                />
-                <Button
-                  size="sm"
-                  className="self-end h-8"
-                  onClick={() => handleAddNote(interviewId)}
-                  disabled={!noteInput.trim() || isAddingNote}
-                >
-                  {isAddingNote ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </div>
-
-              {/* Notes Thread */}
-              {isLoadingNotes ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : notes.length === 0 && !legacyNotes ? (
-                <p className="text-sm text-muted-foreground text-center py-2">No notes yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {/* Show legacy note if present */}
-                  {legacyNotes && (
-                    <div className="flex gap-2.5">
-                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                        <span className="text-[10px] font-bold text-muted-foreground">SC</span>
-                      </div>
-                      <div className="flex-1 bg-muted/30 rounded-lg p-2.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-semibold">System Note</span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{legacyNotes}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {notes.map((note) => (
-                    <div key={note.id} className="flex gap-2.5 group">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-[10px] font-bold text-primary">
-                          {getInitials(note.author_name)}
-                        </span>
-                      </div>
-                      <div className="flex-1 bg-muted/20 rounded-lg p-2.5">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold">{note.author_name}</span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {format(new Date(note.created_at), 'MMM d, h:mm a')}
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteNote(interviewId, note.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </>
-    );
-  };
-
-  const renderInterviewCard = (interview: ReturnType<typeof normalizeInterview>, showFeedback = false) => (
-    <Card key={interview.id} className="overflow-hidden">
-      <CardHeader className="bg-muted/30">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  'p-2 rounded-lg',
-                  interview.status === 'completed' || interview.status === 'COMPLETED'
-                    ? 'bg-green-100'
-                    : interview.status === 'cancelled' ||
-                      interview.status === 'CANCELLED' ||
-                      interview.status === 'no_show' ||
-                      interview.status === 'NO_SHOW'
-                    ? 'bg-red-100'
-                    : 'bg-blue-100'
-                )}
-              >
-                {getInterviewIcon(interview.type)}
-              </div>
-              <div>
-                <CardTitle className="text-base capitalize">
-                  {interview.type.replace('_', ' ')} Interview
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  {format(interview.scheduledDate, 'EEEE, MMMM dd, yyyy')}
-                </CardDescription>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                {format(interview.scheduledDate, 'h:mm a')} ({interview.duration} min)
-              </span>
-
-              {interview.location && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {interview.location}
-                </span>
-              )}
-
-              {interview.interviewers.length > 0 && (
-                <span className="flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" />
-                  {interview.interviewers.length} interviewer
-                  {interview.interviewers.length > 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className={cn('border', getStatusColor(interview.status))}>
-                <span className="flex items-center gap-1">
-                  {getStatusIcon(interview.status)}
-                  <span className="capitalize text-xs">
-                    {interview.status.toLowerCase().replace('_', ' ')}
-                  </span>
-                </span>
-              </Badge>
-
-              {interview.rating != null && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded-md">
-                  {renderStars(interview.rating)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {(interview.meetingLink || interview.recordingUrl) && (
-            <div className="flex gap-2">
-              {interview.meetingLink &&
-                (interview.status === 'scheduled' || interview.status === 'SCHEDULED') && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={interview.meetingLink} target="_blank" rel="noopener noreferrer">
-                      <Video className="h-4 w-4 mr-2" />
-                      Join
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                )}
-              {interview.recordingUrl &&
-                (interview.status === 'completed' || interview.status === 'COMPLETED') && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={interview.recordingUrl} target="_blank" rel="noopener noreferrer">
-                      <PlayCircle className="h-4 w-4 mr-2" />
-                      Recording
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                )}
-            </div>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-4">
-        <div className="space-y-3">
-          {/* Interviewers */}
-          {interview.interviewers.length > 0 && (
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Interviewers</h4>
-              <div className="flex flex-wrap gap-2">
-                {interview.interviewers.map((interviewer: any, idx: number) => (
-                  <Badge key={idx} variant="secondary">
-                    {typeof interviewer === 'string' ? interviewer : interviewer.name || interviewer}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Feedback Section */}
-          {showFeedback && interview.feedback && (
-            <>
-              <Separator />
-              <div>
-                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Interview Feedback
-                </h4>
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <p className="text-sm whitespace-pre-wrap">
-                    {typeof interview.feedback === 'string'
-                      ? interview.feedback
-                      : JSON.stringify(interview.feedback, null, 2)}
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Notes with attribution (new) */}
-          {renderNotesSection(interview.id, interview.notes)}
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   return (
-    <ScrollArea className="h-[calc(100vh-20rem)]">
-      <div className="space-y-6 pr-4">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{interviews.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">All interviews</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-blue-600">Upcoming</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{upcomingInterviews.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Scheduled</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-green-600">Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{completedInterviews.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Finished</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-amber-600">Today</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{todayInterviews.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Happening today</p>
-            </CardContent>
-          </Card>
+    <div className="flex flex-col h-full space-y-2 py-2 overflow-hidden text-xs">
+      {/* Stats Strip */}
+      <div className="flex items-center gap-4 px-1 pb-2 border-b">
+        <div className="flex items-center gap-1.5">
+          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
+            {interviews.length}
+          </div>
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Total</span>
         </div>
-
-        {/* Today's Interviews */}
-        {todayInterviews.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
-              <h3 className="text-lg font-semibold">Today's Interviews</h3>
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                {todayInterviews.length}
-              </Badge>
-            </div>
-            {todayInterviews.map((interview) => renderInterviewCard(interview))}
-          </div>
-        )}
-
-        {/* Upcoming Interviews */}
-        {upcomingInterviews.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold">Upcoming Interviews</h3>
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                {upcomingInterviews.length}
-              </Badge>
-            </div>
-            {upcomingInterviews.map((interview) => renderInterviewCard(interview))}
-          </div>
-        )}
-
-        {/* Completed Interviews */}
-        {completedInterviews.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <h3 className="text-lg font-semibold">Completed Interviews</h3>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                {completedInterviews.length}
-              </Badge>
-            </div>
-            {completedInterviews.map((interview) => renderInterviewCard(interview, true))}
-          </div>
-        )}
-
-        {/* Cancelled/No Show Interviews */}
-        {cancelledInterviews.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-muted-foreground" />
-              <h3 className="text-lg font-semibold">Cancelled & No-Shows</h3>
-              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                {cancelledInterviews.length}
-              </Badge>
-            </div>
-            {cancelledInterviews.map((interview) => renderInterviewCard(interview))}
-          </div>
-        )}
+        <div className="h-3 w-px bg-border" />
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-blue-500" />
+          <span className="font-bold text-foreground">{upcomingParams.length}</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Upcoming</span>
+        </div>
+        <div className="h-3 w-px bg-border" />
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="font-bold text-foreground">{completedParams.length}</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Done</span>
+        </div>
       </div>
-    </ScrollArea>
+
+      {/* List */}
+      <ScrollArea className="flex-1 -mx-2 px-2">
+        <div className="space-y-1">
+          {interviews.map((interview) => {
+            const isExpanded = expandedRows[interview.id];
+            const notes = notesMap[interview.id] || [];
+
+            return (
+              <div key={interview.id} className="border rounded-md bg-card transition-all hover:border-sidebar-accent hover:shadow-sm">
+                {/* Row Header */}
+                <div
+                  className="flex items-center p-2 gap-3 cursor-pointer hover:bg-muted/30"
+                  onClick={() => toggleRow(interview.id)}
+                >
+                  <div className={cn("p-1.5 rounded-md border", getStatusColor(interview.status))}>
+                    {getInterviewIcon(interview.type)}
+                  </div>
+
+                  <div className="flex-1 min-w-0 grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-4">
+                      <div className="font-semibold text-[11px] truncate flex items-center gap-2">
+                        {format(interview.scheduledDate, 'MMM d, yyyy')}
+                        {isToday(interview.scheduledDate) && <Badge variant="secondary" className="px-1 py-0 h-4 text-[9px] bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200">TODAY</Badge>}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(interview.scheduledDate, 'h:mm a')} • {interview.duration}m
+                      </div>
+                    </div>
+
+                    <div className="col-span-3">
+                      <Badge variant="outline" className={cn("text-[9px] px-1 py-0 h-4 uppercase tracking-tighter w-fit", getStatusColor(interview.status))}>
+                        {interview.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+
+                    <div className="col-span-3">
+                      <div className="flex -space-x-1.5">
+                        {interview.interviewers.slice(0, 3).map((interviewer: any, idx: number) => {
+                          const name = getInterviewerName(interviewer);
+                          return (
+                            <div key={idx} className="h-5 w-5 rounded-full ring-1 ring-background bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground" title={name}>
+                              {getInitials(name)}
+                            </div>
+                          );
+                        })}
+                        {interview.interviewers.length > 3 && (
+                          <div className="h-5 w-5 rounded-full ring-1 ring-background bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground">+{interview.interviewers.length - 3}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 flex justify-end items-center gap-1">
+                      {interview.meetingLink && (
+                        <a
+                          href={interview.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="h-5 w-5 rounded flex items-center justify-center hover:bg-primary/10 transition-colors"
+                          title="Join Meeting"
+                        >
+                          <Video className="h-3 w-3 text-blue-600" />
+                        </a>
+                      )}
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="border-t bg-muted/10 p-3 space-y-3 animation-in slide-in-from-top-1 duration-200">
+                    {/* Actions Toolbar */}
+                    <div className="flex items-center gap-2">
+                      {interview.meetingLink && (
+                        <>
+                          <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 bg-background" asChild>
+                            <a href={interview.meetingLink} target="_blank" rel="noopener noreferrer">
+                              <Video className="h-3 w-3" /> Join Meeting
+                            </a>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-[10px] gap-1 bg-background"
+                            onClick={() => {
+                              navigator.clipboard.writeText(interview.meetingLink);
+                              toast({ title: 'Link copied to clipboard' });
+                            }}
+                          >
+                            <Copy className="h-3 w-3" /> Copy Link
+                          </Button>
+                        </>
+                      )}
+                      {!interview.meetingLink && ['video', 'phone'].includes(interview.type.toLowerCase()) && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                          <span>No Meet link — connect calendar to generate</span>
+                        </div>
+                      )}
+                      {interview.recordingUrl && (
+                        <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1 bg-background" asChild>
+                          <a href={interview.recordingUrl} target="_blank" rel="noopener noreferrer">
+                            <PlayCircle className="h-3 w-3" /> Recording
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Notes Section */}
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <MessageSquare className="h-3 w-3" />
+                        Notes & Feedback
+                      </div>
+
+                      {/* New Note Input */}
+                      <div className="flex gap-2">
+                        <Textarea
+                          placeholder="Add a quick note..."
+                          value={noteInputs[interview.id] || ''}
+                          onChange={(e) => setNoteInputs(p => ({ ...p, [interview.id]: e.target.value }))}
+                          className="h-8 min-h-[32px] py-1 text-[11px] resize-none flex-1 bg-background"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddNote(interview.id);
+                            }
+                          }}
+                        />
+                        <Button size="sm" className="h-8 w-8 p-0" onClick={() => handleAddNote(interview.id)} disabled={addingNoteFor[interview.id]}>
+                          {addingNoteFor[interview.id] ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+
+                      {/* Notes List */}
+                      <div className="space-y-1.5">
+                        {loadingNotesFor[interview.id] ? (
+                          <div className="py-2 flex justify-center"><Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /></div>
+                        ) : notes.length === 0 && !interview.notes ? (
+                          <p className="text-[10px] text-muted-foreground italic pl-1">No notes yet.</p>
+                        ) : (
+                          <>
+                            {interview.notes && (
+                              <div className="flex gap-2 bg-background p-2 rounded border border-border/50">
+                                <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-[8px] font-bold">SYS</div>
+                                <div className="flex-1 text-[10px]">
+                                  <p className="text-muted-foreground">{interview.notes}</p>
+                                </div>
+                              </div>
+                            )}
+                            {notes.map(note => (
+                              <div key={note.id} className="flex gap-2 bg-background p-2 rounded border border-border/50 group">
+                                <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-[8px] font-bold text-primary">
+                                  {getInitials(note.author_name)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-start">
+                                    <span className="text-[10px] font-semibold">{note.author_name}</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[9px] text-muted-foreground">{format(new Date(note.created_at), 'M/d h:mm a')}</span>
+                                      <button onClick={() => handleDeleteNote(interview.id, note.id)} className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity">
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] mt-0.5 whitespace-pre-wrap">{note.content}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
