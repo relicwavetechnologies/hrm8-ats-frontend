@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { ExperienceSkillsTab } from "./tabs/ExperienceSkillsTab";
@@ -17,6 +17,7 @@ import { CallLogsTab } from "./tabs/CallLogsTab";
 import { SmsTab } from "./tabs/SmsTab";
 import { SlackTab } from "./tabs/SlackTab";
 import { NotesTab } from "./tabs/NotesTab";
+import { TaskCreationTab, TaskListTab } from "./tabs/CreateTaskTab";
 import { useCursorTracking } from "@/shared/hooks/useCursorTracking";
 import { NotificationCenter } from "@/modules/notifications/components/NotificationCenter";
 import { CandidateInfoPanel } from "./CandidateInfoPanel";
@@ -35,6 +36,7 @@ interface CandidateAssessmentViewProps {
   nextStageName?: string;
   onMoveToNextStage?: () => void;
   isSimpleFlow?: boolean;
+  jobId?: string;
 }
 
 export function CandidateAssessmentView({
@@ -49,8 +51,10 @@ export function CandidateAssessmentView({
   nextStageName,
   onMoveToNextStage,
   isSimpleFlow,
+  jobId,
 }: CandidateAssessmentViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [topActiveTab, setTopActiveTab] = useState("notes");
   const [fullApplication, setFullApplication] = useState<Application>(application);
 
   useEffect(() => {
@@ -137,10 +141,11 @@ export function CandidateAssessmentView({
               <ResizablePanel defaultSize={75} minSize={50}>
                 <div className="h-full flex flex-col overflow-hidden">
                   {/* Top - Notes Panel */}
-                  <div className="h-[360px] flex-shrink-0 border-b p-2">
+                  {/* Top - Notes / New Task Panel */}
+                  <div className="h-[360px] flex-shrink-0 border-b bg-background">
                     <CandidateNotesPanelEnhanced
                       applicationId={fullApplication.id}
-                      jobId={fullApplication.jobId || ''}
+                      jobId={jobId || fullApplication.jobId || ''}
                       candidateName={fullApplication.candidateName || "Candidate"}
                       jobTitle={jobTitle}
                       candidateEmail={fullApplication.candidateEmail}
@@ -159,9 +164,14 @@ export function CandidateAssessmentView({
                               <FileText className="h-3.5 w-3.5" />
                               Overview
                             </TabsTrigger>
+
                             <TabsTrigger value="notes" className="gap-1.5 text-xs">
                               <MessageSquare className="h-3.5 w-3.5" />
                               Notes
+                            </TabsTrigger>
+                            <TabsTrigger value="tasks" className="gap-1.5 text-xs">
+                              <CheckSquare className="h-3.5 w-3.5" />
+                              Tasks
                             </TabsTrigger>
                             <TabsTrigger value="annotations" className="gap-1.5 text-xs">
                               <Highlighter className="h-3.5 w-3.5" />
@@ -209,12 +219,23 @@ export function CandidateAssessmentView({
                             <NotesTab application={fullApplication} />
                           </TabsContent>
 
+
+
+
+
+                          <TabsContent value="tasks" className="mt-0 h-full">
+                            <TaskListTab application={fullApplication} />
+                          </TabsContent>
+
                           <TabsContent value="experience" className="mt-0">
                             <ExperienceSkillsTab application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="questionnaire" className="mt-0">
-                            <QuestionnaireResponsesTab application={fullApplication} />
+                            <QuestionnaireResponsesTab
+                              application={fullApplication}
+                              jobId={jobId || fullApplication.jobId}
+                            />
                           </TabsContent>
 
                           <TabsContent value="interviews" className="mt-0">
@@ -268,6 +289,6 @@ export function CandidateAssessmentView({
           </div>
         </div>
       </SheetContent>
-    </Sheet>
+    </Sheet >
   );
 }

@@ -45,4 +45,41 @@ export const gmailThreadService = {
     }
     return response.data;
   },
+
+  async sendEmailReply(
+    applicationId: string,
+    data: {
+      threadId: string;
+      messageId: string;
+      subject: string;
+      body: string;
+      to: string;
+    }
+  ): Promise<EmailLogEntry> {
+    const response = await apiClient.post<EmailLogEntry>(
+      `/api/applications/${applicationId}/email-reply`,
+      data
+    );
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to send email reply');
+    }
+    return response.data;
+  },
+
+  async rewriteEmailReply(
+    applicationId: string,
+    data: {
+      originalMessage: string;
+      tone?: 'professional' | 'friendly' | 'formal';
+    }
+  ): Promise<{ subject: string; body: string }> {
+    const response = await apiClient.post<{ subject: string; body: string }>(
+      `/api/applications/${applicationId}/email-reply/rewrite`,
+      data
+    );
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to rewrite email reply');
+    }
+    return response.data;
+  },
 };

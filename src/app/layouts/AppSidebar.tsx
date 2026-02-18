@@ -4,7 +4,7 @@ import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import iconMark from "@/assets/icon-mark.png";
 import { Home, LayoutGrid, Users, Briefcase, FileText, BarChart3, Calendar, Settings, HelpCircle, Clock, Building2, UserCog, Mail, DollarSign, FileBarChart, Shield, Ticket, Heart, UsersRound, UserCheck, Target, Plug, CalendarDays, ClipboardList, Wallet, Gift, Receipt, FolderOpen, DollarSignIcon, UserMinus, GraduationCap, TrendingUp, User, Crown, CalendarClock, BarChart2, MessageSquare, Handshake, UserSquare, Server, Bell, Map, CircleDollarSign, LineChart, FileCheck, FileSignature, ShieldCheck, PieChart, MailPlus, Inbox, Award, HeartHandshake, Banknote, Settings2, ScrollText, UserRound, ChevronDown, ClipboardCheck, UserRoundCog } from "lucide-react";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar } from "@/shared/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar } from "@/shared/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible";
 import { Badge } from "@/shared/components/ui/badge";
 
@@ -20,7 +20,7 @@ import { usePermissions } from "@/shared/hooks/usePermissions";
 const mainNavItems = [
   { title: "Home", url: "/home", icon: Home },
   { title: "Dashboards", url: "/dashboard/overview", icon: LayoutGrid },
-  { title: "Connect Google", url: "/integrations?tab=calendar", icon: Plug },
+  // { title: "Connect Google", url: "/integrations?tab=calendar", icon: Plug },
 ];
 
 // ATS (Applicant Tracking System) Section
@@ -37,8 +37,8 @@ const atsNavItems = [
     url: "/candidates",
     icon: Users,
   },
-  { title: "Applications", url: "/applications", icon: FileCheck },
-  { title: "Requisitions", url: "/requisitions", icon: ClipboardList },
+  // { title: "Applications", url: "/applications", icon: FileCheck },
+  // { title: "Requisitions", url: "/requisitions", icon: ClipboardList },
   {
     title: "Interviews",
     url: "/interviews",
@@ -59,17 +59,17 @@ const atsNavItems = [
       { title: "Management", url: "/offers/manage" },
     ]
   },
-  {
-    title: "AI Interviews",
-    url: "/ai-interviews",
-    icon: MessageSquare,
-    subItems: [
-      { title: "All Interviews", url: "/ai-interviews" },
-      { title: "Schedule New", url: "/ai-interviews/schedule" },
-      { title: "Reports", url: "/ai-interviews/reports" },
-      { title: "Analytics", url: "/ai-interviews/analytics" },
-    ]
-  },
+  // {
+  //   title: "AI Interviews",
+  //   url: "/ai-interviews",
+  //   icon: MessageSquare,
+  //   subItems: [
+  //     { title: "All Interviews", url: "/ai-interviews" },
+  //     { title: "Schedule New", url: "/ai-interviews/schedule" },
+  //     { title: "Reports", url: "/ai-interviews/reports" },
+  //     { title: "Analytics", url: "/ai-interviews/analytics" },
+  //   ]
+  // },
   {
     title: "Assessments",
     url: "/assessments",
@@ -81,10 +81,11 @@ const atsNavItems = [
       { title: "Analytics", url: "/assessment-analytics" },
     ]
   },
-  { title: "Background Checks", url: "/background-checks", icon: ShieldCheck },
+  // { title: "Background Checks", url: "/background-checks", icon: ShieldCheck },
   { title: "Careers Page", url: "/ats/careers-page", icon: Building2 },
   { title: "Email Templates", url: "/email-templates", icon: MailPlus },
   { title: "Inbox", url: "/messages", icon: Inbox },
+  { title: "Onboarding", url: "/recruitment-integration", icon: Users },
 ];
 
 
@@ -149,28 +150,28 @@ const hrManagementNavItems = [
 // MANAGEMENT Section
 const managementNavItems = [
   { title: "Users", url: "/users", icon: UsersRound },
-  { title: "Finance", url: "/finance", icon: Banknote },
-  { title: "Connect Google", url: "/integrations?tab=calendar", icon: CalendarDays },
-  { title: "Integrations", url: "/integrations", icon: Plug },
-  { title: "Reports", url: "/reports", icon: FileBarChart },
+  // { title: "Finance", url: "/finance", icon: Banknote },
+  // { title: "Connect Google", url: "/integrations?tab=calendar", icon: CalendarDays },
+  // { title: "Integrations", url: "/integrations", icon: Plug },
+  // { title: "Reports", url: "/reports", icon: FileBarChart },
 ];
 
 // INTEGRATIONS Section
 const integrationsNavItems = [
-  { title: "Advanced Analytics", url: "/advanced-analytics", icon: BarChart2 },
-  { title: "Recruitment Integration", url: "/recruitment-integration", icon: Users },
-  { title: "Enhanced Learning", url: "/enhanced-learning", icon: GraduationCap },
-  { title: "Connect Google", url: "/integrations?tab=calendar", icon: CalendarDays },
+  // { title: "Advanced Analytics", url: "/advanced-analytics", icon: BarChart2 },
+  // { title: "Recruitment Integration", url: "/recruitment-integration", icon: Users },
+  // { title: "Enhanced Learning", url: "/enhanced-learning", icon: GraduationCap },
+  // { title: "Connect Google", url: "/integrations?tab=calendar", icon: CalendarDays },
   { title: "Integrations", url: "/integrations", icon: Plug },
 ];
 
 // SYSTEM Section
 const systemNavItems = [
   { title: "Company Profile", url: "/company-profile", icon: Building2 },
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Admin Settings", url: "/admin-settings", icon: Settings2 },
+  // { title: "Settings", url: "/settings", icon: Settings },
+  // { title: "Admin Settings", url: "/admin-settings", icon: Settings2 },
   { title: "Support Tickets", url: "/support-tickets", icon: Ticket },
-  { title: "System Monitoring", url: "/system-monitoring", icon: Server },
+  // { title: "System Monitoring", url: "/system-monitoring", icon: Server },
   { title: "Notification Settings", url: "/notification-preferences", icon: Bell },
 ];
 export function AppSidebar() {
@@ -199,6 +200,72 @@ export function AppSidebar() {
     }
 
     return false;
+  };
+
+  const NavItem = ({ item, isActive, isExpanded }: { item: any, isActive: (url: string) => boolean, isExpanded: boolean }) => {
+    // If item has subItems, render a Collapsible with SidebarMenuSub
+    if (item.subItems && item.subItems.length > 0) {
+      return (
+        <Collapsible asChild defaultOpen={isActive(item.url)} className="group/collapsible">
+          <SidebarMenuItem>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton tooltip={item.title} isActive={isActive(item.url)}>
+                <item.icon className="h-5 w-5" />
+                <span>{item.title}</span>
+                <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                {item.subItems.map((subItem: any) => (
+                  <SidebarMenuSubItem key={subItem.title}>
+                    <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                      <NavLink to={subItem.url}>
+                        <span>{subItem.title}</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </SidebarMenuItem>
+        </Collapsible>
+      );
+    }
+
+    // Standard leaf item
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          isActive={isActive(item.url)}
+          tooltip={item.title}
+          className={cn(
+            "relative transition-all duration-200",
+            "hover:bg-sidebar-accent/50",
+            isActive(item.url) && [
+              "bg-primary/10",
+              "text-primary",
+              "font-medium",
+              isExpanded && "border-l-4 border-primary"
+            ]
+          )}
+        >
+          <NavLink to={item.url} className="flex items-center gap-3 w-full">
+            <item.icon className={cn(
+              "h-5 w-5 transition-all",
+              !isExpanded && "mx-auto"
+            )} />
+            {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
+            {item.badge && isExpanded && (
+              <div className="ml-auto">
+                <item.badge />
+              </div>
+            )}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
   };
 
   return <Sidebar
@@ -246,30 +313,7 @@ export function AppSidebar() {
         <SidebarGroupContent>
           <SidebarMenu>
             {mainNavItems.map(item => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(item.url)}
-                  className={cn(
-                    "relative transition-all duration-200",
-                    "hover:bg-sidebar-accent/50",
-                    isActive(item.url) && [
-                      "bg-primary/10",
-                      "text-primary",
-                      "font-medium",
-                      isExpanded && "border-l-4 border-primary"
-                    ]
-                  )}
-                >
-                  <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                    <item.icon className={cn(
-                      "h-5 w-5 transition-all",
-                      !isExpanded && "mx-auto"
-                    )} />
-                    {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
             ))}
           </SidebarMenu>
         </SidebarGroupContent>
@@ -294,30 +338,7 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {atsNavItems.map(item => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.url)}
-                          className={cn(
-                            "relative transition-all duration-200",
-                            "hover:bg-sidebar-accent/50",
-                            isActive(item.url) && [
-                              "bg-primary/10",
-                              "text-primary",
-                              "font-medium",
-                              isExpanded && "border-l-4 border-primary"
-                            ]
-                          )}
-                        >
-                          <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                            <item.icon className={cn(
-                              "h-5 w-5 transition-all",
-                              !isExpanded && "mx-auto"
-                            )} />
-                            {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                      <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -347,30 +368,7 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {operationsNavItems.map(item => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.url)}
-                          className={cn(
-                            "relative transition-all duration-200",
-                            "hover:bg-sidebar-accent/50",
-                            isActive(item.url) && [
-                              "bg-primary/10",
-                              "text-primary",
-                              "font-medium",
-                              isExpanded && "border-l-4 border-primary"
-                            ]
-                          )}
-                        >
-                          <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                            <item.icon className={cn(
-                              "h-5 w-5 transition-all",
-                              !isExpanded && "mx-auto"
-                            )} />
-                            {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                      <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -382,7 +380,7 @@ export function AppSidebar() {
       )}
 
       {/* HR MANAGEMENT Section - Only show if HRMS module is enabled */}
-      {hasHRMS && (
+      {false && hasHRMS && (
         <>
           <Collapsible open={sections.hrManagement} onOpenChange={() => toggleSection('hrManagement')}>
             <SidebarGroup>
@@ -398,30 +396,7 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {hrManagementNavItems.map(item => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.url)}
-                          className={cn(
-                            "relative transition-all duration-200",
-                            "hover:bg-sidebar-accent/50",
-                            isActive(item.url) && [
-                              "bg-primary/10",
-                              "text-primary",
-                              "font-medium",
-                              isExpanded && "border-l-4 border-primary"
-                            ]
-                          )}
-                        >
-                          <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                            <item.icon className={cn(
-                              "h-5 w-5 transition-all",
-                              !isExpanded && "mx-auto"
-                            )} />
-                            {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                      <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -447,30 +422,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {managementNavItems.map(item => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.url)}
-                      className={cn(
-                        "relative transition-all duration-200",
-                        "hover:bg-sidebar-accent/50",
-                        isActive(item.url) && [
-                          "bg-primary/10",
-                          "text-primary",
-                          "font-medium",
-                          isExpanded && "border-l-4 border-primary"
-                        ]
-                      )}
-                    >
-                      <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                        <item.icon className={cn(
-                          "h-5 w-5 transition-all",
-                          !isExpanded && "mx-auto"
-                        )} />
-                        {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -486,7 +438,7 @@ export function AppSidebar() {
           {isExpanded && (
             <CollapsibleTrigger asChild>
               <SidebarGroupLabel className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-sidebar-accent/30 rounded-sm transition-colors flex items-center justify-between group">
-                <span>Integration & Intelligence</span>
+                <span>Intelligence</span>
                 <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
@@ -495,30 +447,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {integrationsNavItems.map(item => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.url)}
-                      className={cn(
-                        "relative transition-all duration-200",
-                        "hover:bg-sidebar-accent/50",
-                        isActive(item.url) && [
-                          "bg-primary/10",
-                          "text-primary",
-                          "font-medium",
-                          isExpanded && "border-l-4 border-primary"
-                        ]
-                      )}
-                    >
-                      <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                        <item.icon className={cn(
-                          "h-5 w-5 transition-all",
-                          !isExpanded && "mx-auto"
-                        )} />
-                        {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -541,30 +470,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {systemNavItems.map(item => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.url)}
-                      className={cn(
-                        "relative transition-all duration-200",
-                        "hover:bg-sidebar-accent/50",
-                        isActive(item.url) && [
-                          "bg-primary/10",
-                          "text-primary",
-                          "font-medium",
-                          isExpanded && "border-l-4 border-primary"
-                        ]
-                      )}
-                    >
-                      <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                        <item.icon className={cn(
-                          "h-5 w-5 transition-all",
-                          !isExpanded && "mx-auto"
-                        )} />
-                        {isExpanded && <span className="transition-opacity duration-200">{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <NavItem key={item.title} item={item} isActive={isActive} isExpanded={isExpanded} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -601,7 +507,15 @@ export function AppSidebar() {
                       record.type === 'job' ? 'Job' :
                         'Employer';
 
+                  const recordItem = {
+                    title: record.name,
+                    url: record.url,
+                    icon: Icon,
+                    // Simulate item structure for NavItem
+                  };
+
                   return (
+                    // Manually render recent items as they have specific rendering logic (type label etc)
                     <SidebarMenuItem key={`recent-${record.id}`}>
                       <SidebarMenuButton
                         asChild

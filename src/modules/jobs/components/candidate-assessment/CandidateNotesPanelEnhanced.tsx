@@ -50,13 +50,7 @@ interface CandidateNotesPanelProps {
   onTaskCreated?: () => void;
 }
 
-// Mock hiring team
-const MOCK_HIRING_TEAM: HiringTeamMember[] = [
-  { id: '1', name: 'John Smith', role: 'Hiring Manager' },
-  { id: '2', name: 'Sarah Johnson', role: 'Technical Lead' },
-  { id: '3', name: 'Mike Davis', role: 'Recruiter' },
-  { id: '4', name: 'Emily Brown', role: 'HR Manager' },
-];
+
 
 export function CandidateNotesPanelEnhanced({
   applicationId,
@@ -75,7 +69,7 @@ export function CandidateNotesPanelEnhanced({
   const [activeTab, setActiveTab] = useState('notes');
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteContent, setNoteContent] = useState('');
-  const [hiringTeam] = useState<HiringTeamMember[]>(MOCK_HIRING_TEAM);
+  const [hiringTeam, setHiringTeam] = useState<HiringTeamMember[]>([]);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionPosition, setMentionPosition] = useState<{ top: number; left: number } | null>(null);
@@ -92,11 +86,49 @@ export function CandidateNotesPanelEnhanced({
   const [aiContext, setAiContext] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
+  // Fetch hiring team
+  useEffect(() => {
+    const fetchTeam = async () => {
+      // Use currentJobId defined in component scope
+      if (!currentJobId) {
+        return;
+      }
+
+      try {
+        const url = `/api/jobs/${currentJobId}/team`;
+        const response = await apiClient.get<any[]>(url);
+
+        if (response.success && response.data) {
+          const mappedTeam = response.data.map(member => ({
+            id: member.userId,
+            name: member.name,
+            role: member.role,
+            avatar: member.avatar
+          }));
+          console.log('CandidateNotesPanelEnhanced: Mapped team:', mappedTeam);
+          setHiringTeam(mappedTeam);
+        } else {
+          console.warn('CandidateNotesPanelEnhanced: Team fetch was not successful or no data', response);
+        }
+      } catch (error) {
+        console.error('CandidateNotesPanelEnhanced: Failed to fetch hiring team:', error);
+      }
+    };
+
+    fetchTeam();
+  }, [jobId, application?.jobId]);
+
   // Build a minimal Application object for new tabs (use provided or construct from props)
-  const applicationObj: Application = application || {
+  // Ensure we consistently use the available jobId, preferring the explicit prop
+  const currentJobId = jobId || application?.jobId || '';
+
+  const applicationObj: Application = application ? {
+    ...application,
+    jobId: currentJobId || application.jobId,
+  } : {
     id: applicationId,
     candidateId: '',
-    jobId: jobId || '',
+    jobId: currentJobId,
     jobTitle,
     status: 'applied',
     stage: 'New Application',
@@ -353,11 +385,11 @@ Hiring Team`;
 
     try {
       const response = await apiClient.post(
-        `/api/applications/${applicationId}/send-email`,
+        `/api/applications/${applicationId}/emails`,
         {
-          to: candidateEmail,
           subject: emailSubject,
           body: emailBody,
+          templateId: selectedTemplate || undefined,
         }
       );
 
@@ -476,124 +508,80 @@ Hiring Team`;
 
           {/* Email Tab Content */}
           <TabsContent value="email" className="m-0 data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
-            <div className="flex flex-col h-full space-y-2 py-2">
-              {/* Header: To & Send */}
-              <div className="flex items-center justify-between px-1 gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight flex-shrink-0">To:</span>
-                  <div className="bg-muted px-2 py-0.5 rounded-full border border-muted-foreground/10 truncate">
-                    <span className="text-[10px] font-medium text-foreground">{candidateEmail || "No Email"}</span>
+            <div className="flex flex-col h-full bg-background">
+              {/* Header: To & Actions */}
+              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">To:</span>
+                  <div className="bg-background px-2 py-0.5 rounded-full border text-[10px] font-medium truncate max-w-[200px]">
+                    {candidateEmail || "No Email"}
                   </div>
                 </div>
                 <Button
                   onClick={handleSendEmail}
                   disabled={!emailSubject.trim() || !emailBody.trim() || isSendingEmail || !candidateEmail}
-                  className="h-7 px-3 text-[11px] font-bold shadow-sm"
+                  className="h-6 px-3 text-[10px] font-bold"
                   size="sm"
                 >
-                  {isSendingEmail ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <Send className="h-3 w-3" />
-                      <span>Send</span>
-                    </div>
-                  )}
+                  {isSendingEmail ? <Loader2 className="h-3 w-3 animate-spin" /> : "Send"}
                 </Button>
               </div>
 
-              {/* Subject Bar */}
-              <div className="px-1">
+              {/* Subject & Tools Row */}
+              <div className="flex items-center gap-2 px-2 py-1 border-b">
                 <Input
-                  placeholder="Subject Line..."
+                  placeholder="Subject..."
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="text-xs h-8 border-none bg-muted/30 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="text-xs h-7 border-none shadow-none focus-visible:ring-0 flex-1 min-w-[100px] bg-transparent font-medium px-1"
                   disabled={isSendingEmail}
                 />
-              </div>
+                <div className="h-4 w-px bg-border" />
 
-              {/* Toolbar: Templates & AI */}
-              <div className="flex items-center gap-2 px-1 pb-1 border-b border-muted">
-                {/* Templates Dropdown */}
-                <div className="flex-1 max-w-[180px]">
-                  <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
-                    <SelectTrigger className="text-[11px] h-7 bg-transparent border-none hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                        <SelectValue placeholder="Use Template..." />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map(template => (
-                        <SelectItem key={template.id} value={template.id}>
-                          <span className="text-[11px]">{template.name}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Templates */}
+                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                  <SelectTrigger className="h-6 w-[24px] p-0 border-none shadow-none text-muted-foreground hover:text-foreground">
+                    <FileText className="h-3.5 w-3.5" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {templates.map(template => (
+                      <SelectItem key={template.id} value={template.id} className="text-xs">{template.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                <div className="h-4 w-px bg-muted-foreground/20" />
-
-                {/* AI Assistant Popover */}
+                {/* AI */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-[11px] text-primary hover:text-primary hover:bg-primary/5">
-                      <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                      AI Assistant
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10">
+                      <Sparkles className="h-3.5 w-3.5" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 p-3 shadow-xl border-primary/20" side="bottom" align="end">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 bg-primary/10 rounded">
-                          <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        </div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary">AI Writing Assistant</h4>
-                      </div>
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="What should this email be about? (e.g., 'Schedule a follow-up interview for Tuesday morning')"
-                          value={aiContext}
-                          onChange={(e) => setAiContext(e.target.value)}
-                          className="text-xs min-h-[80px] resize-none focus-visible:ring-primary/30"
-                          disabled={isGeneratingAI}
-                        />
-                        <Button
-                          onClick={handleGenerateWithAI}
-                          disabled={isGeneratingAI || !aiContext.trim()}
-                          className="w-full h-8 bg-primary hover:bg-primary/90"
-                          size="sm"
-                        >
-                          {isGeneratingAI ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Sparkles className="h-3.5 w-3.5" />
-                              <span className="text-xs font-semibold">Generate Content</span>
-                            </div>
-                          )}
-                        </Button>
-                      </div>
+                  <PopoverContent className="w-80 p-3 shadow-xl" side="bottom" align="end">
+                    <div className="space-y-2">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Assistant</h4>
+                      <Textarea
+                        placeholder="What to write?"
+                        value={aiContext}
+                        onChange={(e) => setAiContext(e.target.value)}
+                        className="text-xs min-h-[60px]"
+                      />
+                      <Button size="sm" onClick={handleGenerateWithAI} disabled={isGeneratingAI} className="w-full h-7 text-xs">
+                        Generate
+                      </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
-
-                <div className="flex-1" />
-                <span className="text-[10px] text-muted-foreground/50 italic mr-1">Markdown support</span>
               </div>
 
-              {/* Editor area - flex-1 to fill all remaining space */}
-              <div className="flex-1 min-h-0 overflow-hidden px-1">
-                <div className="h-full border rounded-md overflow-hidden bg-background shadow-inner flex flex-col">
-                  <RichTextEditor
-                    content={emailBody}
-                    onChange={setEmailBody}
-                    placeholder="Start typing your email here..."
-                    className="text-xs border-0 h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:p-3 [&_.ProseMirror]:focus:outline-none"
-                  />
-                </div>
+              {/* Editor */}
+              <div className="flex-1 min-h-0 relative">
+                <RichTextEditor
+                  content={emailBody}
+                  onChange={setEmailBody}
+                  placeholder="Write your email..."
+                  className="absolute inset-0 border-none text-xs p-3 resize-none focus:outline-none"
+                />
               </div>
             </div>
           </TabsContent>

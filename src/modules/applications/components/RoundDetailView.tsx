@@ -29,7 +29,7 @@ interface RoundDetailViewProps {
   onConfigureAssessment?: (roundId: string) => void;
   onConfigureInterview?: (roundId: string) => void;
   allRounds?: JobRound[];
-  onMoveToNextRound?: (applicationId: string) => void; 
+  onMoveToNextRound?: (applicationId: string) => void;
   onReject?: (applicationId: string) => void;
   onRefresh?: () => void;
   onConfigureEmail?: (roundId: string) => void;
@@ -56,23 +56,23 @@ const PASS_THRESHOLD = 70;
 
 function getDisplayState(assessment: RoundAssessment | null): DisplayState {
   if (!assessment) return 'NOT_INVITED';
-  
+
   const { status, averageScore, isFinalized } = assessment;
-  
+
   // Finalized with score determines pass/fail
   if (isFinalized && averageScore !== null) {
     return averageScore >= PASS_THRESHOLD ? 'PASSED' : 'FAILED';
   }
-  
+
   // Assessment completed, awaiting grading/finalization
   if (status === 'COMPLETED') return 'COMPLETED';
-  
+
   // Assessment in progress
   if (status === 'IN_PROGRESS') return 'IN_PROGRESS';
-  
+
   // Invited but not started
   if (status === 'INVITED') return 'INVITED';
-  
+
   return 'NOT_INVITED';
 }
 
@@ -90,7 +90,7 @@ export function RoundDetailView({
   onRefresh,
   onConfigureEmail
 }: RoundDetailViewProps) {
-  
+
   // Candidates currently in this round
   const roundApplications = useMemo(() => {
     return applications.filter(app => app.roundId === round.id);
@@ -104,15 +104,15 @@ export function RoundDetailView({
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [gradingOpen, setGradingOpen] = useState(false);
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
-  
+
   // Bulk Analysis State
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
+
   // Candidate detail drawer state
   const [selectedProfileApp, setSelectedProfileApp] = useState<Application | null>(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
-  
+
   const handleViewProfile = (app: Application) => {
     setSelectedProfileApp(app);
     setDetailPanelOpen(true);
@@ -171,7 +171,7 @@ export function RoundDetailView({
       const response = await apiClient.post(`/api/assessments/${assessmentId}/resend`);
       if (response.success) {
         toast.success("Invitation resent successfully");
-        fetchAssessments(); 
+        fetchAssessments();
       }
     } catch (error) {
       console.error("Failed to resend invitation", error);
@@ -197,14 +197,14 @@ export function RoundDetailView({
 
   const handleBulkReanalyze = async () => {
     if (selectedCandidateIds.size === 0) return;
-    
+
     setIsAnalyzing(true);
     try {
       const result = await applicationService.bulkScoreCandidates(
-        Array.from(selectedCandidateIds), 
+        Array.from(selectedCandidateIds),
         jobId
       );
-      
+
       if (result.success && result.data) {
         toast.success(result.data.message || `Successfully analyzed ${result.data.success} candidates`);
         // Refresh the page data
@@ -226,11 +226,11 @@ export function RoundDetailView({
 
   const handleBulkMove = async () => {
     if (selectedCandidateIds.size === 0) return;
-    
+
     setIsBulkMoving(true);
     try {
       const selectedApps = roundApplications.filter(app => selectedCandidateIds.has(app.id));
-      
+
       for (const app of selectedApps) {
         if (app.shortlisted) {
           await onMoveToNextRound?.(app.id);
@@ -238,7 +238,7 @@ export function RoundDetailView({
           await onReject?.(app.id);
         }
       }
-      
+
       toast.success(`Successfully processed ${selectedApps.length} candidates`);
       onRefresh?.();
       setSelectedCandidateIds(new Set());
@@ -260,21 +260,21 @@ export function RoundDetailView({
   }, [roundApplications, assessments]);
 
   // Group candidates by state
-  const pendingCandidates = candidatesWithState.filter(c => 
+  const pendingCandidates = candidatesWithState.filter(c =>
     ['NOT_INVITED', 'INVITED', 'IN_PROGRESS'].includes(c.displayState)
   );
   const reviewCandidates = candidatesWithState.filter(c => c.displayState === 'COMPLETED');
-  const decidedCandidates = candidatesWithState.filter(c => 
+  const decidedCandidates = candidatesWithState.filter(c =>
     ['PASSED', 'FAILED'].includes(c.displayState)
   );
 
   // Render a single candidate row
   const renderCandidateRow = ({ app, assessment, displayState }: { app: Application; assessment: RoundAssessment | null; displayState: DisplayState }) => {
     const name = app.candidateName || 'Unknown';
-    
+
     return (
-      <div 
-        key={app.id} 
+      <div
+        key={app.id}
         className="group flex items-center justify-between p-4 mb-3 bg-background border border-border/40 rounded-xl hover:border-border/80 hover:shadow-sm transition-all duration-200"
       >
         <div className="flex items-center gap-4">
@@ -292,7 +292,7 @@ export function RoundDetailView({
                 </Badge>
               )}
             </div>
-            <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-3">            
+            <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-3">
               {/* Status Badge */}
               {displayState === 'NOT_INVITED' && (
                 <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-gray-300 text-gray-500">Not Invited</Badge>
@@ -335,8 +335,8 @@ export function RoundDetailView({
         {/* Actions based on state */}
         <div className="flex items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
           {/* Always show View Profile */}
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             variant="ghost"
             className="h-8 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => handleViewProfile(app)}
@@ -346,8 +346,8 @@ export function RoundDetailView({
           </Button>
 
           {displayState === 'NOT_INVITED' && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               className="h-8 text-xs border-primary/20 hover:bg-primary/5 hover:text-primary"
               onClick={() => handleInvite(app.id)}
@@ -363,8 +363,8 @@ export function RoundDetailView({
           )}
 
           {(displayState === 'INVITED' || displayState === 'IN_PROGRESS') && assessment && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="ghost"
               className="h-8 text-xs hover:bg-primary/5"
               onClick={() => handleResend(assessment.id)}
@@ -380,8 +380,8 @@ export function RoundDetailView({
           )}
 
           {displayState === 'COMPLETED' && assessment && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               className="h-8 text-xs"
               onClick={() => handleGrade(assessment.id)}
@@ -394,8 +394,8 @@ export function RoundDetailView({
           {displayState === 'PASSED' && (
             <>
               {assessment && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="ghost"
                   className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                   onClick={() => handleGrade(assessment.id)}
@@ -405,7 +405,7 @@ export function RoundDetailView({
                 </Button>
               )}
               {onMoveToNextRound && (
-                <Button 
+                <Button
                   size="sm"
                   variant="default"
                   className="h-8 text-xs bg-primary hover:bg-primary/90"
@@ -421,8 +421,8 @@ export function RoundDetailView({
           {displayState === 'FAILED' && (
             <>
               {assessment && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="ghost"
                   className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                   onClick={() => handleGrade(assessment.id)}
@@ -431,9 +431,9 @@ export function RoundDetailView({
                   <Eye className="h-4 w-4" />
                 </Button>
               )}
-              <Button 
-                size="sm" 
-                variant="destructive" 
+              <Button
+                size="sm"
+                variant="destructive"
                 className="h-8 text-xs"
                 onClick={() => onReject?.(app.id)}
               >
@@ -463,31 +463,31 @@ export function RoundDetailView({
         </div>
         <div className="flex items-center gap-2">
           {round.type === 'INTERVIEW' && !round.isFixed && onConfigureInterview && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="h-8 border-border/60 hover:bg-muted/50 text-xs font-medium"
               onClick={() => onConfigureInterview(round.id)}
             >
               <Settings className="mr-2 h-3.5 w-3.5" />
               Configure
             </Button>
-          )} 
+          )}
           {onConfigureEmail && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="h-8 border-border/60 hover:bg-muted/50 text-xs font-medium"
               onClick={() => onConfigureEmail(round.id)}
             >
               <Mail className="mr-2 h-3.5 w-3.5" />
               Configure
             </Button>
-          )}     
+          )}
           {round.type === 'ASSESSMENT' && !round.isFixed && onConfigureAssessment && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="h-8 border-border/60 hover:bg-muted/50 text-xs font-medium"
               onClick={() => onConfigureAssessment(round.id)}
             >
@@ -499,13 +499,13 @@ export function RoundDetailView({
       </div>
 
       {(round.name === 'New' || round.name === 'New Application') ? (
-         <div className="space-y-4">
-          
+        <div className="space-y-4">
+
           {/* Bulk Actions Toolbar - Only for New Application round */}
           {roundApplications.length > 0 && (
             <div className="flex items-center justify-between p-2 bg-muted/30 border rounded-lg mb-4">
               <div className="flex items-center gap-3 px-2">
-                <Checkbox 
+                <Checkbox
                   checked={roundApplications.length > 0 && selectedCandidateIds.size === roundApplications.length}
                   onCheckedChange={(checked) => {
                     if (checked) {
@@ -526,9 +526,9 @@ export function RoundDetailView({
                   <span className="text-sm text-muted-foreground mr-2">
                     {selectedCandidateIds.size} selected
                   </span>
-                  <Button 
-                    size="sm" 
-                    onClick={handleBulkReanalyze} 
+                  <Button
+                    size="sm"
+                    onClick={handleBulkReanalyze}
                     disabled={isAnalyzing}
                     className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
@@ -543,12 +543,12 @@ export function RoundDetailView({
                   {(() => {
                     const selectedApps = roundApplications.filter(app => selectedCandidateIds.has(app.id));
                     const allDecided = selectedApps.length > 0 && selectedApps.every(app => app.shortlisted || app.status === 'rejected');
-                    
+
                     return (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="default"
-                        onClick={handleBulkMove} 
+                        onClick={handleBulkMove}
                         disabled={!allDecided || isBulkMoving}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
@@ -580,12 +580,12 @@ export function RoundDetailView({
                 // List View for New Application Round
                 <div className="divide-y divide-border/40">
                   {roundApplications.map((app) => (
-                    <div 
-                      key={app.id} 
+                    <div
+                      key={app.id}
                       className={`flex items-start gap-4 p-4 transition-colors hover:bg-muted/30 ${selectedCandidateIds.has(app.id) ? 'bg-primary/5' : ''}`}
                     >
                       <div className="pt-1">
-                        <Checkbox 
+                        <Checkbox
                           checked={selectedCandidateIds.has(app.id)}
                           onCheckedChange={(checked) => {
                             const newSet = new Set(selectedCandidateIds);
@@ -598,7 +598,7 @@ export function RoundDetailView({
                           }}
                         />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0" onClick={() => onApplicationClick(app)}>
                         <div className="flex items-start justify-between">
                           <div className="flex gap-3">
@@ -631,7 +631,7 @@ export function RoundDetailView({
                                   })()}
                                 </span>
                               </div>
-                              
+
                               {/* Quick Analysis/Tags Preview */}
                               {(app.tags && app.tags.length > 0) && (
                                 <div className="flex flex-wrap gap-1 mt-2">
@@ -647,7 +647,7 @@ export function RoundDetailView({
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center">
                             {(() => {
                               if (app.status === 'rejected') {
@@ -659,27 +659,27 @@ export function RoundDetailView({
                               return <Badge variant="outline" className="mr-2 h-7 rounded-lg border-slate-100 bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pending</Badge>;
                             })()}
 
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
+                            <Button
+                              size="sm"
+                              variant="ghost"
                               className="h-8 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleViewProfile(app);
                               }}
                             >
-                               View Profile
+                              View Profile
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="default" // Primary action
                               className="bg-slate-900 hover:bg-black text-white h-8 text-xs font-bold ml-2 rounded-lg transition-all active:scale-[0.98]"
                               onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedAppForEval(app);
+                                e.stopPropagation();
+                                setSelectedAppForEval(app);
                               }}
                             >
-                               EVALUATE
+                              EVALUATE
                             </Button>
                           </div>
                         </div>
@@ -692,7 +692,7 @@ export function RoundDetailView({
           </div>
         </div>
       ) : round.type === 'INTERVIEW' ? (
-        <InterviewRoundPanel 
+        <InterviewRoundPanel
           jobId={jobId}
           roundId={round.id}
           roundName={round.name}
@@ -785,17 +785,17 @@ export function RoundDetailView({
           </div>
         </div>
       )}
-        
+
       {selectedAssessmentId && (
-        <AssessmentGradingDialog 
-          open={gradingOpen} 
+        <AssessmentGradingDialog
+          open={gradingOpen}
           onOpenChange={setGradingOpen}
           assessmentId={selectedAssessmentId}
           readOnly={false}
           onGraded={fetchAssessments}
         />
       )}
-      
+
       {/* Candidate Detail Drawer */}
       {selectedProfileApp && (
         <CandidateAssessmentView
@@ -804,18 +804,19 @@ export function RoundDetailView({
           open={detailPanelOpen}
           onOpenChange={setDetailPanelOpen}
           jobTitle={round.name}
+          jobId={jobId}
         />
       )}
 
       {selectedAppForEval && (
         <CandidateEvaluationView
-            isOpen={!!selectedAppForEval}
-            application={selectedAppForEval}
-            onClose={() => setSelectedAppForEval(null)}
-            onEvaluationComplete={() => {
-                onRefresh?.();
-                // We keep it open or close depending on preference, current implementation closes if non-pending decision
-            }}
+          isOpen={!!selectedAppForEval}
+          application={selectedAppForEval}
+          onClose={() => setSelectedAppForEval(null)}
+          onEvaluationComplete={() => {
+            onRefresh?.();
+            // We keep it open or close depending on preference, current implementation closes if non-pending decision
+          }}
         />
       )}
     </div>

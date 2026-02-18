@@ -17,7 +17,7 @@ interface CandidateEmailPanelProps {
   candidateName?: string;
   jobTitle?: string;
   candidateEmail?: string;
-  onEmailSent?: () => void;
+  onEmailSent?: (needsReconnect?: boolean) => void;
   onBack?: () => void;
 }
 
@@ -139,9 +139,8 @@ export function CandidateEmailPanel({
       });
 
       const response = await apiClient.post(
-        `/api/applications/${applicationId}/send-email`,
+        `/api/applications/${applicationId}/emails`,
         {
-          to: candidateEmail,
           subject: processedSubject,
           body: processedBody,
         }
@@ -156,7 +155,8 @@ export function CandidateEmailPanel({
         setEmailBody('');
         setSelectedTemplate('');
         setAiContext('');
-        onEmailSent?.();
+        const needsReconnect = (response.data as any)?.needsReconnect ?? false;
+        onEmailSent?.(needsReconnect);
       } else {
         throw new Error(response.error || 'Failed to send email');
       }
@@ -242,14 +242,7 @@ export function CandidateEmailPanel({
                 <SelectContent>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>
-                      <div className="flex items-center gap-2">
-                        <span>{template.name}</span>
-                        {template.category && (
-                          <Badge variant="secondary" className="text-[10px] ml-auto">
-                            {template.category}
-                          </Badge>
-                        )}
-                      </div>
+                      <span>{template.name}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -373,8 +366,7 @@ export function CandidateEmailPanel({
                     content={emailBody}
                     onChange={setEmailBody}
                     placeholder="Write your email here... Use dynamic fields for personalization."
-                    className="text-sm"
-                    minHeight="min-h-[300px]"
+                    className="text-sm min-h-[300px]"
                   />
                 </div>
               )}

@@ -8,11 +8,10 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Brand Colors - HRM8 Primary #5B67F3 */
-    --primary: 235 87% 65%;
+    --primary: 236 79% 64%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 235 87% 60%;
-    --primary-light: 235 87% 95%;
+    --primary-hover: 236 79% 60%;
+    --primary-light: 236 79% 95%;
 
     /* Supporting Colors - Vibrant & Professional */
     --secondary: 220 13% 91%;
@@ -125,10 +124,10 @@ All colors MUST be HSL.
     --popover: 222 47% 11%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 235 87% 65%;
+    --primary: 236 79% 64%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 235 87% 70%;
-    --primary-light: 235 87% 20%;
+    --primary-hover: 236 79% 70%;
+    --primary-light: 236 79% 20%;
 
     --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 0 0% 98%;

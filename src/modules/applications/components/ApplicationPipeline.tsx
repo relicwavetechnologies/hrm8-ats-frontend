@@ -1664,6 +1664,7 @@ export function ApplicationPipeline({
           open={detailPanelOpen}
           onOpenChange={setDetailPanelOpen}
           jobTitle={jobTitle}
+          jobId={jobId}
           onNext={handleNext}
           onPrevious={handlePrevious}
           hasNext={hasNext}

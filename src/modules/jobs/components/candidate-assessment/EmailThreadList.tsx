@@ -3,7 +3,7 @@ import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
-import { Mail, Loader2, RefreshCw, Plus, Inbox, ArrowDownLeft, ArrowUpRight, AlertTriangle } from 'lucide-react';
+import { Mail, Loader2, RefreshCw, Inbox, ArrowDownLeft, ArrowUpRight, AlertTriangle } from 'lucide-react';
 import { GmailThread } from '@/shared/lib/gmailThreadService';
 
 interface EmailThreadListProps {
@@ -11,8 +11,8 @@ interface EmailThreadListProps {
   loading: boolean;
   gmailConnected: boolean;
   onThreadClick: (thread: GmailThread) => void;
-  onCompose: () => void;
   onRefresh: () => void;
+  needsReconnect?: boolean;
 }
 
 function formatRelativeDate(dateStr: string): string {
@@ -40,8 +40,8 @@ export function EmailThreadList({
   loading,
   gmailConnected,
   onThreadClick,
-  onCompose,
   onRefresh,
+  needsReconnect,
 }: EmailThreadListProps) {
   // Determine if last message in thread is inbound
   const isLastMessageInbound = (thread: GmailThread) => {
@@ -58,15 +58,9 @@ export function EmailThreadList({
             <Mail className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Email Threads</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRefresh} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button size="sm" className="gap-1.5" onClick={onCompose}>
-              <Plus className="h-4 w-4" />
-              Compose New
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRefresh} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
 
@@ -91,6 +85,27 @@ export function EmailThreadList({
         </div>
       )}
 
+      {/* Gmail send permission missing banner */}
+      {needsReconnect && gmailConnected && (
+        <div className="mx-4 mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Gmail send permission missing</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              Emails are being sent via SMTP and won't appear in thread history. Reconnect Gmail to enable direct sending.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 h-7 text-xs border-amber-300 dark:border-amber-700"
+              onClick={() => { window.location.href = '/api/auth/google/connect'; }}
+            >
+              Reconnect Gmail →
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <ScrollArea className="flex-1">
         <div className="p-4">
@@ -104,10 +119,6 @@ export function EmailThreadList({
               <Inbox className="h-12 w-12 mb-3 opacity-40" />
               <p className="text-sm font-medium">No email threads yet</p>
               <p className="text-xs mt-1">Send an email to start a conversation</p>
-              <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onCompose}>
-                <Plus className="h-4 w-4" />
-                Compose Email
-              </Button>
             </div>
           ) : (
             <div className="space-y-2">
