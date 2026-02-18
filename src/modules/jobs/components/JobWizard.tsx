@@ -490,31 +490,31 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
   const serviceTypeConfig = {
     'self-managed': {
       name: 'Self-Managed',
-      price: 'FREE',
+      price: 'Subscription quota',
       icon: Briefcase,
       color: 'text-muted-foreground'
     },
     'shortlisting': {
       name: 'Shortlisting Service',
-      price: '$1,990',
+      price: 'Dynamic wallet pricing',
       icon: Users,
       color: 'text-blue-600'
     },
     'full-service': {
       name: 'Full Service',
-      price: '$5,990',
+      price: 'Dynamic wallet pricing',
       icon: Star,
       color: 'text-primary'
     },
     'executive-search': {
       name: 'Executive Search',
-      price: '$9,990+',
+      price: 'Dynamic wallet pricing',
       icon: Crown,
       color: 'text-amber-600'
     },
     'rpo': {
       name: 'RPO',
-      price: 'Custom',
+      price: 'Dynamic wallet pricing',
       icon: Briefcase,
       color: 'text-purple-600'
     }
@@ -522,11 +522,6 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
 
   const currentService = serviceTypeConfig[currentServiceType] || serviceTypeConfig['self-managed'];
   const ServiceIcon = currentService.icon;
-
-  const handleChangeService = () => {
-    setStep(1);
-    // Scroll is handled automatically by the useEffect on line 56
-  };
 
   const onSubmit = async (data: JobFormData) => {
     console.log('📋 Form submitted!', { step, totalSteps, data: { ...data, description: data.description?.substring(0, 50) + '...' } });
@@ -634,9 +629,6 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
 
       console.log('✅ Terms accepted, proceeding with publish...');
 
-      const isSelfManaged = data.serviceType === 'self-managed' || data.serviceType === 'rpo';
-      const requiresPayment = !isSelfManaged;
-
       // Convert to API format using utility function
       const jobRequest = transformJobFormDataToCreateRequest(data, {
         includeTerms: true,
@@ -647,8 +639,6 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
       // Add servicePackage to job request
       console.log('🔍 DEBUG servicePackage:', {
         serviceType: data.serviceType,
-        isSelfManaged,
-        requiresPayment
       });
       const servicePackage = data.serviceType === 'rpo' ? 'self-managed' : data.serviceType;
       (jobRequest as any).servicePackage = servicePackage;
@@ -691,8 +681,31 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
 
           // Check for failure (ApiClient catches errors and returns success: false)
           if (!publishResponse.success) {
-            // Handle Insufficient Balance (402)
-            if (publishResponse.status === 402) {
+            const status = publishResponse.status;
+            const errorMsg = publishResponse.error || 'Failed to publish job';
+
+            // Handle 402 — Subscription Required or Quota Exhausted
+            if (status === 402) {
+              // Check if this is a wallet balance issue (HRM8 managed) or subscription issue
+              if (errorMsg.toLowerCase().includes('subscription required')) {
+                toast({
+                  title: 'Subscription Required',
+                  description: 'You need an active subscription to publish jobs. Please subscribe first.',
+                  variant: 'destructive',
+                });
+                setIsPublishing(false);
+                return;
+              }
+              if (errorMsg.toLowerCase().includes('quota exhausted')) {
+                toast({
+                  title: 'Job Quota Exhausted',
+                  description: 'Your subscription job posting quota is full. Please upgrade your plan.',
+                  variant: 'destructive',
+                });
+                setIsPublishing(false);
+                return;
+              }
+              // Wallet insufficient balance (HRM8 managed services)
               const errorData: any = publishResponse.data || {};
               setBalanceErrorData({
                 required: errorData.required || 0,
@@ -705,7 +718,18 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
               return;
             }
 
-            throw new Error(publishResponse.error || 'Failed to publish job');
+            // Handle 503 — No consultant available
+            if (status === 503) {
+              toast({
+                title: 'No Consultant Available',
+                description: 'No consultant is currently available for this service. Please try again later.',
+                variant: 'destructive',
+              });
+              setIsPublishing(false);
+              return;
+            }
+
+            throw new Error(errorMsg);
           }
 
           // Success flow
@@ -790,8 +814,21 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         } catch (publishError: any) {
           console.error('❌ Publish failed:', publishError);
 
-          // Handle Insufficient Balance
+          // Handle 402 (wallet insufficient) coming from catch
           if (publishError.status === 402 || publishError.response?.status === 402) {
+            const errorMsg = publishError.response?.data?.error || publishError.message || '';
+
+            if (errorMsg.toLowerCase().includes('subscription required')) {
+              toast({ title: 'Subscription Required', description: 'You need an active subscription.', variant: 'destructive' });
+              setIsPublishing(false);
+              return;
+            }
+            if (errorMsg.toLowerCase().includes('quota exhausted')) {
+              toast({ title: 'Quota Exhausted', description: 'Upgrade your subscription plan.', variant: 'destructive' });
+              setIsPublishing(false);
+              return;
+            }
+
             const errorData = publishError.response?.data?.data || {};
             setBalanceErrorData({
               required: errorData.required || 0,
@@ -800,6 +837,13 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
               currency: errorData.currency || 'USD'
             });
             setShowBalanceModal(true);
+            setIsPublishing(false);
+            return;
+          }
+
+          // Handle 503 (no consultant)
+          if (publishError.status === 503 || publishError.response?.status === 503) {
+            toast({ title: 'No Consultant Available', description: 'Please try again later.', variant: 'destructive' });
             setIsPublishing(false);
             return;
           }
@@ -1089,18 +1133,6 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
                   {currentService.price}
                 </div>
               </div>
-              {step > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleChangeService}
-                  className="text-xs transition-all duration-200 hover:scale-105"
-                >
-                  <ArrowUp className="h-3 w-3 mr-1" />
-                  Change
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -1355,9 +1387,12 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         {savedJobData && (
           <JobSetupDrawer
             open={showJobSetupDrawer}
-            onOpenChange={(open) => {
+            onOpenChange={(open, meta) => {
               setShowJobSetupDrawer(open);
               if (!open) {
+                if (meta?.reason === 'managed-checkout') {
+                  return;
+                }
                 if (onSuccess) {
                   onSuccess(savedJobData);
                 }

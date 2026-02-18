@@ -93,6 +93,7 @@ export function transformJobFormDataToCreateRequest(
     category_id: data.category_id || undefined, // NEW: Job category FK
     tag_ids: data.tag_ids || undefined, // NEW: Job tags array
     videoInterviewingEnabled: data.videoInterviewingEnabled || false,
+    publishImmediately: false,
   };
 
   // Add optional fields
@@ -243,4 +244,3 @@ export function transformJobToFormData(job: any): JobFormData {
     preInterviewQuestionnaireEnabled: job.pre_interview_questionnaire_enabled || job.preInterviewQuestionnaireEnabled || false,
   };
 }
-

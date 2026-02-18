@@ -29,6 +29,7 @@ import { PricingDisplay } from "@/modules/subscription/components/PricingDisplay
 import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 import { useToast } from "@/shared/hooks/use-toast";
+import { pricingService } from "@/shared/lib/pricingService";
 
 export function SubscriptionManagementPage() {
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -45,6 +46,7 @@ export function SubscriptionManagementPage() {
             setJustReturnedFromCheckout(true);
             queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription', 'active'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
             setSearchParams({}, { replace: true });
@@ -74,7 +76,7 @@ export function SubscriptionManagementPage() {
     const { data: walletData, isLoading: walletLoading } = useQuery({
         queryKey: ['wallet', 'balance'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/balance');
+            const response = await fetch('/api/wallet/balance', { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to fetch wallet balance');
             return response.json();
         },
@@ -84,12 +86,11 @@ export function SubscriptionManagementPage() {
     const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
         queryKey: ['wallet', 'subscription', 'active'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/subscriptions', { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch subscriptions');
+            // Use authoritative subscription endpoint (includes quota/usage/full plan fields)
+            const response = await fetch('/api/subscriptions/active', { credentials: 'include' });
+            if (!response.ok) throw new Error('Failed to fetch active subscription');
             const result = await response.json();
-            const subs = result.data?.subscriptions ?? result.data ?? [];
-            const arr = Array.isArray(subs) ? subs : [];
-            return arr.find((sub: { status?: string }) => sub.status === 'ACTIVE') || null;
+            return result?.data?.subscription ?? null;
         },
         refetchOnWindowFocus: true,
     });
@@ -98,7 +99,7 @@ export function SubscriptionManagementPage() {
     const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
         queryKey: ['wallet', 'transactions'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/transactions?limit=10');
+            const response = await fetch('/api/wallet/transactions?limit=10', { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to fetch transactions');
             return response.json();
         },
@@ -115,6 +116,8 @@ export function SubscriptionManagementPage() {
     const subscription = subscriptionData;
     const wallet = walletData?.data;
     const transactions = transactionsData?.data?.transactions || [];
+    const walletCurrency = wallet?.currency || subscription?.currency || 'USD';
+    const subscriptionCurrency = subscription?.currency || walletCurrency;
 
     const jobsUsagePercent = subscription?.jobs_used && subscription?.job_quota
         ? (subscription.jobs_used / subscription.job_quota) * 100
@@ -140,6 +143,7 @@ export function SubscriptionManagementPage() {
                     balance={wallet?.balance || 0}
                     totalCredits={wallet?.totalCredits || 0}
                     totalDebits={wallet?.totalDebits || 0}
+                    currency={walletCurrency}
                     status={wallet?.status || 'ACTIVE'}
                     isLoading={walletLoading}
                     showRechargeButton
@@ -177,7 +181,7 @@ export function SubscriptionManagementPage() {
                                 <div>
                                     <p className="text-2xl font-bold">{subscription.name}</p>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        ${subscription.base_price} / {subscription.billing_cycle.toLowerCase()}
+                                        {pricingService.formatPrice(subscription.base_price, subscriptionCurrency)} / {subscription.billing_cycle.toLowerCase()}
                                     </p>
                                 </div>
 
@@ -230,7 +234,7 @@ export function SubscriptionManagementPage() {
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm text-muted-foreground">Prepaid Balance</span>
                                             <span className="text-sm font-semibold">
-                                                ${subscription.prepaid_balance.toFixed(2)}
+                                                {pricingService.formatPrice(subscription.prepaid_balance, subscriptionCurrency)}
                                             </span>
                                         </div>
                                     </div>

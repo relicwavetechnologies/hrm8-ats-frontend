@@ -25,10 +25,17 @@ export interface JobsListResult {
 }
 
 export function useJobsList(
-  selectedStatus: string,
-  page: number,
-  refreshKey: number
+  selectedStatus: string | null | undefined,
+  page: number | null | undefined,
+  refreshKey: number | null | undefined,
+  enabled = true
 ): JobsListResult {
+  const safeStatus = typeof selectedStatus === 'string' ? selectedStatus : 'all';
+  const safePage =
+    typeof page === 'number' && Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  const safeRefreshKey =
+    typeof refreshKey === 'number' && Number.isFinite(refreshKey) ? refreshKey : 0;
+
   const {
     data,
     isLoading,
@@ -36,24 +43,52 @@ export function useJobsList(
     error,
     refetch,
   } = useQuery({
-    queryKey: ['jobs-list', selectedStatus, page, refreshKey],
+    queryKey: ['jobs-list', safeStatus, safePage, safeRefreshKey],
     queryFn: async () => {
       const filters: { status?: JobStatus; page: number; limit: number } = {
-        page,
+        page: safePage,
         limit: JOBS_PAGE_SIZE,
       };
-      if (selectedStatus && selectedStatus !== 'all') {
-        filters.status = STATUS_MAP[selectedStatus] ?? (selectedStatus.toUpperCase() as JobStatus);
+      if (safeStatus !== 'all') {
+        filters.status = STATUS_MAP[safeStatus] ?? (safeStatus.toUpperCase() as JobStatus);
       }
+
       const response = await jobService.getJobs(filters);
       if (!response.success || !response.data) {
         throw new Error(response.error ?? 'Failed to fetch jobs');
       }
-      const { jobs: rawJobs = [], total = 0, stats } = response.data;
-      const jobs = Array.isArray(rawJobs) ? rawJobs.map(mapBackendJobToFrontend) : [];
-      return { jobs, total, stats: stats ?? null };
+
+      const payload = response.data as any;
+      const rawJobs = Array.isArray(payload?.jobs) ? payload.jobs : [];
+      const jobs = rawJobs
+        .filter((job: unknown) => Boolean(job) && typeof job === 'object')
+        .map((job: unknown) => {
+          try {
+            return mapBackendJobToFrontend(job);
+          } catch (mapError) {
+            console.warn('Skipping malformed job row from API response', mapError, job);
+            return null;
+          }
+        })
+        .filter((job: Job | null): job is Job => job !== null);
+
+      const totalFromApi = Number(payload?.total);
+      const total = Number.isFinite(totalFromApi) ? totalFromApi : jobs.length;
+      const rawStats = payload?.stats;
+      const stats =
+        rawStats && typeof rawStats === 'object'
+          ? {
+              total: Number(rawStats.total || 0),
+              active: Number(rawStats.active || 0),
+              filled: Number(rawStats.filled || 0),
+              applicants: Number(rawStats.applicants || 0),
+            }
+          : null;
+
+      return { jobs, total, stats };
     },
     staleTime: 2 * 60 * 1000,
+    enabled,
     placeholderData: (previousData) => previousData,
   });
 

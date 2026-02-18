@@ -24,7 +24,7 @@ export default function StripeMockCheckout() {
 
         try {
             // Call backend to process payment and credit wallet
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const apiUrl = import.meta.env.VITE_API_URL || '';
             const response = await fetch(`${apiUrl}/api/integrations/stripe/mock-payment-success`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

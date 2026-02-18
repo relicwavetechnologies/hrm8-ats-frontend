@@ -9,11 +9,13 @@ import { Button } from "@/shared/components/ui/button";
 import { Wallet, TrendingUp, TrendingDown, AlertCircle, Plus } from "lucide-react";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { cn } from "@/shared/lib/utils";
+import { pricingService } from "@/shared/lib/pricingService";
 
 interface WalletBalanceProps {
     balance: number;
     totalCredits: number;
     totalDebits: number;
+    currency?: string;
     status: 'ACTIVE' | 'FROZEN' | 'SUSPENDED';
     isLoading?: boolean;
     showRechargeButton?: boolean;
@@ -25,6 +27,7 @@ export function WalletBalance({
     balance,
     totalCredits,
     totalDebits,
+    currency = 'USD',
     status,
     isLoading = false,
     showRechargeButton = false,
@@ -66,7 +69,7 @@ export function WalletBalance({
                             <Wallet className="h-5 w-5" />
                             Virtual Wallet
                         </CardTitle>
-                        <CardDescription>Your account balance in USD</CardDescription>
+                        <CardDescription>Your account balance in {currency}</CardDescription>
                     </div>
                     <Badge variant={statusVariant}>{status}</Badge>
                 </div>
@@ -79,7 +82,7 @@ export function WalletBalance({
                 )}>
                     <p className="text-sm text-muted-foreground mb-1">Available Balance</p>
                     <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-bold">${balance.toFixed(2)}</p>
+                        <p className="text-3xl font-bold">{pricingService.formatPrice(balance, currency)}</p>
                         {isLowBalance && (
                             <Badge variant="outline" className="text-yellow-600 border-yellow-600">
                                 <AlertCircle className="h-3 w-3 mr-1" />
@@ -96,7 +99,7 @@ export function WalletBalance({
                             <TrendingUp className="h-4 w-4 text-green-600" />
                             <p className="text-xs text-muted-foreground">Total Credits</p>
                         </div>
-                        <p className="text-lg font-semibold text-green-600">${totalCredits.toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-green-600">{pricingService.formatPrice(totalCredits, currency)}</p>
                     </div>
 
                     <div className="p-3 rounded-lg border bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
@@ -104,7 +107,7 @@ export function WalletBalance({
                             <TrendingDown className="h-4 w-4 text-red-600" />
                             <p className="text-xs text-muted-foreground">Total Debits</p>
                         </div>
-                        <p className="text-lg font-semibold text-red-600">${totalDebits.toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-red-600">{pricingService.formatPrice(totalDebits, currency)}</p>
                     </div>
                 </div>
 

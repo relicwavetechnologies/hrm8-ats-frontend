@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { Link, useSearchParams, useNavigate, useMatch } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
@@ -16,6 +16,7 @@ import { JobWizard } from "@/modules/jobs/components/JobWizard";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
 import { JobCreateDrawer } from "@/components/conversational/JobCreateDrawer";
 import { JobSetupDrawer } from "@/components/setup/JobSetupDrawer";
+import { ManagedRecruitmentCheckoutDialog } from "@/modules/jobs/components/ManagedRecruitmentCheckoutDialog";
 import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
 import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
 import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
@@ -52,6 +53,10 @@ import {
   AlertDialogCancel,
 } from "@/shared/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+
+type CheckoutOrigin = 'fromSetup' | 'fromJobs';
+type CheckoutOutcome = 'none' | 'cancelled' | 'paid';
+type SetupReturnMode = 'normal' | 'forceChoice';
 
 export default function Jobs() {
   const { toast } = useToast();
@@ -93,15 +98,35 @@ export default function Jobs() {
   const [setupDrawerOpen, setSetupDrawerOpen] = useState(false);
   const [setupJobId, setSetupJobId] = useState<string | null>(null);
   const [setupJobTitle, setSetupJobTitle] = useState<string | undefined>(undefined);
+  const [setupReturnMode, setSetupReturnMode] = useState<SetupReturnMode>('normal');
+  const [managedCheckoutOpen, setManagedCheckoutOpen] = useState(false);
+  const [checkoutOrigin, setCheckoutOrigin] = useState<CheckoutOrigin>('fromJobs');
+  const [checkoutOutcome, setCheckoutOutcome] = useState<CheckoutOutcome>('none');
+  const checkoutOriginRef = useRef<CheckoutOrigin>('fromJobs');
+  const checkoutOutcomeRef = useRef<CheckoutOutcome>('none');
+
+  const managedMatchA = useMatch('/ats/jobs/:jobId/managed-recruitment-checkout');
+  const managedMatchB = useMatch('/jobs/:jobId/managed-recruitment-checkout');
+  const managedCheckoutMatch = managedMatchA ?? managedMatchB;
+  const managedCheckoutJobId = managedCheckoutMatch?.params.jobId ?? null;
+  const managedCheckoutServiceParam = searchParams.get('serviceType');
+  const managedCheckoutServiceType: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo' | undefined =
+    managedCheckoutServiceParam === 'shortlisting' ||
+      managedCheckoutServiceParam === 'full-service' ||
+      managedCheckoutServiceParam === 'executive-search' ||
+      managedCheckoutServiceParam === 'rpo'
+      ? managedCheckoutServiceParam
+      : undefined;
 
   const jobsPage = 1;
   const {
-    jobs,
+    jobs: jobsResponse,
     total: totalJobs,
     stats: backendStats,
     isLoading: jobsLoading,
     error: jobsError,
-  } = useJobsList(selectedStatus, jobsPage, refreshKey);
+  } = useJobsList(selectedStatus, jobsPage, refreshKey, !managedCheckoutJobId);
+  const jobs = useMemo(() => (Array.isArray(jobsResponse) ? jobsResponse : []), [jobsResponse]);
 
   useEffect(() => {
     if (jobsError) {
@@ -160,6 +185,25 @@ export default function Jobs() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!managedCheckoutJobId) {
+      setManagedCheckoutOpen(false);
+      return;
+    }
+
+    setManagedCheckoutOpen(true);
+    const resolvedOrigin = searchParams.get('fromSetup') === '1' ? 'fromSetup' : 'fromJobs';
+    checkoutOriginRef.current = resolvedOrigin;
+    setCheckoutOrigin(resolvedOrigin);
+    checkoutOutcomeRef.current = 'none';
+    setCheckoutOutcome('none');
+  }, [managedCheckoutJobId, searchParams]);
+
+  const cleanupManagedCheckoutRoute = useCallback(() => {
+    setSearchParams({}, { replace: true });
+    navigate('/ats/jobs', { replace: true });
+  }, [navigate, setSearchParams]);
 
   // Extract unique consultants and countries
   const uniqueConsultants = useMemo(() => {
@@ -1056,6 +1100,7 @@ export default function Jobs() {
 
                     if (!isSetupComplete) {
                       // Setup not complete, open JobSetupDrawer
+                      setSetupReturnMode('normal');
                       setSetupJobId(job.id);
                       setSetupJobTitle(job.title);
                       setSetupDrawerOpen(true);
@@ -1166,9 +1211,13 @@ export default function Jobs() {
             {/* Job Setup Drawer */}
             <JobSetupDrawer
               open={setupDrawerOpen}
-              onOpenChange={(open) => {
+              onOpenChange={(open, meta) => {
                 setSetupDrawerOpen(open);
                 if (!open) {
+                  if (meta?.reason === 'managed-checkout') {
+                    return;
+                  }
+                  setSetupReturnMode('normal');
                   setSetupJobId(null);
                   setSetupJobTitle(undefined);
                   // Refresh jobs list after setup is complete
@@ -1177,7 +1226,54 @@ export default function Jobs() {
               }}
               jobId={setupJobId}
               jobTitle={setupJobTitle}
+              forceChoiceOnOpen={setupReturnMode === 'forceChoice'}
             />
+
+            {managedCheckoutJobId && managedCheckoutOpen && (
+              <ManagedRecruitmentCheckoutDialog
+                open={managedCheckoutOpen}
+                onOpenChange={(open) => {
+                  setManagedCheckoutOpen(open);
+                  if (!open) {
+                    const shouldReturnToChoice =
+                      checkoutOriginRef.current === 'fromSetup' &&
+                      checkoutOutcomeRef.current !== 'paid' &&
+                      Boolean(managedCheckoutJobId);
+
+                    if (checkoutOutcomeRef.current !== 'paid') {
+                      checkoutOutcomeRef.current = 'cancelled';
+                      setCheckoutOutcome('cancelled');
+                    }
+                    cleanupManagedCheckoutRoute();
+
+                    if (shouldReturnToChoice && managedCheckoutJobId) {
+                      queueMicrotask(() => {
+                        setSetupReturnMode('forceChoice');
+                        setSetupJobId(managedCheckoutJobId);
+                        setSetupJobTitle(undefined);
+                        setSetupDrawerOpen(true);
+                      });
+                    }
+                    setRefreshKey(prev => prev + 1);
+                  }
+                }}
+                jobId={managedCheckoutJobId}
+                initialServiceType={managedCheckoutServiceType}
+                onSuccess={(upgradedJob) => {
+                  checkoutOutcomeRef.current = 'paid';
+                  setCheckoutOutcome('paid');
+                  setRefreshKey(prev => prev + 1);
+                  const targetJob = upgradedJob || jobs.find(j => j.id === managedCheckoutJobId);
+                  const targetJobId = targetJob?.id || managedCheckoutJobId;
+                  if (targetJobId) {
+                    setSetupReturnMode('normal');
+                    setSetupJobId(targetJobId);
+                    setSetupJobTitle(targetJob?.title);
+                    setSetupDrawerOpen(true);
+                  }
+                }}
+              />
+            )}
           </>
         )}
       </div>

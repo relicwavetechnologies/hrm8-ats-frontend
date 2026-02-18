@@ -123,6 +123,34 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
     const draftStepIndex = WIZARD_STEPS.indexOf(currentStepId) + 1;
 
+    const mapServiceTypeToHiringMode = (serviceType?: string): 'SELF_MANAGED' | 'SHORTLISTING' | 'FULL_SERVICE' | 'EXECUTIVE_SEARCH' => {
+        switch (serviceType) {
+            case 'shortlisting':
+                return 'SHORTLISTING';
+            case 'full-service':
+            case 'rpo':
+                return 'FULL_SERVICE';
+            case 'executive-search':
+                return 'EXECUTIVE_SEARCH';
+            default:
+                return 'SELF_MANAGED';
+        }
+    };
+
+    const mapServiceTypeToServicePackage = (serviceType?: string): 'self-managed' | 'shortlisting' | 'full-service' | 'executive-search' => {
+        switch (serviceType) {
+            case 'shortlisting':
+                return 'shortlisting';
+            case 'full-service':
+            case 'rpo':
+                return 'full-service';
+            case 'executive-search':
+                return 'executive-search';
+            default:
+                return 'self-managed';
+        }
+    };
+
     const buildDraftPayload = () => ({
         title: jobData.title || 'Untitled draft',
         description: jobData.description || '',
@@ -162,12 +190,14 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     toast({ title: 'Error', description: res.error || 'Failed to save draft', variant: 'destructive' });
                 }
             } else {
+                const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
+                const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
                 const createRes = await jobService.createJob({
                     title: payload.title,
                     description: payload.description,
                     department: payload.department ?? '',
                     location: payload.location,
-                    hiringMode: 'SELF_MANAGED',
+                    hiringMode,
                     workArrangement: (payload.workArrangement ?? 'on-site').toUpperCase().replace('-', '_') as any,
                     employmentType: (payload.employmentType ?? 'full-time').toUpperCase().replace('-', '_') as any,
                     numberOfVacancies: payload.numberOfVacancies,
@@ -180,6 +210,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     visibility: payload.visibility,
                     stealth: payload.stealth,
                     closeDate: payload.closeDate,
+                    servicePackage,
                     publishImmediately: false,
                 });
                 if (createRes.success && createRes.data) {
@@ -222,6 +253,9 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
         setIsSubmitting(true);
         try {
+            const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
+            const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
+
             // Transform JobFormData to CreateJobRequest
             const payload: any = {
                 title: jobData.title || 'Untitled Job',
@@ -248,7 +282,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
                 // Config
                 applicationForm: jobData.applicationForm,
-                hiringMode: 'SELF_MANAGED',
+                hiringMode,
+                servicePackage,
                 visibility: jobData.visibility,
                 stealth: jobData.stealth,
                 closeDate: jobData.closeDate,
@@ -269,10 +304,47 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 }
 
                 // Now publish the job (this will change status from DRAFT to OPEN)
-                const publishResponse = await jobService.publishJob(newJobId);
+                const publishResponse = await import('@/shared/lib/jobService').then(m => m.jobService.publishJob(newJobId));
 
                 if (!publishResponse.success) {
-                    throw new Error(publishResponse.error || 'Failed to publish job');
+                    const status = publishResponse.status;
+                    const errorMsg = (publishResponse as any).error || 'Failed to publish job';
+
+                    if (status === 402) {
+                        if (errorMsg.toLowerCase().includes('subscription required')) {
+                            toast({
+                                title: 'Subscription Required',
+                                description: 'You need an active subscription to publish jobs.',
+                                variant: 'destructive',
+                            });
+                            return;
+                        }
+                        if (errorMsg.toLowerCase().includes('quota exhausted')) {
+                            toast({
+                                title: 'Job Quota Exhausted',
+                                description: 'Your subscription quota is full. Please upgrade your plan.',
+                                variant: 'destructive',
+                            });
+                            return;
+                        }
+                        toast({
+                            title: 'Insufficient Wallet Balance',
+                            description: 'Top up your wallet to use HRM8 managed services.',
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+
+                    if (status === 503) {
+                        toast({
+                            title: 'No Consultant Available',
+                            description: 'No consultant is currently available for this service. Please try again later.',
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+
+                    throw new Error(errorMsg);
                 }
 
                 // Ensure the job status is OPEN (in case publishJob didn't update it)
@@ -316,8 +388,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         } catch (error) {
             console.error('Job creation failed:', error);
             toast({
-                title: 'Error',
-                description: error instanceof Error ? error.message : 'Failed to publish job',
+                title: 'Publish Failed',
+                description: error instanceof Error ? error.message : 'Failed to create and publish job.',
                 variant: 'destructive',
             });
         } finally {
@@ -366,16 +438,6 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         onSkip={nextStep}
                         isUploading={isUploadingDoc}
                         uploadComplete={uploadComplete}
-                    />
-                );
-            case 'service-type':
-                return (
-                    <ChatServiceTypeCard
-                        currentValue={jobData.serviceType}
-                        onSelect={(val) => {
-                            setJobData({ serviceType: val });
-                            nextStep();
-                        }}
                     />
                 );
             case 'basic-details':
@@ -607,139 +669,142 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
     return (
         <>
-        <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleRequestClose(); else onOpenChange(nextOpen); }}>
-            <DrawerContent className="h-[95vh] rounded-t-[32px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
-                <DrawerHeader className="border-b px-6 py-4 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Sparkles className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                            <DrawerTitle className="text-xl font-bold tracking-tight">Smart Job Wizard</DrawerTitle>
-                            <DrawerDescription className="text-sm text-muted-foreground font-medium">AI-guided job creation</DrawerDescription>
-                        </div>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={handleRequestClose} className="rounded-full hover:bg-muted">
-                        <X className="h-5 w-5" />
-                    </Button>
-                </DrawerHeader>
-
-                <div className="flex-1 flex overflow-hidden">
-                    {/* Wizard Step Section - Card Based */}
-                    <div className="flex-1 flex flex-col min-w-0 bg-muted/30">
-                        <ScrollArea className="flex-1 p-8" ref={scrollRef}>
-                            <div className="max-w-2xl mx-auto pb-12">
-                                {/* Step Card: rendered based on currentStepId */}
-                                {renderStepCard()}
+            <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleRequestClose(); else onOpenChange(nextOpen); }}>
+                <DrawerContent className="h-[95vh] rounded-t-[32px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
+                    <DrawerHeader className="border-b px-6 py-4 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Sparkles className="h-5 w-5 text-primary" />
                             </div>
-                        </ScrollArea>
-
-                        {/* Back button for non-first steps */}
-                        {currentStepId !== 'document-upload' && (
-                            <div className="p-4 bg-background border-t flex justify-between items-center">
-                                <Button variant="ghost" onClick={prevStep} className="gap-2">
-                                    <ChevronRight className="h-4 w-4 rotate-180" />
-                                    Back
-                                </Button>
-                                <span className="text-sm text-muted-foreground">
-                                    Step {WIZARD_STEPS.indexOf(currentStepId) + 1} of {WIZARD_STEPS.length}
-                                </span>
+                            <div>
+                                <DrawerTitle className="text-xl font-bold tracking-tight">Smart Job Wizard</DrawerTitle>
+                                <DrawerDescription className="text-sm text-muted-foreground font-medium">AI-guided job creation</DrawerDescription>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Live Preview Section */}
-                    <div className="w-[450px] border-l bg-white hidden lg:flex flex-col min-h-0">
-                        <div className="p-4 border-b bg-muted/10 flex items-center justify-between">
-                            <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Live Job Preview</h3>
-                            <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">LIVE UPDATE</div>
                         </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <JobPreviewPanel jobData={jobData} />
+                        <Button variant="ghost" size="icon" onClick={handleRequestClose} className="rounded-full hover:bg-muted">
+                            <X className="h-5 w-5" />
+                        </Button>
+                    </DrawerHeader>
+
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Wizard Step Section - Card Based */}
+                        <div className="flex-1 flex flex-col min-w-0 bg-muted/30">
+                            <ScrollArea className="flex-1 p-8" ref={scrollRef}>
+                                <div className="max-w-2xl mx-auto pb-12">
+                                    {/* Step Card: rendered based on currentStepId */}
+                                    {renderStepCard()}
+                                </div>
+                            </ScrollArea>
+
+                            {/* Back button for non-first steps */}
+                            {currentStepId !== 'document-upload' && (
+                                <div className="p-4 bg-background border-t flex justify-between items-center">
+                                    <Button variant="ghost" onClick={prevStep} className="gap-2">
+                                        <ChevronRight className="h-4 w-4 rotate-180" />
+                                        Back
+                                    </Button>
+                                    <span className="text-sm text-muted-foreground">
+                                        Step {WIZARD_STEPS.indexOf(currentStepId) + 1} of {WIZARD_STEPS.length}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Live Preview Section */}
+                        <div className="w-[450px] border-l bg-white hidden lg:flex flex-col min-h-0">
+                            <div className="p-4 border-b bg-muted/10 flex items-center justify-between">
+                                <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Live Job Preview</h3>
+                                <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">LIVE UPDATE</div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                <JobPreviewPanel jobData={jobData} />
+                            </div>
                         </div>
                     </div>
-                </div>
-            </DrawerContent>
-        </Drawer>
+                </DrawerContent>
+            </Drawer>
 
-        <AlertDialog open={showSaveDraftDialog} onOpenChange={setShowSaveDraftDialog}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Save as draft?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You can save this job as a draft and continue later from the Drafts tab. Your current step will be saved.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <Button variant="outline" onClick={handleDontSaveAndClose}>
-                        Don&apos;t save
-                    </Button>
-                    <Button onClick={handleSaveDraftAndClose} disabled={isSavingDraft}>
-                        {isSavingDraft ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</> : 'Save draft'}
-                    </Button>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            <AlertDialog open={showSaveDraftDialog} onOpenChange={setShowSaveDraftDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Save as draft?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You can save this job as a draft and continue later from the Drafts tab. Your current step will be saved.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <Button variant="outline" onClick={handleDontSaveAndClose}>
+                            Don&apos;t save
+                        </Button>
+                        <Button onClick={handleSaveDraftAndClose} disabled={isSavingDraft}>
+                            {isSavingDraft ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</> : 'Save draft'}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
-        <JobSetupDrawer
-            open={setupDrawerOpen}
-            onOpenChange={(open) => {
-                setSetupDrawerOpen(open);
-                if (!open) {
-                    setCreatedJobId(null);
-                    setCreatedJobTitle(undefined);
-                    // Reload to refresh jobs list and remove draft
-                    window.location.reload();
-                }
-            }}
-            jobId={createdJobId}
-            jobTitle={createdJobTitle}
-        />
+            <JobSetupDrawer
+                open={setupDrawerOpen}
+                onOpenChange={(open, meta) => {
+                    setSetupDrawerOpen(open);
+                    if (!open) {
+                        if (meta?.reason === 'managed-checkout') {
+                            return;
+                        }
+                        setCreatedJobId(null);
+                        setCreatedJobTitle(undefined);
+                        // Reload to refresh jobs list and remove draft
+                        window.location.reload();
+                    }
+                }}
+                jobId={createdJobId}
+                jobTitle={createdJobTitle}
+            />
 
-        <Dialog open={showTemplateNameDialog} onOpenChange={setShowTemplateNameDialog}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Save as Template</DialogTitle>
-                    <DialogDescription>
-                        Enter a name for this job template. This will help you quickly create similar jobs in the future.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="template-name">Template Name</Label>
-                        <Input
-                            id="template-name"
-                            placeholder="e.g., Senior Frontend Engineer Template"
-                            value={templateNameInput}
-                            onChange={(e) => setTemplateNameInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleTemplateNameSubmit();
-                                }
-                            }}
-                        />
+            <Dialog open={showTemplateNameDialog} onOpenChange={setShowTemplateNameDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Save as Template</DialogTitle>
+                        <DialogDescription>
+                            Enter a name for this job template. This will help you quickly create similar jobs in the future.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="template-name">Template Name</Label>
+                            <Input
+                                id="template-name"
+                                placeholder="e.g., Senior Frontend Engineer Template"
+                                value={templateNameInput}
+                                onChange={(e) => setTemplateNameInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleTemplateNameSubmit();
+                                    }
+                                }}
+                            />
+                        </div>
                     </div>
-                </div>
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowTemplateNameDialog(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={handleTemplateNameSubmit}
-                        disabled={!templateNameInput.trim()}
-                    >
-                        Continue to Publish
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowTemplateNameDialog(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleTemplateNameSubmit}
+                            disabled={!templateNameInput.trim()}
+                        >
+                            Continue to Publish
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

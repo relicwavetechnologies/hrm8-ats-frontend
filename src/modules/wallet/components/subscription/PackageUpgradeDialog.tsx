@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/label";
@@ -9,6 +10,7 @@ import { Loader2, CheckCircle2, XCircle, Sparkles, Check } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { cn } from "@/shared/lib/utils";
 import { createUpgradeCheckoutSession, type UpgradeTier } from "@/shared/lib/payments";
+import { pricingService } from "@/shared/lib/pricingService";
 
 interface PackageUpgradeDialogProps {
   open: boolean;
@@ -29,35 +31,63 @@ export function PackageUpgradeDialog({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const { data: pricingData, isLoading: pricingLoading } = useQuery({
+    queryKey: ['pricing', 'package-upgrade-dialog'],
+    enabled: open,
+    queryFn: async () => {
+      const [servicePrices, executiveBands] = await Promise.all([
+        pricingService.getRecruitmentServices(),
+        pricingService.getExecutiveSearchBands(),
+      ]);
+      return { servicePrices, executiveBands };
+    },
+  });
+
   const upgradePackages: Array<{
     id: UpgradeTier;
     name: string;
-    price: number;
+    priceLabel: string;
     description: string;
     features: string[];
   }> = useMemo(() => ([
     {
       id: "shortlisting",
       name: "Shortlisting",
-      price: 1990,
+      priceLabel: (() => {
+        const match = pricingData?.servicePrices.find((s) =>
+          String(s.serviceType || '').toUpperCase().replace(/[\s-]/g, '_').includes('SHORTLIST')
+        );
+        if (!match) return 'Dynamic at checkout';
+        return pricingService.formatPrice(match.price, match.currency);
+      })(),
       description: "We screen candidates and deliver a shortlist.",
       features: ["Job board advertising", "Applicant screening", "Shortlist delivered"],
     },
     {
       id: "full_service",
       name: "Full Service",
-      price: 5990,
+      priceLabel: (() => {
+        const match = pricingData?.servicePrices.find((s) =>
+          String(s.serviceType || '').toUpperCase().replace(/[\s-]/g, '_') === 'FULL'
+        );
+        if (!match) return 'Dynamic at checkout';
+        return pricingService.formatPrice(match.price, match.currency);
+      })(),
       description: "Complete recruitment with interview coordination and offers.",
       features: ["End-to-end support", "Interview coordination", "Offer negotiation"],
     },
     {
       id: "executive_search",
       name: "Executive Search",
-      price: 9990,
+      priceLabel: (() => {
+        const firstBand = pricingData?.executiveBands?.[0];
+        if (!firstBand) return 'Dynamic at checkout';
+        return `${pricingService.formatPrice(firstBand.price, firstBand.currency)}+`;
+      })(),
       description: "Leadership roles with confidential search and assessment.",
       features: ["C-level positions", "Confidential search", "Executive assessment"],
     },
-  ]), []);
+  ]), [pricingData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +151,14 @@ export function PackageUpgradeDialog({
               </AlertDescription>
             </Alert>
 
+            {pricingLoading && (
+              <Alert>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <AlertTitle>Loading pricing</AlertTitle>
+                <AlertDescription>Fetching your company&apos;s regional pricing.</AlertDescription>
+              </Alert>
+            )}
+
             {error && (
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
@@ -163,7 +201,7 @@ export function PackageUpgradeDialog({
                           <p className="text-sm text-muted-foreground">{pkg.description}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold">${pkg.price.toLocaleString("en-US")}</p>
+                          <p className="font-bold">{pkg.priceLabel}</p>
                           <p className="text-xs text-muted-foreground">one-time</p>
                         </div>
                       </div>
@@ -187,7 +225,7 @@ export function PackageUpgradeDialog({
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">Price:</span>
-                          <span className="font-semibold">${pkg.price.toLocaleString("en-US")}</span>
+                          <span className="font-semibold">{pkg.priceLabel}</span>
                         </div>
                         <div className="pt-2 border-t">
                           <p className="text-xs font-medium mb-1">Key Features:</p>
@@ -229,7 +267,6 @@ export function PackageUpgradeDialog({
     </Dialog>
   );
 }
-
 
 
 

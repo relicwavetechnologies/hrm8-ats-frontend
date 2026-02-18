@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { JobFormData } from '@/shared/types/job';
-import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { TermsAndConditions } from './TermsAndConditions';
-import { calculateTotalJobCost } from '@/shared/lib/paymentService';
 import { pricingService, type JobPriceCalculation } from '@/shared/lib/pricingService';
 import { Rocket, DollarSign, Info, Megaphone, CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { RECRUITMENT_SERVICES } from '@/shared/lib/subscriptionConfig';
-import { useAuth } from '@/app/providers/AuthContext';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { FormField, FormItem, FormLabel, FormControl } from '@/shared/components/ui/form';
 
@@ -28,7 +25,6 @@ function mapServiceTypeToApi(serviceType: string): string {
 
 export function JobWizardStep6({ form }: JobWizardStep6Props) {
   const formData = form.watch();
-  const { user } = useAuth();
 
   const [termsAccepted, setTermsAccepted] = useState(formData.termsAccepted || false);
   const [jobPriceCalc, setJobPriceCalc] = useState<JobPriceCalculation | null>(null);
@@ -61,28 +57,11 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
       });
   }, [formData.serviceType, formData.salaryMax, formData.salaryMin, isSelfManaged]);
 
-  const legacyCostBreakdown = calculateTotalJobCost(
-    user?.companyId || '',
-    formData.serviceType,
-    { min: formData.salaryMin || 0, max: formData.salaryMax || 0 }
-  );
-
-  // Use API price for recruitment cost when available, else fall back to legacy
-  const recruitmentCost = jobPriceCalc ? jobPriceCalc.price : legacyCostBreakdown.upfrontRecruitmentCost;
-  const recruitmentCurrency = jobPriceCalc?.currency || 'USD';
-  const costBreakdown = {
-    ...legacyCostBreakdown,
-    upfrontRecruitmentCost: recruitmentCost,
-    recruitmentServiceCost: recruitmentCost,
-    totalUpfront: legacyCostBreakdown.jobPostingCost + recruitmentCost,
-  };
+  const recruitmentCost = !isSelfManaged && jobPriceCalc ? jobPriceCalc.price : 0;
+  const recruitmentCurrency = jobPriceCalc?.currency || formData.salaryCurrency || 'USD';
+  const totalDueNow = isSelfManaged ? 0 : recruitmentCost;
 
   const serviceName = RECRUITMENT_SERVICES[formData.serviceType as keyof typeof RECRUITMENT_SERVICES]?.name || '';
-
-  const handlePaymentMethodSelect = (method: 'account' | 'credit_card', invoiceRequested?: boolean) => {
-    form.setValue('selectedPaymentMethod', method);
-    form.setValue('paymentInvoiceRequested', invoiceRequested);
-  };
 
   const handleTermsAcceptChange = (accepted: boolean) => {
     setTermsAccepted(accepted);
@@ -97,7 +76,7 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
           Submit & Activate
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Complete payment (if required) and activate your job posting. It will be live on HRM8 internal job board and your careers page.
+          Publish using your subscription quota. If you selected an HRM8 managed service, wallet funds are also required.
         </p>
       </div>
 
@@ -115,16 +94,16 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
         </AlertDescription>
       </Alert>
 
-      {/* Cost Breakdown - Only show if payment required */}
-      {costBreakdown.totalUpfront > 0 && (
+      {/* Managed service quote (dynamic only) */}
+      {!isSelfManaged && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Payment Required
+              Service Payment (HRM8 Managed)
             </CardTitle>
             <CardDescription>
-              Complete payment to activate your job posting
+              Publishing uses quota. Wallet is charged only for managed services.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -133,47 +112,42 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
               <div>
                 <p className="font-medium">Job Posting</p>
                 <p className="text-sm text-muted-foreground">
-                  {costBreakdown.jobPostingCost === 0
-                    ? 'Included in your plan'
-                    : '30-day HRM8 posting'}
+                  Included in your active subscription quota
                 </p>
               </div>
-              <p className="text-lg font-semibold">
-                {costBreakdown.jobPostingCost === 0 ? 'FREE' : `$${costBreakdown.jobPostingCost}`}
-              </p>
+              <p className="text-lg font-semibold">FREE</p>
             </div>
 
-            {/* Recruitment Service Cost (if not self-managed) */}
-            {!isSelfManaged && costBreakdown.recruitmentServiceCost > 0 && (
-              <div className="flex justify-between items-center pb-3 border-b">
-                <div>
-                  <p className="font-medium">Recruitment Service</p>
-                  <p className="text-sm text-muted-foreground">
-                    {serviceName}
-                    {jobPriceCalc?.isExecutiveSearch && jobPriceCalc?.band && (
-                      <> · Executive Search {jobPriceCalc.band}</>
-                    )}
-                  </p>
-                </div>
-                <p className="text-lg font-semibold">
-                  {priceLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    pricingService.formatPrice(costBreakdown.upfrontRecruitmentCost, recruitmentCurrency)
+            <div className="flex justify-between items-center pb-3 border-b">
+              <div>
+                <p className="font-medium">Recruitment Service</p>
+                <p className="text-sm text-muted-foreground">
+                  {serviceName}
+                  {jobPriceCalc?.isExecutiveSearch && jobPriceCalc?.band && (
+                    <> · Executive Search {jobPriceCalc.band}</>
                   )}
                 </p>
               </div>
-            )}
+              <p className="text-lg font-semibold">
+                {priceLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : jobPriceCalc ? (
+                  pricingService.formatPrice(recruitmentCost, recruitmentCurrency)
+                ) : (
+                  'Calculated at checkout'
+                )}
+              </p>
+            </div>
 
             {/* Total Due Now */}
             <div className="flex justify-between items-center pt-3">
               <p className="text-lg font-semibold">Total Due Now</p>
               <p className="text-2xl font-bold text-primary">
-                {costBreakdown.totalUpfront === 0
-                  ? 'FREE'
-                  : priceLoading
-                    ? '...'
-                    : pricingService.formatPrice(costBreakdown.totalUpfront, recruitmentCurrency)}
+                {priceLoading
+                  ? '...'
+                  : jobPriceCalc
+                    ? pricingService.formatPrice(totalDueNow, recruitmentCurrency)
+                    : 'Calculated at checkout'}
               </p>
             </div>
 
@@ -183,33 +157,23 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
       )}
 
       {/* Payment Info for Paid Packages */}
-      {costBreakdown.totalUpfront > 0 && !isSelfManaged && (
+      {!isSelfManaged && (
         <Alert className="border-2 border-primary/30 bg-primary/5">
           <Info className="h-5 w-5 text-primary" />
-          <AlertTitle className="text-base font-semibold">Payment Required</AlertTitle>
+          <AlertTitle className="text-base font-semibold">Managed Service Payment</AlertTitle>
           <AlertDescription className="text-base mt-2">
             <p className="mb-2">
-              When you click "Pay & Publish", you will be redirected to a secure payment page to complete your payment via Stripe.
+              HRM8 managed services are paid from your wallet balance at publish time.
             </p>
             <p className="text-sm text-muted-foreground">
-              Your job will be published automatically after successful payment.
+              If wallet balance is low, top up and retry. Subscription quota is still required for publishing.
             </p>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Payment Method (only for self-managed jobs with payment) */}
-      {costBreakdown.totalUpfront > 0 && isSelfManaged && (
-        <PaymentMethodSelector
-          employerId={user?.companyId || ''}
-          amount={costBreakdown.totalUpfront}
-          selectedMethod={formData.selectedPaymentMethod}
-          onMethodSelect={handlePaymentMethodSelect}
-        />
-      )}
-
       {/* Free Job Posting Info */}
-      {costBreakdown.totalUpfront === 0 && (
+      {isSelfManaged && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -217,13 +181,13 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
               No Payment Required
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Your job posting is free and will be activated immediately upon submission.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Publishing uses subscription quota with no extra service charge for self-managed jobs.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
       <TermsAndConditions
         accepted={termsAccepted}
@@ -231,7 +195,7 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
         required={true}
       />
 
-      {isSelfManaged && costBreakdown.jobPostingCost === 0 && (
+      {isSelfManaged && (
         <Alert className="border-2 border-primary/30 bg-primary/5">
           <Megaphone className="h-5 w-5 text-primary" />
           <AlertTitle className="text-base font-semibold">🎉 Free Job Posting Activated!</AlertTitle>

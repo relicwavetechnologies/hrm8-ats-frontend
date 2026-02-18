@@ -5,7 +5,7 @@
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { ArrowRight, Briefcase, Building2, Zap, Sliders } from 'lucide-react';
+import { ArrowRight, Briefcase, Building2, Wallet, Zap, Sliders } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 interface SetupFlowTypeCardProps {
@@ -26,7 +26,7 @@ const MANAGEMENT_OPTIONS = [
   {
     id: 'hrm8-managed' as const,
     name: 'HRM8-Managed',
-    description: 'HRM8 handles recruitment; you focus on interviews and decisions.',
+    description: 'Choose a managed service, pay from wallet, then continue with advanced setup.',
     icon: Building2,
   },
 ];
@@ -135,6 +135,22 @@ export const SetupFlowTypeCard: React.FC<SetupFlowTypeCardProps> = ({
           );
         })}
       </div>
+
+      {managementType === 'hrm8-managed' && (
+        <Card className="border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Wallet className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Next step: managed service checkout</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                You will see service options with pricing, pay from wallet, and continue directly to advanced setup.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
