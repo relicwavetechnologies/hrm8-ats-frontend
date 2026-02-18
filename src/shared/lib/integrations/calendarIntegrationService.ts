@@ -37,13 +37,13 @@ export function getCalendarIntegrations(): CalendarIntegration[] {
 export function saveCalendarIntegration(integration: CalendarIntegration): void {
   const integrations = getCalendarIntegrations();
   const index = integrations.findIndex(i => i.provider === integration.provider);
-  
+
   if (index >= 0) {
     integrations[index] = integration;
   } else {
     integrations.push(integration);
   }
-  
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(integrations));
 }
 
@@ -56,27 +56,65 @@ export function getCalendarIntegration(provider: CalendarProvider): CalendarInte
   return getCalendarIntegrations().find(i => i.provider === provider);
 }
 
+import { apiClient } from '../api';
+
 /**
  * Initiate OAuth flow for calendar provider
  */
 export async function connectCalendarProvider(provider: CalendarProvider): Promise<void> {
-  // Mock OAuth flow - in production this would be a real OAuth implementation
+  if (provider === 'google') {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    window.location.href = `${API_BASE_URL}/api/auth/google/connect`;
+    return;
+  }
+
+  // Mock OAuth flow for other providers
   return new Promise((resolve) => {
     setTimeout(() => {
       const integration: CalendarIntegration = {
         id: `${provider}-${Date.now()}`,
         provider,
-        email: `user@${provider === 'google' ? 'gmail.com' : 'outlook.com'}`,
+        email: `user@outlook.com`,
         connected: true,
         connectedAt: new Date().toISOString(),
         lastSync: new Date().toISOString(),
         defaultCalendarId: 'primary',
       };
-      
+
       saveCalendarIntegration(integration);
       resolve();
     }, 1500);
   });
+}
+
+/**
+ * Fetch real integration status from backend
+ */
+export async function fetchIntegrationStatus(provider: CalendarProvider): Promise<CalendarIntegration | undefined> {
+  if (provider === 'google') {
+    try {
+      const response = await apiClient.get<{ connected: boolean; email?: string }>('/api/auth/google/status');
+      if (response.success && response.data) {
+        if (response.data.connected) {
+          const integration: CalendarIntegration = {
+            id: `google-${response.data.email}`,
+            provider: 'google',
+            email: response.data.email || '',
+            connected: true,
+            connectedAt: new Date().toISOString(), // Mocked join date as it's not in the status API
+          };
+          saveCalendarIntegration(integration);
+          return integration;
+        } else {
+          disconnectCalendarIntegration('google');
+          return undefined;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch Google integration status:', error);
+    }
+  }
+  return getCalendarIntegration(provider);
 }
 
 /**
@@ -87,7 +125,7 @@ export async function createCalendarEvent(
   event: Omit<CalendarEvent, 'id'>
 ): Promise<CalendarEvent> {
   const integration = getCalendarIntegration(provider);
-  
+
   if (!integration || !integration.connected) {
     throw new Error(`${provider} calendar is not connected`);
   }
@@ -114,7 +152,7 @@ export async function updateCalendarEvent(
   updates: Partial<CalendarEvent>
 ): Promise<CalendarEvent> {
   const integration = getCalendarIntegration(provider);
-  
+
   if (!integration || !integration.connected) {
     throw new Error(`${provider} calendar is not connected`);
   }
@@ -135,7 +173,7 @@ export async function deleteCalendarEvent(
   eventId: string
 ): Promise<void> {
   const integration = getCalendarIntegration(provider);
-  
+
   if (!integration || !integration.connected) {
     throw new Error(`${provider} calendar is not connected`);
   }
@@ -158,7 +196,7 @@ export async function getAvailableTimeSlots(
   duration: number // in minutes
 ): Promise<Array<{ start: string; end: string }>> {
   const integration = getCalendarIntegration(provider);
-  
+
   if (!integration || !integration.connected) {
     throw new Error(`${provider} calendar is not connected`);
   }
@@ -181,7 +219,7 @@ export async function getAvailableTimeSlots(
  */
 export async function syncCalendar(provider: CalendarProvider): Promise<void> {
   const integration = getCalendarIntegration(provider);
-  
+
   if (!integration || !integration.connected) {
     throw new Error(`${provider} calendar is not connected`);
   }

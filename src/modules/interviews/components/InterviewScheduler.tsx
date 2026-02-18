@@ -53,13 +53,13 @@ export function InterviewScheduler({ candidateName, jobTitle, onSubmit, onCancel
     if (selectedTemplate) {
       form.setValue("type", selectedTemplate.type);
       form.setValue("duration", selectedTemplate.duration);
-      
+
       // Auto-generate agenda from template questions
       const agendaText = selectedTemplate.questions
         .filter(q => q.isRequired)
         .map((q, idx) => `${idx + 1}. ${q.question} (${q.expectedDuration} min)`)
         .join("\n");
-      
+
       if (agendaText) {
         form.setValue("agenda", agendaText);
       }
@@ -284,10 +284,10 @@ export function InterviewScheduler({ candidateName, jobTitle, onSubmit, onCancel
               <FormItem>
                 <FormLabel>Agenda (Optional)</FormLabel>
                 <FormControl>
-                  <Textarea 
+                  <Textarea
                     placeholder="Interview topics and discussion points..."
                     rows={3}
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />

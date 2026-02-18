@@ -83,9 +83,9 @@ export function InterviewCalendarView({
     return interviews.map((interview) => {
       const start = new Date(interview.scheduledDate);
       const end = new Date(start.getTime() + interview.duration * 60 * 1000);
-      
+
       // Get candidate name
-      const candidateName = interview.candidate 
+      const candidateName = interview.candidate
         ? `${interview.candidate.firstName} ${interview.candidate.lastName}`
         : interview.candidateId.substring(0, 8);
 
