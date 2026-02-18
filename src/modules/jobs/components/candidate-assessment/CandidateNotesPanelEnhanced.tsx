@@ -16,6 +16,7 @@ import { Application } from '@/shared/types/application';
 import { SendSmsTab } from './tabs/SendSmsTab';
 import { ScheduleMeetingTab } from './tabs/ScheduleMeetingTab';
 import { CreateTaskTab } from './tabs/CreateTaskTab';
+import { getCaretCoordinates } from '@/shared/lib/textareaUtils';
 
 interface Note {
   id: string;
@@ -77,6 +78,7 @@ export function CandidateNotesPanelEnhanced({
   const [hiringTeam] = useState<HiringTeamMember[]>(MOCK_HIRING_TEAM);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
+  const [mentionPosition, setMentionPosition] = useState<{ top: number; left: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
@@ -163,11 +165,22 @@ export function CandidateNotesPanelEnhanced({
       if (!searchText.includes(' ')) {
         setShowMentions(true);
         setMentionSearch(searchText.toLowerCase());
+
+        // Calculate caret position for dropdown
+        if (textareaRef.current) {
+          const coords = getCaretCoordinates(textareaRef.current, cursorPosition);
+          // Add offset for the dropdown to appear below the line
+          setMentionPosition({
+            top: coords.top + coords.height,
+            left: coords.left,
+          });
+        }
         return;
       }
     }
     setShowMentions(false);
     setMentionSearch('');
+    setMentionPosition(null);
   };
 
   const insertMention = (member: HiringTeamMember) => {
@@ -184,6 +197,7 @@ export function CandidateNotesPanelEnhanced({
     setNoteContent(newContent);
     setShowMentions(false);
     setMentionSearch('');
+    setMentionPosition(null);
     textareaRef.current?.focus();
   };
 
@@ -424,23 +438,29 @@ Hiring Team`;
                 )}
               </Button>
 
-              {showMentions && filteredTeam.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50 max-h-[120px] overflow-auto">
+              {showMentions && filteredTeam.length > 0 && mentionPosition && (
+                <div
+                  className="absolute z-50 bg-popover border rounded-md shadow-lg max-h-[120px] overflow-auto min-w-[180px]"
+                  style={{
+                    top: `${mentionPosition.top}px`,
+                    left: `${mentionPosition.left}px`,
+                  }}
+                >
                   {filteredTeam.slice(0, 4).map((member) => (
                     <button
                       key={member.id}
                       className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted text-left text-sm"
                       onClick={() => insertMention(member)}
                     >
-                      <Avatar className="h-5 w-5">
+                      <Avatar className="h-5 w-5 flex-shrink-0">
                         <AvatarImage src={member.avatar} />
                         <AvatarFallback className="text-[10px]">
                           {member.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate text-xs">{member.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{member.role}</p>
+                        <span className="font-medium text-xs">{member.name}</span>
+                        <span className="text-[10px] text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-md">{member.role}</span>
                       </div>
                     </button>
                   ))}
