@@ -1,7 +1,7 @@
 /**
  * Subscription Upgrade Dialog
  * Dialog for upgrading/purchasing subscription plans with wallet credit
- * Uses dynamic pricing from API when available; falls back to static plans
+ * Uses dynamic pricing from API only
  */
 
 import { useState, useMemo } from "react";
@@ -41,54 +41,6 @@ const PLAN_METADATA: Record<string, { name: string; jobQuota: number | null; fea
     CUSTOM: { name: 'Custom Enterprise', jobQuota: null, features: ['Unlimited Jobs', 'Custom SLA', 'White-label'], recommended: false },
     RPO: { name: 'RPO', jobQuota: null, features: ['Volume hiring', 'Dedicated team'], recommended: false },
 };
-
-const FALLBACK_PLANS = [
-    {
-        id: 'free',
-        name: 'ATS Lite',
-        price: 0,
-        billingCycle: 'MONTHLY' as const,
-        jobQuota: 1,
-        features: ['1 Active Job', 'Basic ATS', 'Email Support'],
-        recommended: false,
-    },
-    {
-        id: 'basic',
-        name: 'Small Plan',
-        price: 295,
-        billingCycle: 'MONTHLY' as const,
-        jobQuota: 5,
-        features: ['5 Jobs/month', 'Full ATS', 'AI Screening', 'Priority Support', 'Consultant Access'],
-        recommended: true,
-    },
-    {
-        id: 'professional',
-        name: 'Medium Plan',
-        price: 495,
-        billingCycle: 'MONTHLY' as const,
-        jobQuota: 25,
-        features: ['25 Jobs/month', 'Everything in Small', 'Advanced Analytics', 'Dedicated Support'],
-        recommended: false,
-    },
-    {
-        id: 'enterprise',
-        name: 'Large Plan',
-        price: 695,
-        billingCycle: 'MONTHLY' as const,
-        jobQuota: 50,
-        features: ['50 Jobs/month', 'Everything in Medium', 'Custom Integrations', 'Account Manager'],
-        recommended: false,
-    },
-    {
-        id: 'custom',
-        name: 'Custom Enterprise',
-        price: 995,
-        billingCycle: 'MONTHLY' as const,
-        jobQuota: null, // Unlimited
-        features: ['Unlimited Jobs', 'Everything in Large', 'Custom SLA', 'White-label Options'],
-        recommended: false,
-    },
-];
 
 type PlanForDisplay = {
     id: string;
@@ -135,23 +87,13 @@ export function SubscriptionUpgradeDialog({
                 };
             });
         }
-        return FALLBACK_PLANS.map((p) => ({
-            id: p.id,
-            planType: p.id.toUpperCase().replace(/-/g, '_'),
-            name: p.name,
-            price: p.price,
-            currency: 'USD',
-            billingCycle: p.billingCycle,
-            jobQuota: p.jobQuota,
-            features: p.features,
-            recommended: p.recommended,
-        }));
+        return [];
     }, [apiTiers]);
 
     const upgradeMutation = useMutation({
         mutationFn: async (planId: string) => {
             const plan = plans.find(p => p.id === planId || p.planType.toLowerCase() === planId.toLowerCase());
-            if (!plan) throw new Error('Invalid plan selected');
+            if (!plan) throw new Error('Pricing is currently unavailable for your account');
 
             const isFree = plan.price <= 0;
 
@@ -206,17 +148,14 @@ export function SubscriptionUpgradeDialog({
     });
 
     const handleSelectPlan = (planId: string) => {
-        if (planId === 'free') {
-            toast({
-                title: "Free Plan",
-                description: "This is the free plan. No payment required.",
-            });
-            return;
-        }
+        const plan = plans.find(p => p.id === planId || p.planType.toLowerCase() === planId.toLowerCase());
+        if (!plan) return;
 
         setSelectedPlan(planId);
         upgradeMutation.mutate(planId);
     };
+
+    const displayPlans = tiersLoading ? [] : plans;
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -228,8 +167,14 @@ export function SubscriptionUpgradeDialog({
                     </DialogDescription>
                 </DialogHeader>
 
+                {!tiersLoading && displayPlans.length === 0 && (
+                    <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+                        Unable to load dynamic subscription pricing. Please contact HRM8 admin.
+                    </div>
+                )}
+
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
-                    {(tiersLoading ? FALLBACK_PLANS.map(p => ({ id: p.id, planType: p.id.toUpperCase().replace(/-/g, '_'), name: p.name, price: p.price, currency: 'USD', billingCycle: p.billingCycle, jobQuota: p.jobQuota, features: p.features, recommended: p.recommended })) : plans).map((plan) => {
+                    {displayPlans.map((plan) => {
                         const isCurrent = currentPlan?.toLowerCase() === plan.id;
                         const isDisabled = upgradeMutation.isPending;
                         return (

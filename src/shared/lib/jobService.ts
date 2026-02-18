@@ -161,7 +161,7 @@ class JobService {
    */
   async upgradeManagedService(
     id: string,
-    servicePackage: 'shortlisting' | 'full-service' | 'executive-search'
+    servicePackage: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo'
   ) {
     return apiClient.post<{ job: Job }>(`/api/jobs/${id}/upgrade-managed-service`, { servicePackage });
   }

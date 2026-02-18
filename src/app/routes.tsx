@@ -143,6 +143,11 @@ export function AppRoutes() {
                         <JobsPage />
                     </Suspense>
                 } />
+                <Route path="/ats/jobs/:jobId/managed-recruitment-checkout" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <JobsPage />
+                    </Suspense>
+                } />
                 <Route path="/ats/job-templates" element={
                     <Suspense fallback={<PageLoader />}>
                         <JobTemplatesPage />

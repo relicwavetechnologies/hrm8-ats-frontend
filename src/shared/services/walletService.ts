@@ -7,6 +7,7 @@ export interface WalletBalance {
     balance: number;
     totalCredits: number;
     totalDebits: number;
+    currency: string;
     status: 'ACTIVE' | 'FROZEN' | 'SUSPENDED';
 }
 
@@ -58,13 +59,39 @@ export interface AddOnServiceRequest {
 }
 
 class WalletService {
-    private apiUrl = import.meta.env.VITE_API_URL || '';
+    private apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
     private baseUrl = `${this.apiUrl}/api/wallet`;
+    private fallbackWalletBaseUrl = '/api/wallet';
+
+    private async fetchWallet(path: string, init: RequestInit = {}): Promise<Response> {
+        const request: RequestInit = {
+            credentials: 'include',
+            ...init,
+        };
+        try {
+            return await fetch(`${this.baseUrl}${path}`, request);
+        } catch (error) {
+            if (!this.apiUrl) throw error;
+            return fetch(`${this.fallbackWalletBaseUrl}${path}`, request);
+        }
+    }
+
+    private async fetchApi(path: string, init: RequestInit = {}): Promise<Response> {
+        const request: RequestInit = {
+            credentials: 'include',
+            ...init,
+        };
+        try {
+            return await fetch(`${this.apiUrl}${path}`, request);
+        } catch (error) {
+            if (!this.apiUrl) throw error;
+            return fetch(path, request);
+        }
+    }
 
     // Wallet Balance & Account
     async getBalance(): Promise<WalletBalance> {
-        const response = await fetch(`${this.baseUrl}/balance`, {
-            credentials: 'include',
+        const response = await this.fetchWallet('/balance', {
             headers: { 'Content-Type': 'application/json' }
         });
         if (!response.ok) {
@@ -75,8 +102,7 @@ class WalletService {
     }
 
     async getAccount() {
-        const response = await fetch(`${this.baseUrl}/account`, {
-            credentials: 'include',
+        const response = await this.fetchWallet('/account', {
             headers: { 'Content-Type': 'application/json' }
         });
         if (!response.ok) throw new Error('Failed to fetch wallet account');
@@ -85,9 +111,7 @@ class WalletService {
     }
 
     async verifyIntegrity() {
-        const response = await fetch(`${this.baseUrl}/verify`, {
-            credentials: 'include'
-        });
+        const response = await this.fetchWallet('/verify');
         if (!response.ok) throw new Error('Failed to verify wallet integrity');
         const data = await response.json();
         return data.data;
@@ -110,9 +134,7 @@ class WalletService {
         if (params?.startDate) queryParams.append('startDate', params.startDate.toISOString());
         if (params?.endDate) queryParams.append('endDate', params.endDate.toISOString());
 
-        const response = await fetch(`${this.baseUrl}/transactions?${queryParams}`, {
-            credentials: 'include'
-        });
+        const response = await this.fetchWallet(`/transactions?${queryParams}`);
         if (!response.ok) throw new Error('Failed to fetch transactions');
         const data = await response.json();
         return data.data;
@@ -120,8 +142,7 @@ class WalletService {
 
     // Subscriptions
     async getSubscriptions(): Promise<Subscription[]> {
-        const response = await fetch(`${this.baseUrl}/subscriptions`, {
-            credentials: 'include',
+        const response = await this.fetchWallet('/subscriptions', {
             headers: { 'Content-Type': 'application/json' }
         });
         if (!response.ok) {
@@ -136,8 +157,7 @@ class WalletService {
     }
 
     async getSubscription(subscriptionId: string) {
-        const response = await fetch(`${this.baseUrl}/subscriptions/${subscriptionId}`, {
-            credentials: 'include',
+        const response = await this.fetchWallet(`/subscriptions/${subscriptionId}`, {
             headers: { 'Content-Type': 'application/json' }
         });
         if (!response.ok) throw new Error('Failed to fetch subscription');
@@ -154,9 +174,8 @@ class WalletService {
         autoRenew?: boolean;
     }) {
         // Use /api/subscriptions (SubscriptionService) - creates subscription snapshot + quota
-        const response = await fetch(`${this.apiUrl}/api/subscriptions`, {
+        const response = await this.fetchApi('/api/subscriptions', {
             method: 'POST',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(subscriptionData),
         });
@@ -173,9 +192,8 @@ class WalletService {
     }
 
     async renewSubscription(subscriptionId: string) {
-        const response = await fetch(`${this.baseUrl}/subscriptions/${subscriptionId}/renew`, {
+        const response = await this.fetchWallet(`/subscriptions/${subscriptionId}/renew`, {
             method: 'POST',
-            credentials: 'include',
         });
         if (!response.ok) {
             const error = await response.json();
@@ -185,9 +203,8 @@ class WalletService {
     }
 
     async cancelSubscription(subscriptionId: string, reason?: string) {
-        const response = await fetch(`${this.baseUrl}/subscriptions/${subscriptionId}/cancel`, {
+        const response = await this.fetchWallet(`/subscriptions/${subscriptionId}/cancel`, {
             method: 'POST',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reason }),
         });
@@ -203,12 +220,10 @@ class WalletService {
         billingCycle?: string;
         jobQuota?: number | null;
     }) {
-        const url = `${this.apiUrl}/api/integrations/stripe/create-checkout-session`;
         const origin = window.location.origin;
-        const response = await fetch(url, {
+        const response = await this.fetchApi('/api/integrations/stripe/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({
                 type: 'subscription',
                 amount: data.amount,
@@ -243,14 +258,12 @@ class WalletService {
         paymentMethod: string;
     }) {
         console.log('[WalletService] rechargeWallet called', data);
-        const url = `${this.apiUrl}/api/integrations/stripe/create-checkout-session`;
-        console.log('[WalletService] Fetching URL:', url);
+        console.log('[WalletService] Fetching URL:', `${this.apiUrl}/api/integrations/stripe/create-checkout-session`);
 
         try {
-            const response = await fetch(url, {
+            const response = await this.fetchApi('/api/integrations/stripe/create-checkout-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
                 body: JSON.stringify({
                     amount: data.amount,
                     description: `Wallet recharge - $${data.amount.toFixed(2)}`,

@@ -12,7 +12,7 @@ const managedServices = [
   {
     id: 'shortlisting' as const,
     name: 'Shortlisting Service',
-    price: '$1,990',
+    price: 'Dynamic',
     description: 'We screen candidates and send a curated shortlist.',
     features: [
       'Candidate screening',
@@ -25,7 +25,7 @@ const managedServices = [
   {
     id: 'full-service' as const,
     name: 'Full Service Recruitment',
-    price: '$5,990',
+    price: 'Dynamic',
     description: 'Complete end-to-end recruitment support.',
     features: [
       'Sourcing and screening',
@@ -38,7 +38,7 @@ const managedServices = [
   {
     id: 'executive-search' as const,
     name: 'Executive Search',
-    price: 'Custom',
+    price: 'Salary-based',
     description: 'Confidential search for senior and C-level roles.',
     features: [
       'Headhunting',
@@ -94,7 +94,7 @@ export function ServiceTypeSelector({ value, onChange }: ServiceTypeSelectorProp
             </div>
             <div>
               <h4 className="font-semibold text-sm mb-0.5">Self-Managed</h4>
-              <div className="text-lg font-bold text-primary">FREE</div>
+              <div className="text-lg font-bold text-primary">Subscription</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Publish and manage hiring directly using ATS workflow.
               </p>
@@ -185,6 +185,9 @@ export function ServiceTypeSelector({ value, onChange }: ServiceTypeSelectorProp
                       <h4 className="font-semibold text-sm mb-0.5">{service.name}</h4>
                       <div className="text-lg font-bold text-primary">{service.price}</div>
                       <p className="text-xs text-muted-foreground mt-1">{service.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Final price is resolved dynamically at managed checkout.
+                      </p>
                     </div>
 
                     <div className="space-y-1">

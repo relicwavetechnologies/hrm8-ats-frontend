@@ -187,10 +187,10 @@ export function PostPublishFlow({
     }
   };
 
-  const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search') => {
+  const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo') => {
     onOpenChange(false);
     setShowUpgradeDialog(false);
-    navigate(`/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
+    navigate(`/ats/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
   };
 
   const renderToolsStep = () => (

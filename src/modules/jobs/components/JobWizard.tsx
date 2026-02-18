@@ -490,31 +490,31 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
   const serviceTypeConfig = {
     'self-managed': {
       name: 'Self-Managed',
-      price: 'FREE',
+      price: 'Subscription quota',
       icon: Briefcase,
       color: 'text-muted-foreground'
     },
     'shortlisting': {
       name: 'Shortlisting Service',
-      price: '$1,990',
+      price: 'Dynamic wallet pricing',
       icon: Users,
       color: 'text-blue-600'
     },
     'full-service': {
       name: 'Full Service',
-      price: '$5,990',
+      price: 'Dynamic wallet pricing',
       icon: Star,
       color: 'text-primary'
     },
     'executive-search': {
       name: 'Executive Search',
-      price: '$9,990+',
+      price: 'Dynamic wallet pricing',
       icon: Crown,
       color: 'text-amber-600'
     },
     'rpo': {
       name: 'RPO',
-      price: 'Custom',
+      price: 'Dynamic wallet pricing',
       icon: Briefcase,
       color: 'text-purple-600'
     }
@@ -1387,9 +1387,12 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         {savedJobData && (
           <JobSetupDrawer
             open={showJobSetupDrawer}
-            onOpenChange={(open) => {
+            onOpenChange={(open, meta) => {
               setShowJobSetupDrawer(open);
               if (!open) {
+                if (meta?.reason === 'managed-checkout') {
+                  return;
+                }
                 if (onSuccess) {
                   onSuccess(savedJobData);
                 }

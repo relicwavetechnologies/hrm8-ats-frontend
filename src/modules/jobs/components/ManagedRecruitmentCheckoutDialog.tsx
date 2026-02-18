@@ -13,7 +13,7 @@ import { walletService } from '@/shared/services/walletService';
 import { useToast } from '@/shared/hooks/use-toast';
 import type { Job } from '@/shared/types/job';
 
-type ManagedServiceType = 'shortlisting' | 'full-service' | 'executive-search';
+type ManagedServiceType = 'shortlisting' | 'full-service' | 'rpo' | 'executive-search';
 
 interface ManagedRecruitmentCheckoutDialogProps {
   open: boolean;
@@ -37,11 +37,12 @@ interface ServiceMeta {
   perks: string[];
 }
 
-const SERVICE_ORDER: ManagedServiceType[] = ['shortlisting', 'full-service', 'executive-search'];
+const SERVICE_ORDER: ManagedServiceType[] = ['shortlisting', 'full-service', 'rpo', 'executive-search'];
 
 const EMPTY_QUOTES: Record<ManagedServiceType, ServiceQuote | null> = {
   shortlisting: null,
   'full-service': null,
+  rpo: null,
   'executive-search': null,
 };
 
@@ -67,6 +68,16 @@ const SERVICE_META: Record<ManagedServiceType, ServiceMeta> = {
       'Finalist handover with recommendations',
     ],
   },
+  rpo: {
+    label: 'RPO Service',
+    description: 'Embedded HRM8 hiring delivery with dedicated recruiter ownership.',
+    icon: Star,
+    perks: [
+      'Dedicated recruiter aligned to your hiring plan',
+      'Ongoing pipeline management and progress tracking',
+      'Wallet-based managed delivery with consultant ownership',
+    ],
+  },
   'executive-search': {
     label: 'Executive Search',
     description: 'Leadership hiring with market mapping and confidential outreach.',
@@ -84,6 +95,23 @@ function normalizeServiceCode(value?: string): string {
     .trim()
     .toUpperCase()
     .replace(/^RECRUIT_/, '');
+}
+
+function isShortlistingCode(value?: string): boolean {
+  return normalizeServiceCode(value).includes('SHORTLIST');
+}
+
+function isFullServiceCode(value?: string): boolean {
+  const normalized = normalizeServiceCode(value);
+  return normalized === 'FULL' || normalized === 'FULL_SERVICE';
+}
+
+function isExecutiveBandCode(value?: string): boolean {
+  return normalizeServiceCode(value).startsWith('EXEC_BAND_');
+}
+
+function isRpoCode(value?: string): boolean {
+  return normalizeServiceCode(value) === 'RPO';
 }
 
 function chooseMatchingBand(
@@ -120,6 +148,7 @@ export function ManagedRecruitmentCheckoutDialog({
   const { toast } = useToast();
   const [job, setJob] = useState<Job | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [executiveBands, setExecutiveBands] = useState<ExecutiveSearchBand[]>([]);
   const [serviceQuotes, setServiceQuotes] = useState<Record<ManagedServiceType, ServiceQuote | null>>(EMPTY_QUOTES);
   const [selectedService, setSelectedService] = useState<ManagedServiceType>(initialServiceType);
   const [loading, setLoading] = useState(false);
@@ -138,6 +167,7 @@ export function ManagedRecruitmentCheckoutDialog({
       setLoading(true);
       setError(null);
       setServiceQuotes(EMPTY_QUOTES);
+      setExecutiveBands([]);
 
       try {
         const [jobRes, wallet] = await Promise.all([jobService.getJobById(jobId), walletService.getBalance()]);
@@ -159,10 +189,13 @@ export function ManagedRecruitmentCheckoutDialog({
           servicesResult.status === 'fulfilled' ? servicesResult.value : [];
         const execBands: ExecutiveSearchBand[] =
           execBandsResult.status === 'fulfilled' ? execBandsResult.value : [];
+        setExecutiveBands(
+          [...execBands].sort((a, b) => Number(a.salaryMin ?? 0) - Number(b.salaryMin ?? 0))
+        );
 
         const quotes: Record<ManagedServiceType, ServiceQuote | null> = { ...EMPTY_QUOTES };
 
-        const shortlistingTier = services.find((tier) => normalizeServiceCode(tier.serviceType) === 'SHORTLISTING');
+        const shortlistingTier = services.find((tier) => isShortlistingCode(tier.serviceType));
         if (shortlistingTier) {
           quotes.shortlisting = {
             price: Number(shortlistingTier.price || 0),
@@ -170,11 +203,19 @@ export function ManagedRecruitmentCheckoutDialog({
           };
         }
 
-        const fullServiceTier = services.find((tier) => normalizeServiceCode(tier.serviceType) === 'FULL');
+        const fullServiceTier = services.find((tier) => isFullServiceCode(tier.serviceType));
         if (fullServiceTier) {
           quotes['full-service'] = {
             price: Number(fullServiceTier.price || 0),
             currency: String(fullServiceTier.currency || loadedJob.salaryCurrency || 'USD'),
+          };
+        }
+
+        const rpoTier = services.find((tier) => isRpoCode(tier.serviceType));
+        if (rpoTier) {
+          quotes.rpo = {
+            price: Number(rpoTier.price || 0),
+            currency: String(rpoTier.currency || loadedJob.salaryCurrency || 'USD'),
           };
         }
 
@@ -193,7 +234,7 @@ export function ManagedRecruitmentCheckoutDialog({
           quotes['executive-search'] = resolvedExec;
         } else {
           const execTiers = services
-            .filter((tier) => normalizeServiceCode(tier.serviceType).startsWith('EXEC_BAND_'))
+            .filter((tier) => isExecutiveBandCode(tier.serviceType))
             .map((tier) => ({
               salaryMin: tier.salaryMin,
               salaryMax: tier.salaryMax,
@@ -209,6 +250,9 @@ export function ManagedRecruitmentCheckoutDialog({
           if (quotes[current]) return current;
           return SERVICE_ORDER.find((service) => Boolean(quotes[service])) ?? current;
         });
+        if (!SERVICE_ORDER.some((service) => Boolean(quotes[service]))) {
+          setError('No managed service pricing is available for your company. Please contact HRM8 admin.');
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load managed service checkout';
         setError(message);
@@ -268,15 +312,28 @@ export function ManagedRecruitmentCheckoutDialog({
     } catch (err: any) {
       const status = err?.status;
       const message = err?.message || 'Failed to activate managed service';
-      setError(message);
 
       if (status === 402) {
+        const walletMessage =
+          message || 'Insufficient wallet balance. Please top up and try again.';
+        setError(walletMessage);
         toast({
           title: 'Insufficient wallet balance',
-          description: message,
+          description: walletMessage,
+          variant: 'destructive',
+        });
+      } else if (status === 503) {
+        const assignmentMessage =
+          message ||
+          'No consultant is currently available. Payment was reversed automatically. Please retry later.';
+        setError(assignmentMessage);
+        toast({
+          title: 'Consultant unavailable',
+          description: assignmentMessage,
           variant: 'destructive',
         });
       } else {
+        setError(message);
         toast({
           title: 'Activation failed',
           description: message,
@@ -336,11 +393,15 @@ export function ManagedRecruitmentCheckoutDialog({
                     className={cn(
                       'relative cursor-pointer transition-all duration-200',
                       'border-l-4 px-6 py-5 hover:bg-muted/30 hover:scale-[1.01]',
+                      !quote && 'opacity-70',
                       isSelected
                         ? 'border-l-primary bg-primary/5 shadow-md'
                         : 'border-l-transparent hover:border-l-primary/50'
                     )}
-                    onClick={() => setSelectedService(service)}
+                    onClick={() => {
+                      if (!quote) return;
+                      setSelectedService(service);
+                    }}
                   >
                     {meta.recommended && (
                       <Badge className="absolute -top-2 right-3 z-10 bg-primary text-primary-foreground">
@@ -389,6 +450,15 @@ export function ManagedRecruitmentCheckoutDialog({
                       </div>
 
                       <div className="flex-1 lg:max-w-[320px] w-full lg:pl-4">
+                        {service === 'executive-search' && executiveBands.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-1">
+                            {executiveBands.map((band) => (
+                              <Badge key={band.productCode} variant="outline" className="text-[10px] px-2 py-0.5">
+                                {band.bandName}: {pricingService.formatPrice(band.price, band.currency)}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         <div className="grid grid-cols-1 gap-1.5">
                           {meta.perks.map((perk) => (
                             <div key={perk} className="flex items-start gap-2">

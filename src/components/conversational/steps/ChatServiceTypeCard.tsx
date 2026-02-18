@@ -13,7 +13,7 @@ const managedServices = [
     {
         id: 'shortlisting' as const,
         name: 'Shortlisting Service',
-        price: '$1,990',
+        price: 'Dynamic',
         description: 'We screen candidates and send you a curated shortlist.',
         features: ['Candidate screening', 'Curated shortlist', 'Fast turnaround'],
         icon: Users,
@@ -22,7 +22,7 @@ const managedServices = [
     {
         id: 'full-service' as const,
         name: 'Full Service Recruitment',
-        price: '$5,990',
+        price: 'Dynamic',
         description: 'Complete, end-to-end recruitment assistance.',
         features: ['Sourcing and screening', 'Interview coordination', 'Offer closure support'],
         icon: Star,
@@ -31,7 +31,7 @@ const managedServices = [
     {
         id: 'executive-search' as const,
         name: 'Executive Search',
-        price: 'Custom',
+        price: 'Salary-based',
         description: 'Confidential search for senior and C-level roles.',
         features: ['Headhunting', 'Executive assessment', 'Board-level expertise'],
         icon: Crown,
@@ -80,7 +80,7 @@ export const ChatServiceTypeCard: React.FC<ChatServiceTypeCardProps> = ({ onSele
                         <div className="flex-1">
                             <div className="flex items-baseline justify-between">
                                 <h4 className="font-semibold text-base">Self-Managed</h4>
-                                <span className="text-lg font-bold text-primary">FREE</span>
+                                <span className="text-lg font-bold text-primary">Subscription</span>
                             </div>
                             <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
                                 Publish and manage the entire hiring process yourself.
@@ -174,6 +174,9 @@ export const ChatServiceTypeCard: React.FC<ChatServiceTypeCardProps> = ({ onSele
                                                 <span className="text-lg font-bold text-primary">{service.price}</span>
                                             </div>
                                             <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{service.description}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Final amount is calculated dynamically during wallet checkout.
+                                            </p>
 
                                             <div className={cn(
                                                 "flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground transition-all duration-300",

@@ -3,7 +3,7 @@
  * Handles all HTTP requests to the backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -18,6 +18,35 @@ class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
+  }
+
+  private async parseResponseBody(response: Response): Promise<any> {
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  private async executeRequest<T>(url: string, config: RequestInit): Promise<ApiResponse<T>> {
+    const response = await fetch(url, config);
+    const data = await this.parseResponseBody(response);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data?.error || `HTTP ${response.status}: ${response.statusText}`,
+        details: data?.details,
+        status: response.status,
+        data: data?.data,
+      } as ApiResponse<T>;
+    }
+
+    return (data || { success: true }) as ApiResponse<T>;
+  }
+
+  private shouldRetryWithSameOrigin(endpoint: string): boolean {
+    return Boolean(this.baseURL) && endpoint.startsWith('/api/');
   }
 
   private async request<T>(
@@ -36,19 +65,19 @@ class ApiClient {
     };
 
     try {
-      const response = await fetch(url, config);
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.error || `HTTP ${response.status}: ${response.statusText}`,
-          details: data.details,
-        };
+      return await this.executeRequest<T>(url, config);
+    } catch (error) {
+      if (this.shouldRetryWithSameOrigin(endpoint)) {
+        try {
+          return await this.executeRequest<T>(endpoint, config);
+        } catch (fallbackError) {
+          return {
+            success: false,
+            error: fallbackError instanceof Error ? fallbackError.message : 'Network error',
+          };
+        }
       }
 
-      return data as ApiResponse<T>;
-    } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
@@ -78,19 +107,19 @@ class ApiClient {
     };
 
     try {
-      const response = await fetch(url, config);
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.error || `HTTP ${response.status}: ${response.statusText}`,
-          details: data.details,
-        };
+      return await this.executeRequest<T>(url, config);
+    } catch (error) {
+      if (this.shouldRetryWithSameOrigin(endpoint)) {
+        try {
+          return await this.executeRequest<T>(endpoint, config);
+        } catch (fallbackError) {
+          return {
+            success: false,
+            error: fallbackError instanceof Error ? fallbackError.message : 'Network error',
+          };
+        }
       }
 
-      return data as ApiResponse<T>;
-    } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',

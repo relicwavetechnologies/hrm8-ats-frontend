@@ -746,9 +746,12 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
             <JobSetupDrawer
                 open={setupDrawerOpen}
-                onOpenChange={(open) => {
+                onOpenChange={(open, meta) => {
                     setSetupDrawerOpen(open);
                     if (!open) {
+                        if (meta?.reason === 'managed-checkout') {
+                            return;
+                        }
                         setCreatedJobId(null);
                         setCreatedJobTitle(undefined);
                         // Reload to refresh jobs list and remove draft

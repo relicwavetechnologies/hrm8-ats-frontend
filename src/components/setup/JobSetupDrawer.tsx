@@ -27,9 +27,13 @@ import { SetupReviewCard } from './steps/SetupReviewCard';
 
 interface JobSetupDrawerProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (
+    open: boolean,
+    meta?: { reason: 'open' | 'close' | 'managed-checkout' }
+  ) => void;
   jobId: string | null;
   jobTitle?: string;
+  forceChoiceOnOpen?: boolean;
 }
 
 const SETUP_STEPS = [
@@ -46,6 +50,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   onOpenChange,
   jobId,
   jobTitle,
+  forceChoiceOnOpen = false,
 }) => {
   const navigate = useNavigate();
   const {
@@ -73,6 +78,14 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     if (!open) reset();
   }, [open, jobId, setIsOpen, reset]);
 
+  useEffect(() => {
+    if (!open || !forceChoiceOnOpen) return;
+    // Explicitly reset to step-1 choice screen when returning from a cancelled managed checkout.
+    reset();
+    setIsOpen(true, jobId ?? undefined);
+    setCurrentStep(1);
+  }, [open, forceChoiceOnOpen, jobId, reset, setIsOpen, setCurrentStep]);
+
   // Load job roles when drawer opens with a jobId
   useEffect(() => {
     if (!open || !jobId) return;
@@ -91,7 +104,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   }, [open, jobId, setRoles]);
 
   useEffect(() => {
-    if (!open || !jobId) return;
+    if (!open || !jobId || forceChoiceOnOpen) return;
     const loadJobSetup = async () => {
       try {
         const res = await jobService.getJobById(jobId);
@@ -124,7 +137,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
       }
     };
     loadJobSetup();
-  }, [open, jobId, setManagementType, setSetupType, setCurrentStep]);
+  }, [open, jobId, forceChoiceOnOpen, setManagementType, setSetupType, setCurrentStep]);
 
   useEffect(() => {
     if (managementType === 'hrm8-managed' && setupType !== 'advanced') {
@@ -136,7 +149,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   const [saving, setSaving] = useState(false);
 
   const handleClose = () => {
-    onOpenChange(false);
+    onOpenChange(false, { reason: 'close' });
     reset();
   };
 
@@ -178,8 +191,8 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
       return;
     }
 
-    onOpenChange(false);
-    navigate(`/jobs/${effectiveJobId}/managed-recruitment-checkout?fromSetup=1`);
+    onOpenChange(false, { reason: 'managed-checkout' });
+    navigate(`/ats/jobs/${effectiveJobId}/managed-recruitment-checkout?fromSetup=1`);
   };
 
   const renderStep = () => {
@@ -311,7 +324,12 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   const stepInfo = SETUP_STEPS[currentStep - 1];
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen, { reason: nextOpen ? 'open' : 'close' });
+      }}
+    >
       <DrawerContent className="h-[90vh] rounded-t-[24px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
         <DrawerHeader className="border-b px-6 py-4 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">

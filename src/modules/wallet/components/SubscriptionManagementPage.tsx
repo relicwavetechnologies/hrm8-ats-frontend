@@ -29,6 +29,7 @@ import { PricingDisplay } from "@/modules/subscription/components/PricingDisplay
 import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 import { useToast } from "@/shared/hooks/use-toast";
+import { pricingService } from "@/shared/lib/pricingService";
 
 export function SubscriptionManagementPage() {
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -115,6 +116,8 @@ export function SubscriptionManagementPage() {
     const subscription = subscriptionData;
     const wallet = walletData?.data;
     const transactions = transactionsData?.data?.transactions || [];
+    const walletCurrency = wallet?.currency || subscription?.currency || 'USD';
+    const subscriptionCurrency = subscription?.currency || walletCurrency;
 
     const jobsUsagePercent = subscription?.jobs_used && subscription?.job_quota
         ? (subscription.jobs_used / subscription.job_quota) * 100
@@ -140,6 +143,7 @@ export function SubscriptionManagementPage() {
                     balance={wallet?.balance || 0}
                     totalCredits={wallet?.totalCredits || 0}
                     totalDebits={wallet?.totalDebits || 0}
+                    currency={walletCurrency}
                     status={wallet?.status || 'ACTIVE'}
                     isLoading={walletLoading}
                     showRechargeButton
@@ -177,7 +181,7 @@ export function SubscriptionManagementPage() {
                                 <div>
                                     <p className="text-2xl font-bold">{subscription.name}</p>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        ${subscription.base_price} / {subscription.billing_cycle.toLowerCase()}
+                                        {pricingService.formatPrice(subscription.base_price, subscriptionCurrency)} / {subscription.billing_cycle.toLowerCase()}
                                     </p>
                                 </div>
 
@@ -230,7 +234,7 @@ export function SubscriptionManagementPage() {
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm text-muted-foreground">Prepaid Balance</span>
                                             <span className="text-sm font-semibold">
-                                                ${subscription.prepaid_balance.toFixed(2)}
+                                                {pricingService.formatPrice(subscription.prepaid_balance, subscriptionCurrency)}
                                             </span>
                                         </div>
                                     </div>
