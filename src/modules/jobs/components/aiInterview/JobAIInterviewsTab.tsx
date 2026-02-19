@@ -16,7 +16,8 @@ import { CSS } from '@dnd-kit/utilities';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin, { type EventClickArg } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
+import type { EventClickArg } from '@fullcalendar/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -104,16 +105,16 @@ const toNameFromEmail = (email?: string) => {
 const statusBadgeClass = (status: VideoInterview['status']) => {
   switch (status) {
     case 'COMPLETED':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
     case 'IN_PROGRESS':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
     case 'SCHEDULED':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
     case 'CANCELLED':
     case 'NO_SHOW':
-      return 'bg-rose-50 text-rose-700 border-rose-200';
+      return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800';
     default:
-      return 'bg-slate-50 text-slate-700 border-slate-200';
+      return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800';
   }
 };
 
@@ -158,10 +159,10 @@ function WeeklyInterviewBars({ data }: { data: Array<{ label: string; scheduled:
         <div key={item.label} className="grid grid-cols-[34px_1fr] items-center gap-2">
           <span className="text-[10px] text-muted-foreground">{item.label}</span>
           <div className="space-y-1">
-            <div className="h-2 rounded bg-blue-100 overflow-hidden">
+            <div className="h-2 rounded bg-blue-100 dark:bg-blue-900/30 overflow-hidden">
               <div className="h-full bg-blue-500" style={{ width: `${(item.scheduled / max) * 100}%` }} />
             </div>
-            <div className="h-2 rounded bg-emerald-100 overflow-hidden">
+            <div className="h-2 rounded bg-emerald-100 dark:bg-emerald-900/30 overflow-hidden">
               <div className="h-full bg-emerald-500" style={{ width: `${(item.completed / max) * 100}%` }} />
             </div>
           </div>
@@ -172,12 +173,12 @@ function WeeklyInterviewBars({ data }: { data: Array<{ label: string; scheduled:
 }
 
 const columnTheme: Record<VideoInterview['status'], string> = {
-  SCHEDULED: 'bg-gradient-to-b from-blue-50/80 to-blue-50/30 border-blue-200/70',
-  IN_PROGRESS: 'bg-gradient-to-b from-amber-50/80 to-amber-50/30 border-amber-200/70',
-  COMPLETED: 'bg-gradient-to-b from-emerald-50/80 to-emerald-50/30 border-emerald-200/70',
-  CANCELLED: 'bg-gradient-to-b from-rose-50/80 to-rose-50/30 border-rose-200/70',
-  NO_SHOW: 'bg-gradient-to-b from-orange-50/80 to-orange-50/30 border-orange-200/70',
-  RESCHEDULED: 'bg-gradient-to-b from-violet-50/80 to-violet-50/30 border-violet-200/70',
+  SCHEDULED: 'bg-gradient-to-b from-blue-50/80 to-blue-50/30 border-blue-200/70 dark:from-blue-900/20 dark:to-blue-900/10 dark:border-blue-800/70',
+  IN_PROGRESS: 'bg-gradient-to-b from-amber-50/80 to-amber-50/30 border-amber-200/70 dark:from-amber-900/20 dark:to-amber-900/10 dark:border-amber-800/70',
+  COMPLETED: 'bg-gradient-to-b from-emerald-50/80 to-emerald-50/30 border-emerald-200/70 dark:from-emerald-900/20 dark:to-emerald-900/10 dark:border-emerald-800/70',
+  CANCELLED: 'bg-gradient-to-b from-rose-50/80 to-rose-50/30 border-rose-200/70 dark:from-rose-900/20 dark:to-rose-900/10 dark:border-rose-800/70',
+  NO_SHOW: 'bg-gradient-to-b from-orange-50/80 to-orange-50/30 border-orange-200/70 dark:from-orange-900/20 dark:to-orange-900/10 dark:border-orange-800/70',
+  RESCHEDULED: 'bg-gradient-to-b from-violet-50/80 to-violet-50/30 border-violet-200/70 dark:from-violet-900/20 dark:to-violet-900/10 dark:border-violet-800/70',
 };
 
 function KanbanColumn({ id, label, count, children }: KanbanColumnProps) {

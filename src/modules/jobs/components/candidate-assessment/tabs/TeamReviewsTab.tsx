@@ -36,18 +36,18 @@ interface TimelineRow {
 }
 
 const recommendationClass = (rec?: string) => {
-  if (!rec) return "bg-slate-50 text-slate-700 border-slate-200";
+  if (!rec) return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800";
   const value = rec.toLowerCase();
   if (value.includes("strong-hire") || value.includes("approve") || value === "hire") {
-    return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
   }
   if (value.includes("pending") || value.includes("maybe")) {
-    return "bg-amber-50 text-amber-700 border-amber-200";
+    return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
   }
   if (value.includes("reject") || value.includes("no-hire")) {
-    return "bg-red-50 text-red-700 border-red-200";
+    return "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
   }
-  return "bg-slate-50 text-slate-700 border-slate-200";
+  return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800";
 };
 
 function formatTimestamp(date: Date) {
@@ -167,7 +167,7 @@ export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
   }, [application]);
 
   const noteRows = useMemo(
-    () => parseRecruiterNotes(application.recruiterNotes, application.createdAt, application.updatedAt),
+    () => parseRecruiterNotes(application.recruiterNotes, String(application.createdAt), String(application.updatedAt)),
     [application.recruiterNotes, application.createdAt, application.updatedAt]
   );
 
@@ -302,15 +302,15 @@ export function TeamReviewsTab({ application, onUpdate }: TeamReviewsTabProps) {
                     </TableCell>
                     <TableCell className="py-2.5">
                       {row.type === "move" ? (
-                        <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">
+                        <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800">
                           <MoveRight className="h-3 w-3 mr-1" />Round Move
                         </Badge>
                       ) : row.type === "review" || row.type === "evaluation" ? (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
                           <Star className="h-3 w-3 mr-1" />{row.type === "review" ? "Review" : "Evaluation"}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700 border-slate-200">Note</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800">Note</Badge>
                       )}
                     </TableCell>
                     <TableCell className="py-2.5 text-[11px] font-medium">{row.by}</TableCell>

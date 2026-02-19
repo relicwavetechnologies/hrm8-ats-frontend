@@ -32,19 +32,19 @@ interface SuccessionPlanningProps {
 
 const getReadinessColor = (readiness: ReadinessLevel) => {
   switch (readiness) {
-    case 'ready-now': return 'text-green-600 bg-green-50 border-green-200';
-    case 'ready-1-2-years': return 'text-blue-600 bg-blue-50 border-blue-200';
-    case 'ready-3-5-years': return 'text-amber-600 bg-amber-50 border-amber-200';
-    case 'not-ready': return 'text-gray-600 bg-gray-50 border-gray-200';
+    case 'ready-now': return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+    case 'ready-1-2-years': return 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+    case 'ready-3-5-years': return 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+    case 'not-ready': return 'text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700';
   }
 };
 
 const getRiskColor = (risk: RiskOfLoss) => {
   switch (risk) {
-    case 'critical': return 'text-red-600 bg-red-50 border-red-200';
-    case 'high': return 'text-orange-600 bg-orange-50 border-orange-200';
-    case 'medium': return 'text-amber-600 bg-amber-50 border-amber-200';
-    case 'low': return 'text-green-600 bg-green-50 border-green-200';
+    case 'critical': return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+    case 'high': return 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
+    case 'medium': return 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+    case 'low': return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
   }
 };
 
@@ -58,10 +58,10 @@ const NineBoxGrid = ({ data }: { data: NineBoxPosition[] }) => {
 
   const getCellColor = (performance: PerformanceLevel, potential: PotentialLevel) => {
     const score = (performanceLevels.indexOf(performance) + 1) + (potentialLevels.indexOf(potential) + 1);
-    if (score <= 3) return 'bg-red-50 border-red-200';
-    if (score <= 5) return 'bg-amber-50 border-amber-200';
-    if (score <= 7) return 'bg-blue-50 border-blue-200';
-    return 'bg-green-50 border-green-200';
+    if (score <= 3) return 'bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50';
+    if (score <= 5) return 'bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/50';
+    if (score <= 7) return 'bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800/50';
+    return 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800/50';
   };
 
   const getCellLabel = (performance: PerformanceLevel, potential: PotentialLevel) => {
@@ -338,9 +338,9 @@ export function SuccessionPlanning({ successionPlans, nineBoxData, leadershipPip
                       <CardTitle className="flex items-center gap-2">
                         {plan.positionTitle}
                         <Badge variant="outline" className={
-                          plan.criticality === 'critical' ? 'border-red-200 text-red-600 bg-red-50' :
-                          plan.criticality === 'high' ? 'border-orange-200 text-orange-600 bg-orange-50' :
-                          'border-blue-200 text-blue-600 bg-blue-50'
+                          plan.criticality === 'critical' ? 'border-red-200 text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
+                          plan.criticality === 'high' ? 'border-orange-200 text-orange-600 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' :
+                          'border-blue-200 text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
                         }>
                           {plan.criticality}
                         </Badge>
@@ -502,7 +502,7 @@ export function SuccessionPlanning({ successionPlans, nineBoxData, leadershipPip
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{plan.successors.length}</span>
                         {plan.successors.filter(s => s.readinessLevel === 'ready-now').length > 0 && (
-                          <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                          <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
                             {plan.successors.filter(s => s.readinessLevel === 'ready-now').length} ready now
                           </Badge>
                         )}
