@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Slider } from '@/shared/components/ui/slider';
@@ -82,7 +83,7 @@ function SortableItem({
         {isEditing ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
+              <Label className="text-sm font-medium">Name</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
@@ -90,7 +91,7 @@ function SortableItem({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
+              <Label className="text-sm font-medium">Description</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
@@ -99,7 +100,7 @@ function SortableItem({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Scale</label>
+                <Label className="text-sm font-medium">Scale</Label>
                 <Select
                   value={formData.scale}
                   onValueChange={(value: RatingScale) => onFormChange({ ...formData, scale: value })}
@@ -117,7 +118,7 @@ function SortableItem({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Category</label>
+                <Label className="text-sm font-medium">Category</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value: any) => onFormChange({ ...formData, category: value })}
@@ -137,9 +138,9 @@ function SortableItem({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <Label className="text-sm font-medium">
                 Weight: {(formData.weight! * 100).toFixed(0)}%
-              </label>
+              </Label>
               <Slider
                 min={0}
                 max={1}
@@ -368,7 +369,7 @@ export function DraggableRatingCriteria() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Name</label>
+                  <Label className="text-sm font-medium">Name</Label>
                   <Input
                     placeholder="e.g., Technical Expertise"
                     value={formData.name}
@@ -377,7 +378,7 @@ export function DraggableRatingCriteria() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
+                  <Label className="text-sm font-medium">Description</Label>
                   <Textarea
                     placeholder="Describe what this criterion measures..."
                     value={formData.description}
@@ -387,7 +388,7 @@ export function DraggableRatingCriteria() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Scale</label>
+                    <Label className="text-sm font-medium">Scale</Label>
                     <Select
                       value={formData.scale}
                       onValueChange={(value: RatingScale) => setFormData({ ...formData, scale: value })}
@@ -405,7 +406,7 @@ export function DraggableRatingCriteria() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Category</label>
+                    <Label className="text-sm font-medium">Category</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value: any) => setFormData({ ...formData, category: value })}
@@ -425,9 +426,9 @@ export function DraggableRatingCriteria() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
+                  <Label className="text-sm font-medium">
                     Weight: {(formData.weight! * 100).toFixed(0)}%
-                  </label>
+                  </Label>
                   <Slider
                     min={0}
                     max={1}

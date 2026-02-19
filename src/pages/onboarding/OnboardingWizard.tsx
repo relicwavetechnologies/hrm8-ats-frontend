@@ -75,7 +75,7 @@ const industrySuggestions = [
 ];
 
 const defaultLocation = (): CompanyProfileLocation => ({
-  
+  id: `loc-${Date.now()}`,
   name: '',
   streetAddress: '',
   city: '',
@@ -299,33 +299,34 @@ export function OnboardingWizardContent({ onComplete, onSkip, embedded = false }
               const Icon = isComplete ? CheckCircle2 : Circle;
               
               return (
-                <button
+                <Button
                   key={section.key}
+                  variant="ghost"
                   onClick={() => setActiveSection(section.key)}
                   className={cn(
-                    'w-full text-left p-4 rounded-lg border transition-all',
+                    'w-full text-left p-4 h-auto justify-start rounded-lg border transition-all',
                     isActive
-                      ? 'bg-white/20 backdrop-blur-sm border-white/30 shadow-lg'
+                      ? 'bg-white/20 backdrop-blur-sm border-white/30 shadow-lg hover:bg-white/20'
                       : 'bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15'
                   )}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 w-full">
                     <Icon className={cn(
                       'h-5 w-5 mt-0.5 flex-shrink-0', 
                       isComplete ? 'text-white' : 'text-white/70'
                     )} />
                     <div className="flex-1 min-w-0">
                       <p className={cn(
-                        'font-medium text-sm mb-1',
+                        'font-medium text-sm mb-1 text-wrap text-left',
                         isActive ? 'text-white' : 'text-white/95'
                       )}>{section.title}</p>
                       <p className={cn(
-                        'text-xs leading-relaxed',
+                        'text-xs leading-relaxed text-wrap text-left',
                         isActive ? 'text-white/90' : 'text-white/80'
                       )}>{section.description}</p>
                     </div>
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>

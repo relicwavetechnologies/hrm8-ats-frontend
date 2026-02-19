@@ -3,6 +3,7 @@ import { UseFormReturn, FieldPath, FieldValues } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
 import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
@@ -103,17 +104,18 @@ export function FormMultiSelect<TFieldValues extends FieldValues = FieldValues>(
                 {showSuggestions && filteredSuggestions.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-auto">
                     {filteredSuggestions.map((suggestion) => (
-                      <button
+                      <Button
                         key={suggestion}
                         type="button"
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                        variant="ghost"
                         onClick={() => {
                           addValue(suggestion);
                           setInputValue('');
                         }}
+                        className="w-full px-3 py-2 h-auto text-left text-sm hover:bg-accent transition-colors justify-start rounded-none"
                       >
                         {suggestion}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
@@ -124,17 +126,19 @@ export function FormMultiSelect<TFieldValues extends FieldValues = FieldValues>(
                   {values.map((value: string) => (
                     <Badge key={value} variant="secondary" className="pl-2 pr-1">
                       {value}
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => removeValue(value)}
                         disabled={disabled}
                         className={cn(
-                          "ml-2 hover:text-destructive transition-colors",
+                          "ml-2 h-4 w-4 p-0 hover:text-destructive transition-colors",
                           disabled && "opacity-50 cursor-not-allowed"
                         )}
                       >
                         <X className="h-3 w-3" />
-                      </button>
+                      </Button>
                     </Badge>
                   ))}
                 </div>

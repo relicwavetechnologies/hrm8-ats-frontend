@@ -204,9 +204,26 @@ export function AppSidebar() {
         <Collapsible asChild defaultOpen={isActive(item.url)} className="group/collapsible">
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton tooltip={item.title} isActive={isActive(item.url)}>
+              <SidebarMenuButton
+                tooltip={item.title}
+                isActive={isActive(item.url)}
+                className={cn(
+                  "relative transition-all duration-200",
+                  "hover:bg-sidebar-accent",
+                  isActive(item.url) && [
+                    "bg-sidebar-accent",
+                    "text-sidebar-accent-foreground",
+                    "font-medium",
+                  ]
+                )}
+              >
                 <item.icon className="h-5 w-5" />
                 <span>{item.title}</span>
+                {item.badge && isExpanded && (
+                  <div className="ml-auto">
+                    <item.badge />
+                  </div>
+                )}
                 <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
               </SidebarMenuButton>
             </CollapsibleTrigger>
@@ -237,12 +254,11 @@ export function AppSidebar() {
           tooltip={item.title}
           className={cn(
             "relative transition-all duration-200",
-            "hover:bg-sidebar-accent/50",
+            "hover:bg-sidebar-accent",
             isActive(item.url) && [
-              "bg-primary/10",
-              "text-primary",
+              "bg-sidebar-accent",
+              "text-sidebar-accent-foreground",
               "font-medium",
-              isExpanded && "border-l-4 border-primary"
             ]
           )}
         >
@@ -265,11 +281,12 @@ export function AppSidebar() {
 
   return <Sidebar
     collapsible="icon"
+    className="bg-sidebar"
     data-hover-expand={!open && isHovering}
     onMouseEnter={() => !open && setIsHovering(true)}
     onMouseLeave={() => !open && setIsHovering(false)}
   >
-    <SidebarHeader className="border-b border-sidebar-border p-4 bg-gradient-to-b from-sidebar-accent/30 to-transparent">
+    <SidebarHeader className="border-b border-sidebar-border p-0 bg-sidebar">
       <NavLink
         to="/home"
         className={cn(
@@ -481,13 +498,15 @@ export function AppSidebar() {
             <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
               <Clock className="h-3 w-3" />
               <span className="transition-opacity duration-200">Recent</span>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={clearRecentRecords}
-                className="ml-auto text-[10px] hover:text-foreground transition-colors"
+                className="ml-auto h-5 text-[10px] px-1 py-0 hover:text-foreground transition-colors"
                 title="Clear recent items"
               >
                 Clear
-              </button>
+              </Button>
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -547,7 +566,7 @@ export function AppSidebar() {
       )}
     </SidebarContent>
 
-    <SidebarFooter className="border-t border-sidebar-border p-3 bg-gradient-to-t from-sidebar-accent/30 to-transparent">
+    <SidebarFooter className="border-t border-sidebar-border p-3 bg-sidebar">
       <SidebarFooterContent />
     </SidebarFooter>
   </Sidebar>;

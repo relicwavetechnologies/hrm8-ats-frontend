@@ -10,6 +10,7 @@ import {
   SheetDescription,
 } from '@/shared/components/ui/sheet';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Label } from '@/shared/components/ui/label';
@@ -384,8 +385,9 @@ export function MergedCalendarDrawer({
 
         {/* AI Suggest Panel (collapsible) */}
         <div className="border-b">
-          <button
-            className="w-full px-4 py-2 flex items-center justify-between text-xs font-medium hover:bg-muted/50 transition-colors"
+          <Button
+            variant="ghost"
+            className="w-full px-4 py-2 h-auto flex items-center justify-between text-xs font-medium hover:bg-muted/50 transition-colors rounded-none"
             onClick={() => setAiPanelOpen(!aiPanelOpen)}
           >
             <div className="flex items-center gap-1.5">
@@ -393,7 +395,7 @@ export function MergedCalendarDrawer({
               <span>AI Time Suggestions</span>
             </div>
             {aiPanelOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
+          </Button>
 
           {aiPanelOpen && (
             <div className="px-4 pb-3 space-y-3">
@@ -451,20 +453,20 @@ export function MergedCalendarDrawer({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-0.5">
                   <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Start Date</Label>
-                  <input
+                  <Input
                     type="date"
                     value={dateRangeStart}
                     onChange={e => setDateRangeStart(e.target.value)}
-                    className="h-7 w-full text-[10px] px-2 border rounded-md bg-background"
+                    className="h-7 text-[10px] px-2"
                   />
                 </div>
                 <div className="space-y-0.5">
                   <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">End Date</Label>
-                  <input
+                  <Input
                     type="date"
                     value={dateRangeEnd}
                     onChange={e => setDateRangeEnd(e.target.value)}
-                    className="h-7 w-full text-[10px] px-2 border rounded-md bg-background"
+                    className="h-7 text-[10px] px-2"
                   />
                 </div>
               </div>
@@ -487,12 +489,13 @@ export function MergedCalendarDrawer({
               {suggestions.length > 0 && (
                 <div className="space-y-1.5">
                   {suggestions.map((s, idx) => (
-                    <button
+                    <Button
                       key={idx}
-                      className="w-full text-left p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors space-y-0.5"
+                      variant="ghost"
+                      className="w-full h-auto text-left p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors flex-col items-start space-y-0.5 justify-start"
                       onClick={() => handleSelectSuggestion(s)}
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-1.5">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-[11px] font-semibold">
@@ -504,7 +507,7 @@ export function MergedCalendarDrawer({
                         </Badge>
                       </div>
                       <p className="text-[10px] text-muted-foreground">{s.reason}</p>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

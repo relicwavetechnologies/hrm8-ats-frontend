@@ -101,36 +101,39 @@ export default function Calendar() {
                   const isSelected = selectedDate && isSameDay(day, selectedDate);
                   
                   return (
-                    <button
+                    <Button
                       key={index}
+                      variant="ghost"
                       onClick={() => setSelectedDate(day)}
                       className={`
-                        min-h-[80px] p-2 border rounded-lg text-left relative
-                        transition-colors hover:bg-accent
+                        min-h-[80px] h-auto p-2 border rounded-lg text-left relative justify-start items-start
+                        transition-colors hover:bg-accent hover:text-accent-foreground
                         ${!isCurrentMonth ? 'text-muted-foreground bg-muted/30' : ''}
                         ${isToday ? 'border-primary border-2' : ''}
                         ${isSelected ? 'bg-primary/10 border-primary' : ''}
                       `}
                     >
-                      <div className={`text-sm font-semibold ${isToday ? 'text-primary' : ''}`}>
-                        {format(day, 'd')}
+                      <div className="w-full">
+                        <div className={`text-sm font-semibold ${isToday ? 'text-primary' : ''}`}>
+                          {format(day, 'd')}
+                        </div>
+                        <div className="space-y-1 mt-1">
+                          {dayInterviews.slice(0, 2).map((interview) => (
+                            <div
+                              key={interview.id}
+                              className={`text-xs px-1 py-0.5 rounded truncate ${getStatusColor(interview.status)} text-white w-full text-left`}
+                            >
+                              {interview.scheduledTime} {getTypeIcon(interview.type)}
+                            </div>
+                          ))}
+                          {dayInterviews.length > 2 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{dayInterviews.length - 2} more
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-1 mt-1">
-                        {dayInterviews.slice(0, 2).map((interview) => (
-                          <div
-                            key={interview.id}
-                            className={`text-xs px-1 py-0.5 rounded truncate ${getStatusColor(interview.status)} text-white`}
-                          >
-                            {interview.scheduledTime} {getTypeIcon(interview.type)}
-                          </div>
-                        ))}
-                        {dayInterviews.length > 2 && (
-                          <div className="text-xs text-muted-foreground">
-                            +{dayInterviews.length - 2} more
-                          </div>
-                        )}
-                      </div>
-                    </button>
+                    </Button>
                   );
                 })}
                 </div>

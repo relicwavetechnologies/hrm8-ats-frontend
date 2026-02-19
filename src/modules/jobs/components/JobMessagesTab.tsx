@@ -227,10 +227,11 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
                                 const isSelected = selectedConversationId === conversation.id;
 
                                 return (
-                                    <button
+                                    <Button
                                         key={conversation.id}
+                                        variant="ghost"
                                         onClick={() => setSelectedConversationId(conversation.id)}
-                                        className={`flex items-start gap-3 p-3 text-left transition-colors hover:bg-muted/50 ${isSelected ? 'bg-primary/5 border-l-2 border-primary' : 'border-l-2 border-transparent'}`}
+                                        className={`flex items-start gap-3 p-3 h-auto text-left w-full transition-colors hover:bg-muted/50 justify-start rounded-none ${isSelected ? 'bg-primary/5 border-l-2 border-primary' : 'border-l-2 border-transparent'}`}
                                     >
                                         <Avatar className="h-10 w-10 border mt-0.5">
                                             <AvatarFallback>{initials}</AvatarFallback>
@@ -251,7 +252,7 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
                                                 {lastMsg}
                                             </p>
                                         </div>
-                                    </button>
+                                    </Button>
                                 );
                             })}
                         </div>

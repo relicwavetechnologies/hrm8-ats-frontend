@@ -550,13 +550,15 @@ export function QuestionnaireResponsesTab({ application, jobId }: QuestionnaireR
                       <p className="text-[11px] font-medium truncate">Q{referenceContext.questionIndex}: {referenceContext.questionLabel}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{referenceContext.answerSnippet}</p>
                     </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 p-0 flex-shrink-0 text-muted-foreground hover:text-foreground"
                       onClick={() => setReferenceContext(null)}
                       aria-label="Remove reference"
                     >
                       <X className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -571,10 +573,11 @@ export function QuestionnaireResponsesTab({ application, jobId }: QuestionnaireR
                 {showMentions && filteredTeam.length > 0 && (
                   <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-md border bg-popover shadow-md max-h-40 overflow-y-auto">
                     {filteredTeam.map((member) => (
-                      <button
+                      <Button
                         key={member.userId || member.name}
                         type="button"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                        variant="ghost"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm h-auto justify-start rounded-none"
                         onClick={() => insertMention(member.name)}
                       >
                         <Avatar className="h-5 w-5">
@@ -583,7 +586,7 @@ export function QuestionnaireResponsesTab({ application, jobId }: QuestionnaireR
                           </AvatarFallback>
                         </Avatar>
                         <span>{member.name}</span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}

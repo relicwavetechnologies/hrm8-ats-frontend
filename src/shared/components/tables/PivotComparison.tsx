@@ -49,7 +49,7 @@ export function PivotComparison({
       {config.enabled && (
         <>
           <div>
-            <label className="text-sm font-medium mb-2 block">Comparison Mode</label>
+            <Label className="text-sm font-medium mb-2 block">Comparison Mode</Label>
             <Select
               value={config.mode}
               onValueChange={(value) =>
@@ -67,9 +67,9 @@ export function PivotComparison({
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <Label className="text-sm font-medium mb-2 block">
               {config.mode === "period" ? "Date Field" : "Comparison Field"}
-            </label>
+            </Label>
             <Select
               value={config.compareField}
               onValueChange={(value) => updateConfig({ compareField: value })}
@@ -97,7 +97,7 @@ export function PivotComparison({
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Base Value</label>
+                  <Label className="text-sm font-medium mb-2 block">Base Value</Label>
                   <Select
                     value={config.baseValue}
                     onValueChange={(value) => updateConfig({ baseValue: value })}
@@ -114,7 +114,7 @@ export function PivotComparison({
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Compare Value</label>
+                  <Label className="text-sm font-medium mb-2 block">Compare Value</Label>
                   <Select
                     value={config.compareValue}
                     onValueChange={(value) => updateConfig({ compareValue: value })}

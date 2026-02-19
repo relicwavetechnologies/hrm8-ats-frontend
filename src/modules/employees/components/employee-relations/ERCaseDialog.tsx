@@ -232,9 +232,9 @@ export function ERCaseDialog({ open, onOpenChange, onSuccess, editingCase }: ERC
                 return emp ? (
                   <div key={id} className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded text-sm">
                     {emp.firstName} {emp.lastName}
-                    <button type="button" onClick={() => removeAffectedEmployee(id)} className="ml-1">
+                    <Button type="button" variant="ghost" size="icon" className="h-4 w-4 p-0 ml-0.5 hover:text-destructive hover:bg-transparent" onClick={() => removeAffectedEmployee(id)}>
                       <X className="h-3 w-3" />
-                    </button>
+                    </Button>
                   </div>
                 ) : null;
               })}
@@ -264,9 +264,9 @@ export function ERCaseDialog({ open, onOpenChange, onSuccess, editingCase }: ERC
                 return emp ? (
                   <div key={id} className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded text-sm">
                     {emp.firstName} {emp.lastName}
-                    <button type="button" onClick={() => removeInvestigator(id)} className="ml-1">
+                    <Button type="button" variant="ghost" size="icon" className="h-4 w-4 p-0 ml-0.5 hover:text-destructive hover:bg-transparent" onClick={() => removeInvestigator(id)}>
                       <X className="h-3 w-3" />
-                    </button>
+                    </Button>
                   </div>
                 ) : null;
               })}

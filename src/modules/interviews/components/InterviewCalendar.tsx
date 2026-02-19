@@ -97,10 +97,11 @@ export function InterviewCalendar({ interviews, onInterviewClick }: InterviewCal
 
               <div className="space-y-2">
                 {dayInterviews.map(interview => (
-                  <button
+                  <Button
                     key={interview.id}
+                    variant="ghost"
                     onClick={() => onInterviewClick(interview)}
-                    className={`w-full text-left p-2 rounded-lg border transition-colors hover:shadow-md ${getStatusColor(interview.status)}`}
+                    className={`w-full text-left p-2 h-auto rounded-lg border transition-colors hover:shadow-md justify-start flex-col items-start space-y-0 ${getStatusColor(interview.status)}`}
                   >
                     <div className="flex items-center gap-1 mb-1">
                       {getInterviewTypeIcon(interview.type)}
@@ -110,7 +111,7 @@ export function InterviewCalendar({ interviews, onInterviewClick }: InterviewCal
                     </div>
                     <div className="text-xs truncate font-medium">{interview.candidateName}</div>
                     <div className="text-xs truncate text-muted-foreground">{interview.jobTitle}</div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

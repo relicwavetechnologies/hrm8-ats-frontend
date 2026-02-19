@@ -2,6 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/shared/components/ui/button";
 import { ArrowUpDown, X } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
+import { Label } from "@/shared/components/ui/label";
 
 export interface SortConfig {
   field: string;
@@ -53,7 +54,7 @@ export function PivotSorting({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Sort By</label>
+      <Label className="text-sm font-medium">Sort By</Label>
       <Select onValueChange={addSort}>
         <SelectTrigger>
           <SelectValue placeholder="Add sort field..." />
@@ -84,12 +85,14 @@ export function PivotSorting({
               <span className="text-xs">
                 {field?.label} ({sort.direction})
               </span>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => removeSort(sort.field)}
-                className="ml-1 hover:text-destructive"
+                className="ml-1 h-4 w-4 p-0 hover:text-destructive"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           );
         })}

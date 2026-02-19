@@ -401,13 +401,15 @@ function TaskItem({ task, onDelete, onUpdateStatus, onAddNote }: {
         className="grid grid-cols-[auto_1fr_auto] gap-3 p-3 cursor-pointer hover:bg-muted/20 transition-colors items-start"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
+          className="flex-shrink-0 h-6 w-6 p-0 text-muted-foreground hover:text-primary transition-colors mt-0.5"
           onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED'); }}
-          className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors mt-0.5"
           title={task.status === 'COMPLETED' ? "Mark as Pending" : "Mark as Completed"}
         >
           {task.status === 'COMPLETED' ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <Circle className="h-5 w-5" />}
-        </button>
+        </Button>
 
         <div className="min-w-0 grid gap-1.5">
           <div className="flex items-center gap-2 flex-wrap">
@@ -474,13 +476,15 @@ function TaskItem({ task, onDelete, onUpdateStatus, onAddNote }: {
               <SelectItem value="COMPLETED">Completed</SelectItem>
             </SelectContent>
           </Select>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors"
             onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Delete Task"
           >
             <Trash2 className="h-4 w-4" />
-          </button>
+          </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={(e) => { e.stopPropagation(); setNotesDrawerOpen(true); }}>
             <MessageSquare className="h-3.5 w-3.5 mr-1" />
             Notes

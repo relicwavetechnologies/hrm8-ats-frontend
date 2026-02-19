@@ -6,6 +6,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { Switch } from '@/shared/components/ui/switch';
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { AssessmentTemplate, AssessmentType, AssessmentProvider } from '@/shared/types/assessment';
@@ -299,14 +300,16 @@ export function TemplateBuilderDialog({ open, onClose, template, onSave }: Templ
             {categories.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {categories.map((category) => (
-                  <Badge key={category} variant="secondary" className="gap-1">
+                  <Badge key={category} variant="secondary" className="gap-1 pr-1">
                     {category}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 ml-0.5 p-0 hover:text-destructive hover:bg-transparent"
                       onClick={() => handleRemoveCategory(category)}
-                      className="ml-1 hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
-                    </button>
+                    </Button>
                   </Badge>
                 ))}
               </div>
@@ -317,13 +320,11 @@ export function TemplateBuilderDialog({ open, onClose, template, onSave }: Templ
           </div>
 
           {/* Status */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-3">
+            <Switch
               id="isActive"
               checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded border-gray-300"
+              onCheckedChange={setIsActive}
             />
             <Label htmlFor="isActive" className="cursor-pointer">
               Active (available for use in assessments)

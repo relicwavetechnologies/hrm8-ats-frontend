@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate, useMatch } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, X, Eye, FileEdit, Check } from "lucide-react";
+import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, X, Eye, FileEdit, Check, Filter, Zap } from "lucide-react";
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { jobService } from "@/shared/lib/jobService";
@@ -723,16 +723,18 @@ export default function Jobs() {
         <div className="flex flex-col gap-1">
           <ServiceTypeBadge type={job.serviceType} />
           {job.serviceType !== 'self-managed' && (
-            <button
+            <Button
               type="button"
-              className="text-[10px] text-primary underline-offset-2 hover:underline text-left"
+              variant="link"
+              size="sm"
+              className="text-[10px] h-auto p-0 text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/ats/jobs/${job.id}?tab=service`);
               }}
             >
               View recruitment workflow
-            </button>
+            </Button>
           )}
         </div>
       )

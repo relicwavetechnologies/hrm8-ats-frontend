@@ -105,12 +105,14 @@ export function TableFilters({
           {activeFilters.map(filter => (
             <Badge key={filter.key} variant="secondary" className="gap-1">
               {filter.label}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => onClearFilter(filter.key)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
+                className="ml-1 h-4 w-4 p-0 hover:bg-muted rounded-full"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
           <Button

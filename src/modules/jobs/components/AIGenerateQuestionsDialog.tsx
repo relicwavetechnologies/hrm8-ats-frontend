@@ -380,10 +380,12 @@ export function AIGenerateQuestionsDialog({
                 </Button>
                 <div className="flex gap-1">
                   {generatedQuestions.map((_, index) => (
-                    <button
+                    <Button
                       key={index}
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setCurrentQuestionIndex(index)}
-                      className={`h-2 w-2 rounded-full transition-colors ${index === currentQuestionIndex
+                      className={`h-3 w-3 p-0 rounded-full transition-colors ${index === currentQuestionIndex
                           ? 'bg-primary'
                           : selectedQuestionIds.has(generatedQuestions[index].id)
                             ? 'bg-primary/30'

@@ -357,7 +357,7 @@ export function TemplateEditor({
                 ))}
                 
                 <div className="relative">
-                  <input
+                  <Input
                     type="file"
                     ref={fileInputRef}
                     className="hidden"

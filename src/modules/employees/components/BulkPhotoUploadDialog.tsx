@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Badge } from '@/shared/components/ui/badge';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import { getEmployees, saveEmployee } from '@/shared/lib/employeeStorage';
 import JSZip from 'jszip';
 import { Avatar, AvatarImage, AvatarFallback } from '@/shared/components/ui/avatar';
@@ -191,7 +193,7 @@ export function BulkPhotoUploadDialog({ open, onOpenChange, onSuccess }: BulkPho
 
           {photoMatches.length === 0 ? (
             <div className="border-2 border-dashed rounded-lg p-12 text-center hover:border-primary transition-colors">
-              <input
+              <Input
                 type="file"
                 id="zip-upload"
                 accept=".zip"
@@ -199,7 +201,7 @@ export function BulkPhotoUploadDialog({ open, onOpenChange, onSuccess }: BulkPho
                 className="hidden"
                 disabled={isProcessing}
               />
-              <label htmlFor="zip-upload" className="cursor-pointer">
+              <Label htmlFor="zip-upload" className="cursor-pointer">
                 {isProcessing ? (
                   <Loader2 className="h-12 w-12 mx-auto mb-4 text-primary animate-spin" />
                 ) : (
@@ -211,7 +213,7 @@ export function BulkPhotoUploadDialog({ open, onOpenChange, onSuccess }: BulkPho
                 <p className="text-sm text-muted-foreground">
                   Select a ZIP file containing employee photos
                 </p>
-              </label>
+              </Label>
             </div>
           ) : (
             <>

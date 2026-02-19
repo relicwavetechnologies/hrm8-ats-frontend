@@ -34,6 +34,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Select,
@@ -298,21 +299,21 @@ export default function CompanyProfile() {
                     <div className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Company Name</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Company Name</Label>
                           <p className="text-base mt-1">{basicDetails.companyName || 'Not set'}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Company Size</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Company Size</Label>
                           <p className="text-base mt-1">{basicDetails.companySize || 'Not set'}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Industries</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Industries</Label>
                           <p className="text-base mt-1">
                             {basicDetails.industries?.length ? basicDetails.industries.join(', ') : 'Not set'}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
                           <p className="text-base mt-1 flex items-center gap-2">
                             <Phone className="h-4 w-4" />
                             {basicDetails.phone?.countryCode && basicDetails.phone?.number
@@ -321,20 +322,20 @@ export default function CompanyProfile() {
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Website</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Website</Label>
                           <p className="text-base mt-1 flex items-center gap-2">
                             <Globe className="h-4 w-4" />
                             {basicDetails.websiteUrl || user?.companyWebsite || 'Not set'}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Year Founded</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Year Founded</Label>
                           <p className="text-base mt-1">{basicDetails.yearFounded || 'Not set'}</p>
                         </div>
                       </div>
                       {basicDetails.overview && (
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Overview</label>
+                          <Label className="text-sm font-medium text-muted-foreground">Overview</Label>
                           <p className="text-base mt-1">{basicDetails.overview}</p>
                         </div>
                       )}
@@ -383,28 +384,28 @@ export default function CompanyProfile() {
                       {primaryLocation.name ? (
                         <div className="space-y-4">
                           <div>
-                            <label className="text-sm font-medium text-muted-foreground">Location Name</label>
+                            <Label className="text-sm font-medium text-muted-foreground">Location Name</Label>
                             <p className="text-base mt-1">{primaryLocation.name}</p>
                           </div>
                           <div className="grid gap-4 md:grid-cols-2">
                             <div>
-                              <label className="text-sm font-medium text-muted-foreground">Street Address</label>
+                              <Label className="text-sm font-medium text-muted-foreground">Street Address</Label>
                               <p className="text-base mt-1">{primaryLocation.streetAddress}</p>
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-muted-foreground">City</label>
+                              <Label className="text-sm font-medium text-muted-foreground">City</Label>
                               <p className="text-base mt-1">{primaryLocation.city}</p>
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-muted-foreground">State/Region</label>
+                              <Label className="text-sm font-medium text-muted-foreground">State/Region</Label>
                               <p className="text-base mt-1">{primaryLocation.stateOrRegion}</p>
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-muted-foreground">Postal Code</label>
+                              <Label className="text-sm font-medium text-muted-foreground">Postal Code</Label>
                               <p className="text-base mt-1">{primaryLocation.postalCode}</p>
                             </div>
                             <div>
-                              <label className="text-sm font-medium text-muted-foreground">Country</label>
+                              <Label className="text-sm font-medium text-muted-foreground">Country</Label>
                               <p className="text-base mt-1">{primaryLocation.country}</p>
                             </div>
                           </div>
@@ -455,11 +456,11 @@ export default function CompanyProfile() {
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Position Title</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Position Title</Label>
                         <p className="text-base mt-1">{personalProfile.positionTitle || 'Not set'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
                         <p className="text-base mt-1 flex items-center gap-2">
                           <Phone className="h-4 w-4" />
                           {personalProfile.phone?.countryCode && personalProfile.phone?.number
@@ -468,7 +469,7 @@ export default function CompanyProfile() {
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Location</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Location</Label>
                         <p className="text-base mt-1 flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
                           {personalProfile.location || 'Not set'}
@@ -581,23 +582,23 @@ export default function CompanyProfile() {
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Payment Preference</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Payment Preference</Label>
                         <p className="text-base mt-1 capitalize">{billing.paymentPreference || 'Not set'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Subscription Plan</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Subscription Plan</Label>
                         <p className="text-base mt-1">{billing.subscriptionPlan || 'Not set'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Registered Business Name</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Registered Business Name</Label>
                         <p className="text-base mt-1">{billing.registeredBusinessName || 'Not set'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Tax ID</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Tax ID</Label>
                         <p className="text-base mt-1">{billing.taxId || 'Not set'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Accounts Email</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Accounts Email</Label>
                         <p className="text-base mt-1">{billing.accountsEmail || 'Not set'}</p>
                       </div>
                     </div>
@@ -643,15 +644,15 @@ export default function CompanyProfile() {
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Careers Page Enabled</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Careers Page Enabled</Label>
                         <p className="text-base mt-1">{branding.careersPageEnabled ? 'Yes' : 'No'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Subdomain</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Subdomain</Label>
                         <p className="text-base mt-1">{branding.subdomain || 'Not set'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Brand Color</label>
+                        <Label className="text-sm font-medium text-muted-foreground">Brand Color</Label>
                         <div className="flex items-center gap-2 mt-1">
                           {branding.brandColor && (
                             <div
@@ -666,7 +667,7 @@ export default function CompanyProfile() {
                   )}
                   {branding.companyIntroduction && (
                     <div className="mt-4">
-                      <label className="text-sm font-medium text-muted-foreground">Company Introduction</label>
+                      <Label className="text-sm font-medium text-muted-foreground">Company Introduction</Label>
                       <p className="text-base mt-1">{branding.companyIntroduction}</p>
                     </div>
                   )}

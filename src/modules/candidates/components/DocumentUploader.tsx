@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
+import { Label } from '@/shared/components/ui/label';
 import { FileUpload } from '@/shared/components/ui/file-upload';
 import { uploadDocument } from '@/shared/lib/mockDocumentStorage';
 import { CandidateDocument } from '@/shared/types/entities';
@@ -53,7 +54,7 @@ export function DocumentUploader({
   return (
     <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
       <div>
-        <label className="text-sm font-medium mb-2 block">Document Type</label>
+        <Label className="text-sm font-medium mb-2 block">Document Type</Label>
         <Select value={documentType} onValueChange={(value: any) => setDocumentType(value)}>
           <SelectTrigger>
             <SelectValue />

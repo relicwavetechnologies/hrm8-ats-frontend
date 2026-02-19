@@ -299,7 +299,7 @@ export default function CareersPageAdmin() {
                 )}
               </div>
               <div className="flex-1 space-y-2">
-                <input
+                <Input
                   ref={logoInputRef}
                   type="file"
                   accept="image/*"
@@ -355,7 +355,7 @@ export default function CareersPageAdmin() {
             >
               {!bannerUrl && <Image className="h-12 w-12 text-muted-foreground" />}
             </div>
-            <input
+            <Input
               ref={bannerInputRef}
               type="file"
               accept="image/*"
@@ -537,7 +537,7 @@ export default function CareersPageAdmin() {
                 </div>
               )}
             </div>
-            <input
+            <Input
               ref={galleryInputRef}
               type="file"
               accept="image/*"

@@ -3,6 +3,7 @@ import { Button } from "@/shared/components/ui/button";
 import { X } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 
 export interface FilterConfig {
   field: string;
@@ -57,7 +58,7 @@ export function PivotFilters({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Filters</label>
+      <Label className="text-sm font-medium">Filters</Label>
       <Select onValueChange={addFilter}>
         <SelectTrigger>
           <SelectValue placeholder="Add filter..." />

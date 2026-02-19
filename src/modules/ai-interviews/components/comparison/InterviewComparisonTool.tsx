@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Button } from '@/shared/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Badge } from '@/shared/components/ui/badge';
+import { Label } from '@/shared/components/ui/label';
 import { getAIInterviewSessions } from '@/shared/lib/aiInterview/aiInterviewStorage';
 import { ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -47,7 +48,7 @@ export function InterviewComparisonTool() {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">Interview 1</label>
+            <Label className="text-sm font-medium mb-2 block">Interview 1</Label>
             <Select value={interview1Id} onValueChange={setInterview1Id}>
               <SelectTrigger>
                 <SelectValue placeholder="Select interview" />
@@ -63,7 +64,7 @@ export function InterviewComparisonTool() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Interview 2</label>
+            <Label className="text-sm font-medium mb-2 block">Interview 2</Label>
             <Select value={interview2Id} onValueChange={setInterview2Id}>
               <SelectTrigger>
                 <SelectValue placeholder="Select interview" />

@@ -54,13 +54,15 @@ export function QuestionItem({ question, index, onEdit, onDelete }: QuestionItem
       style={style}
       className="flex items-start gap-3 p-4 bg-card border border-border rounded-lg hover:border-primary/50 transition-colors"
     >
-      <button
-        className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="mt-1 h-7 w-7 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
         {...attributes}
         {...listeners}
       >
         <GripVertical className="h-5 w-5" />
-      </button>
+      </Button>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-3 mb-2">

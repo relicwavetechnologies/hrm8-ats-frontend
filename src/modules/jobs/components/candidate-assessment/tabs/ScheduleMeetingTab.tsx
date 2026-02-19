@@ -352,7 +352,7 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
         {/* Type & Duration */}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-0.5">
-            <label className="text-[9px] font-semibold text-muted-foreground ml-1">Type</label>
+            <Label className="text-[9px] font-semibold text-muted-foreground ml-1">Type</Label>
             <Select value={selectedType} onValueChange={(v) => setSelectedType(v as MeetingType)}>
               <SelectTrigger className="text-[11px] h-7 bg-muted/30 border-muted-foreground/20">
                 <SelectValue />
@@ -366,7 +366,7 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
             </Select>
           </div>
           <div className="space-y-0.5">
-            <label className="text-[9px] font-semibold text-muted-foreground ml-1">Duration</label>
+            <Label className="text-[9px] font-semibold text-muted-foreground ml-1">Duration</Label>
             <Select value={selectedDuration} onValueChange={setSelectedDuration}>
               <SelectTrigger className="text-[11px] h-7 bg-muted/30 border-muted-foreground/20">
                 <SelectValue />
@@ -405,7 +405,7 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
         <div className="grid grid-cols-2 gap-2">
           {/* Date Time Picker */}
           <div className="space-y-0.5">
-            <label className="text-[9px] font-semibold text-muted-foreground ml-1">Date & Time</label>
+            <Label className="text-[9px] font-semibold text-muted-foreground ml-1">Date & Time</Label>
             <div className="flex gap-1">
               <DateTimePicker
                 date={selectedDate}
@@ -430,14 +430,16 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
           {/* Interviewers Multi-Select */}
           <div className="space-y-0.5">
             <div className="flex items-center justify-between">
-              <label className="text-[9px] font-semibold text-muted-foreground ml-1">Interviewers</label>
+              <Label className="text-[9px] font-semibold text-muted-foreground ml-1">Interviewers</Label>
               {selectedInterviewers.length > 0 && (
-                <button
-                  className="text-[9px] text-muted-foreground hover:text-primary underline mr-1"
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-[9px] h-auto p-0 mr-1 text-muted-foreground hover:text-primary"
                   onClick={() => setSelectedInterviewers([])}
                 >
                   Clear
-                </button>
+                </Button>
               )}
             </div>
             <Popover open={interviewerPopoverOpen} onOpenChange={setInterviewerPopoverOpen}>
@@ -512,10 +514,15 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
                 {!calendarStatuses[m.userId] && (
                   <span className="text-[8px] text-amber-600" title="Calendar not connected">⚠</span>
                 )}
-                <button onClick={() => toggleInterviewer(m.userId)} className="hover:text-destructive">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:text-destructive"
+                  onClick={() => toggleInterviewer(m.userId)}
+                >
                   <span className="sr-only">Remove</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-50 hover:opacity-100"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -536,7 +543,7 @@ export function ScheduleMeetingTab({ application }: ScheduleMeetingTabProps) {
 
         {/* Notes */}
         <div className="flex-1 flex flex-col space-y-0.5 min-h-0">
-          <label className="text-[9px] font-semibold text-muted-foreground ml-1">Internal Notes</label>
+          <Label className="text-[9px] font-semibold text-muted-foreground ml-1">Internal Notes</Label>
           <Textarea
             placeholder="Instructions for interviewers..."
             value={notes}

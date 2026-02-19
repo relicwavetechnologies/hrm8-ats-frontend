@@ -26,6 +26,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group";
 import { Button } from "@/shared/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -34,6 +35,7 @@ import {
 import { Calendar } from "@/shared/components/ui/calendar";
 import { usePublicTags } from "@/shared/hooks/useJobCategoriesTags";
 import { cn } from "@/shared/lib/utils";
+import { Label } from "@/shared/components/ui/label";
 
 interface JobWizardStep3Props {
   form: UseFormReturn<JobFormData>;
@@ -220,21 +222,21 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                 >
                   <div className="flex items-center space-x-2 flex-1">
                     <RadioGroupItem value="public" id="public" />
-                    <label htmlFor="public" className="flex-1 cursor-pointer">
+                    <Label htmlFor="public" className="flex-1 cursor-pointer">
                       <div className="font-medium">Public</div>
                       <div className="text-sm text-muted-foreground">
                         Visible everywhere
                       </div>
-                    </label>
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2 flex-1">
                     <RadioGroupItem value="private" id="private" />
-                    <label htmlFor="private" className="flex-1 cursor-pointer">
+                    <Label htmlFor="private" className="flex-1 cursor-pointer">
                       <div className="font-medium">Private</div>
                       <div className="text-sm text-muted-foreground">
                         Only accessible via direct link
                       </div>
-                    </label>
+                    </Label>
                   </div>
                 </RadioGroup>
               </FormControl>
@@ -346,12 +348,11 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                       {tags.map((tag) => {
                         const isSelected = selectedTags.includes(tag.id);
                         return (
-                          <button
+                          <Badge
                             key={tag.id}
-                            type="button"
                             onClick={() => toggleTag(tag.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                              "px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer border-0",
                               isSelected
                                 ? "ring-2 ring-offset-2 shadow-sm"
                                 : "opacity-70 hover:opacity-100"
@@ -359,13 +360,12 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                             style={{
                               backgroundColor: isSelected ? tag.color : tag.color + '40',
                               color: isSelected ? '#fff' : tag.color,
-                              ringColor: tag.color
-                            }}
-                            disabled={!isSelected && selectedTags.length >= 5}
+                              "--ring-color": tag.color
+                            } as React.CSSProperties}
                           >
                             {tag.name}
                             {isSelected && <span className="ml-1">✓</span>}
-                          </button>
+                          </Badge>
                         );
                       })}
                     </div>

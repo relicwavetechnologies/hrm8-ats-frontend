@@ -5,6 +5,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { ConversationData, MessageData } from '@/shared/types/websocket';
 import { cn } from '@/shared/lib/utils';
@@ -103,8 +104,9 @@ export function ConversationList({
           const lastMessage = conversation.lastMessage;
 
           return (
-            <button
+            <Button
               key={conversation.id}
+              variant="ghost"
               onClick={() => {
                 // Determine path based on current route context
                 const pathname = window.location.pathname;
@@ -124,11 +126,11 @@ export function ConversationList({
                 navigate(path);
               }}
               className={cn(
-                'w-full p-4 text-left transition-colors border-b border-border/70 hover:bg-muted/40',
+                'w-full h-auto p-4 justify-start text-left border-b border-border/70 hover:bg-muted/40 rounded-none',
                 isActive && 'bg-muted/60'
               )}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 w-full">
                 <Avatar className="h-12 w-12 shrink-0">
                   <AvatarImage src={conversation.candidate?.photo} />
                   <AvatarFallback>
@@ -168,7 +170,7 @@ export function ConversationList({
                   </div>
                 </div>
               </div>
-            </button>
+            </Button>
           );
         })}
       </div>

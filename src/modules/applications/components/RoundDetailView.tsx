@@ -17,6 +17,7 @@ import { AssessmentGradingDialog } from "./AssessmentGradingDialog";
 import { InterviewRoundPanel } from "./InterviewRoundPanel";
 import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Label } from "@/shared/components/ui/label";
 import { applicationService } from "@/shared/lib/applicationService";
 import { CandidateEvaluationView } from "./candidate-evaluation/CandidateEvaluationView";
 
@@ -516,9 +517,9 @@ export function RoundDetailView({
                   }}
                   id="select-all"
                 />
-                <label htmlFor="select-all" className="text-sm font-medium text-muted-foreground cursor-pointer">
+                <Label htmlFor="select-all" className="text-sm font-medium text-muted-foreground cursor-pointer">
                   Select All ({roundApplications.length})
-                </label>
+                </Label>
               </div>
 
               {selectedCandidateIds.size > 0 && (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import { CheckCircle2, Edit2, Send, MapPin, Briefcase, DollarSign, Users, FileText, FileCheck } from 'lucide-react';
 import {
     Dialog,
@@ -149,12 +150,11 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
 
             <div className="space-y-4">
                 <div className="flex items-start gap-3 px-1">
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         id="terms"
-                        className="mt-1 h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer"
+                        className="mt-0.5"
                         checked={termsAccepted}
-                        onChange={(e) => onTermsAcceptedChange?.(e.target.checked)}
+                        onCheckedChange={(checked) => onTermsAcceptedChange?.(checked === true)}
                     />
                     <div className="grid gap-1.5 leading-none">
                         <label
@@ -167,7 +167,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                             By publishing this job, you agree to our{' '}
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <button className="underline text-primary hover:text-primary/80 font-medium">Terms of Service</button>
+                                    <Button variant="ghost" className="underline text-primary hover:text-primary/80 font-medium h-auto p-0 text-xs">Terms of Service</Button>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
                                     <DialogHeader>
@@ -220,12 +220,11 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                 </div>
 
                 <div className="flex items-start gap-3 px-1">
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         id="save-template"
-                        className="mt-1 h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer"
+                        className="mt-0.5"
                         checked={saveAsTemplate}
-                        onChange={(e) => onSaveAsTemplateChange?.(e.target.checked)}
+                        onCheckedChange={(checked) => onSaveAsTemplateChange?.(checked === true)}
                     />
                     <div className="grid gap-1.5 leading-none">
                         <label

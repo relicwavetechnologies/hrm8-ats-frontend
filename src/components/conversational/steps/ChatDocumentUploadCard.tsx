@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { cn } from '@/shared/lib/utils';
 import { Upload, FileText, ChevronRight, Sparkles, X, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -80,7 +81,7 @@ export const ChatDocumentUploadCard: React.FC<ChatDocumentUploadCardProps> = ({
                     uploadComplete && "border-green-500 bg-green-50"
                 )}
             >
-                <input
+                <Input
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf,.doc,.docx,.txt"

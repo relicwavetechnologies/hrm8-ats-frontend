@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Button } from "@/shared/components/ui/button";
 import { Calendar } from "@/shared/components/ui/calendar";
@@ -387,7 +388,7 @@ export function GoalFormDialog({
                     <CardContent className="space-y-3">
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">KPI Name</label>
+                          <Label className="text-sm font-medium">KPI Name</Label>
                           <Input
                             placeholder="e.g., Response Time"
                             value={kpi.name}
@@ -395,7 +396,7 @@ export function GoalFormDialog({
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Unit</label>
+                          <Label className="text-sm font-medium">Unit</Label>
                           <Input
                             placeholder="e.g., minutes, %, count"
                             value={kpi.unit}
@@ -403,7 +404,7 @@ export function GoalFormDialog({
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Target Value</label>
+                          <Label className="text-sm font-medium">Target Value</Label>
                           <Input
                             type="number"
                             placeholder="100"
@@ -414,7 +415,7 @@ export function GoalFormDialog({
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Current Value</label>
+                          <Label className="text-sm font-medium">Current Value</Label>
                           <Input
                             type="number"
                             placeholder="0"
@@ -425,7 +426,7 @@ export function GoalFormDialog({
                           />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                          <label className="text-sm font-medium">Description (Optional)</label>
+                          <Label className="text-sm font-medium">Description (Optional)</Label>
                           <Input
                             placeholder="Additional details about this KPI"
                             value={kpi.description}
