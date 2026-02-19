@@ -74,6 +74,7 @@ interface DataTableProps<T> {
   // Column resizing
   tableId?: string;
   resizable?: boolean;
+  compact?: boolean;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -110,6 +111,7 @@ export function DataTable<T extends { id: string }>({
   onRowClick,
   tableId = "default-table",
   resizable = true,
+  compact = false,
 }: DataTableProps<T>) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -521,8 +523,14 @@ export function DataTable<T extends { id: string }>({
     );
   }
 
+  const headerRowClass = compact ? "h-8" : "";
+  const headCellClass = compact ? "text-[11px] font-semibold py-1.5 px-2.5" : "";
+  const rowClass = compact ? "h-10" : "";
+  const cellClass = compact ? "py-2 px-2.5 text-xs" : "";
+  const sortableButtonClass = compact ? "-ml-2 h-7 text-[11px]" : "-ml-4 h-8";
+
   return (
-    <div className="space-y-4">
+    <div className={cn(compact ? "space-y-3" : "space-y-4")}>
       {/* Filters and Export */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-[300px]">
@@ -591,8 +599,8 @@ export function DataTable<T extends { id: string }>({
 
       {/* Bulk Actions */}
       {selectable && selectedIds.length > 0 && renderBulkActions && (
-        <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg border">
-          <span className="text-sm font-medium">
+        <div className={cn("flex items-center gap-4 bg-muted/50 rounded-lg border", compact ? "p-2" : "p-3")}>
+          <span className={cn(compact ? "text-xs font-medium" : "text-sm font-medium")}>
             {selectedIds.length} row{selectedIds.length !== 1 ? 's' : ''} selected
           </span>
           {renderBulkActions(selectedIds)}
@@ -601,8 +609,8 @@ export function DataTable<T extends { id: string }>({
 
       {/* Grouping Control */}
       {grouping && groupedData && (
-        <div className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
-          <span className="text-sm text-muted-foreground">
+        <div className={cn("flex items-center justify-between p-2 bg-muted/30 rounded-md", compact && "py-1.5")}>
+          <span className={cn("text-muted-foreground", compact ? "text-xs" : "text-sm")}>
             Grouped by: <span className="font-medium">{grouping.label || grouping.column}</span>
           </span>
           <Button
@@ -619,9 +627,9 @@ export function DataTable<T extends { id: string }>({
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className={headerRowClass}>
               {selectable && (
-                <TableHead className="w-12">
+                <TableHead className={cn(compact ? "w-10" : "w-12", headCellClass)}>
                   <Checkbox
                     checked={
                       (paginatedData || filteredAndSortedData).length > 0 &&
@@ -639,18 +647,19 @@ export function DataTable<T extends { id: string }>({
               {displayColumns.map((column, index) => {
                 const width = resizable ? getColumnWidth(column.key) : undefined;
                 return (
-                  <TableHead 
+                  <TableHead
                     key={column.key} 
                     style={{ 
                       width: width ? `${width}px` : column.width,
                       position: 'relative',
                     }}
+                    className={headCellClass}
                   >
                     {column.sortable ? (
                       <Button
                         variant="ghost"
                         onClick={() => handleSort(column.key)}
-                        className="-ml-4 h-8 data-[state=open]:bg-accent"
+                        className={cn(sortableButtonClass, "data-[state=open]:bg-accent")}
                       >
                         {column.label}
                         {getSortIcon(column.key)}
@@ -702,7 +711,7 @@ export function DataTable<T extends { id: string }>({
                       />
                       {isExpanded &&
                         group.items.map((item) => (
-                          <TableRow 
+                          <TableRow
                             key={item.id}
                             onClick={(e) => {
                               e.preventDefault();
@@ -711,10 +720,10 @@ export function DataTable<T extends { id: string }>({
                                 onRowClick(item);
                               }
                             }}
-                            className={cn(onRowClick && "cursor-pointer")}
+                            className={cn(onRowClick && "cursor-pointer", rowClass)}
                           >
                             {selectable && (
-                              <TableCell onClick={(e) => e.stopPropagation()}>
+                              <TableCell onClick={(e) => e.stopPropagation()} className={cellClass}>
                                 <Checkbox
                                   checked={selectedIds.includes(item.id)}
                                   onCheckedChange={(checked) =>
@@ -725,7 +734,7 @@ export function DataTable<T extends { id: string }>({
                               </TableCell>
                             )}
                             {displayColumns.map((column) => (
-                              <TableCell key={column.key} style={{ width: column.width }}>
+                              <TableCell key={column.key} style={{ width: column.width }} className={cellClass}>
                                 {inlineEditing && column.editable ? (
                                   <EditableCell
                                     value={item[column.key as keyof T]}
@@ -764,7 +773,7 @@ export function DataTable<T extends { id: string }>({
               </TableRow>
             ) : (
               paginatedData && paginatedData.map((item) => (
-                <TableRow 
+                <TableRow
                   key={item.id}
                   onClick={(e) => {
                     e.preventDefault();
@@ -773,10 +782,10 @@ export function DataTable<T extends { id: string }>({
                       onRowClick(item);
                     }
                   }}
-                  className={cn(onRowClick && "cursor-pointer")}
+                  className={cn(onRowClick && "cursor-pointer", rowClass)}
                 >
                   {selectable && (
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell onClick={(e) => e.stopPropagation()} className={cellClass}>
                       <Checkbox
                         checked={selectedIds.includes(item.id)}
                         onCheckedChange={(checked) => handleSelectRow(item.id, checked as boolean)}
@@ -785,7 +794,7 @@ export function DataTable<T extends { id: string }>({
                     </TableCell>
                   )}
                   {displayColumns.map((column) => (
-                    <TableCell key={column.key} style={{ width: column.width }}>
+                    <TableCell key={column.key} style={{ width: column.width }} className={cellClass}>
                       {inlineEditing && column.editable ? (
                         <EditableCell
                           value={item[column.key as keyof T]}

@@ -26,6 +26,7 @@ export function EmailTab({ application }: EmailTabProps) {
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [selectedThread, setSelectedThread] = useState<GmailThread | null>(null);
   const [replyingToMessage, setReplyingToMessage] = useState<GmailMessage | null>(null);
+  const [composerMode, setComposerMode] = useState<'new' | 'reply'>('new');
   const [replyDrawerOpen, setReplyDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -68,7 +69,14 @@ export function EmailTab({ application }: EmailTabProps) {
   };
 
   const handleReply = (message: GmailMessage) => {
+    setComposerMode('reply');
     setReplyingToMessage(message);
+    setReplyDrawerOpen(true);
+  };
+
+  const handleComposeNew = () => {
+    setComposerMode('new');
+    setReplyingToMessage(null);
     setReplyDrawerOpen(true);
   };
 
@@ -81,15 +89,7 @@ export function EmailTab({ application }: EmailTabProps) {
     if (needsReconnectParam) {
       setNeedsReconnect(true);
     }
-    // Reload threads
     await loadThreads();
-    if (selectedThread) {
-      // Refresh the thread
-      const refreshed = threads.find(t => t.threadId === selectedThread.threadId);
-      if (refreshed) {
-        setSelectedThread(refreshed);
-      }
-    }
     setReplyingToMessage(null);
     setReplyDrawerOpen(false);
   };
@@ -114,6 +114,7 @@ export function EmailTab({ application }: EmailTabProps) {
           gmailConnected={gmailConnected}
           onThreadClick={handleThreadClick}
           onRefresh={loadThreads}
+          onCompose={handleComposeNew}
           needsReconnect={needsReconnect}
         />
       )}
@@ -123,16 +124,19 @@ export function EmailTab({ application }: EmailTabProps) {
           thread={selectedThread}
           onBack={handleBackFromThread}
           onReply={handleReply}
+          onCompose={handleComposeNew}
         />
       )}
 
       {/* Reply Drawer */}
       <EmailReplyDrawer
         open={replyDrawerOpen}
+        mode={composerMode}
         thread={selectedThread}
         replyingToMessage={replyingToMessage}
         applicationId={application.id}
         candidateName={application.candidateName || "Candidate"}
+        candidateEmail={application.candidateEmail || ""}
         jobTitle={application.jobTitle || "Position"}
         onClose={() => {
           setReplyDrawerOpen(false);

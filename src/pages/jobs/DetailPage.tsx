@@ -24,9 +24,12 @@ import {
   MoreVertical,
   Megaphone,
   Sparkles,
+  GitBranch,
   Video,
   ArrowUpCircle,
-  UserPlus
+  UserPlus,
+  Users,
+  CheckSquare
 } from "lucide-react";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
@@ -44,6 +47,7 @@ import { ApplicationPipeline } from "@/modules/applications/components/Applicati
 import { JobApplicantsList } from "@/modules/applications/components/JobApplicantsList";
 import { AllApplicantsCard } from "@/modules/applications/components/AllApplicantsCard";
 import { InitialScreeningTab } from "@/modules/applications/components/InitialScreeningTab";
+import { CandidatesTab } from "@/modules/applications/components/CandidatesTab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,12 +56,9 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
 import { ExternalPromotionDialog } from "@/modules/jobs/components/ExternalPromotionDialog";
-import { JobAnalyticsDashboard } from "@/modules/jobs/components/analytics/JobAnalyticsDashboard";
-import { JobCollaborationPanel } from "@/modules/jobs/components/collaboration/JobCollaborationPanel";
-import { JobVersionHistory } from "@/modules/jobs/components/history/JobVersionHistory";
 import { JobBudgetTracker } from "@/modules/jobs/components/budget/JobBudgetTracker";
-import { CandidateMatchingPanel } from "@/modules/jobs/components/matching/CandidateMatchingPanel";
 import { JobAIInterviewsTab } from "@/modules/jobs/components/aiInterview/JobAIInterviewsTab";
+import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { useToast } from "@/shared/hooks/use-toast";
 import { jobService } from "@/modules/jobs/lib/jobService";
 import { mapBackendJobToFrontend } from "@/modules/jobs/lib/jobDataMapper";
@@ -661,30 +662,30 @@ export default function JobDetail() {
             <div className="flex items-center gap-2 mr-4">
               <JobStatusBadge status={job.status} />
               {job.assignedConsultantName ? (
-                <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                   Consultant: {job.assignedConsultantName}
                 </Badge>
               ) : (
                 <ServiceTypeBadge type="self-managed" />
               )}
               {job.pipeline?.stage && (
-                <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                   Pipeline: {job.pipeline.stage.replace(/_/g, ' ')}
                 </Badge>
               )}
             </div>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/ats/jobs">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-3.5 w-3.5 mr-2" />
                 Back
               </Link>
             </Button>
             <Button size="sm" onClick={handleEditJob}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-3.5 w-3.5 mr-2" />
               Edit
             </Button>
             <Button size="sm" variant="outline" onClick={() => setHiringTeamDrawerOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
+              <UserPlus className="h-3.5 w-3.5 mr-2" />
               Manage Team
             </Button>
             <JobLifecycleActions
@@ -716,7 +717,8 @@ export default function JobDetail() {
                 value="applicants"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
-                Applicants
+                <GitBranch className="h-3.5 w-3.5 flex-shrink-0" />
+                Pipeline
                 {job.applicantsCount > 0 && (
                   <Badge variant="outline" className="h-5 px-1.5 text-xs rounded-full ml-1">{job.applicantsCount}</Badge>
                 )}
@@ -725,39 +727,28 @@ export default function JobDetail() {
                 value="screening"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
-                Initial Screening
+                AI Screening
               </TabsTrigger>
               <TabsTrigger
-                value="matching"
+                value="candidates"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
-                <Sparkles className="h-3.5 w-3.5 flex-shrink-0" />
-                Matching
+                <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                Candidates
               </TabsTrigger>
               <TabsTrigger
                 value="ai-interviews"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 <Video className="h-3.5 w-3.5 flex-shrink-0" />
-                AI Interviews
+                Interviews
               </TabsTrigger>
               <TabsTrigger
-                value="analytics"
+                value="tasks"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger
-                value="collaboration"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                Collaboration
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                History
+                <CheckSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                Tasks
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
@@ -769,7 +760,7 @@ export default function JobDetail() {
           </div>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="mt-6 space-y-6">
+          <TabsContent value="overview" className="mt-3 space-y-3">
             {/* Payment Status - Show for paid packages */}
             {(job.serviceType !== 'self-managed' && job.serviceType !== 'rpo') && (
               <JobPaymentStatus job={job} onPaymentComplete={handleJobUpdate} />
@@ -780,15 +771,15 @@ export default function JobDetail() {
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <ArrowUpCircle className="h-4 w-4 text-primary" />
+                    <ArrowUpCircle className="h-3.5 w-3.5 text-primary" />
                     Upgrade to HRM8 Recruitment Service
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Need additional support? Upgrade to one of our recruitment services to get expert help with candidate sourcing, screening, and hiring.
                   </p>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="space-y-2 text-xs">
                     <li className="flex items-start gap-2">
                       <span className="text-primary mt-0.5">✓</span>
                       <span>Professional candidate screening and evaluation</span>
@@ -803,52 +794,52 @@ export default function JobDetail() {
                     </li>
                   </ul>
                   <Button
-                    className="w-full"
+                    className="w-full h-8 text-xs"
                     onClick={() => setUpgradeServiceDialogOpen(true)}
                   >
-                    <ArrowUpCircle className="h-4 w-4 mr-2" />
+                    <ArrowUpCircle className="h-3.5 w-3.5 mr-2" />
                     Upgrade to Recruitment Service
                   </Button>
                 </CardContent>
               </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="lg:col-span-2 space-y-3">
                 {/* Job Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Job Details</CardTitle>
+                <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-xs font-semibold">Job Details</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <CardContent className="space-y-3 pt-0 px-3 pb-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Location:</span>
                         <span>{job.location}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-xs">
+                        <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Arrangement:</span>
-                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                        <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                           {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-xs">
+                        <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Type:</span>
                         <EmploymentTypeBadge type={job.employmentType} />
                       </div>
                       {(job.salaryMin || job.salaryMax) && (
                         <div className="space-y-2 col-span-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-center gap-2 text-xs">
+                            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="font-medium">Salary:</span>
                             <span>{formatSalaryRange(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod)}</span>
                           </div>
 
                           {job.salaryDescription && (
-                            <div className="ml-6 text-sm bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
+                            <div className="ml-6 text-xs bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
                               <p className="text-foreground italic">
                                 💰 {job.salaryDescription}
                               </p>
@@ -856,20 +847,20 @@ export default function JobDetail() {
                           )}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-xs">
+                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Experience:</span>
                         <span>{formatExperienceLevel(job.experienceLevel)}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-xs">
+                        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Visibility:</span>
-                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full capitalize">
+                        <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full capitalize">
                           {job.visibility}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-xs">
+                        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">Service:</span>
                         <ServiceTypeBadge type={job.serviceType} />
                         {!job.serviceType || job.serviceType === 'self-managed' ? (
@@ -880,37 +871,37 @@ export default function JobDetail() {
                     <Separator />
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Job Code</p>
-                      <p className="font-mono text-sm font-medium">{job.jobCode}</p>
+                      <p className="font-mono text-xs font-medium">{job.jobCode}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                      <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
+                      <p className="text-xs font-medium">{formatRelativeDate(job.postingDate)}</p>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Description */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Description</CardTitle>
+                <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-sm font-semibold">Description</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="pt-0 px-3 pb-3">
                     <div
-                      className="prose prose-sm max-w-none"
+                      className="prose prose-sm max-w-none text-xs leading-6"
                       dangerouslySetInnerHTML={{ __html: job.description }}
                     />
                   </CardContent>
                 </Card>
 
                 {/* Requirements */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Requirements</CardTitle>
+                <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-sm font-semibold">Requirements</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
+                  <CardContent className="pt-0 px-3 pb-3">
+                    <ul className="space-y-1.5">
                       {job.requirements.map((req, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
+                        <li key={index} className="flex items-start gap-2 text-xs">
                           <span className="text-primary mt-1">•</span>
                           <span>{req}</span>
                         </li>
@@ -920,14 +911,14 @@ export default function JobDetail() {
                 </Card>
 
                 {/* Responsibilities */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Responsibilities</CardTitle>
+                <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-sm font-semibold">Responsibilities</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
+                  <CardContent className="pt-0 px-3 pb-3">
+                    <ul className="space-y-1.5">
                       {job.responsibilities.map((resp, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
+                        <li key={index} className="flex items-start gap-2 text-xs">
                           <span className="text-primary mt-1">•</span>
                           <span>{resp}</span>
                         </li>
@@ -938,14 +929,14 @@ export default function JobDetail() {
 
                 {/* Distribution */}
                 {job.jobBoardDistribution.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Job Board Distribution</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                  <Card className="border-muted/60 shadow-none">
+                      <CardHeader className="px-3 pt-3 pb-2">
+                        <CardTitle className="text-sm font-semibold">Job Board Distribution</CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 px-3 pb-3">
                       <div className="flex flex-wrap gap-2">
                         {job.jobBoardDistribution.map((board) => (
-                          <Badge key={board} variant="outline" className="h-6 px-2 text-xs rounded-full">
+                          <Badge key={board} variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                             {board}
                           </Badge>
                         ))}
@@ -956,29 +947,29 @@ export default function JobDetail() {
               </div>
 
               {/* Activity Sidebar */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Quick Stats</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div className="space-y-3">
+                <Card className="border-muted/60 shadow-none">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Quick Stats</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2.5 pt-0 px-3 pb-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Eye className="h-4 w-4" />
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Eye className="h-3.5 w-3.5" />
                         <span>Total Views</span>
                       </div>
                       <span className="font-semibold">{job.viewsCount?.toLocaleString() || 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <ArrowUpCircle className="h-4 w-4" />
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <ArrowUpCircle className="h-3.5 w-3.5" />
                         <span>Apply Clicks</span>
                       </div>
                       <span className="font-semibold">{job.clicksCount?.toLocaleString() || 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Briefcase className="h-4 w-4" />
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Briefcase className="h-3.5 w-3.5" />
                         <span>Applicants</span>
                       </div>
                       <span className="font-semibold">{job.applicantsCount || 0}</span>
@@ -986,22 +977,22 @@ export default function JobDetail() {
                     <Separator />
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                      <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
+                      <p className="text-xs font-medium">{formatRelativeDate(job.postingDate)}</p>
                     </div>
                     {job.closeDate && (
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Closed</p>
-                        <p className="text-sm font-medium">{formatRelativeDate(job.closeDate)}</p>
+                        <p className="text-xs font-medium">{formatRelativeDate(job.closeDate)}</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <Card className="border-muted/60 shadow-none">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 px-3 pb-3">
                     <JobActivityFeed activities={activities} />
                   </CardContent>
                 </Card>
@@ -1024,20 +1015,20 @@ export default function JobDetail() {
                   onClick={() => setEmailHubOpen(true)}
                   variant="outline"
                 >
-                  <Inbox className="h-4 w-4 mr-2" />
+                  <Inbox className="h-3.5 w-3.5 mr-2" />
                   Email Center
                 </Button>
                 <Button
                   onClick={() => setUploadDialogOpen(true)}
                   variant="outline"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3.5 w-3.5 mr-2" />
                   Upload Candidates
                 </Button>
                 <Button
                   onClick={() => setTalentPoolDialogOpen(true)}
                 >
-                  <UserPlus className="h-4 w-4 mr-2" />
+                  <UserPlus className="h-3.5 w-3.5 mr-2" />
                   Add from Talent Pool
                 </Button>
               </div>
@@ -1057,11 +1048,11 @@ export default function JobDetail() {
                 <Tabs value={applicationsViewMode} onValueChange={(v) => setApplicationsViewMode(v as 'pipeline' | 'list')}>
                   <TabsList>
                     <TabsTrigger value="pipeline">
-                      <LayoutGrid className="h-4 w-4 mr-2" />
+                      <LayoutGrid className="h-3.5 w-3.5 mr-2" />
                       Pipeline
                     </TabsTrigger>
                     <TabsTrigger value="list">
-                      <List className="h-4 w-4 mr-2" />
+                      <List className="h-3.5 w-3.5 mr-2" />
                       List
                     </TabsTrigger>
                   </TabsList>
@@ -1095,7 +1086,7 @@ export default function JobDetail() {
             )}
           </TabsContent>
 
-          {/* Initial Screening Tab */}
+          {/* AI Screening Tab */}
           <TabsContent value="screening" className="mt-6">
             <InitialScreeningTab
               jobId={job.id}
@@ -1106,29 +1097,24 @@ export default function JobDetail() {
             />
           </TabsContent>
 
-          {/* Matching Tab */}
-          <TabsContent value="matching" className="mt-6">
-            <CandidateMatchingPanel job={job} />
+          {/* Candidates Tab */}
+          <TabsContent value="candidates" className="mt-6">
+            <CandidatesTab
+              applications={allApplications}
+              jobId={job.id}
+              jobTitle={job.title}
+              onRefresh={handleJobUpdate}
+            />
           </TabsContent>
 
-          {/* AI Interviews Tab */}
+          {/* Interviews Tab */}
           <TabsContent value="ai-interviews" className="mt-6">
             <JobAIInterviewsTab job={job} />
           </TabsContent>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="mt-6">
-            <JobAnalyticsDashboard jobId={job.id} />
-          </TabsContent>
-
-          {/* Collaboration Tab */}
-          <TabsContent value="collaboration" className="mt-6">
-            <JobCollaborationPanel jobId={job.id} />
-          </TabsContent>
-
-          {/* History Tab */}
-          <TabsContent value="history" className="mt-6">
-            <JobVersionHistory jobId={job.id} onRevert={handleRevertVersion} />
+          {/* Tasks Tab */}
+          <TabsContent value="tasks" className="mt-6">
+            <JobTasksTab job={job} applications={allApplications} onRefresh={handleJobUpdate} />
           </TabsContent>
 
           {/* Settings Tab */}
@@ -1141,15 +1127,15 @@ export default function JobDetail() {
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Megaphone className="h-4 w-4 text-primary" />
+                    <Megaphone className="h-3.5 w-3.5 text-primary" />
                     Promote to External Job Boards
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Maximize your job's reach by promoting it to 50M+ candidates across major job boards like Indeed, LinkedIn, and Glassdoor.
                   </p>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="space-y-2 text-xs">
                     <li className="flex items-start gap-2">
                       <span className="text-primary mt-0.5">✓</span>
                       <span>Get 3-5x more qualified applicants</span>
@@ -1164,10 +1150,10 @@ export default function JobDetail() {
                     </li>
                   </ul>
                   <Button
-                    className="w-full"
+                    className="w-full h-8 text-xs"
                     onClick={() => setPromotionDialogOpen(true)}
                   >
-                    <Megaphone className="h-4 w-4 mr-2" />
+                    <Megaphone className="h-3.5 w-3.5 mr-2" />
                     Promote to External Job Boards
                   </Button>
                 </CardContent>
@@ -1180,7 +1166,7 @@ export default function JobDetail() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button variant="outline" onClick={handleEditJob} className="w-full justify-start">
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-3.5 w-3.5 mr-2" />
                   Edit Job Details
                 </Button>
                 <Button
@@ -1190,12 +1176,12 @@ export default function JobDetail() {
                 >
                   {job.archived ? (
                     <>
-                      <ArchiveRestore className="h-4 w-4 mr-2" />
+                      <ArchiveRestore className="h-3.5 w-3.5 mr-2" />
                       Unarchive Job
                     </>
                   ) : (
                     <>
-                      <Archive className="h-4 w-4 mr-2" />
+                      <Archive className="h-3.5 w-3.5 mr-2" />
                       Archive Job
                     </>
                   )}
@@ -1205,7 +1191,7 @@ export default function JobDetail() {
                   className="w-full justify-start"
                   onClick={() => setDeleteDialogOpen(true)}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
                   Delete Job
                 </Button>
               </CardContent>

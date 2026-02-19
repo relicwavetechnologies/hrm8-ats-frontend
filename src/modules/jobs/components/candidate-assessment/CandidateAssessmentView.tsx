@@ -4,9 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus, Loader2 } from "lucide-react";
 import { Application } from "@/shared/types/application";
-import { OverviewTab } from "./tabs/OverviewTab";
+import { ActivityTimelineTab } from "./tabs/ActivityTimelineTab";
 import { ExperienceSkillsTab } from "./tabs/ExperienceSkillsTab";
 import { QuestionnaireResponsesTab } from "./tabs/QuestionnaireResponsesTab";
 import { InterviewsTab } from "./tabs/InterviewsTab";
@@ -23,6 +24,7 @@ import { NotificationCenter } from "@/modules/notifications/components/Notificat
 import { CandidateInfoPanel } from "./CandidateInfoPanel";
 import { CandidateNotesPanelEnhanced } from "./CandidateNotesPanelEnhanced";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/shared/components/ui/resizable";
+import { useToast } from "@/shared/hooks/use-toast";
 
 interface CandidateAssessmentViewProps {
   application: Application;
@@ -53,9 +55,21 @@ export function CandidateAssessmentView({
   isSimpleFlow,
   jobId,
 }: CandidateAssessmentViewProps) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("activity");
   const [topActiveTab, setTopActiveTab] = useState("notes");
   const [fullApplication, setFullApplication] = useState<Application>(application);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const statusToStageMap: Record<string, string> = {
+    applied: "New Application",
+    screening: "Resume Review",
+    interview: "Technical Interview",
+    offer: "Offer Extended",
+    hired: "Offer Accepted",
+    rejected: "Rejected",
+    withdrawn: "Withdrawn",
+  };
 
   useEffect(() => {
     const fetchFullDetails = async () => {
@@ -90,6 +104,36 @@ export function CandidateAssessmentView({
     }
   };
 
+  const handleStatusChange = async (nextStatus: string) => {
+    if (!fullApplication.id || !nextStatus || nextStatus === fullApplication.status) return;
+    const nextStage = statusToStageMap[nextStatus] || fullApplication.stage || "New Application";
+
+    setIsUpdatingStatus(true);
+    try {
+      const { applicationService } = await import("@/modules/applications/lib/applicationService");
+      const response = await applicationService.updateStage(fullApplication.id, nextStage);
+
+      if (!response.success) {
+        throw new Error(response.error || "Failed to update status");
+      }
+
+      setFullApplication((prev) => ({
+        ...prev,
+        status: nextStatus as Application["status"],
+        stage: nextStage as Application["stage"],
+      }));
+      toast({ title: "Status updated" });
+    } catch (error) {
+      toast({
+        title: "Failed to update status",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -105,16 +149,43 @@ export function CandidateAssessmentView({
         <div ref={containerRef} className="flex flex-col h-full relative overflow-hidden">
           {/* Compact Header */}
           <div className="bg-background flex-shrink-0">
-            <div className="flex items-center justify-end py-1 px-2 gap-1">
-              <NotificationCenter userId="current-user" />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onOpenChange(false)}
-                className="h-7 w-7"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between py-1.5 px-2 gap-2 border-b">
+              <div className="flex items-center gap-2 min-w-0">
+                <Badge variant="outline" className="h-6 text-[10px] px-2 max-w-[180px] truncate">
+                  {fullApplication.candidateName || "Candidate"}
+                </Badge>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">Status</span>
+                <Select
+                  value={String(fullApplication.status || "applied")}
+                  onValueChange={handleStatusChange}
+                  disabled={isUpdatingStatus}
+                >
+                  <SelectTrigger className="h-7 w-[160px] text-[11px] bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="screening">Screening</SelectItem>
+                    <SelectItem value="interview">Interview</SelectItem>
+                    <SelectItem value="offer">Offer</SelectItem>
+                    <SelectItem value="hired">Hired</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isUpdatingStatus && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              </div>
+              <div className="flex items-center gap-1">
+                <NotificationCenter userId="current-user" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onOpenChange(false)}
+                  className="h-7 w-7"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -160,9 +231,9 @@ export function CandidateAssessmentView({
                       <div className="border-b px-2 bg-muted/20 flex-shrink-0">
                         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                           <TabsList className="h-10 bg-transparent inline-flex w-max gap-1 whitespace-nowrap">
-                            <TabsTrigger value="overview" className="gap-1.5 text-xs">
-                              <FileText className="h-3.5 w-3.5" />
-                              Overview
+                            <TabsTrigger value="activity" className="gap-1.5 text-xs">
+                              <Activity className="h-3.5 w-3.5" />
+                              Activity
                             </TabsTrigger>
 
                             <TabsTrigger value="notes" className="gap-1.5 text-xs">
@@ -211,8 +282,8 @@ export function CandidateAssessmentView({
 
                       <ScrollArea className="flex-1">
                         <div className="p-4">
-                          <TabsContent value="overview" className="mt-0">
-                            <OverviewTab application={fullApplication} />
+                          <TabsContent value="activity" className="mt-0">
+                            <ActivityTimelineTab application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="notes" className="mt-0">
@@ -261,7 +332,7 @@ export function CandidateAssessmentView({
                           </TabsContent>
 
                           <TabsContent value="annotations" className="mt-0">
-                            <ResumeAnnotationsTab candidateId={fullApplication.id} />
+                            <ResumeAnnotationsTab candidateId={fullApplication.id} application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="email" className="mt-0">

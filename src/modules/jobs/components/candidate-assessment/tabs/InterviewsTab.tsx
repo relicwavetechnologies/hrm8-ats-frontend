@@ -32,12 +32,14 @@ import { cn } from '@/shared/lib/utils';
 import { format, isFuture, isToday } from 'date-fns';
 import { apiClient } from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/use-toast';
+import { videoInterviewService, type VideoInterview } from '@/shared/lib/videoInterviewService';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 
 interface InterviewNote {
   id: string;
@@ -77,6 +79,7 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [hiringTeam, setHiringTeam] = useState<HiringTeamMember[]>([]);
+  const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   const { interviews: applicationInterviews } = application;
@@ -189,6 +192,33 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
       toast({ title: 'Note deleted' });
     } catch {
       toast({ title: 'Failed to delete note', variant: 'destructive' });
+    }
+  };
+
+  const handleStatusChange = async (interviewId: string, status: VideoInterview['status']) => {
+    setUpdatingStatus((prev) => ({ ...prev, [interviewId]: true }));
+    try {
+      const response = await videoInterviewService.updateStatus(interviewId, status);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update interview status');
+      }
+
+      setScheduledInterviews((prev) =>
+        prev.map((item) => {
+          if (item.id !== interviewId) return item;
+          return {
+            ...item,
+            status,
+            scheduled_date: item.scheduled_date ?? item.scheduledDate,
+          };
+        })
+      );
+      toast({ title: 'Interview status updated' });
+    } catch (error) {
+      console.error('Failed to update interview status:', error);
+      toast({ title: 'Failed to update interview status', variant: 'destructive' });
+    } finally {
+      setUpdatingStatus((prev) => ({ ...prev, [interviewId]: false }));
     }
   };
 
@@ -320,9 +350,26 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
                       </div>
                     </div>
 
-                    <div className="col-span-3">
-                      <Badge variant="outline" className={cn("text-[9px] px-1 py-0 h-4 uppercase tracking-tighter w-fit", getStatusColor(interview.status))}>
-                        {interview.status.replace('_', ' ')}
+                    <div className="col-span-3" onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={String(interview.status).toUpperCase()}
+                        onValueChange={(value) => handleStatusChange(interview.id, value as VideoInterview['status'])}
+                        disabled={updatingStatus[interview.id]}
+                      >
+                        <SelectTrigger className="h-6 text-[10px] bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                          <SelectItem value="COMPLETED">Completed</SelectItem>
+                          <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                          <SelectItem value="NO_SHOW">No Show</SelectItem>
+                          <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Badge variant="outline" className={cn("mt-1 text-[9px] px-1 py-0 h-4 uppercase tracking-tighter w-fit", getStatusColor(interview.status))}>
+                        {String(interview.status).replace('_', ' ')}
                       </Badge>
                     </div>
 

@@ -15,6 +15,7 @@ export interface Annotation {
 
 export interface CreateAnnotationRequest {
     resume_id: string;
+    application_id?: string;
     user_id: string;
     user_name: string;
     user_color: string;
@@ -56,4 +57,3 @@ class ResumeAnnotationService {
 }
 
 export const resumeAnnotationService = new ResumeAnnotationService();
-

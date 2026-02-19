@@ -1,6 +1,7 @@
 
 import { apiClient } from '@/shared/services/api';
 import type { Application } from '@/shared/types/application';
+import { jobService } from '@/modules/jobs/lib/jobService';
 
 export interface SubmitApplicationRequest {
     jobId: string;
@@ -49,7 +50,32 @@ class ApplicationService {
     }
 
     async getCandidateApplications() {
-        return apiClient.get<{ applications: Application[] }>('/api/applications');
+        try {
+            return await apiClient.get<{ applications: Application[] }>('/api/applications');
+        } catch {
+            const jobsResponse = await jobService.getJobs({ page: 1, limit: 300 });
+            if (!jobsResponse.success || !jobsResponse.data?.jobs?.length) {
+                return { success: true, data: { applications: [] } } as any;
+            }
+
+            const appResponses = await Promise.allSettled(
+                jobsResponse.data.jobs.map((job) => this.getJobApplications(job.id))
+            );
+
+            const allApplications = appResponses
+                .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+                .flatMap((result) => result.value?.data?.applications || []);
+
+            const unique = new Map<string, Application>();
+            allApplications.forEach((app: Application) => {
+                if (app?.id && !unique.has(app.id)) unique.set(app.id, app);
+            });
+
+            return {
+                success: true,
+                data: { applications: Array.from(unique.values()) },
+            } as any;
+        }
     }
 
     async getJobApplications(

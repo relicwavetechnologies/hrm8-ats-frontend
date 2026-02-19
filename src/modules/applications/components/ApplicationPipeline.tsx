@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, DragOverEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Application, ApplicationStage } from "@/shared/types/application";
@@ -209,6 +209,7 @@ const StageColumn = React.memo(function StageColumn({
   const { setNodeRef, isOver } = useDroppable({
     id: round.id,
   });
+  const selectedSet = useMemo(() => new Set(selectedForComparison), [selectedForComparison]);
 
   // Get color based on round type and fixed status
   const getRoundColor = (round: JobRound): string => {
@@ -225,9 +226,9 @@ const StageColumn = React.memo(function StageColumn({
 
   return (
     <div className="min-w-0">
-      <Card className={`${getRoundColor(round)} border-2 h-full flex flex-col ${isOver ? 'ring-2 ring-primary' : ''}`}>
-        <div className="p-3 flex flex-col flex-1">
-          <div className="flex items-center justify-between mb-3 flex-shrink-0">
+      <Card className={`${getRoundColor(round)} border h-full flex flex-col shadow-none ${isOver ? 'ring-1 ring-primary' : ''}`}>
+        <div className="p-2.5 flex flex-col flex-1">
+          <div className="flex items-center justify-between mb-2 flex-shrink-0">
             <div
               className={`flex items-center gap-2 flex-1 min-w-0 ${round.isFixed && round.fixedKey === 'NEW' ? 'cursor-pointer hover:opacity-80' : ''}`}
               onClick={(e) => {
@@ -242,7 +243,7 @@ const StageColumn = React.memo(function StageColumn({
                   <GripVertical className="h-4 w-4" />
                 </div>
               )}
-              <h3 className="font-semibold text-sm truncate">{round.name}</h3>
+              <h3 className="font-semibold text-xs truncate">{round.name}</h3>
               {!round.isFixed && round.type === 'INTERVIEW' && (
                 <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-full shrink-0">
                   Interview
@@ -255,7 +256,7 @@ const StageColumn = React.memo(function StageColumn({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs h-6 px-2 rounded-full">
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-full">
                 {applications.length}
               </Badge>
               {onConfigureEmail && !isSimpleFlow && (
@@ -272,7 +273,7 @@ const StageColumn = React.memo(function StageColumn({
                   <Mail className="h-3 w-3" />
                 </Button>
               )}
-              {round.isFixed && round.fixedKey === 'NEW' && (
+              {round.isFixed && round.fixedKey === 'NEW' && !isSimpleFlow && (
                 <>
                   {onOpenScreening && (
                     <Button
@@ -322,7 +323,7 @@ const StageColumn = React.memo(function StageColumn({
                   )}
                 </>
               )}
-              {!round.isFixed && round.type === 'INTERVIEW' && (
+              {!round.isFixed && round.type === 'INTERVIEW' && !isSimpleFlow && (
                 <>
                   {onConfigureInterview && !isSimpleFlow && (
                     <Button
@@ -354,7 +355,7 @@ const StageColumn = React.memo(function StageColumn({
                   )}
                 </>
               )}
-              {round.isFixed && round.fixedKey === 'OFFER' && (
+              {round.isFixed && round.fixedKey === 'OFFER' && !isSimpleFlow && (
                 <>
                   {onConfigureOffer && !isSimpleFlow && (
                     <Button
@@ -370,7 +371,7 @@ const StageColumn = React.memo(function StageColumn({
                       <Settings className="h-3 w-3" />
                     </Button>
                   )}
-                  {onExecuteOffer && applications.length > 0 && (
+                  {onExecuteOffer && applications.length > 0 && !isSimpleFlow && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -404,25 +405,22 @@ const StageColumn = React.memo(function StageColumn({
           </div>
           <div ref={setNodeRef} className="flex-1 min-h-[150px]">
             <SortableContext items={applications.map((app) => app.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-1.5 flex-1 overflow-y-auto min-h-[150px]">
+              <div className="space-y-1 flex-1 overflow-y-auto min-h-[150px]">
                 {applications.map((application) => (
                   <div key={application.id} className="relative group">
                     <ApplicationCard
                       application={application}
                       onClick={() => onApplicationClick(application)}
                       isCompareMode={isCompareMode}
-                      isSelected={selectedForComparison.includes(application.id)}
+                      isSelected={selectedSet.has(application.id)}
                       onToggleSelect={onToggleSelect}
                       variant="minimal"
                       allRounds={allRounds}
-                      onMoveToRound={(appId, roundId) => {
-                        if (onMoveToRound) {
-                          onMoveToRound(appId, roundId);
-                        }
-                      }}
+                      onMoveToRound={onMoveToRound}
                       onViewInterviews={onViewInterviews}
                       isOptimisticMove={optimisticMoves.has(application.id)}
                       hasFailed={failedMoves.has(application.id)}
+                      isSimpleFlow={isSimpleFlow}
                     />
                   </div>
                 ))}
@@ -470,7 +468,7 @@ export function ApplicationPipeline({
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [jobData, setJobData] = useState<any>(null);
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Optimistic update state - for instant UI feedback
   const [optimisticMoves, setOptimisticMoves] = useState<Map<string, string>>(new Map());
@@ -870,14 +868,6 @@ export function ApplicationPipeline({
       // Dragging an application
       setActiveId(id);
     }
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    // Optional: Add logic for smoother drag-over effects between columns
-    // For now, we rely on handleDragEnd for the actual move
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -1491,13 +1481,6 @@ export function ApplicationPipeline({
         const matchedRound = findRoundForApplication(app);
         if (matchedRound && roundMap.has(matchedRound.id)) {
           roundMap.get(matchedRound.id)!.push(app);
-        } else {
-          console.warn('[ApplicationPipeline] Could not find round for application:', {
-            appId: app.id,
-            stage: app.stage,
-            roundId: app.roundId,
-            availableRounds: rounds.map(r => ({ id: r.id, name: r.name, fixedKey: r.fixedKey }))
-          });
         }
       }
     });
@@ -1592,7 +1575,6 @@ export function ApplicationPipeline({
         <DndContext
           sensors={sensors}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="flex h-full gap-4 min-w-max pb-4">
