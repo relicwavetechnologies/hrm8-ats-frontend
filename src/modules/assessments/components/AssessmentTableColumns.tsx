@@ -18,8 +18,8 @@ const getStatusBadge = (status: Assessment['status']) => {
   const styles: Record<Assessment['status'], { label: string; className: string }> = {
     'draft': { label: 'Draft', className: 'text-foreground/70 border-foreground/20' },
     'pending-invitation': { label: 'Pending Invitation', className: 'text-warning border-warning/30 bg-warning/5' },
-    'invited': { label: 'Invited', className: 'text-purple-600 border-purple-300/70 bg-purple-50/40' },
-    'in-progress': { label: 'In Progress', className: 'text-blue-600 border-blue-300/70 bg-blue-50/40' },
+    'invited': { label: 'Invited', className: 'text-purple-600 border-purple-300/70 bg-purple-50/40 dark:text-purple-400 dark:border-purple-700/70 dark:bg-purple-900/40' },
+    'in-progress': { label: 'In Progress', className: 'text-blue-600 border-blue-300/70 bg-blue-50/40 dark:text-blue-400 dark:border-blue-700/70 dark:bg-blue-900/40' },
     'completed': { label: 'Completed', className: 'text-success border-success/30 bg-success/5' },
     'expired': { label: 'Expired', className: 'text-destructive border-destructive/30 bg-destructive/5' },
     'cancelled': { label: 'Cancelled', className: 'text-foreground/60 border-foreground/20' },
@@ -126,7 +126,11 @@ export const createAssessmentTableColumns = (
             {assessment.passed !== undefined && (
               <Badge
                 variant="outline"
-                className={`h-6 px-2 rounded-full text-xs ${assessment.passed ? 'text-success border-success/30 bg-success/5' : 'text-destructive border-destructive/30 bg-destructive/5'}`}
+                className={`h-6 px-2 rounded-full text-xs ${
+                  assessment.passed 
+                    ? 'text-success border-success/30 bg-success/5 dark:text-success-foreground/90 dark:border-success/50 dark:bg-success/20' 
+                    : 'text-destructive border-destructive/30 bg-destructive/5 dark:text-destructive-foreground/90 dark:border-destructive/50 dark:bg-destructive/20'
+                }`}
               >
                 {assessment.passed ? 'Pass' : 'Fail'}
               </Badge>

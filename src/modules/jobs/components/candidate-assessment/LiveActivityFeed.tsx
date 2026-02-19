@@ -63,25 +63,25 @@ export const LiveActivityFeed: React.FC<LiveActivityFeedProps> = ({
   const getActivityColor = (action: ActivityAction) => {
     switch (action) {
       case 'viewed':
-        return 'border-blue-200 bg-blue-50';
+        return 'border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800';
       case 'commented':
-        return 'border-green-200 bg-green-50';
+        return 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800';
       case 'rated':
-        return 'border-yellow-200 bg-yellow-50';
+        return 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800';
       case 'status_changed':
-        return 'border-purple-200 bg-purple-50';
+        return 'border-purple-200 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-800';
       case 'decision_made':
-        return 'border-green-200 bg-green-50';
+        return 'border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800';
       case 'interview_scheduled':
-        return 'border-orange-200 bg-orange-50';
+        return 'border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800';
       case 'note_added':
-        return 'border-gray-200 bg-gray-50';
+        return 'border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700';
       case 'document_uploaded':
-        return 'border-indigo-200 bg-indigo-50';
+        return 'border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800';
       case 'mentioned':
-        return 'border-pink-200 bg-pink-50';
+        return 'border-pink-200 bg-pink-50 dark:bg-pink-900/20 dark:border-pink-800';
       default:
-        return 'border-border bg-muted';
+        return 'border-border bg-muted/50';
     }
   };
 

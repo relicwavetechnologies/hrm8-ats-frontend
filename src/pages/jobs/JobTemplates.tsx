@@ -130,18 +130,18 @@ export default function JobTemplates() {
   const getCategoryClass = (category?: string) => {
     const value = (category || "").toLowerCase();
     if (value.includes("engineering") || value.includes("tech")) {
-      return "bg-blue-50 text-blue-700 border-blue-200";
+      return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
     }
     if (value.includes("sales") || value.includes("marketing")) {
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
     }
     if (value.includes("hr") || value.includes("people")) {
-      return "bg-violet-50 text-violet-700 border-violet-200";
+      return "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800";
     }
     if (value.includes("finance")) {
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
     }
-    return "bg-slate-50 text-slate-700 border-slate-200";
+    return "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700";
   };
 
   const handleUseTemplate = async (template: JobTemplate) => {
@@ -244,8 +244,8 @@ export default function JobTemplates() {
           title: previewForm.title.trim(),
           department: previewForm.department.trim(),
           location: previewForm.location.trim(),
-          employmentType: previewForm.employmentType.trim(),
-          workArrangement: previewForm.workArrangement.trim(),
+          employmentType: previewForm.employmentType.trim() as any,
+          workArrangement: previewForm.workArrangement.trim() as any,
           experienceLevel: previewForm.experienceLevel.trim(),
           salaryMin: Number.isFinite(parsedMin as number) ? parsedMin : undefined,
           salaryMax: Number.isFinite(parsedMax as number) ? parsedMax : undefined,
@@ -285,7 +285,7 @@ export default function JobTemplates() {
           <div className="flex items-center gap-1.5">
             <p className="text-xs font-semibold truncate">{template.name}</p>
             {(template.usageCount || 0) > 20 && (
-              <Badge variant="secondary" className="h-5 text-[10px] bg-amber-50 text-amber-700 border border-amber-200">
+              <Badge variant="secondary" className="h-5 text-[10px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
                 Popular
               </Badge>
             )}
@@ -316,7 +316,7 @@ export default function JobTemplates() {
       label: "Usage",
       sortable: true,
       render: (template) => (
-        <Badge variant="outline" className="h-5 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+        <Badge variant="outline" className="h-5 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
           {template.usageCount || 0}
         </Badge>
       ),
@@ -335,7 +335,7 @@ export default function JobTemplates() {
       key: "shared",
       label: "Shared",
       render: () => (
-        <Badge variant="secondary" className="h-5 text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+        <Badge variant="secondary" className="h-5 text-[10px] bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
           <Users className="h-3 w-3 mr-1" /> Team
         </Badge>
       ),
@@ -393,12 +393,12 @@ export default function JobTemplates() {
               </Button>
             </div>
 
-            <div className="border rounded-md bg-gradient-to-r from-slate-50 to-blue-50/40 px-2 py-1.5">
+            <div className="border rounded-md bg-gradient-to-r from-slate-50 to-blue-50/40 dark:from-slate-900/40 dark:to-blue-900/10 px-2 py-1.5">
               <div className="flex items-center gap-2 text-[11px]">
-                <Badge variant="outline" className="h-6 rounded-md bg-white border-slate-200 text-slate-700">Total {stats.total}</Badge>
-                <Badge variant="outline" className="h-6 rounded-md bg-blue-50 border-blue-200 text-blue-700">Mine {stats.mine}</Badge>
-                <Badge variant="outline" className="h-6 rounded-md bg-emerald-50 border-emerald-200 text-emerald-700">Usage {stats.usage}</Badge>
-                <Badge variant="outline" className="h-6 rounded-md bg-violet-50 border-violet-200 text-violet-700">Categories {stats.categories}</Badge>
+                <Badge variant="outline" className="h-6 rounded-md bg-white border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">Total {stats.total}</Badge>
+                <Badge variant="outline" className="h-6 rounded-md bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400">Mine {stats.mine}</Badge>
+                <Badge variant="outline" className="h-6 rounded-md bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400">Usage {stats.usage}</Badge>
+                <Badge variant="outline" className="h-6 rounded-md bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-900/30 dark:border-violet-800 dark:text-violet-400">Categories {stats.categories}</Badge>
               </div>
             </div>
 
@@ -517,7 +517,7 @@ export default function JobTemplates() {
                       <Badge variant="outline" className={`h-5 text-[10px] ${getCategoryClass(previewForm.category)}`}>
                         {previewForm.category || "Uncategorized"}
                       </Badge>
-                      <Badge variant="outline" className="h-5 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                      <Badge variant="outline" className="h-5 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
                         Used {previewTemplate.usageCount || 0}
                       </Badge>
                     </div>
