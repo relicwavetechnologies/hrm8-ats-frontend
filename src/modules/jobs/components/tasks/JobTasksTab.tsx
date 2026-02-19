@@ -1,5 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -14,15 +26,18 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { FormDrawer } from '@/shared/components/ui/form-drawer';
 import { DateTimePicker } from '@/shared/components/ui/date-time-picker';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { apiClient } from '@/shared/lib/api';
+import { applicationService } from '@/shared/lib/applicationService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { authService } from '@/shared/lib/authService';
 import type { Application } from '@/shared/types/application';
 import type { Job } from '@/shared/types/job';
-import { CheckSquare, Loader2, Plus, Trash2, MessageSquare, Send, BarChart3, Sparkles } from 'lucide-react';
+import { CheckSquare, Loader2, Plus, Trash2, MessageSquare, Send, BarChart3, Sparkles, LayoutGrid, List, GripVertical } from 'lucide-react';
+import { CandidateAssessmentView } from '@/modules/jobs/components/candidate-assessment/CandidateAssessmentView';
 
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
@@ -30,6 +45,7 @@ type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
 interface JobTaskRow {
   id: string;
   applicationId: string;
+  jobTitle?: string;
   candidateName: string;
   candidateEmail: string;
   title: string;
@@ -54,9 +70,24 @@ interface ParsedTaskNote {
 }
 
 interface JobTasksTabProps {
-  job: Job;
-  applications: Application[];
+  job?: Job;
+  applications?: Application[];
   onRefresh?: () => void;
+}
+
+interface TaskKanbanColumnProps {
+  id: TaskStatus;
+  label: string;
+  count: number;
+  children: ReactNode;
+}
+
+interface TaskKanbanCardProps {
+  task: JobTaskRow;
+  onOpenNotes: (task: JobTaskRow) => void;
+  onDelete: (task: JobTaskRow) => void;
+  onViewProfile: (task: JobTaskRow) => void;
+  loadingProfile: boolean;
 }
 
 const priorityClass = (priority: TaskPriority) => {
@@ -94,6 +125,89 @@ function WeeklyTaskBars({ data }: { data: Array<{ label: string; created: number
   );
 }
 
+const taskColumnTheme: Record<TaskStatus, string> = {
+  PENDING: 'bg-gradient-to-b from-slate-50/90 to-slate-50/40 border-slate-200/70',
+  IN_PROGRESS: 'bg-gradient-to-b from-blue-50/90 to-blue-50/40 border-blue-200/70',
+  COMPLETED: 'bg-gradient-to-b from-emerald-50/90 to-emerald-50/40 border-emerald-200/70',
+};
+
+function TaskKanbanColumn({ id, label, count, children }: TaskKanbanColumnProps) {
+  const { isOver, setNodeRef } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border ${taskColumnTheme[id]} transition-all duration-150 ${
+        isOver ? 'ring-2 ring-primary/40 shadow-sm' : ''
+      }`}
+    >
+      <div className="border-b border-border/60 px-3 py-2.5 flex items-center justify-between">
+        <p className="text-xs font-semibold">{label}</p>
+        <Badge variant="outline" className="text-[10px] h-5 px-1.5">{count}</Badge>
+      </div>
+      <div className="max-h-[640px] overflow-auto p-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function TaskKanbanCard({ task, onOpenNotes, onDelete, onViewProfile, loadingProfile }: TaskKanbanCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `${task.applicationId}::${task.id}`,
+    data: { status: task.status },
+  });
+  const style = { transform: CSS.Translate.toString(transform) };
+  const notes = parseTaskDescription(task.description);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-lg border bg-background/95 p-2.5 shadow-sm transition-all duration-150 ${
+        isDragging ? 'opacity-80 shadow-md scale-[1.01] z-10' : 'hover:shadow'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-medium truncate">{task.title}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{task.candidateName} • {task.candidateEmail}</p>
+          {task.jobTitle && <p className="text-[11px] text-muted-foreground truncate">{task.jobTitle}</p>}
+        </div>
+        <button
+          type="button"
+          className="h-6 w-6 shrink-0 rounded border bg-muted/30 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+          {...listeners}
+          {...attributes}
+          aria-label="Drag task"
+        >
+          <GripVertical className="h-3.5 w-3.5 mx-auto" />
+        </button>
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${priorityClass(task.priority)}`}>{task.priority}</Badge>
+        <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${statusClass(task.status)}`}>{task.status.replace('_', ' ')}</Badge>
+        <Badge variant="outline" className="text-[10px] h-5 px-1.5">{task.assignedToName || 'Unassigned'}</Badge>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{notes.notes[0]?.content || notes.descriptionText || 'No notes'}</p>
+      <p className="text-[11px] text-muted-foreground mt-1">
+        Due: {task.dueDate ? format(new Date(task.dueDate), 'PPp') : 'No due date'}
+      </p>
+      <div className="flex flex-wrap gap-1 mt-2">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => onOpenNotes(task)}>
+          <MessageSquare className="h-3 w-3 mr-1" />
+          Notes
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => onViewProfile(task)} disabled={loadingProfile}>
+          {loadingProfile ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+          View Profile
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-destructive" onClick={() => onDelete(task)}>
+          <Trash2 className="h-3 w-3 mr-1" />
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function parseTaskDescription(description?: string): { descriptionText: string; notes: ParsedTaskNote[] } {
   if (!description) return { descriptionText: '', notes: [] };
 
@@ -117,7 +231,7 @@ function parseTaskDescription(description?: string): { descriptionText: string; 
   return { descriptionText, notes };
 }
 
-export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) {
+export function JobTasksTab({ job, applications = [], onRefresh }: JobTasksTabProps) {
   const { toast } = useToast();
 
   const [tasks, setTasks] = useState<JobTaskRow[]>([]);
@@ -140,12 +254,27 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
   const [selectedTask, setSelectedTask] = useState<JobTaskRow | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'board'>('table');
+  const [activeDragTaskId, setActiveDragTaskId] = useState<string | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [openAssessment, setOpenAssessment] = useState(false);
+  const [loadingProfileTaskId, setLoadingProfileTaskId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    })
+  );
 
   useEffect(() => {
     loadTasks();
-  }, [job.id, applications.length]);
+  }, [job?.id, applications.length]);
 
   useEffect(() => {
+    if (!job?.id) {
+      setTeam([]);
+      return;
+    }
     const fetchTeam = async () => {
       try {
         const response = await apiClient.get<any>(`/api/jobs/${job.id}/team`);
@@ -164,7 +293,7 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
       }
     };
     fetchTeam();
-  }, [job.id]);
+  }, [job?.id]);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -186,48 +315,78 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
   }, [applications, candidateId]);
 
   const loadTasks = async () => {
-    if (!applications.length) {
-      setTasks([]);
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const results = await Promise.allSettled(
-        applications.map(async (app) => {
-          const response = await apiClient.get<{ tasks: any[] }>(`/api/applications/${app.id}/tasks`);
-          if (!response.success || !response.data?.tasks) return [] as JobTaskRow[];
+      let rows: JobTaskRow[] = [];
 
-          return response.data.tasks.map((t: any): JobTaskRow => {
-            const candidateName =
-              app.candidateName ||
-              ((app as any).candidate?.firstName
-                ? `${(app as any).candidate?.firstName || ''} ${(app as any).candidate?.lastName || ''}`.trim()
-                : 'Unknown Candidate');
-
+      if (!job?.id) {
+        // Global mode: single bulk request for all company tasks
+        const response = await applicationService.getCompanyTasks();
+        if (response.success && response.data?.tasks) {
+          rows = response.data.tasks.map((t: any): JobTaskRow => {
+            const candidate = t.application?.candidate || {};
+            const firstName = candidate.first_name || '';
+            const lastName = candidate.last_name || '';
+            const candidateName = `${firstName} ${lastName}`.trim() || candidate.email || 'Unknown Candidate';
             return {
               id: t.id,
-              applicationId: app.id,
+              applicationId: t.application?.id || '',
+              jobTitle: t.application?.job?.title || '',
               candidateName,
-              candidateEmail: app.candidateEmail || app.email || 'No email',
+              candidateEmail: candidate.email || 'No email',
               title: t.title,
               description: t.description,
               status: t.status,
               priority: t.priority,
               dueDate: t.due_date || t.dueDate,
-              assignedToName: t.assignee?.name || t.assigned_to_name || t.assignedToName || t.assignee_name || '',
+              assignedToName: t.assignee?.name || '',
               createdAt: t.created_at || t.createdAt,
             };
           });
-        })
-      );
+        }
+      } else {
+        // Job-specific mode: per-application requests (already a small set)
+        if (!applications.length) {
+          setTasks([]);
+          setIsLoading(false);
+          return;
+        }
+        const results = await Promise.allSettled(
+          applications.map(async (app) => {
+            const response = await apiClient.get<{ tasks: any[] }>(`/api/applications/${app.id}/tasks`);
+            if (!response.success || !response.data?.tasks) return [] as JobTaskRow[];
 
-      const merged = results
-        .filter((result): result is PromiseFulfilledResult<JobTaskRow[]> => result.status === 'fulfilled')
-        .flatMap((result) => result.value)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return response.data.tasks.map((t: any): JobTaskRow => {
+              const candidateName =
+                app.candidateName ||
+                ((app as any).candidate?.firstName
+                  ? `${(app as any).candidate?.firstName || ''} ${(app as any).candidate?.lastName || ''}`.trim()
+                  : 'Unknown Candidate');
 
-      setTasks(merged);
+              return {
+                id: t.id,
+                applicationId: app.id,
+                jobTitle: app.jobTitle || (app as any).job?.title || '',
+                candidateName,
+                candidateEmail: app.candidateEmail || (app as any).email || 'No email',
+                title: t.title,
+                description: t.description,
+                status: t.status,
+                priority: t.priority,
+                dueDate: t.due_date || t.dueDate,
+                assignedToName: t.assignee?.name || t.assigned_to_name || t.assignedToName || t.assignee_name || '',
+                createdAt: t.created_at || t.createdAt,
+              };
+            });
+          })
+        );
+
+        rows = results
+          .filter((result): result is PromiseFulfilledResult<JobTaskRow[]> => result.status === 'fulfilled')
+          .flatMap((result) => result.value);
+      }
+
+      setTasks(rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch (error) {
       console.error('Failed to load tasks:', error);
       toast({ title: 'Error', description: 'Failed to load tasks', variant: 'destructive' });
@@ -351,6 +510,82 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
     }
   };
 
+  const handleBoardDragStart = (event: DragStartEvent) => {
+    setActiveDragTaskId(String(event.active.id));
+  };
+
+  const handleBoardDragEnd = async (event: DragEndEvent) => {
+    setActiveDragTaskId(null);
+    const dragId = String(event.active.id);
+    const targetStatus = event.over?.id as TaskStatus | undefined;
+    if (!targetStatus) return;
+
+    const [applicationId, taskId] = dragId.split('::');
+    const currentTask = tasks.find((item) => item.id === taskId && item.applicationId === applicationId);
+    if (!currentTask || currentTask.status === targetStatus) return;
+
+    const previousStatus = currentTask.status;
+    setTasks((prev) =>
+      prev.map((item) =>
+        item.id === taskId && item.applicationId === applicationId ? { ...item, status: targetStatus } : item
+      )
+    );
+
+    try {
+      await apiClient.put(`/api/applications/${applicationId}/tasks/${taskId}`, { status: targetStatus });
+      toast({ title: 'Task updated' });
+    } catch {
+      setTasks((prev) =>
+        prev.map((item) =>
+          item.id === taskId && item.applicationId === applicationId ? { ...item, status: previousStatus } : item
+        )
+      );
+      toast({ title: 'Failed to update task', variant: 'destructive' });
+    }
+  };
+
+  const handleViewProfile = async (task: JobTaskRow) => {
+    const taskKey = `${task.applicationId}::${task.id}`;
+    setLoadingProfileTaskId(taskKey);
+    const local = applications.find((app) => app.id === task.applicationId) || null;
+    if (local) {
+      setSelectedApplication(local);
+      setOpenAssessment(true);
+    }
+
+    try {
+      const response = await applicationService.getApplicationForAdmin(task.applicationId);
+      if (response.success && response.data?.application) {
+        const full = response.data.application as any;
+        const mapped: Application = {
+          ...(local || {}),
+          ...full,
+          candidateName:
+            full.candidate?.firstName && full.candidate?.lastName
+              ? `${full.candidate.firstName} ${full.candidate.lastName}`
+              : full.candidate?.firstName || full.candidateName || local?.candidateName,
+          candidateEmail: full.candidate?.email || full.candidateEmail || local?.candidateEmail,
+          candidatePhone: full.candidate?.phone || full.candidatePhone || local?.candidatePhone,
+          candidatePhoto: full.candidate?.photo || full.candidatePhoto || local?.candidatePhoto,
+          activities: full.activities || local?.activities || [],
+          notes: full.notes || local?.notes || [],
+          interviews: full.interviews || local?.interviews || [],
+          teamReviews: full.teamReviews || local?.teamReviews || [],
+          evaluations: full.evaluations || local?.evaluations || [],
+          aiAnalysis: full.aiAnalysis || local?.aiAnalysis,
+        } as Application;
+        setSelectedApplication(mapped);
+        setOpenAssessment(true);
+      }
+    } catch {
+      if (!local) {
+        toast({ title: 'Failed to open profile', variant: 'destructive' });
+      }
+    } finally {
+      setLoadingProfileTaskId(null);
+    }
+  };
+
   const openNotesDrawer = (task: JobTaskRow) => {
     setSelectedTask(task);
     setNoteInput('');
@@ -402,7 +637,19 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
           </div>
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'table' | 'board')}>
+              <TabsList className="h-8">
+                <TabsTrigger value="board" className="text-xs h-7">
+                  <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+                  Board
+                </TabsTrigger>
+                <TabsTrigger value="table" className="text-xs h-7">
+                  <List className="h-3.5 w-3.5 mr-1.5" />
+                  Table
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             <Button size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
               <Plus className="h-3.5 w-3.5 mr-1.5" />
               New Task
@@ -411,6 +658,8 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
         </CardContent>
       </Card>
 
+      {viewMode === 'table' && (
+      <>
       <div className="grid gap-3 lg:grid-cols-2">
         <Card className="border-border/80 shadow-none">
           <CardHeader className="px-4 py-3">
@@ -483,7 +732,9 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
                 </TableRow>
               )}
 
-              {!isLoading && tasks.map((task) => (
+              {!isLoading && tasks.map((task) => {
+                const parsed = parseTaskDescription(task.description);
+                return (
                 <TableRow key={`${task.applicationId}-${task.id}`}>
                   <TableCell className="px-3 py-2.5 min-w-[220px]">
                     <p className="font-medium text-foreground truncate">{task.title}</p>
@@ -492,6 +743,7 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
                   <TableCell className="px-3 py-2.5 min-w-[200px]">
                     <p className="font-medium text-foreground truncate">{task.candidateName}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{task.candidateEmail}</p>
+                    {task.jobTitle && <p className="text-[11px] text-muted-foreground truncate">{task.jobTitle}</p>}
                   </TableCell>
                   <TableCell className="px-3 py-2.5">
                     <Badge variant="outline" className="text-[10px]">{task.assignedToName || 'Unassigned'}</Badge>
@@ -521,10 +773,10 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
                   </TableCell>
                   <TableCell className="px-3 py-2.5 max-w-[260px]">
                     <p className="text-[11px] text-muted-foreground line-clamp-2">
-                      {parseTaskDescription(task.description).notes[0]?.content || parseTaskDescription(task.description).descriptionText || 'No notes'}
+                      {parsed.notes[0]?.content || parsed.descriptionText || 'No notes'}
                     </p>
-                    {parseTaskDescription(task.description).notes.length > 0 && (
-                      <Badge variant="secondary" className="mt-1 text-[10px]">{parseTaskDescription(task.description).notes.length} notes</Badge>
+                    {parsed.notes.length > 0 && (
+                      <Badge variant="secondary" className="mt-1 text-[10px]">{parsed.notes.length} notes</Badge>
                     )}
                     <Button size="sm" variant="ghost" className="h-6 px-1.5 mt-1 text-[10px] text-primary" onClick={() => openNotesDrawer(task)}>
                       <MessageSquare className="h-3 w-3 mr-1" />
@@ -538,11 +790,55 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </div>
       </div>
+      </>
+      )}
+
+      {viewMode === 'board' && (
+        <DndContext sensors={sensors} onDragStart={handleBoardDragStart} onDragEnd={handleBoardDragEnd}>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {([
+              { key: 'PENDING', label: 'Pending' },
+              { key: 'IN_PROGRESS', label: 'In Progress' },
+              { key: 'COMPLETED', label: 'Completed' },
+            ] as Array<{ key: TaskStatus; label: string }>).map((column) => (
+              <TaskKanbanColumn
+                key={column.key}
+                id={column.key}
+                label={column.label}
+                count={tasks.filter((item) => item.status === column.key).length}
+              >
+                {tasks
+                  .filter((item) => item.status === column.key)
+                  .map((task) => (
+                    <TaskKanbanCard
+                      key={`${task.applicationId}::${task.id}`}
+                      task={task}
+                      onOpenNotes={openNotesDrawer}
+                      onDelete={handleDelete}
+                      onViewProfile={handleViewProfile}
+                      loadingProfile={loadingProfileTaskId === `${task.applicationId}::${task.id}`}
+                    />
+                  ))}
+              </TaskKanbanColumn>
+            ))}
+          </div>
+          <DragOverlay>
+            {activeDragTaskId ? (
+              <div className="rounded-lg border border-primary/30 bg-background p-2.5 shadow-xl">
+                <p className="text-xs font-medium truncate">
+                  {tasks.find((task) => `${task.applicationId}::${task.id}` === activeDragTaskId)?.title || 'Task'}
+                </p>
+                <p className="text-[11px] text-muted-foreground">Moving task...</p>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       <FormDrawer
         open={createOpen}
@@ -673,6 +969,16 @@ export function JobTasksTab({ job, applications, onRefresh }: JobTasksTabProps) 
           </div>
         )}
       </FormDrawer>
+
+      {selectedApplication && (
+        <CandidateAssessmentView
+          application={selectedApplication}
+          open={openAssessment}
+          onOpenChange={setOpenAssessment}
+          jobTitle={selectedApplication.jobTitle || job?.title || 'Job'}
+          jobId={selectedApplication.jobId || job?.id || ''}
+        />
+      )}
     </div>
   );
 }

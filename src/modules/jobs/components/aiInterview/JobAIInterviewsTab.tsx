@@ -1,6 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -19,10 +31,9 @@ import {
 } from '@/shared/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { Video, Calendar as CalendarIcon, FileText, Link as LinkIcon, Loader2, Sparkles, BarChart3, Eye, MessageSquare, Send, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Video, Calendar as CalendarIcon, FileText, Link as LinkIcon, Loader2, Sparkles, BarChart3, Eye, MessageSquare, Send, Trash2, LayoutGrid, List, GripVertical } from 'lucide-react';
 import { videoInterviewService, type VideoInterview } from '@/shared/lib/videoInterviewService';
 import { applicationService } from '@/shared/lib/applicationService';
-import { jobService } from '@/shared/lib/jobService';
 import { useToast } from '@/shared/hooks/use-toast';
 import type { Job } from '@/shared/types/job';
 import type { Application } from '@/shared/types/application';
@@ -55,6 +66,27 @@ interface InterviewNote {
   author_name: string;
   content: string;
   created_at: string;
+}
+
+interface KanbanColumnProps {
+  id: VideoInterview['status'];
+  label: string;
+  count: number;
+  children: ReactNode;
+}
+
+interface KanbanCardProps {
+  interview: VideoInterview;
+  candidateName: string;
+  displayEmail: string;
+  jobTitle: string;
+  applicationId: string;
+  assignedName: string;
+  notePreview: string;
+  onOpenProfile: (applicationId?: string) => void;
+  onOpenNotes: (interview: VideoInterview, candidateName: string) => void;
+  onGoToJob: (jobId: string) => void;
+  resolveJobId: (interview: VideoInterview) => string;
 }
 
 const toNameFromEmail = (email?: string) => {
@@ -139,6 +171,111 @@ function WeeklyInterviewBars({ data }: { data: Array<{ label: string; scheduled:
   );
 }
 
+const columnTheme: Record<VideoInterview['status'], string> = {
+  SCHEDULED: 'bg-gradient-to-b from-blue-50/80 to-blue-50/30 border-blue-200/70',
+  IN_PROGRESS: 'bg-gradient-to-b from-amber-50/80 to-amber-50/30 border-amber-200/70',
+  COMPLETED: 'bg-gradient-to-b from-emerald-50/80 to-emerald-50/30 border-emerald-200/70',
+  CANCELLED: 'bg-gradient-to-b from-rose-50/80 to-rose-50/30 border-rose-200/70',
+  NO_SHOW: 'bg-gradient-to-b from-orange-50/80 to-orange-50/30 border-orange-200/70',
+  RESCHEDULED: 'bg-gradient-to-b from-violet-50/80 to-violet-50/30 border-violet-200/70',
+};
+
+function KanbanColumn({ id, label, count, children }: KanbanColumnProps) {
+  const { isOver, setNodeRef } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border ${columnTheme[id]} transition-all duration-150 ${
+        isOver ? 'ring-2 ring-primary/40 shadow-sm' : ''
+      }`}
+    >
+      <div className="border-b border-border/60 px-3 py-2.5 flex items-center justify-between">
+        <p className="text-xs font-semibold">{label}</p>
+        <Badge variant="outline" className="text-[10px] h-5 px-1.5">
+          {count}
+        </Badge>
+      </div>
+      <div className="max-h-[640px] overflow-auto p-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function KanbanCard({
+  interview,
+  candidateName,
+  displayEmail,
+  jobTitle,
+  applicationId,
+  assignedName,
+  notePreview,
+  onOpenProfile,
+  onOpenNotes,
+  onGoToJob,
+  resolveJobId,
+}: KanbanCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: interview.id,
+    data: { status: interview.status },
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+  };
+
+  const resolvedJobId = resolveJobId(interview);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-lg border bg-background/95 p-2.5 shadow-sm transition-all duration-150 ${
+        isDragging ? 'opacity-80 shadow-md scale-[1.01] z-10' : 'hover:shadow'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-medium truncate">{candidateName}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{displayEmail}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{jobTitle}</p>
+        </div>
+        <button
+          type="button"
+          className="h-6 w-6 shrink-0 rounded border bg-muted/30 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+          {...listeners}
+          {...attributes}
+          aria-label="Drag interview"
+        >
+          <GripVertical className="h-3.5 w-3.5 mx-auto" />
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-2">
+        {format(new Date(interview.scheduledDate), 'PPp')} • {interview.duration}m
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        <Badge variant="outline" className="text-[10px] h-5 px-1.5">{interview.type.replace('_', ' ')}</Badge>
+        <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${statusBadgeClass(interview.status)}`}>{interview.status.replace('_', ' ')}</Badge>
+        <Badge variant="outline" className="text-[10px] h-5 px-1.5">{assignedName || 'Unassigned'}</Badge>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{notePreview || 'No notes yet'}</p>
+      <div className="flex flex-wrap gap-1 mt-2">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => onOpenProfile(applicationId)} disabled={!applicationId}>
+          <Eye className="mr-1 h-3 w-3" />
+          Profile
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => onOpenNotes(interview, candidateName)}>
+          <MessageSquare className="mr-1 h-3 w-3" />
+          Notes
+        </Button>
+        {!!resolvedJobId && (
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => onGoToJob(resolvedJobId)}>
+            Go to Job
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -178,6 +315,15 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
   const [viewMode, setViewMode] = useState<'table' | 'board' | 'calendar'>('table');
   const [calendarDetail, setCalendarDetail] = useState<VideoInterview | null>(null);
   const [calendarDetailOpen, setCalendarDetailOpen] = useState(false);
+  const [calendarNoteInput, setCalendarNoteInput] = useState('');
+  const [isAddingCalendarNote, setIsAddingCalendarNote] = useState(false);
+  const [activeDragInterviewId, setActiveDragInterviewId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    })
+  );
 
   const loadApplicationDetails = async (applicationId: string): Promise<Application | null> => {
     const mapFromResponse = (full: any): Application => ({
@@ -273,14 +419,9 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
     try {
       let applicationList: any[] = [];
       if (isGlobalMode) {
-        const jobsResponse = await jobService.getJobs({ page: 1, limit: 300 });
-        if (jobsResponse.success && jobsResponse.data?.jobs?.length) {
-          const results = await Promise.allSettled(
-            jobsResponse.data.jobs.map((item) => applicationService.getJobApplications(item.id))
-          );
-          applicationList = results
-            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
-            .flatMap((result) => result.value?.data?.applications || []);
+        const response = await applicationService.getCompanyApplications();
+        if (response.success && response.data?.applications) {
+          applicationList = response.data.applications;
         }
       } else {
         const response = await applicationService.getJobApplications(job!.id);
@@ -429,6 +570,7 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
     { key: 'SCHEDULED', label: 'Scheduled' },
     { key: 'IN_PROGRESS', label: 'In Progress' },
     { key: 'COMPLETED', label: 'Completed' },
+    { key: 'RESCHEDULED', label: 'Rescheduled' },
     { key: 'CANCELLED', label: 'Cancelled' },
     { key: 'NO_SHOW', label: 'No Show' },
   ];
@@ -584,7 +726,7 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
   const handleStatusChange = async (interview: VideoInterview, newStatus: VideoInterview['status']) => {
     setUpdatingStatus((prev) => ({ ...prev, [interview.id]: true }));
     try {
-      const response = await videoInterviewService.updateInterview(interview.id, { status: newStatus });
+      const response = await videoInterviewService.updateStatus(interview.id, newStatus);
       if (!response.success) {
         throw new Error(response.error || 'Failed to update interview status');
       }
@@ -594,6 +736,38 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to update status', variant: 'destructive' });
     } finally {
       setUpdatingStatus((prev) => ({ ...prev, [interview.id]: false }));
+    }
+  };
+
+  const handleBoardDragStart = (event: DragStartEvent) => {
+    setActiveDragInterviewId(String(event.active.id));
+  };
+
+  const handleBoardDragEnd = async (event: DragEndEvent) => {
+    setActiveDragInterviewId(null);
+    const interviewId = String(event.active.id);
+    const targetStatus = event.over?.id as VideoInterview['status'] | undefined;
+    if (!targetStatus) return;
+
+    const current = interviews.find((item) => item.id === interviewId);
+    if (!current || current.status === targetStatus) return;
+
+    const previousStatus = current.status;
+    setInterviews((prev) => prev.map((item) => (item.id === interviewId ? { ...item, status: targetStatus } : item)));
+
+    try {
+      const response = await videoInterviewService.updateStatus(interviewId, targetStatus);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update interview status');
+      }
+      toast({ title: 'Status updated', description: `Interview moved to ${targetStatus.replace('_', ' ').toLowerCase()}` });
+    } catch (error) {
+      setInterviews((prev) => prev.map((item) => (item.id === interviewId ? { ...item, status: previousStatus } : item)));
+      toast({
+        title: 'Failed to move interview',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -668,7 +842,46 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
     const interview = event.event.extendedProps.interview as VideoInterview;
     if (!interview) return;
     setCalendarDetail(interview);
+    const applicationId = resolveApplicationId(interview);
+    const candidateName =
+      interview.application?.candidateName ||
+      (interview.candidate ? `${interview.candidate.firstName || ''} ${interview.candidate.lastName || ''}`.trim() : '') ||
+      toNameFromEmail(interview.candidate?.email);
+    if (applicationId) {
+      setNotesTarget({ interviewId: interview.id, applicationId, candidateName });
+      loadInterviewNotes(applicationId, interview.id);
+    } else {
+      setNotesTarget(null);
+      setInterviewNotes([]);
+    }
+    setCalendarNoteInput('');
     setCalendarDetailOpen(true);
+  };
+
+  const handleAddCalendarNote = async () => {
+    if (!notesTarget || !calendarNoteInput.trim()) return;
+    setIsAddingCalendarNote(true);
+    try {
+      const response = await apiClient.post<{ note: InterviewNote }>(
+        `/api/applications/${notesTarget.applicationId}/interviews/${notesTarget.interviewId}/notes`,
+        { content: calendarNoteInput.trim() }
+      );
+      if (!response.success || !response.data?.note) throw new Error(response.error || 'Failed to add note');
+      setInterviewNotes((prev) => [response.data!.note, ...prev]);
+      setTableNotePreviewMap((prev) => ({
+        ...prev,
+        [notesTarget.interviewId]: {
+          latest: response.data!.note.content,
+          count: (prev[notesTarget.interviewId]?.count || 0) + 1,
+        },
+      }));
+      setCalendarNoteInput('');
+      toast({ title: 'Note added' });
+    } catch (error) {
+      toast({ title: 'Failed to add note', description: error instanceof Error ? error.message : 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsAddingCalendarNote(false);
+    }
   };
 
   const handleAddNote = async () => {
@@ -1003,16 +1216,15 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
       )}
 
       {viewMode === 'board' && (
-        <div className="grid gap-3 lg:grid-cols-5">
-          {boardColumns.map((column) => (
-            <div key={column.key} className="rounded-lg border border-border/80 bg-background">
-              <div className="border-b px-3 py-2">
-                <p className="text-xs font-semibold">{column.label}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  {sortedInterviews.filter((item) => item.status === column.key).length} interviews
-                </p>
-              </div>
-              <div className="max-h-[640px] overflow-auto p-2 space-y-2">
+        <DndContext sensors={sensors} onDragStart={handleBoardDragStart} onDragEnd={handleBoardDragEnd}>
+          <div className="grid gap-3 lg:grid-cols-5">
+            {boardColumns.map((column) => (
+              <KanbanColumn
+                key={column.key}
+                id={column.key}
+                label={column.label}
+                count={sortedInterviews.filter((item) => item.status === column.key).length}
+              >
                 {sortedInterviews
                   .filter((item) => item.status === column.key)
                   .map((interview) => {
@@ -1023,59 +1235,42 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
                       toNameFromEmail(interview.candidate?.email);
                     const displayEmail = interview.candidate?.email || 'No email';
                     return (
-                      <div key={interview.id} className="rounded-md border p-2.5 space-y-2 bg-background">
-                        <div>
-                          <p className="text-xs font-medium truncate">{candidateName}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{displayEmail}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{getInterviewJobTitle(interview)}</p>
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {format(new Date(interview.scheduledDate), 'PPp')} • {interview.duration}m
-                        </div>
-                        <Select
-                          value={interview.status}
-                          onValueChange={(value) => handleStatusChange(interview, value as VideoInterview['status'])}
-                          disabled={updatingStatus[interview.id]}
-                        >
-                          <SelectTrigger className="h-7 text-[10px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
-                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                            <SelectItem value="NO_SHOW">No Show</SelectItem>
-                            <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="flex flex-wrap gap-1">
-                          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => handleOpenProfile(applicationId)} disabled={!applicationId}>
-                            <Eye className="mr-1 h-3 w-3" />
-                            Profile
-                          </Button>
-                          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => handleOpenNotes(interview, candidateName)}>
-                            <MessageSquare className="mr-1 h-3 w-3" />
-                            Notes
-                          </Button>
-                          {!!getInterviewJobId(interview) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-1.5 text-[10px]"
-                              onClick={() => navigate(`/ats/jobs/${getInterviewJobId(interview)}`)}
-                            >
-                              Go to Job
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                      <KanbanCard
+                        key={interview.id}
+                        interview={interview}
+                        candidateName={candidateName}
+                        displayEmail={displayEmail}
+                        jobTitle={getInterviewJobTitle(interview)}
+                        applicationId={applicationId}
+                        assignedName={resolveAssignedToNameForInterview(interview, applicationId)}
+                        notePreview={
+                          tableNotePreviewMap[interview.id]?.latest ||
+                          interview.notes ||
+                          interview.interviewFeedbacks?.[0]?.notes ||
+                          interview.feedback?.[0]?.notes ||
+                          ''
+                        }
+                        onOpenProfile={handleOpenProfile}
+                        onOpenNotes={handleOpenNotes}
+                        onGoToJob={(targetJobId) => navigate(`/ats/jobs/${targetJobId}`)}
+                        resolveJobId={getInterviewJobId}
+                      />
                     );
                   })}
+              </KanbanColumn>
+            ))}
+          </div>
+          <DragOverlay>
+            {activeDragInterviewId ? (
+              <div className="rounded-lg border border-primary/30 bg-background p-2.5 shadow-xl">
+                <p className="text-xs font-medium truncate">
+                  {(sortedInterviews.find((item) => item.id === activeDragInterviewId)?.application?.candidateName) || 'Interview'}
+                </p>
+                <p className="text-[11px] text-muted-foreground">Moving interview...</p>
               </div>
-            </div>
-          ))}
-        </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {viewMode === 'calendar' && (
@@ -1086,6 +1281,22 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
               initialView="timeGridWeek"
               events={calendarEvents}
               eventClick={handleCalendarEventClick}
+              eventContent={(eventInfo) => {
+                const interview = eventInfo.event.extendedProps.interview as VideoInterview;
+                const name =
+                  interview?.application?.candidateName ||
+                  (interview?.candidate
+                    ? `${interview.candidate.firstName || ''} ${interview.candidate.lastName || ''}`.trim()
+                    : '') ||
+                  toNameFromEmail(interview?.candidate?.email);
+                return (
+                  <div className="px-1 py-0.5">
+                    <p className="text-[10px] font-semibold leading-tight truncate">{name}</p>
+                    <p className="text-[10px] leading-tight truncate">{getInterviewJobTitle(interview)}</p>
+                    <p className="text-[10px] leading-tight">{interview?.type?.replace('_', ' ')} • {interview?.duration || 0}m</p>
+                  </div>
+                );
+              }}
               headerToolbar={{
                 left: 'prev,next today',
                 center: 'title',
@@ -1212,10 +1423,37 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
                   toNameFromEmail(calendarDetail.candidate?.email)}
               </p>
               <p className="text-xs text-muted-foreground">{calendarDetail.candidate?.email || 'No email'}</p>
-              <p className="text-xs text-muted-foreground mt-1">{getInterviewJobTitle(calendarDetail)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(calendarDetail.scheduledDate), 'PPp')} • {calendarDetail.duration} min • {calendarDetail.type.replace('_', ' ')}
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                <div className="rounded border bg-muted/20 p-2">
+                  <p className="text-muted-foreground">Job</p>
+                  <p className="font-medium truncate">{getInterviewJobTitle(calendarDetail)}</p>
+                </div>
+                <div className="rounded border bg-muted/20 p-2">
+                  <p className="text-muted-foreground">Status</p>
+                  <p className="font-medium">{calendarDetail.status.replace('_', ' ')}</p>
+                </div>
+                <div className="rounded border bg-muted/20 p-2">
+                  <p className="text-muted-foreground">Type</p>
+                  <p className="font-medium">{calendarDetail.type.replace('_', ' ')}</p>
+                </div>
+                <div className="rounded border bg-muted/20 p-2">
+                  <p className="text-muted-foreground">Duration</p>
+                  <p className="font-medium">{calendarDetail.duration} min</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Scheduled: {format(new Date(calendarDetail.scheduledDate), 'PPpp')}
               </p>
+              {calendarDetail.meetingLink && (
+                <a
+                  href={calendarDetail.meetingLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex text-xs mt-1 text-primary underline"
+                >
+                  Open meeting link
+                </a>
+              )}
               <div className="flex flex-wrap gap-2 mt-2">
                 <Button
                   size="sm"
@@ -1243,11 +1481,43 @@ export function JobAIInterviewsTab({ job }: JobAIInterviewsTabProps) {
                 )}
               </div>
             </div>
-            <div className="rounded-md border bg-muted/20 p-3">
-              <p className="text-[11px] text-muted-foreground mb-1">Latest Notes</p>
-              <p className="text-sm">
-                {tableNotePreviewMap[calendarDetail.id]?.latest || calendarDetail.notes || 'No notes'}
-              </p>
+            <div className="rounded-md border bg-background p-3">
+              <p className="text-xs font-semibold mb-2">Notes</p>
+              <div className="flex gap-2 mb-2">
+                <Textarea
+                  value={calendarNoteInput}
+                  onChange={(event) => setCalendarNoteInput(event.target.value)}
+                  placeholder="Add note for this schedule..."
+                  className="min-h-[72px] text-sm"
+                />
+                <Button
+                  className="h-9 self-end"
+                  onClick={handleAddCalendarNote}
+                  disabled={!notesTarget || !calendarNoteInput.trim() || isAddingCalendarNote}
+                >
+                  {isAddingCalendarNote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
+              <div className="max-h-[260px] overflow-auto rounded border divide-y">
+                {isLoadingNotes ? (
+                  <div className="py-8 text-center text-xs text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                    Loading notes...
+                  </div>
+                ) : interviewNotes.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-muted-foreground">No notes yet.</div>
+                ) : (
+                  interviewNotes.map((note) => (
+                    <div key={note.id} className="p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-medium">{note.author_name || 'Unknown'}</p>
+                        <p className="text-[10px] text-muted-foreground">{format(new Date(note.created_at), 'PP p')}</p>
+                      </div>
+                      <p className="text-xs mt-1 whitespace-pre-wrap">{note.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         ) : (

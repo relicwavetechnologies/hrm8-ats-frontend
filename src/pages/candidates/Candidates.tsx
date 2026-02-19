@@ -2,16 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { CandidatesTab } from "@/modules/applications/components/CandidatesTab";
 import { applicationService } from "@/shared/lib/applicationService";
-import { jobService } from "@/shared/lib/jobService";
 import type { Application } from "@/shared/types/application";
 import { Loader2, Users } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { useToast } from "@/shared/hooks/use-toast";
 
-const CANDIDATES_CACHE_KEY = "global-candidates-cache-v1";
-const CANDIDATES_CACHE_TTL_MS = 60 * 1000;
-const JOB_FETCH_CONCURRENCY = 8;
+const CANDIDATES_CACHE_KEY = "global-candidates-cache-v2";
+const CANDIDATES_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function mapApplication(raw: any): Application {
   const candidateFromPayload = raw.candidate || raw.candidateProfile || {};
@@ -134,68 +132,14 @@ export default function Candidates() {
     else setIsLoading(true);
 
     try {
-      const jobsResponse = await jobService.getJobs({ page: 1, limit: 300 });
-      if (!jobsResponse.success || !jobsResponse.data?.jobs) {
-        throw new Error(jobsResponse.error || "Failed to load jobs");
-      }
-
-      const jobs = jobsResponse.data.jobs;
-      const jobsWithApplicants = jobs.filter((job) => (job as any)?.applicantsCount == null || Number((job as any).applicantsCount) > 0);
-      const jobsToFetch = jobsWithApplicants.length > 0 ? jobsWithApplicants : jobs;
-
-      if (!jobsToFetch.length) {
-        if (requestId !== loadRequestRef.current) return;
-        setApplications([]);
-        sessionStorage.setItem(
-          CANDIDATES_CACHE_KEY,
-          JSON.stringify({ ts: Date.now(), applications: [] })
-        );
-        return;
-      }
-
-      const uniqueById = new Map<string, any>();
-      let nextIndex = 0;
-      let completed = 0;
-      let hasPainted = false;
-
-      const publish = (force = false) => {
-        if (requestId !== loadRequestRef.current) return;
-        if (!force && completed % 4 !== 0) return;
-        const mapped = Array.from(uniqueById.values()).map(mapApplication);
-        setApplications(mapped);
-        if (!silent && !hasPainted && mapped.length > 0) {
-          hasPainted = true;
-          setIsLoading(false);
-        }
-      };
-
-      const worker = async () => {
-        while (nextIndex < jobsToFetch.length) {
-          const idx = nextIndex++;
-          const job = jobsToFetch[idx];
-          try {
-            const response = await applicationService.getJobApplications(job.id);
-            const apps = response?.data?.applications || [];
-            apps.forEach((app: any) => {
-              if (app?.id) uniqueById.set(app.id, app);
-            });
-          } catch {
-            // Continue with other jobs
-          } finally {
-            completed += 1;
-            publish(false);
-          }
-        }
-      };
-
-      const workers = Array.from(
-        { length: Math.min(JOB_FETCH_CONCURRENCY, jobsToFetch.length) },
-        () => worker()
-      );
-      await Promise.all(workers);
-
+      const response = await applicationService.getCompanyApplications();
       if (requestId !== loadRequestRef.current) return;
-      const mapped = Array.from(uniqueById.values()).map(mapApplication);
+
+      if (!response.success || !response.data?.applications) {
+        throw new Error((response as any).error || "Failed to load candidates");
+      }
+
+      const mapped = response.data.applications.map(mapApplication);
       setApplications(mapped);
       sessionStorage.setItem(
         CANDIDATES_CACHE_KEY,

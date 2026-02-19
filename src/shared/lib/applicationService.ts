@@ -80,6 +80,16 @@ class ApplicationService {
     }>(`/api/applications/${id}/resume`);
   }
 
+  // Single bulk fetch: all applications for the authenticated company (used by Candidates tab)
+  async getCompanyApplications() {
+    return apiClient.get<{ applications: Application[] }>('/api/applications/company');
+  }
+
+  // Single bulk fetch: all tasks for the authenticated company
+  async getCompanyTasks() {
+    return apiClient.get<{ tasks: any[] }>('/api/tasks/company');
+  }
+
   async getCandidateApplications() {
     try {
       return await apiClient.get<{ applications: Application[] }>('/api/applications');

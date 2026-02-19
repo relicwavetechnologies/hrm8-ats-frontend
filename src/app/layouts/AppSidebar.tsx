@@ -43,13 +43,8 @@ const atsNavItems = [
     title: "Interviews",
     url: "/interviews",
     icon: CalendarClock,
-    badge: FeedbackNotificationBadge,
-    subItems: [
-      { title: "All Interviews", url: "/interviews" },
-      { title: "Schedule", url: "/interviews/schedule" },
-      { title: "Collaborative Feedback", url: "/collaborative-feedback" },
-    ]
   },
+  { title: "Tasks", url: "/tasks", icon: ClipboardList },
   {
     title: "Offers",
     url: "/offers",
