@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Badge } from '@/shared/components/ui/badge';
 import { Progress } from '@/shared/components/ui/progress';
 import { Button } from '@/shared/components/ui/button';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { Label } from '@/shared/components/ui/label';
 import { Calendar } from '@/shared/components/ui/calendar';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, Lightbulb, Activity, AlertTriangle, CalendarIcon, Filter, X, Clock } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -172,7 +174,7 @@ export default function AdvancedAnalytics() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Date Range Filter */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Date Range</label>
+                  <Label className="text-sm font-medium">Date Range</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -213,7 +215,7 @@ export default function AdvancedAnalytics() {
 
                 {/* Department Filter */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Departments</label>
+                  <Label className="text-sm font-medium">Departments</Label>
                   <Select
                     value={selectedDepartments.length === 0 ? "all" : selectedDepartments[0]}
                     onValueChange={(value) => {
@@ -254,25 +256,24 @@ export default function AdvancedAnalytics() {
 
                 {/* Metric Type Filter */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Metric Types</label>
+                  <Label className="text-sm font-medium">Metric Types</Label>
                   <div className="space-y-2">
                     {['turnover', 'performance', 'engagement', 'productivity', 'cost'].map(type => (
-                      <label key={type} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input
-                          type="checkbox"
+                      <Label key={type} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          id={`metric-${type}`}
                           checked={selectedMetricTypes.includes(type)}
-                          onChange={() => toggleMetricType(type)}
-                          className="rounded border-gray-300"
+                          onCheckedChange={() => toggleMetricType(type)}
                         />
                         <span className="capitalize">{type}</span>
-                      </label>
+                      </Label>
                     ))}
                   </div>
                 </div>
 
                 {/* Priority Filter */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Priority Level</label>
+                  <Label className="text-sm font-medium">Priority Level</Label>
                   <Select value={selectedPriority} onValueChange={setSelectedPriority}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Priorities" />

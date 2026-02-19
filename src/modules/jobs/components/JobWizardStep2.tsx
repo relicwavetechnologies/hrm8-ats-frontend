@@ -543,13 +543,15 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                           return (
                             <Badge key={tag} variant={variant} className="px-3 py-1 text-sm flex items-center gap-2">
                               {tag}
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleRemoveTag(tag)}
-                                className="hover:bg-background/20 rounded-full p-0.5"
+                                className="h-4 w-4 hover:bg-background/20 rounded-full p-0.5 ml-1"
                               >
                                 <X className="h-3 w-3" />
-                              </button>
+                              </Button>
                             </Badge>
                           );
                         })}

@@ -501,9 +501,14 @@ export function InterviewsTab({ application }: InterviewsTabProps) {
                                     <span className="text-[10px] font-semibold">{note.author_name}</span>
                                     <div className="flex items-center gap-1">
                                       <span className="text-[9px] text-muted-foreground">{format(new Date(note.created_at), 'M/d h:mm a')}</span>
-                                      <button onClick={() => handleDeleteNote(interview.id, note.id)} className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                                        onClick={() => handleDeleteNote(interview.id, note.id)}
+                                      >
                                         <Trash2 className="h-3 w-3" />
-                                      </button>
+                                      </Button>
                                     </div>
                                   </div>
                                   <p className="text-[10px] mt-0.5 whitespace-pre-wrap">{note.content}</p>

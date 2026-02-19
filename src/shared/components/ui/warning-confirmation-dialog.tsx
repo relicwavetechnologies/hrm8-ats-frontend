@@ -308,12 +308,12 @@ export function WarningConfirmationDialog({
                 disabled={isProcessing}
                 className="mt-1"
               />
-              <label 
+              <Label 
                 htmlFor="confirm-checkbox" 
                 className="text-sm leading-relaxed cursor-pointer"
               >
                 {requireCheckboxConfirmation}
-              </label>
+              </Label>
             </div>
           )}
         </div>

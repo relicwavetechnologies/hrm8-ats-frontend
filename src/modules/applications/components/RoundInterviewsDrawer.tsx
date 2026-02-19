@@ -1042,7 +1042,7 @@ export function RoundInterviewsDrawer({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Cancellation Reason</label>
+              <Label className="text-sm font-medium">Cancellation Reason</Label>
               <Input
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
@@ -1073,7 +1073,7 @@ export function RoundInterviewsDrawer({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Reason (Optional)</label>
+              <Label className="text-sm font-medium">Reason (Optional)</Label>
               <Input
                 value={noShowReason}
                 onChange={(e) => setNoShowReason(e.target.value)}

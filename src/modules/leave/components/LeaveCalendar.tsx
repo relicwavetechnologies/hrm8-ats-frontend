@@ -89,11 +89,12 @@ export function LeaveCalendar({ department }: LeaveCalendarProps) {
               const isToday = isSameDay(day, new Date());
               
               return (
-                <button
+                <Button
                   key={day.toISOString()}
+                  variant="ghost"
                   onClick={() => setSelectedDate(day)}
                   className={`
-                    aspect-square p-2 rounded-lg border text-sm transition-colors relative
+                    aspect-square p-2 h-auto rounded-lg border text-sm transition-colors relative flex-col items-start justify-start
                     ${isSelected ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent'}
                     ${!isSameMonth(day, currentMonth) ? 'text-muted-foreground' : ''}
                     ${isToday ? 'font-bold border-primary' : ''}
@@ -123,7 +124,7 @@ export function LeaveCalendar({ department }: LeaveCalendarProps) {
                       </div>
                     )}
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>

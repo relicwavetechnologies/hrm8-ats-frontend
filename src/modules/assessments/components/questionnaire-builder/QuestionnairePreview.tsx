@@ -45,12 +45,12 @@ export default function QuestionnairePreview({ questions, templateName, estimate
                   {(question.options || []).map((option) => (
                     <div key={option.id} className="flex items-center space-x-2">
                       <Checkbox id={option.id} disabled />
-                      <label htmlFor={option.id} className="text-sm">
+                      <Label htmlFor={option.id} className="text-sm">
                         {option.text}
                         {question.scoringEnabled && option.score !== undefined && (
                           <span className="text-muted-foreground ml-2">({option.score} pts)</span>
                         )}
-                      </label>
+                      </Label>
                     </div>
                   ))}
                 </div>
@@ -59,12 +59,12 @@ export default function QuestionnairePreview({ questions, templateName, estimate
                   {(question.options || []).map((option) => (
                     <div key={option.id} className="flex items-center space-x-2">
                       <RadioGroupItem value={option.id} id={option.id} disabled />
-                      <label htmlFor={option.id} className="text-sm">
+                      <Label htmlFor={option.id} className="text-sm">
                         {option.text}
                         {question.scoringEnabled && option.score !== undefined && (
                           <span className="text-muted-foreground ml-2">({option.score} pts)</span>
                         )}
-                      </label>
+                      </Label>
                     </div>
                   ))}
                 </RadioGroup>
@@ -100,15 +100,15 @@ export default function QuestionnairePreview({ questions, templateName, estimate
             <RadioGroup>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="yes" id={`${question.id}-yes`} disabled />
-                <label htmlFor={`${question.id}-yes`} className="text-sm">
+                <Label htmlFor={`${question.id}-yes`} className="text-sm">
                   Yes
-                </label>
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="no" id={`${question.id}-no`} disabled />
-                <label htmlFor={`${question.id}-no`} className="text-sm">
+                <Label htmlFor={`${question.id}-no`} className="text-sm">
                   No
-                </label>
+                </Label>
               </div>
             </RadioGroup>
           )}

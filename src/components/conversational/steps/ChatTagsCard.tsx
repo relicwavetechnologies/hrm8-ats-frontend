@@ -92,12 +92,15 @@ export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
                             {tags.filter(t => !STANDARD_TAGS.includes(t)).map(tag => (
                                 <Badge key={tag} variant="secondary" className="gap-1 py-1 px-2.5">
                                     {tag}
-                                    <button
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
                                         onClick={() => handleToggleTag(tag)}
-                                        className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                                        className="ml-1 h-4 w-4 p-0 rounded-full hover:bg-muted-foreground/20"
                                     >
                                         <X className="h-3 w-3" />
-                                    </button>
+                                    </Button>
                                 </Badge>
                             ))}
                         </div>

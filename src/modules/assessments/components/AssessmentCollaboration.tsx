@@ -468,10 +468,12 @@ function RatingsPanel({
           <Label>Score</Label>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
-              <button
+              <Button
                 key={star}
+                variant="ghost"
+                size="icon"
+                className="h-auto w-auto p-0.5 focus-visible:ring-0"
                 onClick={() => setScore(star)}
-                className="focus:outline-none"
               >
                 <Star
                   className={cn(
@@ -479,7 +481,7 @@ function RatingsPanel({
                     star <= score ? 'fill-warning text-warning' : 'text-muted hover:text-warning'
                   )}
                 />
-              </button>
+              </Button>
             ))}
           </div>
         </div>

@@ -7,6 +7,7 @@
 import { FormEvent, useMemo, useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@/shared/components/ui/button";
+import { Textarea } from "@/shared/components/ui/textarea";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Loader2, ArrowUp, Plus, Mic, Info, Settings2, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { MarkdownRenderer } from "@/shared/components/common/MarkdownRenderer";
@@ -89,12 +90,13 @@ function UserMessage({ text }: { text: string }) {
         {displayText}
         {!isExpanded && "..."}
       </p>
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="mt-2 text-xs font-medium text-primary hover:underline"
+        className="mt-2 text-xs font-medium text-primary hover:underline h-auto p-0"
       >
         {isExpanded ? "Show less" : "Read more"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -402,13 +404,13 @@ export function AiAssistantSidebar({
 
               {/* Textarea */}
               <div className="relative">
-                <textarea
+                <Textarea
                   value={input}
                   onChange={handleInputChange}
                   placeholder="Start a conversation..."
                   disabled={isStreaming}
                   rows={3}
-                  className="w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
+                  className="w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50 border-0 focus-visible:ring-0 shadow-none"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();

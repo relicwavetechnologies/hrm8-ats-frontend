@@ -270,9 +270,10 @@ export function CandidateNotesPanel({
           {showMentions && filteredTeam.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50 max-h-[120px] overflow-auto">
               {filteredTeam.slice(0, 4).map((member) => (
-                <button
+                <Button
                   key={member.id}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted text-left text-sm"
+                  variant="ghost"
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted text-left text-sm h-auto justify-start rounded-none"
                   onClick={() => insertMention(member)}
                 >
                   <Avatar className="h-5 w-5">
@@ -285,7 +286,7 @@ export function CandidateNotesPanel({
                     <p className="font-medium truncate text-xs">{member.name}</p>
                     <p className="text-[10px] text-muted-foreground">{member.role}</p>
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
           )}

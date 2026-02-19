@@ -69,14 +69,15 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
                         const Icon = item.icon;
                         const isSelected = workArrangement === item.value;
                         return (
-                            <button
+                            <Button
                                 key={item.value}
                                 type="button"
+                                variant="ghost"
                                 onClick={() => onWorkArrangementChange(item.value)}
                                 className={cn(
-                                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                                    "flex flex-col items-center gap-2 p-4 h-auto rounded-xl border-2 transition-all duration-200",
                                     isSelected
-                                        ? "border-primary bg-primary/5 shadow-md"
+                                        ? "border-primary bg-primary/5 shadow-md hover:bg-primary/5"
                                         : "border-muted hover:border-primary/30"
                                 )}
                             >
@@ -88,7 +89,7 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
                                 </div>
                                 <span className="font-semibold text-sm">{item.label}</span>
                                 <span className="text-[10px] text-muted-foreground leading-tight text-center">{item.description}</span>
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>

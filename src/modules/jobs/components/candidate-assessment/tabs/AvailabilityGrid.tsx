@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, Calendar, WifiOff } from 'lucide-react';
 import { apiClient } from '@/shared/lib/api';
 import { format, addHours } from 'date-fns';
 import { cn } from '@/shared/lib/utils';
+import { Label } from '@/shared/components/ui/label';
 
 interface InterviewerInfo {
   userId: string;
@@ -88,9 +89,9 @@ export function AvailabilityGrid({ interviewers, proposedTime, duration = 60 }: 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+        <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
           Interviewer Availability
-        </label>
+        </Label>
         {proposedTime && (
           <Button
             variant="ghost"

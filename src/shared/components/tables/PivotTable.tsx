@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import {
   Select,
@@ -9,6 +10,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Badge } from "@/shared/components/ui/badge";
+import { Label } from "@/shared/components/ui/label";
 import { X, Settings2, Download, FileSpreadsheet, FileText, Library, BarChart3, Copy, Save, Filter, ArrowUpDown, Layers, Undo, Redo } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import {
@@ -1014,9 +1016,9 @@ export function PivotTable<T extends Record<string, any>>({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Row Fields */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <Label className="text-sm font-medium mb-2 block">
                   Row Fields
-                </label>
+                </Label>
                 <Select onValueChange={addRow}>
                   <SelectTrigger>
                     <SelectValue placeholder="Add row field..." />
@@ -1035,12 +1037,14 @@ export function PivotTable<T extends Record<string, any>>({
                     return (
                       <Badge key={field} variant="secondary">
                         {fieldInfo?.label || field}
-                        <button
-                          onClick={() => removeRow(field)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeRow(field)}
+                        className="ml-1 h-4 w-4 p-0 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                       </Badge>
                     );
                   })}
@@ -1049,9 +1053,9 @@ export function PivotTable<T extends Record<string, any>>({
 
               {/* Column Fields */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <Label className="text-sm font-medium mb-2 block">
                   Column Fields
-                </label>
+                </Label>
                 <Select onValueChange={addColumn}>
                   <SelectTrigger>
                     <SelectValue placeholder="Add column field..." />
@@ -1070,12 +1074,14 @@ export function PivotTable<T extends Record<string, any>>({
                     return (
                       <Badge key={field} variant="secondary">
                         {fieldInfo?.label || field}
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => removeColumn(field)}
-                          className="ml-1 hover:text-destructive"
+                          className="ml-1 h-4 w-4 p-0 hover:text-destructive"
                         >
                           <X className="h-3 w-3" />
-                        </button>
+                        </Button>
                       </Badge>
                     );
                   })}
@@ -1084,9 +1090,9 @@ export function PivotTable<T extends Record<string, any>>({
 
               {/* Value Fields */}
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <Label className="text-sm font-medium mb-2 block">
                   Value Fields
-                </label>
+                </Label>
                 <div className="flex gap-2">
                   <Select
                     onValueChange={(value) => {
@@ -1129,12 +1135,14 @@ export function PivotTable<T extends Record<string, any>>({
                   {config.values.map((value, index) => (
                     <Badge key={index} variant="secondary">
                       {value.label}
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => removeValue(index)}
-                        className="ml-1 hover:text-destructive"
+                        className="ml-1 h-4 w-4 p-0 hover:text-destructive"
                       >
                         <X className="h-3 w-3" />
-                      </button>
+                      </Button>
                     </Badge>
                   ))}
                 </div>
@@ -1240,7 +1248,7 @@ export function PivotTable<T extends Record<string, any>>({
           {showConfig && config.values.length > 0 && (
             <div className="mt-4 pt-4 border-t space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Show Totals</label>
+                <Label className="text-sm font-medium">Show Totals</Label>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1261,7 +1269,7 @@ export function PivotTable<T extends Record<string, any>>({
           {showConfig && config.values.length > 0 && (
             <div className="mt-4 pt-4 border-t space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Conditional Formatting</label>
+                <Label className="text-sm font-medium">Conditional Formatting</Label>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1282,9 +1290,9 @@ export function PivotTable<T extends Record<string, any>>({
               {config.conditionalFormatting?.enabled && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
+                    <Label className="text-sm font-medium mb-2 block">
                       Color Scale
-                    </label>
+                    </Label>
                     <Select
                       value={config.conditionalFormatting.colorScale}
                       onValueChange={(value) =>
@@ -1309,9 +1317,9 @@ export function PivotTable<T extends Record<string, any>>({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
+                    <Label className="text-sm font-medium mb-2 block">
                       Threshold Mode
-                    </label>
+                    </Label>
                     <Select
                       value={config.conditionalFormatting.autoThresholds ? "auto" : "manual"}
                       onValueChange={(value) =>
@@ -1337,12 +1345,11 @@ export function PivotTable<T extends Record<string, any>>({
                   {!config.conditionalFormatting.autoThresholds && (
                     <>
                       <div>
-                        <label className="text-sm font-medium mb-2 block">
+                        <Label className="text-sm font-medium mb-2 block">
                           Low Threshold
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
-                          className="w-full px-3 py-2 border rounded-md"
                           value={config.conditionalFormatting.thresholds.low}
                           onChange={(e) =>
                             updateConfig({
@@ -1359,12 +1366,11 @@ export function PivotTable<T extends Record<string, any>>({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium mb-2 block">
+                        <Label className="text-sm font-medium mb-2 block">
                           High Threshold
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                           type="number"
-                          className="w-full px-3 py-2 border rounded-md"
                           value={config.conditionalFormatting.thresholds.high}
                           onChange={(e) =>
                             updateConfig({

@@ -43,19 +43,20 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
                 </Label>
                 <div className="grid grid-cols-4 gap-2">
                     {employmentTypes.map((type) => (
-                        <button
+                        <Button
                             key={type.value}
                             type="button"
+                            variant="ghost"
                             onClick={() => onEmploymentTypeChange(type.value)}
                             className={cn(
-                                "py-3 px-2 rounded-xl text-sm font-medium border-2 transition-all duration-200",
+                                "py-3 px-2 h-auto rounded-xl text-sm font-medium border-2 transition-all duration-200",
                                 employmentType === type.value
-                                    ? "border-primary bg-primary/10 text-primary"
+                                    ? "border-primary bg-primary/10 text-primary hover:bg-primary/10"
                                     : "border-muted hover:border-primary/30"
                             )}
                         >
                             {type.label}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>
@@ -68,20 +69,21 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                     {experienceLevels.map((level) => (
-                        <button
+                        <Button
                             key={level.value}
                             type="button"
+                            variant="ghost"
                             onClick={() => onExperienceLevelChange(level.value)}
                             className={cn(
-                                "py-4 px-4 rounded-xl text-left border-2 transition-all duration-200",
+                                "py-4 px-4 h-auto rounded-xl text-left border-2 transition-all duration-200 flex-col items-start",
                                 experienceLevel === level.value
-                                    ? "border-primary bg-primary/10"
+                                    ? "border-primary bg-primary/10 hover:bg-primary/10"
                                     : "border-muted hover:border-primary/30"
                             )}
                         >
                             <span className="font-semibold text-sm block">{level.label}</span>
                             <span className="text-xs text-muted-foreground">{level.description}</span>
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>

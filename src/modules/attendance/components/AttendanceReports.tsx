@@ -6,6 +6,7 @@ import { Calendar } from "@/shared/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { getAttendanceRecords, calculateAttendanceStats } from "@/shared/lib/attendanceStorage";
+import { Label } from "@/shared/components/ui/label";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 
@@ -79,7 +80,7 @@ export function AttendanceReports() {
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Start Date</label>
+              <Label className="text-sm font-medium mb-2 block">Start Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
@@ -100,7 +101,7 @@ export function AttendanceReports() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">End Date</label>
+              <Label className="text-sm font-medium mb-2 block">End Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
@@ -121,7 +122,7 @@ export function AttendanceReports() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Employee</label>
+              <Label className="text-sm font-medium mb-2 block">Employee</Label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger>
                   <SelectValue />

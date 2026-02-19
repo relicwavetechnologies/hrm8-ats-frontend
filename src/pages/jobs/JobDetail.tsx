@@ -755,23 +755,31 @@ export default function JobDetail() {
               {/* Sub-navigation for Applicants */}
               {activeTab === 'applicants' && (
                 <div className="flex flex-col gap-0.5 mt-0.5 mb-1 px-2 animate-in slide-in-from-top-1 duration-200">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setActiveRoundTab('overview')}
-                    className={`w-full text-left pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                    className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${
+                      activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
                   >
                     Overview
-                  </button>
+                  </Button>
                   {rounds.map(round => (
-                    <button
+                    <Button
                       key={round.id}
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setActiveRoundTab(round.id)}
-                      className={`w-full text-left pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                      className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${
+                        activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
                     >
                       <span className="truncate">{round.name}</span>
                       <span className="ml-auto text-[10px] opacity-70">
                         {allApplications.filter(a => a.roundId === round.id).length}
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -1179,7 +1187,6 @@ export default function JobDetail() {
                       setRefreshKey(prev => prev + 1);
                     }}
                     key={refreshKey}
-                    allRounds={rounds}
                   />
                 </div>
               ) : (

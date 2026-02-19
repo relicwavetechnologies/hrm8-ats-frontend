@@ -8,6 +8,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -796,27 +797,21 @@ export function RoundConfigDrawer({
                         <div className="space-y-2">
                           <Label>Evaluation method</Label>
                           <div className="flex gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="evaluationMode"
-                                checked={evaluationMode === "GRADING"}
-                                onChange={() => setEvaluationMode("GRADING")}
-                                className="h-4 w-4"
-                              />
-                              <span>Grading</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="evaluationMode"
-                                checked={evaluationMode === "VOTING"}
-                                onChange={() => setEvaluationMode("VOTING")}
-                                className="h-4 w-4"
-                              />
-                              <span>Voting</span>
-                            </label>
-                          </div>
+                          <RadioGroup
+                            value={evaluationMode}
+                            onValueChange={(v) => setEvaluationMode(v as "GRADING" | "VOTING")}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value="GRADING" id="mode-grading" />
+                              <Label htmlFor="mode-grading" className="cursor-pointer">Grading</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value="VOTING" id="mode-voting" />
+                              <Label htmlFor="mode-voting" className="cursor-pointer">Voting</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
                           <p className="text-xs text-muted-foreground">
                             {evaluationMode === "GRADING"
                               ? "Evaluators assign numeric scores; pass is based on threshold."

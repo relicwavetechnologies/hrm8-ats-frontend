@@ -11,6 +11,7 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { getAttendanceRecords, updateAttendanceRecord } from "@/shared/lib/attendanceStorage";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, isSameDay } from "date-fns";
 import { cn } from "@/shared/lib/utils";
+import { Label } from "@/shared/components/ui/label";
 import type { AttendanceRecord, AttendanceStatus } from "@/shared/types/attendance";
 
 export function TimesheetView() {
@@ -174,7 +175,7 @@ export function TimesheetView() {
                           {isEditing ? (
                             <>
                               <div>
-                                <label className="text-xs text-muted-foreground">Check In</label>
+                                <Label className="text-xs text-muted-foreground">Check In</Label>
                                 <Input
                                   type="time"
                                   value={editValues.checkIn ? format(parseISO(editValues.checkIn), 'HH:mm') : ''}
@@ -188,7 +189,7 @@ export function TimesheetView() {
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-muted-foreground">Check Out</label>
+                                <Label className="text-xs text-muted-foreground">Check Out</Label>
                                 <Input
                                   type="time"
                                   value={editValues.checkOut ? format(parseISO(editValues.checkOut), 'HH:mm') : ''}
@@ -202,7 +203,7 @@ export function TimesheetView() {
                                 />
                               </div>
                               <div>
-                                <label className="text-xs text-muted-foreground">Status</label>
+                                <Label className="text-xs text-muted-foreground">Status</Label>
                                 <Select
                                   value={editValues.status || record.status}
                                   onValueChange={(value) => setEditValues({ ...editValues, status: value as AttendanceStatus })}
@@ -220,7 +221,7 @@ export function TimesheetView() {
                                 </Select>
                               </div>
                               <div>
-                                <label className="text-xs text-muted-foreground">Notes</label>
+                                <Label className="text-xs text-muted-foreground">Notes</Label>
                                 <Input
                                   value={editValues.notes || ''}
                                   onChange={(e) => setEditValues({ ...editValues, notes: e.target.value })}

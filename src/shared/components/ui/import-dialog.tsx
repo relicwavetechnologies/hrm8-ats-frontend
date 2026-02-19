@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 
@@ -129,7 +130,7 @@ export function ImportDialog({
             className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
-            <input
+            <Input
               ref={fileInputRef}
               type="file"
               accept=".csv"

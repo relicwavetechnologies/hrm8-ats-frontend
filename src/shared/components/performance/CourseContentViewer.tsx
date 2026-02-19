@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group';
 import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Separator } from '@/shared/components/ui/separator';
 import {
@@ -208,8 +209,9 @@ export function CourseContentViewer({
                         const isCurrent = mIdx === currentModuleIndex && lIdx === currentLessonIndex;
 
                         return (
-                          <button
+                          <Button
                             key={lesson.id}
+                            variant="ghost"
                             onClick={() => {
                               if (canAccess) {
                                 setCurrentModuleIndex(mIdx);
@@ -219,9 +221,9 @@ export function CourseContentViewer({
                               }
                             }}
                             disabled={!canAccess}
-                            className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                            className={`w-full h-auto text-left p-3 rounded-lg border transition-colors justify-start ${
                               isCurrent
-                                ? 'bg-primary text-primary-foreground border-primary'
+                                ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
                                 : canAccess
                                 ? 'bg-background hover:bg-muted border-border'
                                 : 'bg-muted/50 border-muted cursor-not-allowed'
@@ -249,7 +251,7 @@ export function CourseContentViewer({
                                 </div>
                               </div>
                             </div>
-                          </button>
+                          </Button>
                         );
                       })}
                       {module.assessment && (
@@ -393,8 +395,8 @@ export function CourseContentViewer({
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <textarea
-                          className="w-full min-h-[300px] p-4 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                        <Textarea
+                          className="w-full min-h-[300px] resize-none"
                           placeholder="Start taking notes..."
                         />
                       </CardContent>

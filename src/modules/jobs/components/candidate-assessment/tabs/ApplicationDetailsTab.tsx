@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
+import { Label } from "@/shared/components/ui/label";
 import { Application } from "@/shared/types/application";
 import { 
   User,
@@ -41,7 +42,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Application Date</label>
+                <Label className="text-sm font-medium text-muted-foreground">Application Date</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm">{format(application.appliedDate, "PPP 'at' p")}</p>
@@ -49,14 +50,14 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Application Source</label>
+                <Label className="text-sm font-medium text-muted-foreground">Application Source</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="secondary">LinkedIn</Badge>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Application ID</label>
+                <Label className="text-sm font-medium text-muted-foreground">Application ID</Label>
                 <p className="text-sm text-muted-foreground mt-1 font-mono">
                   {application.id}
                 </p>
@@ -65,7 +66,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
+                <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm">{format(application.updatedAt, "PPP 'at' p")}</p>
@@ -73,14 +74,14 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Referral</label>
+                <Label className="text-sm font-medium text-muted-foreground">Referral</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm">Direct application</p>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Device Used</label>
+                <Label className="text-sm font-medium text-muted-foreground">Device Used</Label>
                 <p className="text-sm text-muted-foreground mt-1">
                   Desktop - Chrome (San Francisco, CA)
                 </p>
@@ -102,7 +103,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Desired Salary Range</label>
+                <Label className="text-sm font-medium text-muted-foreground">Desired Salary Range</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   {application.candidatePreferences?.salaryPreference ? (
@@ -121,7 +122,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Work Arrangement Preference</label>
+                <Label className="text-sm font-medium text-muted-foreground">Work Arrangement Preference</Label>
                 <div className="flex items-center gap-2 mt-1">
                   {application.candidatePreferences?.workArrangement && application.candidatePreferences.workArrangement.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
@@ -136,7 +137,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Employment Type</label>
+                <Label className="text-sm font-medium text-muted-foreground">Employment Type</Label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {application.candidatePreferences?.employmentType && application.candidatePreferences.employmentType.length > 0 ? (
                     application.candidatePreferences.employmentType.map((type, i) => (
@@ -151,7 +152,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Start Date Availability</label>
+                <Label className="text-sm font-medium text-muted-foreground">Start Date Availability</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   {application.candidatePreferences?.startDate ? (
@@ -166,7 +167,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Willing to Relocate</label>
+                <Label className="text-sm font-medium text-muted-foreground">Willing to Relocate</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <CheckCircle2 className={`h-4 w-4 ${application.candidatePreferences?.willingToRelocate ? 'text-green-500' : 'text-muted-foreground'}`} />
                   <p className="text-sm">
@@ -178,7 +179,7 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Visa Sponsorship</label>
+                <Label className="text-sm font-medium text-muted-foreground">Visa Sponsorship</Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Shield className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm">

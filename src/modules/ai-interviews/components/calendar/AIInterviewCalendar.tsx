@@ -93,17 +93,18 @@ export function AIInterviewCalendar() {
                     {interviews.slice(0, 3).map(interview => {
                       const Icon = modeIcons[interview.interviewMode];
                       return (
-                        <button
+                        <Button
                           key={interview.id}
+                          variant="ghost"
                           onClick={() => navigate(`/ai-interviews/${interview.id}`)}
-                          className={`w-full text-left px-1.5 py-1 rounded text-xs border ${statusColors[interview.status]} hover:opacity-80 transition-opacity`}
+                          className={`w-full text-left px-1.5 py-1 h-auto rounded text-xs border justify-start flex-col items-start space-y-0 ${statusColors[interview.status]} hover:opacity-80 transition-opacity`}
                         >
                           <div className="flex items-center gap-1">
                             <Icon className="h-3 w-3 flex-shrink-0" />
                             <span className="truncate">{format(new Date(interview.scheduledDate), 'HH:mm')}</span>
                           </div>
                           <div className="truncate font-medium">{interview.candidateName}</div>
-                        </button>
+                        </Button>
                       );
                     })}
                     {interviews.length > 3 && (

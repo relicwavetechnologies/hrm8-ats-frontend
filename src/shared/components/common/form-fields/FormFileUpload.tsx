@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { UseFormReturn, FieldPath, FieldValues } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/shared/components/ui/form';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { Upload, X, File } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
@@ -112,7 +113,7 @@ export function FormFileUpload<TFieldValues extends FieldValues = FieldValues>({
           </FormLabel>
           <FormControl>
             <div className="space-y-2">
-              <input
+              <Input
                 ref={fileInputRef}
                 type="file"
                 accept={accept}

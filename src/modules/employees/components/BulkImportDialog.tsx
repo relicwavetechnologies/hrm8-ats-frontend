@@ -10,6 +10,8 @@ import { saveEmployee, getEmployees } from '@/shared/lib/employeeStorage';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Badge } from '@/shared/components/ui/badge';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 
 interface BulkImportDialogProps {
   open: boolean;
@@ -284,14 +286,14 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
               </div>
 
               <div className="border-2 border-dashed rounded-lg p-12 text-center hover:border-primary transition-colors">
-                <input
+                <Input
                   type="file"
                   id="bulk-upload"
                   accept=".xlsx,.xls,.csv"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <label htmlFor="bulk-upload" className="cursor-pointer">
+                <Label htmlFor="bulk-upload" className="cursor-pointer">
                   <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-lg font-medium mb-2">
                     Click to upload or drag and drop
@@ -299,7 +301,7 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
                   <p className="text-sm text-muted-foreground">
                     Excel (.xlsx, .xls) or CSV files
                   </p>
-                </label>
+                </Label>
               </div>
 
               <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">

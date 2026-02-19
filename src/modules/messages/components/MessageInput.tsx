@@ -5,6 +5,7 @@
 
 import { useState, KeyboardEvent, useRef } from 'react';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Paperclip, Send, Smile } from 'lucide-react';
 import { useWebSocket } from '@/app/providers/WebSocketContext';
@@ -82,7 +83,7 @@ export function MessageInput({
 
   return (
     <div className={cn('flex flex-col gap-2 p-4 pt-2 border-t bg-background/95 backdrop-blur-md', className)}>
-      <input
+      <Input
         type="file"
         className="hidden"
         ref={fileInputRef}

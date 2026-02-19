@@ -121,9 +121,9 @@ export default function ResetPassword() {
                   : (
                     <>
                       Your password has been changed. You can now{' '}
-                      <button type="button" onClick={() => navigate('/login')} className="underline font-semibold">
+                      <Button variant="link" className="p-0 h-auto font-semibold underline" onClick={() => navigate('/login')}>
                         sign in
-                      </button>
+                      </Button>
                       .
                     </>
                   )}

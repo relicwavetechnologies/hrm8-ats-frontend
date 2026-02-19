@@ -84,12 +84,14 @@ export function TagManager({ applicationId, tags = [], onTagsChange }: TagManage
           className={`text-[10px] px-1.5 py-0.5 ${getTagColor(tag)}`}
         >
           {tag}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-0.5 h-3 w-3 p-0 hover:opacity-70 hover:bg-transparent"
             onClick={(e) => handleRemoveTag(tag, e)}
-            className="ml-1 hover:opacity-70"
           >
             <X className="h-2.5 w-2.5" />
-          </button>
+          </Button>
         </Badge>
       ))}
       

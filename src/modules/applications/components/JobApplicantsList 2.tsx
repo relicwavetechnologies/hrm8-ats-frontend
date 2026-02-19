@@ -98,10 +98,11 @@ export function JobApplicantsList({ jobId }: JobApplicantsListProps) {
         ) : (
           <div className="divide-y rounded-md border">
             {rows.map((row) => (
-              <button
+              <Button
                 key={row.id}
                 type="button"
-                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                variant="ghost"
+                className="w-full flex items-center justify-between px-4 py-3 h-auto text-left hover:bg-muted/50 transition-colors justify-start rounded-none"
                 onClick={() => navigate(`/jobs/${jobId}/applications/${row.id}`)}
               >
                 <div>
@@ -128,7 +129,7 @@ export function JobApplicantsList({ jobId }: JobApplicantsListProps) {
                 <Button variant="ghost" size="sm">
                   View
                 </Button>
-              </button>
+              </Button>
             ))}
           </div>
         )}

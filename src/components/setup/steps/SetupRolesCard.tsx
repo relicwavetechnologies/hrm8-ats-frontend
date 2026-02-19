@@ -210,11 +210,13 @@ export function SetupRolesCard({
                 className="font-normal px-3 py-1.5 gap-1.5 group"
               >
                 {role.name}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleDeleteRole(role.id)}
                   disabled={deletingRoleId === role.id}
-                  className="ml-1 hover:text-destructive transition-colors disabled:opacity-50"
+                  className="ml-1 h-5 w-5 p-0 hover:text-destructive transition-colors disabled:opacity-50"
                   aria-label={`Remove ${role.name}`}
                 >
                   {deletingRoleId === role.id ? (
@@ -222,7 +224,7 @@ export function SetupRolesCard({
                   ) : (
                     <X className="h-3 w-3" />
                   )}
-                </button>
+                </Button>
               </Badge>
             ))}
           </div>

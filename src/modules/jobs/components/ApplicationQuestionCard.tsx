@@ -84,14 +84,16 @@ export function ApplicationQuestionCard({
       style={style}
       className="flex items-start gap-3 p-4 border rounded-lg bg-card"
     >
-      <button
+      <Button
         type="button"
-        className="cursor-grab active:cursor-grabbing mt-1"
+        variant="ghost"
+        size="icon"
+        className="cursor-grab active:cursor-grabbing mt-1 h-8 w-7 p-0 shrink-0"
         {...attributes}
         {...listeners}
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </button>
+      </Button>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 mb-2">

@@ -1,5 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/input";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Label } from "@/shared/components/ui/label";
 
 export interface NumberFormat {
   type: "number" | "currency" | "percentage";
@@ -18,7 +20,7 @@ export function PivotFormatting({ format, onFormatChange }: PivotFormattingProps
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium mb-2 block">Number Format</label>
+          <Label className="text-sm font-medium mb-2 block">Number Format</Label>
           <Select
             value={format.type}
             onValueChange={(value) =>
@@ -37,7 +39,7 @@ export function PivotFormatting({ format, onFormatChange }: PivotFormattingProps
         </div>
 
         <div>
-          <label className="text-sm font-medium mb-2 block">Decimal Places</label>
+          <Label className="text-sm font-medium mb-2 block">Decimal Places</Label>
           <Input
             type="number"
             min="0"
@@ -52,7 +54,7 @@ export function PivotFormatting({ format, onFormatChange }: PivotFormattingProps
 
       {format.type === "currency" && (
         <div>
-          <label className="text-sm font-medium mb-2 block">Currency Symbol</label>
+          <Label className="text-sm font-medium mb-2 block">Currency Symbol</Label>
           <Input
             value={format.currencySymbol || "$"}
             onChange={(e) =>
@@ -64,18 +66,16 @@ export function PivotFormatting({ format, onFormatChange }: PivotFormattingProps
       )}
 
       <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="thousands"
           checked={format.thousandsSeparator}
-          onChange={(e) =>
-            onFormatChange({ ...format, thousandsSeparator: e.target.checked })
+          onCheckedChange={(checked) =>
+            onFormatChange({ ...format, thousandsSeparator: checked === true })
           }
-          className="rounded border-gray-300"
         />
-        <label htmlFor="thousands" className="text-sm">
+        <Label htmlFor="thousands" className="text-sm cursor-pointer">
           Use thousands separator
-        </label>
+        </Label>
       </div>
     </div>
   );

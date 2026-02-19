@@ -6,6 +6,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { CalendarIcon, Settings, Eye, EyeOff, Video } from "lucide-react";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import { Button } from "@/shared/components/ui/button";
 import { Calendar } from "@/shared/components/ui/calendar";
@@ -144,7 +145,7 @@ export function JobEditSettingsTab({ form, job }: JobEditSettingsTabProps) {
         <CardContent className="space-y-4">
           {job?.postingDate && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Posting Date</label>
+              <Label className="text-sm font-medium">Posting Date</Label>
               <p className="text-sm text-muted-foreground">
                 {new Date(job.postingDate).toLocaleDateString()}
               </p>
