@@ -155,6 +155,18 @@ class JobService {
   }
 
   /**
+   * Upgrade an existing job to HRM8 managed service.
+   * For OPEN jobs this debits wallet + auto-assigns consultant.
+   * For DRAFT jobs this routes through publish flow.
+   */
+  async upgradeManagedService(
+    id: string,
+    servicePackage: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo'
+  ) {
+    return apiClient.post<{ job: Job }>(`/api/jobs/${id}/upgrade-managed-service`, { servicePackage });
+  }
+
+  /**
    * Save job as draft
    */
   async saveDraft(id: string, data: UpdateJobRequest) {

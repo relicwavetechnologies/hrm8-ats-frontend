@@ -50,8 +50,8 @@ export function InsufficientBalanceModal({
                     </div>
                     <DialogTitle className="text-center text-xl">Insufficient Wallet Balance</DialogTitle>
                     <DialogDescription className="text-center pt-2">
-                        You don't have enough funds in your company wallet to post this job.
-                        All job payments must be made through your virtual wallet.
+                        You don't have enough funds in your company wallet for this HRM8 managed service.
+                        Job publishing still uses your subscription quota.
                     </DialogDescription>
                 </DialogHeader>
 

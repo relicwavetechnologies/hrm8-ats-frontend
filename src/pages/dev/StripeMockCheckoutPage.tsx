@@ -48,15 +48,15 @@ export default function StripeMockCheckoutPage() {
                 amount: amountTotal,
             });
 
+            if (!response.success) {
+                throw new Error(response.error || 'Payment simulation failed');
+            }
+
             setSuccess(true);
 
             // Wait shortly then redirect
             setTimeout(() => {
-                // Determine redirect based on context (could be passed in metadata, but simple fallback to wallet for now)
-                // In real implementation, we might redirect to the success_url passed in session creation
-                // handling that requires parsing the session object which we don't have here unless we fetch it.
-                // But typically the backend would return the success_url or we just assume a standard one.
-                navigate('/wallet?recharge_success=true');
+                navigate('/subscriptions?subscription_success=true');
             }, 2000);
 
         } catch (err: any) {

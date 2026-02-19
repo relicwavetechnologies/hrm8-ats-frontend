@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Job } from "@/shared/types/job";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
@@ -33,6 +34,7 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { jobService } from "@/shared/lib/jobService";
 import { jobTemplateService } from "@/shared/lib/jobTemplateService";
 import { ExternalPromotionDialog } from "./ExternalPromotionDialog";
+import { UpgradeServiceDialog } from "./UpgradeServiceDialog";
 
 interface PostPublishFlowProps {
   job: Job;
@@ -51,9 +53,11 @@ export function PostPublishFlow({
   onSaveTemplate,
   onComplete,
 }: PostPublishFlowProps) {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<FlowStep>("tools");
   const [showJobTargetDialog, setShowJobTargetDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   
   // Tools step state
   const [alerts, setAlerts] = useState({
@@ -69,6 +73,7 @@ export function PostPublishFlow({
 
   const shareLink = job.shareLink || `${window.location.origin}/jobs/${job.id}`;
   const referralLink = job.referralLink || `${shareLink}?ref=${job.id.substring(0, 8)}`;
+  const canUpgradeToManaged = job.serviceType === "self-managed" || job.serviceType === "rpo";
 
   const handleCopyLink = (link: string, label: string) => {
     navigator.clipboard.writeText(link);
@@ -182,6 +187,12 @@ export function PostPublishFlow({
     }
   };
 
+  const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo') => {
+    onOpenChange(false);
+    setShowUpgradeDialog(false);
+    navigate(`/ats/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
+  };
+
   const renderToolsStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -191,6 +202,26 @@ export function PostPublishFlow({
           Configure tools and settings for your job posting
         </p>
       </div>
+
+      {canUpgradeToManaged && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4" />
+              Need HRM8-managed hiring support?
+            </CardTitle>
+            <CardDescription>
+              Keep this job live and switch to a wallet-based managed service at any time.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setShowUpgradeDialog(true)} size="sm">
+              Choose Managed Service
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Enable Alerts */}
       <Card>
@@ -605,7 +636,12 @@ export function PostPublishFlow({
           setCurrentStep("view");
         }}
       />
+
+      <UpgradeServiceDialog
+        open={showUpgradeDialog}
+        onServiceTypeSelect={handleManagedServiceSelect}
+        onCancel={() => setShowUpgradeDialog(false)}
+      />
     </>
   );
 }
-

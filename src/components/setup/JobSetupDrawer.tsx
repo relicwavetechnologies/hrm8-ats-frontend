@@ -4,6 +4,7 @@
  * define hiring roles/team per job, and configure rounds with optional role-based interviewer assignment.
  */
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Drawer,
   DrawerContent,
@@ -26,9 +27,13 @@ import { SetupReviewCard } from './steps/SetupReviewCard';
 
 interface JobSetupDrawerProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (
+    open: boolean,
+    meta?: { reason: 'open' | 'close' | 'managed-checkout' }
+  ) => void;
   jobId: string | null;
   jobTitle?: string;
+  forceChoiceOnOpen?: boolean;
 }
 
 const SETUP_STEPS = [
@@ -45,7 +50,9 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   onOpenChange,
   jobId,
   jobTitle,
+  forceChoiceOnOpen = false,
 }) => {
+  const navigate = useNavigate();
   const {
     currentStep,
     managementType,
@@ -59,6 +66,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     setRoles,
     setTeam,
     setRounds,
+    setCurrentStep,
     nextStep,
     prevStep,
     reset,
@@ -69,6 +77,14 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     setIsOpen(open, jobId ?? undefined);
     if (!open) reset();
   }, [open, jobId, setIsOpen, reset]);
+
+  useEffect(() => {
+    if (!open || !forceChoiceOnOpen) return;
+    // Explicitly reset to step-1 choice screen when returning from a cancelled managed checkout.
+    reset();
+    setIsOpen(true, jobId ?? undefined);
+    setCurrentStep(1);
+  }, [open, forceChoiceOnOpen, jobId, reset, setIsOpen, setCurrentStep]);
 
   // Load job roles when drawer opens with a jobId
   useEffect(() => {
@@ -87,11 +103,53 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     load();
   }, [open, jobId, setRoles]);
 
+  useEffect(() => {
+    if (!open || !jobId || forceChoiceOnOpen) return;
+    const loadJobSetup = async () => {
+      try {
+        const res = await jobService.getJobById(jobId);
+        const job = res.success ? res.data?.job : null;
+        if (!job) return;
+
+        const isManaged = job.managementType === 'hrm8-managed' || (job.serviceType && job.serviceType !== 'self-managed');
+        if (isManaged) {
+          setManagementType('hrm8-managed');
+          setSetupType('advanced');
+          // If managed payment is completed, skip step-1 and continue directly
+          // into advanced setup steps.
+          if (String(job.paymentStatus || '').toUpperCase() === 'PAID') {
+            setCurrentStep(2);
+          } else {
+            setCurrentStep(1);
+          }
+          return;
+        }
+
+        if (job.managementType === 'self-managed') {
+          setManagementType('self-managed');
+        }
+        if (job.setupType === 'simple' || job.setupType === 'advanced') {
+          setSetupType(job.setupType);
+        }
+        setCurrentStep(1);
+      } catch (e) {
+        console.warn('Could not load job setup metadata:', e);
+      }
+    };
+    loadJobSetup();
+  }, [open, jobId, forceChoiceOnOpen, setManagementType, setSetupType, setCurrentStep]);
+
+  useEffect(() => {
+    if (managementType === 'hrm8-managed' && setupType !== 'advanced') {
+      setSetupType('advanced');
+    }
+  }, [managementType, setupType, setSetupType]);
+
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
   const handleClose = () => {
-    onOpenChange(false);
+    onOpenChange(false, { reason: 'close' });
     reset();
   };
 
@@ -117,16 +175,36 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
   const effectiveJobId = jobId ?? storeJobId ?? null;
 
+  const handleManagementTypeSelect = (type: 'self-managed' | 'hrm8-managed') => {
+    setManagementType(type);
+
+    if (type === 'self-managed') {
+      return;
+    }
+
+    if (!effectiveJobId) {
+      toast({
+        title: 'Job not found',
+        description: 'Cannot continue to managed services without a valid job.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    onOpenChange(false, { reason: 'managed-checkout' });
+    navigate(`/ats/jobs/${effectiveJobId}/managed-recruitment-checkout?fromSetup=1`);
+  };
+
   const renderStep = () => {
     // Step 1: Setup Flow Type (Simple vs Advanced)
     if (currentStep === 1) {
       return (
         <SetupFlowTypeCard
-          managementType={managementType ?? 'self-managed'}
+          managementType={managementType}
           setupType={setupType}
+          onManagementTypeSelect={handleManagementTypeSelect}
           onSetupTypeSelect={(t) => {
             setSetupType(t);
-            // Default to self-managed if not set
             if (!managementType) setManagementType('self-managed');
             nextStep();
           }}
@@ -246,7 +324,12 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   const stepInfo = SETUP_STEPS[currentStep - 1];
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen, { reason: nextOpen ? 'open' : 'close' });
+      }}
+    >
       <DrawerContent className="h-[90vh] rounded-t-[24px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
         <DrawerHeader className="border-b px-6 py-4 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -89,7 +89,7 @@ export function SubscriptionStatusCard({ data, loading }: SubscriptionStatusCard
                             No active subscription
                         </p>
                         <p className="text-xs text-muted-foreground mb-4">
-                            Subscribe to get monthly wallet credits automatically
+                            Subscribe to unlock ATS access and monthly job posting quota
                         </p>
                         <Button onClick={() => navigate('/subscriptions')} className="w-full">
                             <Sparkles className="h-4 w-4 mr-2" />

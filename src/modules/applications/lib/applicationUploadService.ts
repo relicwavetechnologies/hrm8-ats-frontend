@@ -22,7 +22,7 @@ class ApplicationUploadService {
         formData.append('type', type);
 
         // Use fetch directly for FormData
-        const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000';
+        const API_BASE_URL = (import.meta as any).env.VITE_API_URL || '';
         const url = `${API_BASE_URL}/api/applications/upload`;
 
         const response = await fetch(url, {

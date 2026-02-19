@@ -11,7 +11,7 @@ export interface CompanyStats {
 }
 
 class CompanyService {
-    private baseUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/companies`;
+    private baseUrl = `${import.meta.env.VITE_API_URL || ''}/api/companies`;
 
     async getCompanyStats(companyId: string): Promise<CompanyStats> {
         const url = `${this.baseUrl}/${companyId}/stats`;

@@ -35,7 +35,7 @@ interface WebSocketProviderProps {
 
 // WebSocket URL construction
 const getWebSocketUrl = (): string => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
   return apiUrl.replace(/^http/, 'ws');
 };
 
@@ -235,6 +235,16 @@ export function WebSocketProvider({
       ws.onmessage = handleMessage;
 
       ws.onerror = (error) => {
+        // During fast route transitions/unmounts, browsers may emit an "error"
+        // event while the socket is intentionally closing. Treat that as debug noise.
+        if (
+          !shouldReconnectRef.current ||
+          ws.readyState === WebSocket.CLOSING ||
+          ws.readyState === WebSocket.CLOSED
+        ) {
+          console.debug('WebSocket closed during teardown', { readyState: ws.readyState });
+          return;
+        }
         console.error('❌ WebSocket error:', error);
         setConnectionState('error');
       };
@@ -384,4 +394,3 @@ export function useWebSocket() {
   }
   return context;
 }
-

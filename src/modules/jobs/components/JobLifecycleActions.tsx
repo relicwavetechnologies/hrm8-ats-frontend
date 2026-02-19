@@ -227,9 +227,9 @@ export function JobLifecycleActions({ job, onJobUpdate, onEdit }: JobLifecycleAc
     }
   };
 
-  const handleServiceUpgrade = (serviceType: 'shortlisting' | 'full-service' | 'executive-search') => {
+  const handleServiceUpgrade = (serviceType: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo') => {
     // For now, redirect to the managed recruitment mock checkout
-    navigate(`/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
+    navigate(`/ats/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
     setUpgradeServiceDialogOpen(false);
   };
 
@@ -392,4 +392,3 @@ export function JobLifecycleActions({ job, onJobUpdate, onEdit }: JobLifecycleAc
     </>
   );
 }
-
