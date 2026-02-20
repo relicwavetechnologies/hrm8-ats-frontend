@@ -63,25 +63,25 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
     isParsed
 }) => {
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <DollarSign className="h-6 w-6 text-primary" />
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
+            <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Compensation</h3>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h3 className="text-base font-semibold">Compensation</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">
                         Providing a salary range can significantly increase application rates.
                     </p>
                 </div>
             </div>
 
-            <div className="space-y-6 p-1">
+            <div className="space-y-4 p-0.5">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="currency" className="text-sm font-medium">Currency</Label>
                         <Select value={salaryCurrency} onValueChange={onCurrencyChange}>
-                            <SelectTrigger id="currency" className="h-11 rounded-xl">
+                            <SelectTrigger id="currency" className="h-10 rounded-md">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -94,7 +94,7 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
                     <div className="space-y-2">
                         <Label htmlFor="period" className="text-sm font-medium">Pay Period</Label>
                         <Select value={salaryPeriod} onValueChange={(v) => onPeriodChange(v as any)}>
-                            <SelectTrigger id="period" className="h-11 rounded-xl">
+                            <SelectTrigger id="period" className="h-10 rounded-md">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -118,7 +118,7 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
                                 onChange={(e) => onSalaryMinChange(e.target.value ? parseInt(e.target.value) : 0)}
                                 placeholder="e.g., 80000"
                                 className={cn(
-                                    "h-11 pl-9 rounded-xl",
+                                    "h-10 pl-9 rounded-md",
                                     isParsed && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
                                 )}
                             />
@@ -135,7 +135,7 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
                                 onChange={(e) => onSalaryMaxChange(e.target.value ? parseInt(e.target.value) : 0)}
                                 placeholder="e.g., 120000"
                                 className={cn(
-                                    "h-11 pl-9 rounded-xl",
+                                    "h-10 pl-9 rounded-md",
                                     isParsed && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
                                 )}
                             />
@@ -145,7 +145,7 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
 
                 {/* Salary Description */}
                 <div className="space-y-2 pt-2 border-t">
-                    <Label htmlFor="salaryDescription" className="text-base font-medium">
+                    <Label htmlFor="salaryDescription" className="text-sm font-medium">
                         Additional Details <span className="text-muted-foreground font-normal text-sm">(Optional)</span>
                     </Label>
                     <Textarea
@@ -153,15 +153,15 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
                         value={salaryDescription || ''}
                         onChange={(e) => onSalaryDescriptionChange && onSalaryDescriptionChange(e.target.value)}
                         placeholder="e.g. Plus annual performance bonus and stock options..."
-                        className="resize-none min-h-[80px]"
+                        className="resize-none min-h-[72px]"
                     />
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border">
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/40 border">
                     <div className="flex items-center gap-3">
-                        <EyeOff className="h-5 w-5 text-muted-foreground" />
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
                         <div>
-                            <span className="font-medium text-sm">Hide Salary on Job Post?</span>
+                            <span className="font-medium text-xs">Hide Salary on Job Post?</span>
                             <p className="text-xs text-muted-foreground">Salary won't be visible to candidates</p>
                         </div>
                     </div>
@@ -171,10 +171,9 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
 
             <Button
                 onClick={onContinue}
-                className="w-full h-12 text-base rounded-xl font-semibold transition-all gap-2"
-                size="lg"
+                className="w-full h-10 text-sm rounded-md font-medium transition-all gap-1.5"
             >
-                Continue <ChevronRight className="h-5 w-5" />
+                Continue <ChevronRight className="h-4 w-4" />
             </Button>
         </div>
     );

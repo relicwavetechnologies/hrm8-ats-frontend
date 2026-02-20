@@ -4,8 +4,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Label } from '@/shared/components/ui/label';
 import { Input } from '@/shared/components/ui/input';
 import { Switch } from '@/shared/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { Calendar, Eye, EyeOff, ArrowRight, Building, RefreshCcw, Home } from 'lucide-react';
+import { Calendar, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 interface ChatLogisticsCardProps {
@@ -37,23 +36,23 @@ export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
     const safeDate = isValidDate(closeDate) ? closeDate : '';
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Calendar className="h-6 w-6 text-primary" />
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
+            <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <Calendar className="h-4 w-4 text-foreground" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Close Date & Visibility</h3>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h3 className="text-base font-semibold">Close Date & Visibility</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">
                         Set when applications close and who can see this job.
                     </p>
                 </div>
             </div>
 
-            <Card className="p-5 space-y-6">
+            <Card className="p-3.5 space-y-4 rounded-md shadow-none border">
                 {/* Close Date */}
                 <div className="space-y-2">
-                    <Label htmlFor="closeDate" className="text-base font-medium">
+                    <Label htmlFor="closeDate" className="text-sm font-medium">
                         Application Deadline
                     </Label>
                     <Input
@@ -62,20 +61,20 @@ export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
                         value={safeDate}
                         onChange={(e) => onCloseDateChange(e.target.value)}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full text-base h-11"
+                        className="w-full text-sm h-10"
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground">
                         Leave blank for no deadline
                     </p>
                 </div>
 
                 {/* Visibility */}
-                <div className="space-y-3">
-                    <Label className="text-base font-medium">Job Visibility</Label>
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                    <Label className="text-sm font-medium">Job Visibility</Label>
+                    <div className="grid grid-cols-2 gap-2">
                         <Card
                             className={cn(
-                                "p-4 cursor-pointer transition-all border-2",
+                                "p-2.5 cursor-pointer transition-all border",
                                 visibility === 'public'
                                     ? "border-primary bg-primary/5"
                                     : "border-muted hover:border-primary/30"
@@ -83,18 +82,18 @@ export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
                             onClick={() => onVisibilityChange('public')}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
-                                    <Eye className="h-5 w-5" />
+                                <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground">
+                                    <Eye className="h-3.5 w-3.5" />
                                 </div>
                                 <div>
-                                    <p className="font-medium">Public</p>
+                                    <p className="text-sm font-medium">Public</p>
                                     <p className="text-xs text-muted-foreground">Anyone can find</p>
                                 </div>
                             </div>
                         </Card>
                         <Card
                             className={cn(
-                                "p-4 cursor-pointer transition-all border-2",
+                                "p-2.5 cursor-pointer transition-all border",
                                 visibility === 'private'
                                     ? "border-primary bg-primary/5"
                                     : "border-muted hover:border-primary/30"
@@ -102,42 +101,35 @@ export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
                             onClick={() => onVisibilityChange('private')}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                                    <EyeOff className="h-5 w-5" />
+                                <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-foreground">
+                                    <EyeOff className="h-3.5 w-3.5" />
                                 </div>
                                 <div>
-                                    <p className="font-medium">Private</p>
+                                    <p className="text-sm font-medium">Private</p>
                                     <p className="text-xs text-muted-foreground">Invite only</p>
-                                </div>
-
-                                {/* Stealth Mode */}
-                                <div className="space-y-3 pt-4 border-t">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label className="text-base font-medium flex items-center gap-2">
-                                                Stealth Mode
-                                                <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                                    Confidential
-                                                </span>
-                                            </Label>
-                                            <p className="text-xs text-muted-foreground max-w-[80%]">
-                                                Hide your company name and logo from the public job post.
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            checked={stealth}
-                                            onCheckedChange={onStealthChange}
-                                            className="data-[state=checked]:bg-slate-900"
-                                        />
-                                    </div>
                                 </div>
                             </div>
                         </Card>
                     </div>
                 </div>
+
+                {/* Stealth Mode */}
+                <div className="space-y-2 pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-sm font-medium">
+                                Stealth Mode
+                            </Label>
+                            <p className="text-[11px] text-muted-foreground">
+                                Hide company name/logo on public job posting.
+                            </p>
+                        </div>
+                        <Switch checked={stealth} onCheckedChange={onStealthChange} />
+                    </div>
+                </div>
             </Card>
 
-            <Button onClick={onContinue} className="w-full gap-2" size="lg">
+            <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
                 Continue <ArrowRight className="h-4 w-4" />
             </Button>
         </div>

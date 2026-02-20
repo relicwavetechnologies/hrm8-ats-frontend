@@ -46,22 +46,22 @@ export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Tag className="h-6 w-6 text-primary" />
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
+            <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <Tag className="h-4 w-4 text-foreground" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Tags</h3>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h3 className="text-base font-semibold">Tags</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">
                         Add tags to help organize and filter this job.
                     </p>
                 </div>
             </div>
 
-            <Card className="p-5 space-y-5">
+            <Card className="p-3.5 space-y-3 rounded-md shadow-none border">
                 {/* Standard Tags */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Suggested Tags</p>
                     <div className="flex flex-wrap gap-2">
                         {STANDARD_TAGS.map(tag => (
@@ -69,9 +69,9 @@ export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
                                 key={tag}
                                 variant={tags.includes(tag) ? "default" : "outline"}
                                 className={cn(
-                                    "cursor-pointer transition-all py-1.5 px-3",
+                                    "cursor-pointer transition-all h-6 px-2.5 text-[11px]",
                                     tags.includes(tag)
-                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        ? "bg-foreground text-background hover:bg-foreground/90"
                                         : "hover:bg-accent hover:text-accent-foreground"
                                 )}
                                 onClick={() => handleToggleTag(tag)}
@@ -83,14 +83,14 @@ export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
                 </div>
 
                 {/* Custom Tags */}
-                <div className="space-y-3 pt-2 border-t">
+                <div className="space-y-2 pt-2 border-t">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom Tags</p>
 
                     {/* Active Custom Tags (those not in standard list) */}
                     {tags.filter(t => !STANDARD_TAGS.includes(t)).length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
                             {tags.filter(t => !STANDARD_TAGS.includes(t)).map(tag => (
-                                <Badge key={tag} variant="secondary" className="gap-1 py-1 px-2.5">
+                                <Badge key={tag} variant="secondary" className="gap-1 h-6 px-2 text-[11px]">
                                     {tag}
                                     <Button
                                         type="button"
@@ -114,14 +114,14 @@ export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
                             onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
                             className="h-10"
                         />
-                        <Button onClick={handleAddTag} disabled={!newTag.trim()} size="sm" className="h-10 px-4">
+                        <Button onClick={handleAddTag} disabled={!newTag.trim()} size="sm" className="h-10 px-3">
                             <Plus className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
             </Card>
 
-            <Button onClick={onContinue} className="w-full gap-2" size="lg">
+            <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
                 Continue <ArrowRight className="h-4 w-4" />
             </Button>
         </div>

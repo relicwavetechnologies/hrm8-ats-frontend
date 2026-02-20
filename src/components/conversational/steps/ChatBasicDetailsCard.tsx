@@ -27,9 +27,9 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
     const canContinue = title.trim().length >= 3;
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
             <div className="space-y-2">
-                <Label htmlFor="job-title" className="text-base font-semibold">
+                <Label htmlFor="job-title" className="text-sm font-semibold">
                     Job Title <span className="text-destructive">*</span>
                 </Label>
                 <div className="relative">
@@ -39,7 +39,7 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
                         onChange={(e) => onTitleChange(e.target.value)}
                         placeholder="e.g., Senior Software Engineer"
                         className={cn(
-                            "text-lg h-14 px-4 rounded-xl transition-all",
+                            "text-base h-10 px-3 rounded-md transition-all",
                             isParsedTitle && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
                         )}
                         autoFocus
@@ -56,7 +56,7 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="department" className="text-base font-semibold">
+                <Label htmlFor="department" className="text-sm font-semibold">
                     Department
                 </Label>
                 <div className="relative">
@@ -66,7 +66,7 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
                         onChange={(e) => onDepartmentChange(e.target.value)}
                         placeholder="e.g., Engineering, Marketing, Sales"
                         className={cn(
-                            "text-base h-12 px-4 rounded-xl transition-all",
+                            "text-sm h-10 px-3 rounded-md transition-all",
                             isParsedDept && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
                         )}
                     />
@@ -81,9 +81,9 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
             <Button
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="w-full h-12 text-base rounded-xl font-semibold transition-all"
+                className="w-full h-10 text-sm rounded-md font-medium transition-all"
             >
-                Continue <ChevronRight className="ml-2 h-5 w-5" />
+                Continue <ChevronRight className="ml-1.5 h-4 w-4" />
             </Button>
         </div>
     );

@@ -48,23 +48,23 @@ export const ChatApplicationConfigCard: React.FC<ChatApplicationConfigCardProps>
     ] as const;
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Settings className="h-6 w-6 text-primary" />
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
+            <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <Settings className="h-4 w-4 text-foreground" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Application Configuration</h3>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h3 className="text-base font-semibold">Application Configuration</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">
                         Customize what information candidates need to provide.
                     </p>
                 </div>
             </div>
 
-            <Card className="p-0 overflow-hidden border-none shadow-sm">
-                <div className="bg-muted/30 px-5 py-3 border-b flex justify-between items-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <Card className="p-0 overflow-hidden rounded-md border shadow-none">
+                <div className="bg-muted/20 px-3 py-2 border-b flex justify-between items-center text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                     <span>Field</span>
-                    <div className="flex gap-8 px-2">
+                    <div className="flex gap-7 px-2">
                         <span>Include</span>
                         <span>Require</span>
                     </div>
@@ -75,14 +75,14 @@ export const ChatApplicationConfigCard: React.FC<ChatApplicationConfigCardProps>
                         const state = config.includeStandardFields?.[field.id] || { included: false, required: false };
 
                         return (
-                            <div key={field.id} className="p-4 flex items-center justify-between hover:bg-muted/10 transition-colors">
+                            <div key={field.id} className="p-2.5 flex items-center justify-between hover:bg-muted/10 transition-colors">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-background border flex items-center justify-center text-muted-foreground">
-                                        <Icon className="h-4 w-4" />
+                                    <div className="w-7 h-7 rounded-md bg-background border flex items-center justify-center text-muted-foreground">
+                                        <Icon className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="font-medium">{field.label}</span>
+                                    <span className="text-sm font-medium">{field.label}</span>
                                 </div>
-                                <div className="flex items-center gap-10">
+                                <div className="flex items-center gap-8">
                                     <Switch
                                         checked={state.included}
                                         onCheckedChange={() => handleToggle(field.id, 'included')}
@@ -91,7 +91,6 @@ export const ChatApplicationConfigCard: React.FC<ChatApplicationConfigCardProps>
                                         checked={state.required}
                                         onCheckedChange={() => handleToggle(field.id, 'required')}
                                         disabled={!state.included}
-                                        className="data-[state=checked]:bg-red-500"
                                     />
                                 </div>
                             </div>
@@ -100,7 +99,7 @@ export const ChatApplicationConfigCard: React.FC<ChatApplicationConfigCardProps>
                 </div>
             </Card>
 
-            <Button onClick={onContinue} className="w-full gap-2" size="lg">
+            <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
                 Continue <ArrowRight className="h-4 w-4" />
             </Button>
         </div>

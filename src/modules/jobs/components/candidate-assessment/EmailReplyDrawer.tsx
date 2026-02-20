@@ -11,6 +11,7 @@ interface EmailReplyDrawerProps {
   candidateName: string;
   candidateEmail?: string;
   jobTitle: string;
+  jobId?: string;
   onClose: () => void;
   onEmailSent: (needsReconnect?: boolean) => void;
 }
@@ -24,6 +25,7 @@ export function EmailReplyDrawer({
   candidateName,
   candidateEmail,
   jobTitle,
+  jobId,
   onClose,
   onEmailSent,
 }: EmailReplyDrawerProps) {
@@ -45,6 +47,7 @@ export function EmailReplyDrawer({
             candidateName={candidateName}
             candidateEmail={candidateEmail}
             jobTitle={jobTitle}
+            jobId={jobId}
             onCancel={onClose}
             onSent={(needsReconnect) => {
               onEmailSent(needsReconnect);

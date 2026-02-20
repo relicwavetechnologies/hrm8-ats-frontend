@@ -11,6 +11,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { AlertCircle, CheckCircle2, CreditCard, ExternalLink, RefreshCw } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { cn } from '@/shared/lib/utils';
+import { BrandIconPlate, StripeBrandIcon } from '@/modules/settings/components/integrations/BrandIcons';
 
 interface StripeIntegrationCardProps {
     onConnectionChange?: (connected: boolean) => void;
@@ -120,7 +121,9 @@ export function StripeIntegrationCard({ onConnectionChange }: StripeIntegrationC
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5" />
+                        <BrandIconPlate className="h-7 w-7 rounded-md border-slate-200">
+                            <StripeBrandIcon className="h-4 w-4" />
+                        </BrandIconPlate>
                         Stripe Payments
                     </CardTitle>
                     <CardDescription>Payment processing integration</CardDescription>
@@ -140,7 +143,9 @@ export function StripeIntegrationCard({ onConnectionChange }: StripeIntegrationC
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle className="flex items-center gap-2">
-                            <CreditCard className="h-5 w-5" />
+                            <BrandIconPlate className="h-7 w-7 rounded-md border-slate-200">
+                                <StripeBrandIcon className="h-4 w-4" />
+                            </BrandIconPlate>
                             Stripe Payments
                         </CardTitle>
                         <CardDescription>Payment processing integration</CardDescription>
@@ -164,7 +169,11 @@ export function StripeIntegrationCard({ onConnectionChange }: StripeIntegrationC
                     // Not connected state
                     <>
                         <div className="rounded-lg border border-dashed p-6 text-center">
-                            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                            <div className="flex justify-center mb-3">
+                                <BrandIconPlate className="h-12 w-12 rounded-xl">
+                                    <StripeBrandIcon className="h-8 w-8 opacity-95" />
+                                </BrandIconPlate>
+                            </div>
                             <p className="text-sm font-medium mb-2">No Stripe account connected</p>
                             <p className="text-xs text-muted-foreground mb-4">
                                 Connect your Stripe account to accept payments and process subscriptions

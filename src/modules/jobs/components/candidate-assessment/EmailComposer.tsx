@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Badge } from "@/shared/components/ui/badge";
-import { Sparkles, Loader2, Send } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
+import { Sparkles, Loader2, Send, Users, X } from "lucide-react";
 import { apiClient } from "@/shared/lib/api";
 import { GmailMessage, GmailThread, gmailThreadService } from "@/shared/lib/gmailThreadService";
 import { useToast } from "@/shared/hooks/use-toast";
@@ -19,6 +20,7 @@ interface EmailComposerProps {
   candidateName: string;
   candidateEmail?: string;
   jobTitle: string;
+  jobId?: string;
   thread?: GmailThread | null;
   replyingToMessage?: GmailMessage | null;
   onSent: (needsReconnect?: boolean) => void;
@@ -35,6 +37,7 @@ export function EmailComposer({
   candidateName,
   candidateEmail,
   jobTitle,
+  jobId,
   thread,
   replyingToMessage,
   onSent,
@@ -62,6 +65,34 @@ export function EmailComposer({
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  const [ccEmails, setCcEmails] = useState<string[]>([]);
+  const [ccInput, setCcInput] = useState('');
+  const [hiringTeam, setHiringTeam] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [ccPickerOpen, setCcPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!jobId) return;
+    apiClient.get<any>(`/api/jobs/${jobId}/team`).then((res) => {
+      if (res.success && res.data) {
+        const team = (res.data.team || res.data) as any[];
+        setHiringTeam(
+          team.map((m: any) => ({ id: m.id, name: m.name, email: m.email }))
+        );
+      }
+    }).catch(() => {});
+  }, [jobId]);
+
+  const addCcEmail = (email: string) => {
+    const trimmed = email.trim();
+    if (!trimmed || !/.+@.+\..+/.test(trimmed)) return;
+    if (ccEmails.includes(trimmed)) return;
+    setCcEmails((prev) => [...prev, trimmed]);
+  };
+
+  const removeCcEmail = (email: string) => {
+    setCcEmails((prev) => prev.filter((e) => e !== email));
+  };
 
   const applyTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -136,12 +167,14 @@ export function EmailComposer({
           subject,
           body,
           to: replyingToMessage.from,
+          cc: ccEmails.length ? ccEmails : undefined,
         });
       } else {
         const response = await apiClient.post<any>(`/api/applications/${applicationId}/emails`, {
           subject,
           body,
           templateId: selectedTemplate || undefined,
+          cc: ccEmails.length ? ccEmails : undefined,
         });
         if (!response.success) throw new Error(response.error || "Failed to send email");
         needsReconnect = (response.data as any)?.needsReconnect ?? false;
@@ -179,6 +212,75 @@ export function EmailComposer({
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 min-h-[28px]">
+            <span className="text-xs text-muted-foreground w-6 shrink-0">CC</span>
+            {ccEmails.map((email) => (
+              <Badge key={email} variant="outline" className="h-6 text-xs pl-2 pr-1 gap-1">
+                {email}
+                <button
+                  type="button"
+                  onClick={() => removeCcEmail(email)}
+                  className="ml-0.5 rounded-full hover:bg-muted"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="email"
+              value={ccInput}
+              onChange={(e) => setCcInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); addCcEmail(ccInput); setCcInput(''); }
+              }}
+              placeholder="email@example.com"
+              className="h-8 text-xs flex-1"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              onClick={() => { addCcEmail(ccInput); setCcInput(''); }}
+            >
+              Add
+            </Button>
+            {jobId && (
+              <Popover open={ccPickerOpen} onOpenChange={setCcPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="sm" variant="outline" className="h-8 text-xs gap-1.5">
+                    <Users className="h-3.5 w-3.5" />
+                    Hiring Team
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-1" align="end">
+                  {hiringTeam.length === 0 ? (
+                    <p className="text-xs text-muted-foreground px-2 py-1.5">No team members found.</p>
+                  ) : (
+                    hiringTeam.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        className="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs"
+                        onClick={() => {
+                          addCcEmail(member.email);
+                          setCcPickerOpen(false);
+                        }}
+                      >
+                        <span className="font-medium">{member.name}</span>
+                        <span className="text-muted-foreground ml-1.5">{member.email}</span>
+                      </button>
+                    ))
+                  )}
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </div>
+
         <div className="grid gap-2 sm:grid-cols-[1fr_150px_auto]">
           <Input
             value={aiPrompt}

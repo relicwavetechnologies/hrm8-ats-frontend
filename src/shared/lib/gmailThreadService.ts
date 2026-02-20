@@ -54,6 +54,7 @@ export const gmailThreadService = {
       subject: string;
       body: string;
       to: string;
+      cc?: string[];
     }
   ): Promise<EmailLogEntry> {
     const response = await apiClient.post<EmailLogEntry>(

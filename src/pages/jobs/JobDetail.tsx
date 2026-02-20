@@ -68,10 +68,8 @@ import { DeleteJobDialog } from "@/modules/jobs/components/DeleteJobDialog";
 import { applicationService } from "@/shared/lib/applicationService";
 import { TalentPoolSearchDialog } from "@/modules/applications/components/TalentPoolSearchDialog";
 import { JobApplicationsFilterBar, JobApplicationsFilters } from "@/modules/applications/components/JobApplicationsFilterBar";
-import { ManualUploadDialog } from "@/modules/applications/components/ManualUploadDialog";
 import { ApplicationListView } from "@/modules/applications/components/ApplicationListView";
-import { JobEmailHubDrawer } from "@/modules/email/components/JobEmailHubDrawer";
-import { Upload, LayoutGrid, List, Inbox } from "lucide-react";
+import { LayoutGrid, List, Inbox } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { filterApplicationsByTags } from "@/shared/lib/applicationTags";
 import { useMemo } from "react";
@@ -85,6 +83,7 @@ import { CandidatesTab } from "@/modules/applications/components/CandidatesTab";
 import { JobMessagesTab } from "@/modules/jobs/components/JobMessagesTab";
 import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { MessageSquarePlus } from "lucide-react";
+import { JobInboxTab } from "@/modules/jobs/components/JobInboxTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -100,8 +99,6 @@ export default function JobDetail() {
   const [isProcessingDelete, setIsProcessingDelete] = useState(false);
   const [applicantsCount, setApplicantsCount] = useState<number | undefined>(undefined);
   const [talentPoolDialogOpen, setTalentPoolDialogOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [emailHubOpen, setEmailHubOpen] = useState(false);
   const [allApplications, setAllApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
@@ -812,6 +809,13 @@ export default function JobDetail() {
                 Tasks
               </TabsTrigger>
               <TabsTrigger
+                value="inbox"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <Inbox className="h-3.5 w-3.5" />
+                Inbox
+              </TabsTrigger>
+              <TabsTrigger
                 value="messages"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
@@ -838,7 +842,7 @@ export default function JobDetail() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto h-full bg-background p-8">
           <div className="max-w-6xl mx-auto space-y-6">
-            {activeTab !== 'applicants' && activeTab !== 'candidates' && activeTab !== 'team' && (
+            {activeTab === 'overview' && (
               <>
                 <AtsPageHeader
                   title={job.title}
@@ -1134,24 +1138,6 @@ export default function JobDetail() {
               <div className="flex items-center justify-end mb-4">
                 <div className="flex items-center gap-2 ml-4">
                   <Button
-                    onClick={() => setEmailHubOpen(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs"
-                  >
-                    <Inbox className="h-3 w-3 mr-2" />
-                    Email Center
-                  </Button>
-                  <Button
-                    onClick={() => setUploadDialogOpen(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs"
-                  >
-                    <Upload className="h-3 w-3 mr-2" />
-                    Upload
-                  </Button>
-                  <Button
                     onClick={() => setTalentPoolDialogOpen(true)}
                     variant="ghost"
                     size="sm"
@@ -1183,10 +1169,6 @@ export default function JobDetail() {
                     jobTitle={job.title}
                     applications={filteredApplications}
                     enableMultiSelect={false}
-                    onApplicationMoved={() => {
-                      setRefreshKey(prev => prev + 1);
-                    }}
-                    key={refreshKey}
                   />
                 </div>
               ) : (
@@ -1237,21 +1219,42 @@ export default function JobDetail() {
                         const nextRound = rounds[currentIndex + 1];
                         console.log(`[JobDetail] Moving app ${appId} from ${round.name} (${round.id}) to ${nextRound.name} (${nextRound.id})`);
 
-                        try {
-                          // Show loading toast?
-                          toast({ title: "Moving Candidate...", description: `Moving to ${nextRound.name}` });
+                        const previousApplication = allApplications.find((a) => a.id === appId);
+                        // Optimistic UI update for faster perceived movement
+                        setAllApplications((prev) =>
+                          prev.map((app) =>
+                            app.id === appId
+                              ? {
+                                  ...app,
+                                  roundId: nextRound.id,
+                                  stage: app.stage,
+                                }
+                              : app
+                          )
+                        );
 
+                        try {
                           const res = await applicationService.moveStage(appId, nextRound.name, nextRound.id);
 
                           if (res.success) {
                             toast({ title: "Success", description: `Candidate moved to ${nextRound.name}` });
-                            // Force refresh of both applications and rounds statistics if needed
-                            setRefreshKey(prev => prev + 1);
                           } else {
+                            // Rollback optimistic update
+                            if (previousApplication) {
+                              setAllApplications((prev) =>
+                                prev.map((app) => (app.id === appId ? previousApplication : app))
+                              );
+                            }
                             console.error(`[JobDetail] Move failed:`, res);
                             toast({ title: "Move Failed", description: res.error || "Could not move candidate. Check console for details.", variant: "destructive" });
                           }
                         } catch (e: any) {
+                          // Rollback optimistic update
+                          if (previousApplication) {
+                            setAllApplications((prev) =>
+                              prev.map((app) => (app.id === appId ? previousApplication : app))
+                            );
+                          }
                           console.error(`[JobDetail] Exception during move:`, e);
                           toast({ title: "System Error", description: e.message || "Failed to move candidate", variant: "destructive" });
                         }
@@ -1259,6 +1262,7 @@ export default function JobDetail() {
                       onConfigureAssessment={handleConfigureAssessment}
                       onConfigureInterview={handleConfigureInterview}
                       onConfigureEmail={handleConfigureEmail}
+                      isSimpleFlow={job?.setupType === 'simple'}
                     />
                   );
                 })()
@@ -1295,6 +1299,10 @@ export default function JobDetail() {
             {/* Tasks Tab */}
             <TabsContent value="tasks" className="h-full overflow-hidden p-6 pt-0">
               <JobTasksTab job={job} applications={allApplications} onRefresh={handleJobUpdate} />
+            </TabsContent>
+
+            <TabsContent value="inbox" className="h-full overflow-hidden p-6 pt-0">
+              <JobInboxTab jobId={job.id} jobTitle={job.title} applications={allApplications} />
             </TabsContent>
 
             <TabsContent value="messages" className="h-full overflow-hidden p-6 pt-0">
@@ -1489,28 +1497,6 @@ export default function JobDetail() {
             };
             loadCount();
           }}
-        />
-      )}
-
-      {/* Manual Upload Dialog */}
-      {job && (
-        <ManualUploadDialog
-          open={uploadDialogOpen}
-          onOpenChange={setUploadDialogOpen}
-          jobId={job.id}
-          jobTitle={job.title}
-          onSuccess={() => {
-            setRefreshKey(prev => prev + 1);
-          }}
-        />
-      )}
-
-      {/* Email Center Hub Drawer */}
-      {job && (
-        <JobEmailHubDrawer
-          open={emailHubOpen}
-          onOpenChange={setEmailHubOpen}
-          jobId={job.id}
         />
       )}
 

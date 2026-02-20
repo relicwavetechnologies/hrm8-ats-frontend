@@ -34,10 +34,10 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
     onContinue,
 }) => {
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
             {/* Employment Type */}
-            <div className="space-y-3">
-                <Label className="text-base font-semibold flex items-center gap-2">
+            <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-primary" />
                     Employment Type
                 </Label>
@@ -49,7 +49,7 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
                             variant="ghost"
                             onClick={() => onEmploymentTypeChange(type.value)}
                             className={cn(
-                                "py-3 px-2 h-auto rounded-xl text-sm font-medium border-2 transition-all duration-200",
+                                "py-2 px-2 h-auto rounded-md text-xs font-medium border transition-all duration-200",
                                 employmentType === type.value
                                     ? "border-primary bg-primary/10 text-primary hover:bg-primary/10"
                                     : "border-muted hover:border-primary/30"
@@ -62,12 +62,12 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
             </div>
 
             {/* Experience Level */}
-            <div className="space-y-3">
-                <Label className="text-base font-semibold flex items-center gap-2">
+            <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-primary" />
                     Experience Level
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                     {experienceLevels.map((level) => (
                         <Button
                             key={level.value}
@@ -75,13 +75,13 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
                             variant="ghost"
                             onClick={() => onExperienceLevelChange(level.value)}
                             className={cn(
-                                "py-4 px-4 h-auto rounded-xl text-left border-2 transition-all duration-200 flex-col items-start",
+                                "py-2.5 px-3 h-auto rounded-md text-left border transition-all duration-200 flex-col items-start",
                                 experienceLevel === level.value
                                     ? "border-primary bg-primary/10 hover:bg-primary/10"
                                     : "border-muted hover:border-primary/30"
                             )}
                         >
-                            <span className="font-semibold text-sm block">{level.label}</span>
+                            <span className="font-semibold text-xs block">{level.label}</span>
                             <span className="text-xs text-muted-foreground">{level.description}</span>
                         </Button>
                     ))}
@@ -90,9 +90,9 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
 
             <Button
                 onClick={onContinue}
-                className="w-full h-12 text-base rounded-xl font-semibold transition-all"
+                className="w-full h-10 text-sm rounded-md font-medium transition-all"
             >
-                Continue <ChevronRight className="ml-2 h-5 w-5" />
+                Continue <ChevronRight className="ml-1.5 h-4 w-4" />
             </Button>
         </div>
     );

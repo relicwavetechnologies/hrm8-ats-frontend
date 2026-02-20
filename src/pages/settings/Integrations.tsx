@@ -1,125 +1,131 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { Mail, Calendar, Link2, CreditCard } from "lucide-react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { Badge } from "@/shared/components/ui/badge";
+import { Mail, CreditCard, CheckCircle2 } from "lucide-react";
 import { EmailIntegrationCard } from "@/modules/settings/components/integrations/EmailIntegrationCard";
 import { CalendarIntegrationCard } from "@/modules/settings/components/integrations/CalendarIntegrationCard";
-import { ATSIntegrationCard } from "@/modules/settings/components/integrations/ATSIntegrationCard";
 import { StripeIntegrationCard } from "@/modules/settings/components/integrations/StripeIntegrationCard";
-import { useSearchParams } from "react-router-dom";
+import {
+  BrandIconPlate,
+  GmailBrandIcon,
+  GoogleMeetBrandIcon,
+  StripeBrandIcon,
+} from "@/modules/settings/components/integrations/BrandIcons";
 
 export default function Integrations() {
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'email';
+  const requestedTab = searchParams.get("tab") || "email";
+  const defaultTab = useMemo(() => {
+    const allowed = new Set(["email", "calendar", "payments"]);
+    return allowed.has(requestedTab) ? requestedTab : "email";
+  }, [requestedTab]);
 
   return (
     <DashboardPageLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-5 space-y-4">
         <AtsPageHeader
           title="Integrations"
-          subtitle="Manage and configure all system integrations"
+          subtitle="Connect essential services for communication, scheduling, and payments"
         />
 
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <div className="overflow-x-auto -mx-1 px-1">
-            <TabsList className="inline-flex w-auto gap-1 rounded-full border bg-muted/40 px-1 py-1 shadow-sm">
-              <TabsTrigger
-                value="email"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                Email
-              </TabsTrigger>
-              <TabsTrigger
-                value="calendar"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                Calendar
-              </TabsTrigger>
-              <TabsTrigger
-                value="ats"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Link2 className="h-3.5 w-3.5 flex-shrink-0" />
-                ATS Systems
-              </TabsTrigger>
-              <TabsTrigger
-                value="payments"
-                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
-                Payments
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="email" className="space-y-4 mt-6">
-            <div>
-              <h2 className="text-base font-semibold mb-2">Email Integrations</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect your email accounts to send and receive emails directly from the platform
+        <div className="grid gap-3 md:grid-cols-4">
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Email</p>
+              <p className="text-sm font-semibold mt-1 flex items-center gap-1.5">
+                <BrandIconPlate className="h-6 w-6 rounded-md">
+                  <GmailBrandIcon className="h-4 w-4" />
+                </BrandIconPlate>
+                Gmail
               </p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Calendar</p>
+              <p className="text-sm font-semibold mt-1 flex items-center gap-1.5">
+                <BrandIconPlate className="h-6 w-6 rounded-md">
+                  <GoogleMeetBrandIcon className="h-4 w-4" />
+                </BrandIconPlate>
+                Google Meet
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Payments</p>
+              <p className="text-sm font-semibold mt-1 flex items-center gap-1.5">
+                <BrandIconPlate className="h-6 w-6 rounded-md">
+                  <StripeBrandIcon className="h-4 w-4" />
+                </BrandIconPlate>
+                Stripe
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Scope</p>
+              <p className="text-sm font-semibold mt-1 flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Core Integrations
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue={defaultTab} className="space-y-3">
+          <TabsList className="inline-flex w-auto gap-1 rounded-md border bg-muted/25 p-1">
+            <TabsTrigger value="email" className="h-7 px-3 text-xs">
+              <Mail className="h-3.5 w-3.5 mr-1.5" />
+              Email
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="h-7 px-3 text-xs">
+              <BrandIconPlate className="h-[18px] w-[18px] rounded-sm mr-1.5">
+                <GoogleMeetBrandIcon className="h-3 w-3" />
+              </BrandIconPlate>
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="h-7 px-3 text-xs">
+              <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+              Payments
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="email" className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Email Integration</h2>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5">Gmail only</Badge>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="max-w-2xl">
               <EmailIntegrationCard
                 provider="gmail"
                 name="Gmail"
-                description="Connect your Gmail account for email communications"
-              />
-              <EmailIntegrationCard
-                provider="outlook"
-                name="Outlook"
-                description="Connect your Outlook account for email communications"
+                description="Connect Gmail for candidate thread sync and replies"
               />
             </div>
           </TabsContent>
 
-          <TabsContent value="calendar" className="space-y-4 mt-6">
-            <div>
-              <h2 className="text-base font-semibold mb-2">Calendar Integrations</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Sync your calendar to schedule interviews and manage availability
-              </p>
+          <TabsContent value="calendar" className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Calendar Integration</h2>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5">Google Meet</Badge>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="max-w-2xl">
               <CalendarIntegrationCard
                 provider="google"
-                name="Google Calendar"
-                description="Sync with Google Calendar for scheduling"
-              />
-              <CalendarIntegrationCard
-                provider="outlook"
-                name="Outlook Calendar"
-                description="Sync with Outlook Calendar for scheduling"
+                name="Google Meet"
+                description="Sync interview schedules and video meetings"
               />
             </div>
           </TabsContent>
 
-          <TabsContent value="ats" className="space-y-4 mt-6">
-            <div>
-              <h2 className="text-base font-semibold mb-2">ATS System Integrations</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect to external ATS systems to sync candidates and job postings
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <ATSIntegrationCard provider="greenhouse" />
-              <ATSIntegrationCard provider="lever" />
-              <ATSIntegrationCard provider="workday" />
-              <ATSIntegrationCard provider="icims" />
-              <ATSIntegrationCard provider="taleo" />
-              <ATSIntegrationCard provider="jobvite" />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="payments" className="space-y-4 mt-6">
-            <div>
-              <h2 className="text-base font-semibold mb-2">Payment Processing</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect Stripe to accept payments, process subscriptions, and manage billing
-              </p>
+          <TabsContent value="payments" className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Payment Integration</h2>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5">Stripe</Badge>
             </div>
             <div className="max-w-2xl">
               <StripeIntegrationCard />

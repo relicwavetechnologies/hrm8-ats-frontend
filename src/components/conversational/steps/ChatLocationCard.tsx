@@ -1,9 +1,7 @@
 import React from 'react';
-import { Input } from '@/shared/components/ui/input';
 import { LocationAutocomplete } from '../LocationAutocomplete';
 import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group';
 import { cn } from '@/shared/lib/utils';
 import { MapPin, ChevronRight, Building, Home, RefreshCcw } from 'lucide-react';
 
@@ -35,9 +33,9 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
     const canContinue = isLocationValid;
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
             <div className="space-y-2">
-                <Label htmlFor="location" className="text-base font-semibold flex items-center gap-2">
+                <Label htmlFor="location" className="text-sm font-semibold flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary" />
                     Location {workArrangement !== 'remote' && <span className="text-destructive">*</span>}
                 </Label>
@@ -62,9 +60,9 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
                 )}
             </div>
 
-            <div className="space-y-3">
-                <Label className="text-base font-semibold">Work Arrangement</Label>
-                <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2">
+                <Label className="text-sm font-semibold">Work Arrangement</Label>
+                <div className="grid grid-cols-3 gap-2">
                     {workArrangements.map((item) => {
                         const Icon = item.icon;
                         const isSelected = workArrangement === item.value;
@@ -75,19 +73,19 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
                                 variant="ghost"
                                 onClick={() => onWorkArrangementChange(item.value)}
                                 className={cn(
-                                    "flex flex-col items-center gap-2 p-4 h-auto rounded-xl border-2 transition-all duration-200",
+                                    "flex flex-col items-center gap-1.5 p-2.5 h-auto rounded-md border transition-all duration-200",
                                     isSelected
-                                        ? "border-primary bg-primary/5 shadow-md hover:bg-primary/5"
+                                        ? "border-primary bg-primary/5 hover:bg-primary/5"
                                         : "border-muted hover:border-primary/30"
                                 )}
                             >
                                 <div className={cn(
-                                    "p-2 rounded-full transition-colors",
+                                    "p-1.5 rounded-full transition-colors",
                                     isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
                                 )}>
-                                    <Icon className="h-5 w-5" />
+                                    <Icon className="h-4 w-4" />
                                 </div>
-                                <span className="font-semibold text-sm">{item.label}</span>
+                                <span className="font-medium text-xs">{item.label}</span>
                                 <span className="text-[10px] text-muted-foreground leading-tight text-center">{item.description}</span>
                             </Button>
                         );
@@ -98,9 +96,9 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
             <Button
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="w-full h-12 text-base rounded-xl font-semibold transition-all"
+                className="w-full h-10 text-sm rounded-md font-medium transition-all"
             >
-                Continue <ChevronRight className="ml-2 h-5 w-5" />
+                Continue <ChevronRight className="ml-1.5 h-4 w-4" />
             </Button>
         </div>
     );

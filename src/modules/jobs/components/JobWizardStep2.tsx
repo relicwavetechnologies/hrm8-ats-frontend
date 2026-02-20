@@ -1,6 +1,6 @@
 import { UseFormReturn } from "react-hook-form";
 import { JobFormData } from "@/shared/types/job";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   FormField,
   FormItem,
@@ -11,9 +11,8 @@ import {
 } from "@/shared/components/ui/form";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, X, FileText, Pencil, Trash2, Check, Tag as TagIcon } from "lucide-react";
+import { Plus, X, FileText, Check, Tag as TagIcon } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
-import { AIJobGenerator } from "./AIJobGenerator";
 import { RichTextEditor } from "@/shared/components/ui/rich-text-editor";
 import { cn } from "@/shared/lib/utils";
 import { useToast } from "@/shared/hooks/use-toast";
@@ -189,13 +188,13 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-base font-semibold flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Job Description
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Describe the role and what makes it unique
         </p>
       </div>
@@ -211,11 +210,10 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                 content={field.value}
                 onChange={field.onChange}
                 placeholder="Provide a detailed description of the job, including the role, team, and company culture..."
-                className="min-h-[200px]"
-                toolbarActions={<AIJobGenerator form={form} />}
+                className="min-h-[160px]"
               />
             </FormControl>
-            <FormDescription>
+            <FormDescription className="text-xs">
               Use the toolbar to format your description. This will be displayed on the job board.
             </FormDescription>
             <FormMessage />
@@ -223,13 +221,14 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
         )}
       />
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <FormField
         control={form.control}
         name="requirements"
         render={() => (
           <FormItem>
             <FormLabel>Requirements *</FormLabel>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {editingRequirement ? (
                 <div className="flex items-start gap-2">
                   <Input
@@ -296,13 +295,13 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                     }
                   }}
                 />
-                <Button type="button" onClick={addRequirement} size="icon">
+                <Button type="button" onClick={addRequirement} size="icon" className="h-9 w-9">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            <FormDescription>
-              List the key qualifications and skills needed for this role
+            <FormDescription className="text-xs">
+              List key qualifications and must-have skills
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -315,7 +314,7 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
         render={() => (
           <FormItem>
             <FormLabel>Responsibilities *</FormLabel>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {editingResponsibility ? (
                 <div className="flex items-start gap-2">
                   <Input
@@ -382,26 +381,27 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                     }
                   }}
                 />
-                <Button type="button" onClick={addResponsibility} size="icon">
+                <Button type="button" onClick={addResponsibility} size="icon" className="h-9 w-9">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            <FormDescription>
-              Outline the key duties and day-to-day tasks
+            <FormDescription className="text-xs">
+              Outline day-to-day ownership and outcomes
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
+      </div>
 
       {/* Tags Section */}
-      <div className="pt-6 border-t">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+      <div className="pt-4 border-t">
+        <h3 className="text-base font-semibold mb-1.5 flex items-center gap-2">
           <TagIcon className="h-5 w-5" />
           Job Tags
         </h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-xs text-muted-foreground mb-3">
           Add up to 5 tags to categorize and highlight this job
         </p>
         
@@ -479,10 +479,10 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                   Select from standard tags or create custom ones
                 </FormDescription>
                 
-                <div className="space-y-4 mt-3">
+                <div className="space-y-3 mt-2">
                   {/* Standard Tags */}
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Quick Add: Standard Tags</h4>
+                    <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quick Add</h4>
                     <div className="flex flex-wrap gap-2">
                       {STANDARD_TAGS.map(tag => {
                         const isAdded = currentTags.includes(tag);
@@ -492,7 +492,7 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                             key={tag}
                             variant={isAdded ? 'secondary' : getTagVariant(tag)}
                             className={cn(
-                              "cursor-pointer transition-all text-xs font-medium px-3 py-1.5",
+                              "cursor-pointer transition-all text-xs font-medium px-2.5 py-1",
                               isAdded && "opacity-40 cursor-not-allowed line-through",
                               !isAdded && !isDisabled && "hover:opacity-80 hover:scale-105"
                             )}
@@ -508,7 +508,7 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                   
                   {/* Custom Tags */}
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Add Custom Tag</h4>
+                    <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Custom Tag</h4>
                     <div className="flex gap-2">
                       <FormControl>
                         <Input
@@ -525,6 +525,7 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                         variant="outline"
                         onClick={handleAddTag}
                         disabled={!inputValue.trim() || currentTags.length >= 5}
+                        className="h-9"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add
@@ -535,13 +536,13 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                   {/* Selected Tags */}
                   {currentTags.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Selected Tags</h4>
+                      <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Selected</h4>
                       <div className="flex flex-wrap gap-2">
                         {currentTags.map((tag: string) => {
                           const standardTag = STANDARD_TAGS.find(t => t.toLowerCase() === tag.toLowerCase());
                           const variant = standardTag ? getTagVariant(tag) : 'secondary';
                           return (
-                            <Badge key={tag} variant={variant} className="px-3 py-1 text-sm flex items-center gap-2">
+                            <Badge key={tag} variant={variant} className="px-2.5 py-1 text-xs flex items-center gap-1.5">
                               {tag}
                               <Button
                                 type="button"
@@ -559,7 +560,7 @@ export function JobWizardStep2({ form }: JobWizardStep2Props) {
                     </div>
                   )}
                   
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {currentTags.length}/5 tags added
                     {currentTags.length >= 5 && " (maximum reached)"}
                   </p>

@@ -138,6 +138,7 @@ export function EmailTab({ application }: EmailTabProps) {
         candidateName={application.candidateName || "Candidate"}
         candidateEmail={application.candidateEmail || ""}
         jobTitle={application.jobTitle || "Position"}
+        jobId={application.jobId}
         onClose={() => {
           setReplyDrawerOpen(false);
           setReplyingToMessage(null);

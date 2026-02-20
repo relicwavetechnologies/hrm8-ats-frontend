@@ -7,7 +7,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { FileText, Building2, Check, DollarSign, MapPin, Briefcase as BriefcaseIcon, Plus } from "lucide-react";
+import { FileText, Building2, Briefcase as BriefcaseIcon, Plus } from "lucide-react";
 import { ComboboxWithAdd } from "@/shared/components/ui/combobox-with-add";
 import { formatSalaryRange } from "@/shared/lib/jobUtils";
 import { useAuth } from "@/app/providers/AuthContext";
@@ -19,10 +19,8 @@ import { useToast } from "@/shared/hooks/use-toast";
 import { Separator } from "@/shared/components/ui/separator";
 import { useCompanyProfile } from "@/shared/hooks/useCompanyProfile";
 import { CompanyProfileLocation } from "@/shared/types/companyProfile";
-import { AIJobGenerator } from "./AIJobGenerator";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Info } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 import { usePublicCategories } from "@/shared/hooks/useJobCategoriesTags";
 import { JobPricingCalculator } from "./JobPricingCalculator";
 interface JobWizardStep1Props {
@@ -40,7 +38,7 @@ export function JobWizardStep1({
   const {
     toast
   } = useToast();
-  const { user, profileSummary } = useAuth();
+  const { user } = useAuth();
   const { data: profileData, refresh: refreshProfile } = useCompanyProfile();
 
   // Get company name from user
@@ -107,19 +105,19 @@ export function JobWizardStep1({
     // Refresh profile data to include the new location
     await refreshProfile();
   };
-  return <div className="space-y-6">
+  return <div className="space-y-4">
     {/* Basic Details Section */}
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-base font-semibold flex items-center gap-2">
           <BriefcaseIcon className="h-5 w-5" />
           Basic Details
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Start by providing the essential information about this job
         </p>
       </div>
-      <Button variant="outline" size="sm" asChild>
+      <Button variant="outline" size="sm" className="h-8 px-3" asChild>
         <Link to="/jobs/templates">
           <FileText className="h-4 w-4 mr-2" />
           View Templates
@@ -128,15 +126,15 @@ export function JobWizardStep1({
     </div>
 
     {/* Company Display - Read Only */}
-    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border">
-      <Building2 className="h-5 w-5 text-muted-foreground" />
+    <div className="flex items-center gap-2.5 p-3 bg-muted/40 rounded-md border">
+      <Building2 className="h-4 w-4 text-muted-foreground" />
       <div className="flex-1">
-        <p className="text-sm font-medium">Posting Job For</p>
-        <p className="text-lg font-semibold">{companyName}</p>
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Posting Job For</p>
+        <p className="text-sm font-semibold">{companyName}</p>
       </div>
     </div>
 
-    <div className="flex gap-4 items-start">
+    <div className="flex gap-3 items-start">
       {/* Job Title - Takes most of the space */}
       <FormField control={form.control} name="title" render={({
         field
@@ -151,7 +149,7 @@ export function JobWizardStep1({
       {/* Number of Vacancies - Compact width */}
       <FormField control={form.control} name="numberOfVacancies" render={({
         field
-      }) => <FormItem className="w-28">
+      }) => <FormItem className="w-24">
           <FormLabel>Vacancies *</FormLabel>
           <FormControl>
             <Input
@@ -168,7 +166,7 @@ export function JobWizardStep1({
         </FormItem>} />
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <FormField control={form.control} name="department" render={({
         field
       }) => <FormItem>
@@ -187,8 +185,8 @@ export function JobWizardStep1({
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <FormDescription className="text-xs">
-            Select or add a department for this job
+          <FormDescription className="text-[11px]">
+            Select or add department
           </FormDescription>
           <FormMessage />
         </FormItem>} />
@@ -211,8 +209,8 @@ export function JobWizardStep1({
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <FormDescription className="text-xs">
-            Select or add a location for this job
+          <FormDescription className="text-[11px]">
+            Select or add location
           </FormDescription>
           <FormMessage />
         </FormItem>} />
@@ -255,8 +253,8 @@ export function JobWizardStep1({
                 )}
               </SelectContent>
             </Select>
-            <FormDescription className="text-xs">
-              Categorize this job to help candidates find it more easily
+            <FormDescription className="text-[11px]">
+              Helps candidates discover this job
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -265,7 +263,7 @@ export function JobWizardStep1({
     />
 
     {/* Employment Details Row - 3 columns */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <FormField control={form.control} name="employmentType" render={({
         field
       }) => <FormItem>
@@ -308,109 +306,57 @@ export function JobWizardStep1({
 
       <FormItem>
         <FormLabel>Work Arrangement *</FormLabel>
-        <div className="space-y-3">
+        <div className="space-y-2">
           <FormField
             control={form.control}
             name="workArrangement"
             render={({ field }) => {
-              const isRemote = field.value === "remote";
-              const isHybrid = field.value === "hybrid";
-
-              const handleRemoteToggle = (checked: boolean) => {
-                if (checked) {
-                  field.onChange("remote");
-                } else {
-                  field.onChange("on-site");
-                }
-              };
-
-              const handleHybridToggle = (checked: boolean) => {
-                if (checked) {
-                  field.onChange("hybrid");
-                } else {
-                  field.onChange("on-site");
-                }
-              };
-
               return (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <FormLabel className="text-sm font-medium cursor-pointer" htmlFor="remote-toggle">
-                          Remote
-                        </FormLabel>
-                        <FormDescription className="text-xs">
-                          Work from anywhere
-                        </FormDescription>
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        id="remote-toggle"
-                        checked={isRemote}
-                        onCheckedChange={handleRemoteToggle}
-                      />
-                    </FormControl>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <BriefcaseIcon className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <FormLabel className="text-sm font-medium cursor-pointer" htmlFor="hybrid-toggle">
-                          Hybrid
-                        </FormLabel>
-                        <FormDescription className="text-xs">
-                          Mix of remote and on-site
-                        </FormDescription>
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        id="hybrid-toggle"
-                        checked={isHybrid}
-                        onCheckedChange={handleHybridToggle}
-                      />
-                    </FormControl>
-                  </div>
-
-                  {!isRemote && !isHybrid && (
-                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">On-site (default)</span>
-                    </div>
-                  )}
+                <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/20 p-1">
+                  {[
+                    { label: "On-site", value: "on-site" },
+                    { label: "Remote", value: "remote" },
+                    { label: "Hybrid", value: "hybrid" },
+                  ].map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={field.value === option.value ? "default" : "ghost"}
+                      size="sm"
+                      className="h-8 rounded-sm text-xs"
+                      onClick={() => field.onChange(option.value)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
                 </div>
               );
             }}
           />
         </div>
-        <FormDescription className="text-xs">
-          Select the work arrangement for this role. Both options off means on-site.
+        <FormDescription className="text-[11px]">
+          Choose where the role is performed
         </FormDescription>
         <FormMessage />
       </FormItem>
     </div>
 
     {/* Salary Information Section */}
-    <div className="pt-6 border-t">
-      <h3 className="text-lg font-semibold mb-4">Salary Information</h3>
+    <div className="pt-4 border-t">
+      <h3 className="text-base font-semibold mb-3">Salary Information</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-4 items-start mb-4">
-        <div>
-          <h4 className="text-sm font-medium mb-1">Salary Visibility on Job Board</h4>
-          <p className="text-sm text-muted-foreground">
-            Control whether salary information is displayed publicly on job boards.
-            Salary range is always used for filtering and internal tracking.
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-3 items-center mb-3 rounded-md border bg-muted/20 p-3">
+        <div className="space-y-0.5">
+          <h4 className="text-sm font-medium">Salary Visibility on Job Board</h4>
+          <p className="text-[11px] text-muted-foreground">
+            Salary is always used internally for filtering and reporting.
           </p>
         </div>
 
         <FormField control={form.control} name="hideSalary" render={({
           field
         }) => <FormItem className="flex flex-col justify-end">
-            <FormLabel className="mb-2">Hide on Job Post</FormLabel>
+            <FormLabel className="mb-1 text-xs">Hide on Job Post</FormLabel>
             <div className="flex items-center space-x-2">
               <FormControl>
                 <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -421,13 +367,13 @@ export function JobWizardStep1({
                 </FormLabel>
               </div>
             </div>
-            <FormDescription className="text-xs">
+            <FormDescription className="text-[11px]">
               {field.value ? "Salary hidden from public view" : "Salary shown on job board"}
             </FormDescription>
           </FormItem>} />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Salary Range & Currency Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <FormField control={form.control} name="salaryCurrency" render={({
@@ -472,7 +418,7 @@ export function JobWizardStep1({
                   <SelectItem value="annual">Annual</SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>
+              <FormDescription className="text-[11px]">
                 Pay frequency
               </FormDescription>
               <FormMessage />
@@ -517,9 +463,8 @@ export function JobWizardStep1({
             <FormControl>
               <Input placeholder="e.g. Competitive package with bonuses, equity options, and benefits" maxLength={100} {...field} value={field.value || ''} />
             </FormControl>
-            <FormDescription>
-              Add promotional text about compensation (max 100 characters).
-              This will be displayed prominently on the job posting.
+            <FormDescription className="text-[11px]">
+              Add concise compensation context (max 100 chars).
               {field.value && <span className="ml-2 font-medium">
                 {field.value.length}/100
               </span>}
@@ -528,9 +473,9 @@ export function JobWizardStep1({
           </FormItem>} />
 
         {/* Preview of formatted salary */}
-        {(form.watch("salaryMin") || form.watch("salaryMax")) && <div className="p-4 bg-secondary/50 rounded-lg border">
-          <p className="text-sm font-medium mb-1">Salary Display Preview:</p>
-          <p className="text-lg font-semibold">
+        {(form.watch("salaryMin") || form.watch("salaryMax")) && <div className="p-3 bg-secondary/40 rounded-md border">
+          <p className="text-xs font-medium mb-1 uppercase tracking-wide text-muted-foreground">Salary Preview</p>
+          <p className="text-base font-semibold">
             {formatSalaryRange(form.watch("salaryMin"), form.watch("salaryMax"), form.watch("salaryCurrency"), form.watch("salaryPeriod"))}
           </p>
           {form.watch("salaryDescription") && <p className="text-sm text-muted-foreground mt-2 italic">
@@ -580,7 +525,7 @@ export function JobWizardStep1({
                 name="assignmentMode"
                 render={({ field }) => {
                   return (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
                       <FormControl>
                         <Checkbox
                           checked={field.value === 'AUTO'}
