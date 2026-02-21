@@ -91,8 +91,8 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
             <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                     <h3 className="text-xl font-bold">Review Your Job Post</h3>

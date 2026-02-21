@@ -1,6 +1,6 @@
 import React from 'react';
 import { JobFormData } from '@/shared/types/job';
-import { Building2, MapPin, Clock, DollarSign, Users, Briefcase, FileText } from 'lucide-react';
+import { Building2, MapPin, Users, Briefcase, Clock, DollarSign, FileText, Tag } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Separator } from '@/shared/components/ui/separator';
 
@@ -9,84 +9,121 @@ interface JobPreviewPanelProps {
 }
 
 export const JobPreviewPanel: React.FC<JobPreviewPanelProps> = ({ jobData }) => {
+    const hasSalary = jobData.salaryMin || jobData.salaryMax;
+    const salaryStr = hasSalary
+        ? `${jobData.salaryCurrency || 'USD'} ${jobData.salaryMin?.toLocaleString() ?? '—'} – ${jobData.salaryMax?.toLocaleString() ?? '—'} / ${jobData.salaryPeriod || 'yr'}`
+        : null;
+
     return (
-        <div className="p-8 space-y-8 max-w-2xl mx-auto">
-            {/* Header Info */}
-            <div className="space-y-4">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                    {jobData.title || <span className="text-muted-foreground/30 italic">Untilted Role</span>}
-                </h1>
+        <div className="p-6 space-y-6">
+            {/* Title */}
+            <div className="space-y-1">
+                {jobData.title ? (
+                    <h1 className="text-xl font-bold tracking-tight text-foreground leading-tight">{jobData.title}</h1>
+                ) : (
+                    <div className="h-6 w-48 rounded bg-muted/60 animate-pulse" />
+                )}
 
-                <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Building2 className="h-4 w-4 text-primary/60" />
-                        <span className="font-medium">{jobData.department || "No department selected"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4 text-primary/60" />
-                        <span className="font-medium">{jobData.location || "Remote / No location"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="h-4 w-4 text-primary/60" />
-                        <span className="font-medium">{jobData.numberOfVacancies || 1} Vacancy</span>
-                    </div>
-                </div>
-            </div>
-
-            <Separator className="opacity-50" />
-
-            {/* Badges / Quick Info */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-muted/30 border border-muted/50">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Briefcase className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Role Type</span>
-                    </div>
-                    <p className="font-semibold capitalize">{jobData.employmentType || "Not specified"}</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-muted/30 border border-muted/50">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Level</span>
-                    </div>
-                    <p className="font-semibold capitalize">{jobData.experienceLevel || "Not specified"}</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-muted/30 border border-muted/50 col-span-2">
-                    <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Compensation</span>
-                    </div>
-                    <p className="font-semibold">
-                        {jobData.salaryMin ? `${jobData.salaryCurrency || '$'}${jobData.salaryMin} - ${jobData.salaryMax}` : "Salary not yet defined"}
-                    </p>
-                </div>
-            </div>
-
-            {/* Description Preview */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-bold tracking-tight">Role Description</h2>
-                </div>
-                <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
-                    {jobData.description ? (
-                        <div dangerouslySetInnerHTML={{ __html: jobData.description }} />
-                    ) : (
-                        <div className="bg-muted/20 rounded-xl p-8 border border-dashed text-center">
-                            <p className="text-muted-foreground italic">Your professional job description will appear here as you write it...</p>
-                        </div>
+                {/* Meta pills */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                    {jobData.department && (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Building2 className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                            {jobData.department}
+                        </span>
+                    )}
+                    {(jobData.location || jobData.workArrangement) && (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                            {jobData.workArrangement === 'remote' ? 'Remote' : jobData.location || 'No location'}
+                        </span>
+                    )}
+                    {jobData.numberOfVacancies && (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Users className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                            {jobData.numberOfVacancies} {jobData.numberOfVacancies === 1 ? 'vacancy' : 'vacancies'}
+                        </span>
                     )}
                 </div>
             </div>
 
+            <Separator className="opacity-40" />
+
+            {/* Quick info chips */}
+            <div className="flex flex-wrap gap-2">
+                {jobData.employmentType && (
+                    <Badge variant="secondary" className="gap-1.5 rounded-full text-xs font-medium">
+                        <Briefcase className="h-3 w-3" />
+                        {jobData.employmentType.replace('-', ' ')}
+                    </Badge>
+                )}
+                {jobData.experienceLevel && (
+                    <Badge variant="secondary" className="gap-1.5 rounded-full text-xs font-medium">
+                        <Clock className="h-3 w-3" />
+                        {jobData.experienceLevel}
+                    </Badge>
+                )}
+                {jobData.workArrangement && (
+                    <Badge variant="outline" className="rounded-full text-xs font-medium capitalize">
+                        {jobData.workArrangement.replace('-', ' ')}
+                    </Badge>
+                )}
+                {jobData.hideSalary ? (
+                    <Badge variant="outline" className="rounded-full text-xs font-medium text-muted-foreground">
+                        Salary Confidential
+                    </Badge>
+                ) : salaryStr ? (
+                    <Badge variant="outline" className="gap-1.5 rounded-full text-xs font-medium">
+                        <DollarSign className="h-3 w-3" />
+                        {salaryStr}
+                    </Badge>
+                ) : null}
+            </div>
+
+            {/* Description preview */}
+            {jobData.description ? (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-primary/70" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description</span>
+                    </div>
+                    <div
+                        className="text-xs text-muted-foreground leading-relaxed line-clamp-8 prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: jobData.description }}
+                    />
+                </div>
+            ) : (
+                <div className="rounded-xl border-2 border-dashed border-muted p-6 text-center space-y-1.5">
+                    <FileText className="h-6 w-6 text-muted-foreground/40 mx-auto" />
+                    <p className="text-xs text-muted-foreground/60 italic">
+                        Description will appear here as you write
+                    </p>
+                </div>
+            )}
+
             {/* Tags */}
             {jobData.tags && jobData.tags.length > 0 && (
-                <div className="pt-4">
-                    <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5 text-primary/70" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Skills</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
                         {jobData.tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="px-3 py-1 rounded-full">{tag}</Badge>
+                            <Badge key={tag} variant="secondary" className="text-xs rounded-full px-2.5 py-0.5">
+                                {tag}
+                            </Badge>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {/* Placeholder state when no data yet */}
+            {!jobData.title && !jobData.description && (
+                <div className="pt-4 text-center">
+                    <p className="text-xs text-muted-foreground/50 italic">
+                        Your job preview will build as you fill in the steps.
+                    </p>
                 </div>
             )}
         </div>

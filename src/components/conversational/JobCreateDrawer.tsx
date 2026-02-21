@@ -9,6 +9,7 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Sparkles, X, ChevronRight, Loader2 } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
 import { useJobCreateStore, WizardStepId, WIZARD_STEPS } from '@/modules/jobs/store/useJobCreateStore';
 import { JobFormData } from '@/shared/types/job';
 import { JobPreviewPanel } from '@/components/conversational/JobPreviewPanel';
@@ -181,7 +182,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         try {
             const payload = buildDraftPayload();
             if (jobId) {
-                const res = await jobService.saveDraft(jobId, payload);
+                const res = await jobService.saveDraft(jobId, payload as any);
                 if (res.success) {
                     toast({ title: 'Draft saved', description: 'You can continue from the Drafts tab.' });
                     setShowSaveDraftDialog(false);
@@ -217,7 +218,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     const data = createRes.data as { job?: { id: string }; id?: string };
                     const newId = data.job?.id ?? data.id;
                     if (newId) {
-                        await jobService.saveDraft(newId, { ...payload, draftStep: payload.draftStep });
+                        await jobService.saveDraft(newId, { ...payload, draftStep: payload.draftStep } as any);
                         toast({ title: 'Draft saved', description: 'You can continue from the Drafts tab.' });
                     }
                     setShowSaveDraftDialog(false);
@@ -667,56 +668,166 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         }
     };
 
+    const stepMeta: Record<string, { label: string; heading: string; description: string }> = {
+        'document-upload':      { label: 'Upload JD',     heading: 'Start with a Job Description',  description: 'Upload an existing JD to auto-fill the form, or skip to start from scratch.' },
+        'basic-details':        { label: 'Basics',        heading: 'Job Title & Department',         description: 'The first thing candidates see — make it clear and specific.' },
+        'location':             { label: 'Location',      heading: 'Where is this role?',            description: 'Set the work location and arrangement for this position.' },
+        'role-details':         { label: 'Role Type',     heading: 'Role Type & Experience',         description: 'Define the employment arrangement and required seniority level.' },
+        'vacancies':            { label: 'Vacancies',     heading: 'Open Positions',                 description: 'How many people are you looking to hire for this role?' },
+        'compensation':         { label: 'Pay',           heading: 'Compensation Package',           description: 'Transparent salaries attract 30% more applicants.' },
+        'description':          { label: 'Description',   heading: 'Write the Job Description',      description: 'A compelling overview of the role, team, and opportunity.' },
+        'requirements':         { label: 'Requirements',  heading: 'Requirements',                   description: 'What must candidates have to be considered for this role?' },
+        'responsibilities':     { label: 'Duties',        heading: 'Key Responsibilities',           description: 'What will this person be doing on a day-to-day basis?' },
+        'tags':                 { label: 'Tags',          heading: 'Skills & Tags',                  description: 'Add keywords to help candidates discover your listing.' },
+        'application-config':   { label: 'Application',  heading: 'Application Form',               description: 'Choose what information to collect from applicants.' },
+        'screening-questions':  { label: 'Screening',    heading: 'Screening Questions',             description: 'Pre-screen applicants automatically with targeted questions.' },
+        'logistics':            { label: 'Logistics',     heading: 'Closing Date & Visibility',      description: 'Control when the role closes and who can see it.' },
+        'review':               { label: 'Review',        heading: 'Final Review',                   description: 'Double-check everything before publishing.' },
+        'payment':              { label: 'Payment',       heading: 'Complete Payment',               description: 'Activate your service to reach the right candidates.' },
+    };
+    const currentMeta = stepMeta[currentStepId] || { label: currentStepId, heading: currentStepId, description: '' };
+    const currentStepIndex = WIZARD_STEPS.indexOf(currentStepId);
+    const progressPct = ((currentStepIndex + 1) / WIZARD_STEPS.length) * 100;
+
     return (
         <>
             <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleRequestClose(); else onOpenChange(nextOpen); }}>
-                <DrawerContent className="h-[95vh] rounded-t-[32px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
-                    <DrawerHeader className="border-b px-6 py-4 bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+                <DrawerContent className="h-[95vh] rounded-t-[28px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">
+
+                    {/* ── Header ── */}
+                    <DrawerHeader className="border-b px-6 py-3.5 bg-background sticky top-0 z-10 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Sparkles className="h-5 w-5 text-primary" />
+                            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <Sparkles className="h-4 w-4 text-primary" />
                             </div>
                             <div>
-                                <DrawerTitle className="text-xl font-bold tracking-tight">Smart Job Wizard</DrawerTitle>
-                                <DrawerDescription className="text-sm text-muted-foreground font-medium">AI-guided job creation</DrawerDescription>
+                                <DrawerTitle className="text-base font-bold tracking-tight leading-none">Job Creation Wizard</DrawerTitle>
+                                <DrawerDescription className="text-xs text-muted-foreground mt-0.5">
+                                    Step {currentStepIndex + 1} of {WIZARD_STEPS.length} — {currentMeta.label}
+                                </DrawerDescription>
                             </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={handleRequestClose} className="rounded-full hover:bg-muted">
-                            <X className="h-5 w-5" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleSaveDraftAndClose}
+                                disabled={isSavingDraft}
+                                className="hidden sm:flex items-center gap-1.5 text-xs h-8"
+                            >
+                                {isSavingDraft ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                                Save Draft
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={handleRequestClose} className="h-8 w-8 rounded-lg hover:bg-muted">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </DrawerHeader>
 
-                    <div className="flex-1 flex overflow-hidden">
-                        {/* Wizard Step Section - Card Based */}
-                        <div className="flex-1 flex flex-col min-w-0 bg-muted/30">
-                            <ScrollArea className="flex-1 p-8" ref={scrollRef}>
-                                <div className="max-w-2xl mx-auto pb-12">
-                                    {/* Step Card: rendered based on currentStepId */}
-                                    {renderStepCard()}
+                    {/* ── Progress Bar ── */}
+                    <div className="h-[3px] bg-muted shrink-0">
+                        <div
+                            className="h-full bg-primary transition-all duration-500 ease-out"
+                            style={{ width: `${progressPct}%` }}
+                        />
+                    </div>
+
+                    <div className="flex-1 flex overflow-hidden min-h-0">
+
+                        {/* ── Sidebar: Step Navigator ── */}
+                        <div className="w-52 border-r bg-muted/10 hidden xl:flex flex-col shrink-0 overflow-y-auto py-4">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-5 mb-3">Steps</p>
+                            <nav className="flex flex-col gap-px px-3">
+                                {WIZARD_STEPS.filter(s => s !== 'payment').map((stepId, index) => {
+                                    const meta = stepMeta[stepId];
+                                    const stepIndex = WIZARD_STEPS.indexOf(stepId);
+                                    const isDone = stepIndex < currentStepIndex;
+                                    const isCurrent = stepId === currentStepId;
+                                    const isClickable = stepIndex <= currentStepIndex;
+                                    return (
+                                        <button
+                                            key={stepId}
+                                            onClick={() => isClickable ? jumpToStep(stepId) : undefined}
+                                            className={cn(
+                                                "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150 text-xs w-full",
+                                                isCurrent && "bg-primary/10 text-primary font-semibold",
+                                                isDone && !isCurrent && "text-foreground/60 hover:bg-muted/60 cursor-pointer",
+                                                !isClickable && "text-muted-foreground/35 cursor-default",
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors text-[10px] font-bold",
+                                                isCurrent && "bg-primary text-primary-foreground",
+                                                isDone && "bg-green-500 text-white",
+                                                !isCurrent && !isDone && "bg-border text-muted-foreground",
+                                            )}>
+                                                {isDone ? (
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                ) : (<span>{index + 1}</span>)}
+                                            </div>
+                                            <span className="truncate leading-tight">{meta?.label ?? stepId}</span>
+                                        </button>
+                                    );
+                                })}
+                            </nav>
+                        </div>
+
+                        {/* ── Center: Step Content ── */}
+                        <div className="flex-1 flex flex-col min-w-0 bg-muted/20">
+                            <ScrollArea className="flex-1" ref={scrollRef}>
+                                <div className="px-8 py-8 max-w-2xl mx-auto pb-20">
+                                    {/* Step Header */}
+                                    <div className="mb-7">
+                                        <p className="text-xs font-bold text-primary/80 uppercase tracking-widest mb-1.5">
+                                            Step {currentStepIndex + 1}
+                                        </p>
+                                        <h2 className="text-2xl font-bold tracking-tight">{currentMeta.heading}</h2>
+                                        {currentMeta.description && (
+                                            <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{currentMeta.description}</p>
+                                        )}
+                                        <div className="mt-5 h-px bg-border/60" />
+                                    </div>
+
+                                    {/* Step Card */}
+                                    <div className="space-y-6">
+                                        {renderStepCard()}
+                                    </div>
                                 </div>
                             </ScrollArea>
 
-                            {/* Back button for non-first steps */}
-                            {currentStepId !== 'document-upload' && (
-                                <div className="p-4 bg-background border-t flex justify-between items-center">
-                                    <Button variant="ghost" onClick={prevStep} className="gap-2">
+                            {/* Bottom nav bar */}
+                            {currentStepId !== 'document-upload' && currentStepId !== 'review' && (
+                                <div className="shrink-0 border-t bg-background px-8 py-3.5 flex justify-between items-center">
+                                    <Button variant="ghost" onClick={prevStep} size="sm" className="gap-1.5">
                                         <ChevronRight className="h-4 w-4 rotate-180" />
                                         Back
                                     </Button>
-                                    <span className="text-sm text-muted-foreground">
-                                        Step {WIZARD_STEPS.indexOf(currentStepId) + 1} of {WIZARD_STEPS.length}
+                                    <span className="text-xs text-muted-foreground tabular-nums">
+                                        {currentStepIndex + 1} / {WIZARD_STEPS.length}
                                     </span>
+                                </div>
+                            )}
+                            {currentStepId === 'review' && (
+                                <div className="shrink-0 border-t bg-background px-8 py-3.5 flex justify-between items-center">
+                                    <Button variant="ghost" onClick={prevStep} size="sm" className="gap-1.5">
+                                        <ChevronRight className="h-4 w-4 rotate-180" />
+                                        Back
+                                    </Button>
+                                    <span className="text-xs text-muted-foreground">All steps complete</span>
                                 </div>
                             )}
                         </div>
 
-                        {/* Live Preview Section */}
-                        <div className="w-[450px] border-l bg-white hidden lg:flex flex-col min-h-0">
-                            <div className="p-4 border-b bg-muted/10 flex items-center justify-between">
-                                <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Live Job Preview</h3>
-                                <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">LIVE UPDATE</div>
+                        {/* ── Right: Live Preview ── */}
+                        <div className="w-[380px] border-l bg-background hidden lg:flex flex-col min-h-0 shrink-0">
+                            <div className="px-5 py-3.5 border-b flex items-center justify-between shrink-0 bg-muted/5">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    <h3 className="font-semibold text-sm text-foreground">Live Preview</h3>
+                                </div>
+                                <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/50">Candidate View</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto">
                                 <JobPreviewPanel jobData={jobData} />
                             </div>
                         </div>
