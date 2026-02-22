@@ -56,13 +56,7 @@ export const ChatDocumentUploadCard: React.FC<ChatDocumentUploadCardProps> = ({
     };
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
-            <div className="space-y-1.5">
-                <h2 className="text-base font-semibold tracking-tight">Create Job Post</h2>
-                <p className="text-muted-foreground text-xs">
-                    Upload a Job Description to auto-fill details, or start fresh manually.
-                </p>
-            </div>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400">
 
             {/* Upload Zone */}
             <div

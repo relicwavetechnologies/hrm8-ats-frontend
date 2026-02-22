@@ -89,10 +89,10 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
     ];
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
-            <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-4 w-4 text-foreground" />
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
+            <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                     <h3 className="text-base font-semibold">Review Job Post</h3>

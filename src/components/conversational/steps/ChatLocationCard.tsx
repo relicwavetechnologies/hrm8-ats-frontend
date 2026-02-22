@@ -3,7 +3,8 @@ import { LocationAutocomplete } from '../LocationAutocomplete';
 import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
-import { MapPin, ChevronRight, Building, Home, RefreshCcw } from 'lucide-react';
+import { MapPin, ChevronRight, Building2, Home, ArrowLeftRight, Sparkles } from 'lucide-react';
+import { Badge } from '@/shared/components/ui/badge';
 
 interface ChatLocationCardProps {
     location: string;
@@ -15,9 +16,24 @@ interface ChatLocationCardProps {
 }
 
 const workArrangements = [
-    { value: 'on-site' as const, label: 'On-Site', description: 'Work from the office', icon: Building },
-    { value: 'hybrid' as const, label: 'Hybrid', description: 'Mix of office and remote', icon: RefreshCcw },
-    { value: 'remote' as const, label: 'Remote', description: 'Work from anywhere', icon: Home },
+    {
+        value: 'on-site' as const,
+        label: 'On-Site',
+        description: 'Work from the office',
+        icon: Building2,
+    },
+    {
+        value: 'hybrid' as const,
+        label: 'Hybrid',
+        description: 'Mix of office & remote',
+        icon: ArrowLeftRight,
+    },
+    {
+        value: 'remote' as const,
+        label: 'Remote',
+        description: 'Work from anywhere',
+        icon: Home,
+    },
 ];
 
 export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
@@ -28,77 +44,80 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
     onContinue,
     isParsed
 }) => {
-    // Validation: Required for On-Site/Hybrid, Optional (but recommended) for Remote
     const isLocationValid = workArrangement === 'remote' ? true : location.trim().length >= 2;
     const canContinue = isLocationValid;
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
-            <div className="space-y-2">
-                <Label htmlFor="location" className="text-sm font-semibold flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    Location {workArrangement !== 'remote' && <span className="text-destructive">*</span>}
-                </Label>
-                <div className="relative">
-                    <LocationAutocomplete
-                        value={location}
-                        onChange={onLocationChange}
-                        placeholder={workArrangement === 'remote' ? "Optional for Remote roles" : "e.g., Sydney, NSW"}
-                        isParsed={isParsed}
-                        disabled={workArrangement === 'remote' && !location} // Optional: disable if remote and empty? No, let them add HQ if they want.
-                    />
-                    {isParsed && (
-                        <span className="absolute right-10 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-green-600 font-bold">
-                            From JD
-                        </span>
-                    )}
-                </div>
-                {workArrangement === 'remote' && (
-                    <p className="text-xs text-muted-foreground pl-1">
-                        For remote roles, you can specify "Remote" or a specific region (e.g. "Remote - APAC").
-                    </p>
-                )}
-            </div>
-
-            <div className="space-y-2">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400">
+            {/* Work Arrangement — shown first for better flow */}
+            <div className="space-y-3">
                 <Label className="text-sm font-semibold">Work Arrangement</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                     {workArrangements.map((item) => {
                         const Icon = item.icon;
                         const isSelected = workArrangement === item.value;
                         return (
-                            <Button
+                            <button
                                 key={item.value}
                                 type="button"
-                                variant="ghost"
                                 onClick={() => onWorkArrangementChange(item.value)}
                                 className={cn(
-                                    "flex flex-col items-center gap-1.5 p-2.5 h-auto rounded-md border transition-all duration-200",
+                                    "group flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 transition-all duration-200 text-center",
                                     isSelected
-                                        ? "border-primary bg-primary/5 hover:bg-primary/5"
-                                        : "border-muted hover:border-primary/30"
+                                        ? "border-primary bg-primary/5 shadow-sm"
+                                        : "border-border hover:border-primary/30 bg-background"
                                 )}
                             >
                                 <div className={cn(
-                                    "p-1.5 rounded-full transition-colors",
-                                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                                    "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                    isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-primary/10"
                                 )}>
                                     <Icon className="h-4 w-4" />
                                 </div>
-                                <span className="font-medium text-xs">{item.label}</span>
-                                <span className="text-[10px] text-muted-foreground leading-tight text-center">{item.description}</span>
-                            </Button>
+                                <div>
+                                    <p className={cn("font-semibold text-sm", isSelected && "text-primary")}>{item.label}</p>
+                                    <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{item.description}</p>
+                                </div>
+                            </button>
                         );
                     })}
                 </div>
             </div>
 
+            {/* Location Field */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="location" className="text-sm font-semibold flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-primary" />
+                        Location {workArrangement !== 'remote' && <span className="text-destructive">*</span>}
+                    </Label>
+                    {isParsed && (
+                        <Badge variant="outline" className="text-[10px] gap-1 text-green-600 border-green-500/40 bg-green-50 dark:bg-green-950/30">
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Auto-filled
+                        </Badge>
+                    )}
+                </div>
+                <LocationAutocomplete
+                    value={location}
+                    onChange={onLocationChange}
+                    placeholder={workArrangement === 'remote' ? 'Optional — e.g., Remote – APAC' : 'e.g., Sydney, NSW'}
+                    isParsed={isParsed}
+                />
+                {workArrangement === 'remote' && (
+                    <p className="text-xs text-muted-foreground">
+                        For fully remote roles, you can specify a preferred region or leave this blank.
+                    </p>
+                )}
+            </div>
+
             <Button
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="w-full h-10 text-sm rounded-md font-medium transition-all"
+                className="w-full h-11 font-semibold rounded-lg"
             >
-                Continue <ChevronRight className="ml-1.5 h-4 w-4" />
+                Continue
+                <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
         </div>
     );
