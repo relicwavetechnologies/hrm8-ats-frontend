@@ -5,6 +5,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Mail, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { apiClient } from "@/shared/lib/api";
+import { BrandIconPlate, GmailBrandIcon } from "@/modules/settings/components/integrations/BrandIcons";
 import {
   connectEmailProvider,
   disconnectEmailIntegration,
@@ -140,7 +141,13 @@ export function EmailIntegrationCard({ provider, name, description }: EmailInteg
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center animate-pulse">
-                <Mail className="h-6 w-6 opacity-50" />
+                {provider === 'gmail' ? (
+                  <BrandIconPlate className="h-9 w-9">
+                    <GmailBrandIcon className="h-5 w-5 opacity-95" />
+                  </BrandIconPlate>
+                ) : (
+                  <Mail className="h-6 w-6 opacity-50" />
+                )}
               </div>
               <div className="flex-1">
                 <CardTitle className="flex items-center gap-2">{name}</CardTitle>
@@ -160,7 +167,13 @@ export function EmailIntegrationCard({ provider, name, description }: EmailInteg
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-              <Mail className="h-6 w-6" />
+              {provider === 'gmail' ? (
+                <BrandIconPlate className="h-9 w-9">
+                  <GmailBrandIcon className="h-5 w-5" />
+                </BrandIconPlate>
+              ) : (
+                <Mail className="h-6 w-6" />
+              )}
             </div>
             <div>
               <CardTitle className="flex items-center gap-2">

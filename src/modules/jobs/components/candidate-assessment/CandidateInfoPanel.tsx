@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
@@ -31,8 +31,10 @@ import {
   Linkedin,
   Globe,
   Tag,
+  ClipboardList,
 } from 'lucide-react';
 import { format, isValid, parseISO, formatDistanceToNow } from 'date-fns';
+import { applicationService } from '@/modules/applications/lib/applicationService';
 
 interface CandidateInfoPanelProps {
   application: Application;
@@ -79,6 +81,8 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
   const [rating, setRating] = useState((application as any).rating || 0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isPriority, setIsPriority] = useState(false);
+  const [resumeContent, setResumeContent] = useState<string>('');
+  const [resumeContentLoading, setResumeContentLoading] = useState(false);
 
   const candidate = application.candidate;
   const parsedResume = application.parsedResume;
@@ -112,6 +116,53 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
   const keySkills = parsedResume?.skills?.slice(0, 6) || [];
   const strengths = aiAnalysis?.strengths || [];
   const concerns = aiAnalysis?.concerns || [];
+  const recommendation = aiAnalysis?.recommendation || 'pending';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchResumeContent = async () => {
+      if (!application?.id) return;
+      setResumeContentLoading(true);
+      try {
+        const response = await applicationService.getApplicationResume(application.id);
+        if (!cancelled && response.success && response.data?.content) {
+          setResumeContent(String(response.data.content));
+        } else if (!cancelled) {
+          setResumeContent('');
+        }
+      } catch {
+        if (!cancelled) setResumeContent('');
+      } finally {
+        if (!cancelled) setResumeContentLoading(false);
+      }
+    };
+
+    fetchResumeContent();
+    return () => {
+      cancelled = true;
+    };
+  }, [application?.id]);
+
+  const parsedResumeSections = useMemo(() => {
+    if (!resumeContent) {
+      return { summary: '', experience: [] as string[], education: [] as string[], skills: [] as string[] };
+    }
+
+    const lines = resumeContent
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const summary = lines.slice(0, 6).join(' ').slice(0, 900);
+    const experience = lines.filter((line) => /(experience|worked|engineer|developer|manager|consultant)/i.test(line)).slice(0, 6);
+    const education = lines.filter((line) => /(education|university|college|bachelor|master|degree|gpa)/i.test(line)).slice(0, 5);
+    const skills = lines
+      .filter((line) => /(skills|technologies|tools|stack|javascript|python|java|react|node|sql|aws)/i.test(line))
+      .slice(0, 8);
+
+    return { summary, experience, education, skills };
+  }, [resumeContent]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -334,7 +385,7 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                     <div>
                       <p className="text-xs font-medium">{yearsOfExperience}+ Years Experience</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {parsedResume?.workHistory?.[0]?.title || 'Professional'}
+                        {parsedResume?.workHistory?.[0]?.role || parsedResume?.workHistory?.[0]?.title || 'Professional'}
                       </p>
                     </div>
                   </div>
@@ -384,6 +435,52 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Parsed Resume Content
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3 space-y-2">
+                {resumeContentLoading ? (
+                  <p className="text-xs text-muted-foreground">Parsing resume content...</p>
+                ) : parsedResumeSections.summary ? (
+                  <>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{parsedResumeSections.summary}</p>
+                    {parsedResumeSections.experience.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-medium mb-1">Experience Highlights</p>
+                        <ul className="space-y-1">
+                          {parsedResumeSections.experience.map((item, idx) => (
+                            <li key={idx} className="text-xs text-muted-foreground flex gap-1.5">
+                              <span>•</span>
+                              <span className="line-clamp-2">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {parsedResumeSections.education.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-medium mb-1">Education Highlights</p>
+                        <ul className="space-y-1">
+                          {parsedResumeSections.education.map((item, idx) => (
+                            <li key={idx} className="text-xs text-muted-foreground flex gap-1.5">
+                              <span>•</span>
+                              <span className="line-clamp-2">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Resume parsed content not available yet.</p>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Work Experience Summary */}
             {parsedResume?.workHistory && parsedResume.workHistory.length > 0 && (
               <Card>
@@ -396,7 +493,7 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                 <CardContent className="px-3 pb-3 space-y-3">
                   {parsedResume.workHistory.slice(0, 3).map((job, index) => (
                     <div key={index} className="text-sm">
-                      <p className="font-medium">{job.title}</p>
+                      <p className="font-medium">{job.role || job.title || 'Experience'}</p>
                       <p className="text-muted-foreground text-xs">{job.company}</p>
                       <p className="text-muted-foreground text-xs">
                         {job.startDate} - {job.endDate || 'Present'}
@@ -442,10 +539,10 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                 <CardContent className="px-3 pb-3 space-y-2">
                   {parsedResume.education.slice(0, 2).map((edu, index) => (
                     <div key={index} className="text-sm">
-                      <p className="font-medium">{edu.degree}</p>
+                      <p className="font-medium">{edu.degree || edu.field || 'Education'}</p>
                       <p className="text-muted-foreground text-xs">{edu.institution}</p>
-                      {edu.graduationDate && (
-                        <p className="text-muted-foreground text-xs">{edu.graduationDate}</p>
+                      {(edu.endDate || edu.graduationDate) && (
+                        <p className="text-muted-foreground text-xs">{edu.endDate || edu.graduationDate}</p>
                       )}
                     </div>
                   ))}
@@ -501,6 +598,25 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
               </CardContent>
             </Card>
 
+            {aiAnalysis?.scores && (
+              <Card>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm">Score Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 space-y-2">
+                  {Object.entries(aiAnalysis.scores).map(([key, value]) => (
+                    <div key={key} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="capitalize text-muted-foreground">{key}</span>
+                        <span className="font-medium">{Number(value || 0)}%</span>
+                      </div>
+                      <Progress value={Number(value || 0)} className="h-1.5" />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* AI Executive Summary */}
             <Card>
               <CardHeader className="pb-2 pt-3 px-3">
@@ -513,6 +629,20 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {aiAnalysis?.summary || aiAnalysis?.detailedAnalysis?.overallAssessment || "AI analysis pending..."}
                 </p>
+                {aiAnalysis?.recommendation && (
+                  <div className="mt-3 flex items-center justify-between rounded-md border bg-muted/20 p-2">
+                    <span className="text-xs text-muted-foreground">Recommendation</span>
+                    <Badge variant={recommendation.includes('no_hire') ? 'destructive' : recommendation === 'maybe' ? 'secondary' : 'default'}>
+                      {String(aiAnalysis.recommendation).replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
+                )}
+                {aiAnalysis?.justification && (
+                  <div className="mt-2">
+                    <p className="text-[11px] font-medium mb-1">Justification</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{aiAnalysis.justification}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -578,6 +708,13 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                 <p className="text-xs text-muted-foreground line-clamp-2">
                   {aiAnalysis?.culturalFit?.analysis || "Pending analysis..."}
                 </p>
+                {Array.isArray(aiAnalysis?.culturalFit?.valuesMatched) && aiAnalysis.culturalFit.valuesMatched.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {aiAnalysis.culturalFit.valuesMatched.slice(0, 6).map((value: string, idx: number) => (
+                      <Badge key={idx} variant="outline" className="text-[10px]">{value}</Badge>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -604,6 +741,86 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                 </div>
               </CardContent>
             </Card>
+
+            {(aiAnalysis?.communicationStyle || aiAnalysis?.careerTrajectory || aiAnalysis?.flightRisk?.reason) && (
+              <Card>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm">Behavioral & Risk Insights</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 space-y-2">
+                  {aiAnalysis?.communicationStyle && (
+                    <div>
+                      <p className="text-[11px] font-medium">Communication Style</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.communicationStyle}</p>
+                    </div>
+                  )}
+                  {aiAnalysis?.careerTrajectory && (
+                    <div>
+                      <p className="text-[11px] font-medium">Career Trajectory</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.careerTrajectory}</p>
+                    </div>
+                  )}
+                  {aiAnalysis?.flightRisk?.reason && (
+                    <div>
+                      <p className="text-[11px] font-medium">Flight Risk Detail</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.flightRisk.reason}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {Array.isArray(aiAnalysis?.improvementAreas) && aiAnalysis.improvementAreas.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm">Improvement Areas</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <ul className="space-y-1.5">
+                    {aiAnalysis.improvementAreas.slice(0, 6).map((item: string, idx: number) => (
+                      <li key={idx} className="text-xs text-muted-foreground flex gap-1.5">
+                        <span>•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {aiAnalysis?.detailedAnalysis && (
+              <Card>
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <CardTitle className="text-sm">Detailed Analysis</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 space-y-2">
+                  {aiAnalysis.detailedAnalysis.skillsAnalysis && (
+                    <div>
+                      <p className="text-[11px] font-medium">Skills</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.detailedAnalysis.skillsAnalysis}</p>
+                    </div>
+                  )}
+                  {aiAnalysis.detailedAnalysis.experienceAnalysis && (
+                    <div>
+                      <p className="text-[11px] font-medium">Experience</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.detailedAnalysis.experienceAnalysis}</p>
+                    </div>
+                  )}
+                  {aiAnalysis.detailedAnalysis.educationAnalysis && (
+                    <div>
+                      <p className="text-[11px] font-medium">Education</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.detailedAnalysis.educationAnalysis}</p>
+                    </div>
+                  )}
+                  {aiAnalysis.detailedAnalysis.culturalFitAnalysis && (
+                    <div>
+                      <p className="text-[11px] font-medium">Culture Fit</p>
+                      <p className="text-xs text-muted-foreground">{aiAnalysis.detailedAnalysis.culturalFitAnalysis}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </ScrollArea>
       </Tabs>

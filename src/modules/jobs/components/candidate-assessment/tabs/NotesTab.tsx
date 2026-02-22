@@ -8,6 +8,7 @@ import { Application } from '@/shared/types/application';
 
 interface NotesTabProps {
   application: Application;
+  scope?: 'all' | 'questionnaire' | 'annotation';
 }
 
 interface Note {
@@ -33,7 +34,17 @@ function formatTimeAgo(dateInput: string | undefined): string {
   return 'Just now';
 }
 
-export function NotesTab({ application }: NotesTabProps) {
+const QUESTIONNAIRE_PREFIX = '[Questionnaire Ref';
+const ANNOTATION_PREFIX = '[Annotation Ref';
+
+function getNoteScope(content: string): 'questionnaire' | 'annotation' | 'general' {
+  const normalized = (content || '').trim();
+  if (normalized.startsWith(QUESTIONNAIRE_PREFIX)) return 'questionnaire';
+  if (normalized.startsWith(ANNOTATION_PREFIX)) return 'annotation';
+  return 'general';
+}
+
+export function NotesTab({ application, scope = 'all' }: NotesTabProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -75,6 +86,14 @@ export function NotesTab({ application }: NotesTabProps) {
     fetchNotes();
   }, [application.id]);
 
+  const filteredNotes = notes.filter((note) => {
+    const noteScope = getNoteScope(note.content);
+    if (scope === 'questionnaire') return noteScope === 'questionnaire';
+    if (scope === 'annotation') return noteScope === 'annotation';
+    // Whole notes tab should show all notes
+    return true;
+  });
+
   const highlightMentions = (content: string) => {
     return content.replace(
       /@(\w+\s?\w*)/g,
@@ -90,13 +109,20 @@ export function NotesTab({ application }: NotesTabProps) {
     );
   }
 
-  if (notes.length === 0) {
+  if (filteredNotes.length === 0) {
+    const emptyDescription =
+      scope === 'questionnaire'
+        ? 'Add a note from any questionnaire response.'
+        : scope === 'annotation'
+          ? 'Add a highlight or comment in annotations to create notes.'
+          : 'Add a note using the input area above';
+
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">
           <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No notes yet</p>
-          <p className="text-sm">Add a note using the input area above</p>
+          <p className="text-sm">{emptyDescription}</p>
         </CardContent>
       </Card>
     );
@@ -104,7 +130,7 @@ export function NotesTab({ application }: NotesTabProps) {
 
   return (
     <div className="space-y-3">
-      {notes.map((note) => (
+      {filteredNotes.map((note) => (
         <Card key={note.id}>
           <CardContent className="py-4">
             <div className="flex items-center gap-2 mb-2">

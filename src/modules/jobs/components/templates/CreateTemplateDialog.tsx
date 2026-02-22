@@ -166,9 +166,9 @@ export function CreateTemplateDialog({
                     setFormData({ ...formData, isShared: checked as boolean })
                   }
                 />
-                <label htmlFor="isShared" className="text-sm cursor-pointer">
+                <Label htmlFor="isShared" className="text-sm cursor-pointer">
                   Share this template with team members
-                </label>
+                </Label>
               </div>
             </div>
 

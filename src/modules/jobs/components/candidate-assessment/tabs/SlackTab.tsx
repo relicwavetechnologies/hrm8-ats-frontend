@@ -202,13 +202,13 @@ export function SlackTab({ application }: SlackTabProps) {
                             checked={selectedRecipients.includes(member.id)}
                             onCheckedChange={() => handleRecipientToggle(member.id)}
                           />
-                          <label 
+                          <Label 
                             htmlFor={`member-${member.id}`}
                             className="text-sm cursor-pointer select-none grid gap-0.5"
                           >
                             <span className="font-medium">{member.name}</span>
                             <span className="text-xs text-muted-foreground">{member.email}</span>
-                          </label>
+                          </Label>
                         </div>
                         {getRoleBadge(member.hiringRole || member.role)}
                       </div>

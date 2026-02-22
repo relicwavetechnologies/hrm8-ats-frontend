@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Application, ApplicationStage } from "@/shared/types/application";
 import { applicationService } from "@/shared/lib/applicationService";
 import { AutomatedScreeningPanel } from "./screening/AutomatedScreeningPanel";
-import { ManualScreeningPanel } from "./screening/ManualScreeningPanel";
 
 import type { Job } from '@/shared/types/job';
 
@@ -18,14 +16,10 @@ interface InitialScreeningTabProps {
 
 export function InitialScreeningTab({
   jobId,
-  jobTitle,
-  jobRequirements,
-  jobDescription,
   job,
 }: InitialScreeningTabProps) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"automated" | "manual">("automated");
 
   useEffect(() => {
     loadApplications();
@@ -125,11 +119,6 @@ export function InitialScreeningTab({
     }
   };
 
-  const handleScreeningComplete = () => {
-    // Refresh applications after screening
-    loadApplications();
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -147,42 +136,21 @@ export function InitialScreeningTab({
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Initial Screening</CardTitle>
-          <CardDescription>
-            Use AI-powered matching to highlight top candidates, or manually review resumes and answers based on predefined criteria.
+    <div className="space-y-4">
+      <Card className="border-border/80 shadow-none">
+        <CardHeader className="px-4 py-3">
+          <CardTitle className="text-sm font-semibold">AI Screening</CardTitle>
+          <CardDescription className="text-xs">
+            Compact AI-first screening with ranked candidates, detailed AI review access, and bulk re-analysis.
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "automated" | "manual")}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="automated">Automated Screening</TabsTrigger>
-          <TabsTrigger value="manual">Manual Screening</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="automated" className="mt-6">
-          <AutomatedScreeningPanel
-            job={job}
-            applications={applications}
-            onRefresh={loadApplications}
-          />
-        </TabsContent>
-
-        <TabsContent value="manual" className="mt-6">
-          <ManualScreeningPanel
-            jobId={jobId}
-            jobTitle={jobTitle}
-            jobRequirements={jobRequirements || []}
-            jobDescription={jobDescription}
-            applications={applications}
-            onRefresh={loadApplications}
-          />
-        </TabsContent>
-      </Tabs>
+      <AutomatedScreeningPanel
+        job={job}
+        applications={applications}
+        onRefresh={loadApplications}
+      />
     </div>
   );
 }
-

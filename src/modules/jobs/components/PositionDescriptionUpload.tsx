@@ -2,6 +2,7 @@ import { useState, useCallback, forwardRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { JobFormData } from "@/shared/types/job";
 import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
 import { FormItem, FormLabel, FormDescription } from "@/shared/components/ui/form";
 import { FileText, Upload, X, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "@/shared/hooks/use-toast";
@@ -285,7 +286,7 @@ export const PositionDescriptionUpload = forwardRef<HTMLDivElement, PositionDesc
                 isProcessing && "opacity-50 pointer-events-none"
               )}
             >
-              <input
+              <Input
                 type="file"
                 id="pd-upload"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"

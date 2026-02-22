@@ -3,6 +3,8 @@ import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Textarea } from '@/shared/components/ui/textarea';
 import { HelpCircle, Plus, X, ArrowRight, Sparkles, Loader2, Save, FolderOpen } from 'lucide-react';
 import {
   Select,
@@ -273,20 +275,20 @@ export const ChatScreeningQuestionsCard: React.FC<ChatScreeningQuestionsCardProp
                           ))}
                         </SelectContent>
                       </Select>
-                      <label className="flex items-center gap-1.5 text-xs">
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center gap-1.5">
+                        <Checkbox
+                          id={`required-${q.id}`}
                           checked={q.required}
-                          onChange={(e) => handleUpdateQuestion(q.id, { required: e.target.checked })}
+                          onCheckedChange={(checked) => handleUpdateQuestion(q.id, { required: checked === true })}
                         />
-                        Required
-                      </label>
+                        <Label htmlFor={`required-${q.id}`} className="text-xs cursor-pointer">Required</Label>
+                      </div>
                     </div>
                     {needsOptions(q.type) && (
                       <div className="text-xs">
                         <Label className="text-muted-foreground">Options (one per line)</Label>
-                        <textarea
-                          className="mt-1 w-full min-h-[60px] rounded border bg-background px-2 py-1 text-xs"
+                        <Textarea
+                          className="mt-1 w-full min-h-[60px] text-xs resize-none"
                           value={(q.options || []).map((o) => o.label).join('\n')}
                           onChange={(e) => {
                             const labels = e.target.value.split('\n').map((s) => s.trim()).filter(Boolean);
@@ -294,7 +296,7 @@ export const ChatScreeningQuestionsCard: React.FC<ChatScreeningQuestionsCardProp
                               options: labels.map((label, i) => ({ id: `opt-${i}`, label, value: label })),
                             });
                           }}
-                          placeholder="Option 1&#10;Option 2&#10;Option 3"
+                          placeholder={"Option 1\nOption 2\nOption 3"}
                         />
                       </div>
                     )}

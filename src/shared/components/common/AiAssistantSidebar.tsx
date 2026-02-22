@@ -7,6 +7,7 @@
 import { FormEvent, useMemo, useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@/shared/components/ui/button";
+import { Textarea } from "@/shared/components/ui/textarea";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Loader2, ArrowUp, Plus, Mic, Info, Settings2, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { MarkdownRenderer } from "@/shared/components/common/MarkdownRenderer";
@@ -89,12 +90,13 @@ function UserMessage({ text }: { text: string }) {
         {displayText}
         {!isExpanded && "..."}
       </p>
-      <button
+      <Button
+        variant="ghost"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="mt-2 text-xs font-medium text-primary hover:underline"
+        className="mt-2 text-xs font-medium text-primary hover:underline h-auto p-0"
       >
         {isExpanded ? "Show less" : "Read more"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -169,13 +171,31 @@ function ToolInvocationDisplay({ invocation }: { invocation: ToolInvocation }) {
 interface AiAssistantSidebarProps {
   /** API endpoint for the chat stream - determines access control */
   streamEndpoint?: string;
+  /** Additional request body fields (e.g. context for scoped assistants) */
+  requestBody?: Record<string, unknown>;
+  /** Empty state title */
+  welcomeTitle?: string;
+  /** Empty state subtitle */
+  welcomeSubtitle?: string;
+  /** Suggested prompts shown in empty state */
+  suggestedPrompts?: string[];
 }
 
 export function AiAssistantSidebar({
-  streamEndpoint = "/api/assistant/chat/stream"
+  streamEndpoint = "/api/assistant/chat/stream",
+  requestBody,
+  welcomeTitle = "Hi there,",
+  welcomeSubtitle = "How can I help?",
+  suggestedPrompts = [
+    "Show me this candidate's full profile summary",
+    "Move this candidate to Technical Interview",
+    "Add a note about fitment for this role",
+    "Schedule a video interview for tomorrow at 11 AM",
+  ],
 }: AiAssistantSidebarProps) {
   const { messages, input, handleInputChange, handleSubmit, status, stop, error, setInput } = useChat({
     api: `${API_BASE_URL}${streamEndpoint}`,
+    body: requestBody,
     fetch: (url: RequestInfo | URL, init?: RequestInit) =>
       fetch(url, { ...init, credentials: "include" }),
   });
@@ -305,15 +325,14 @@ export function AiAssistantSidebar({
         <ScrollArea className="min-h-0 flex-1 p-4">
           {chatMessages.length === 0 ? (
             <div className="pt-16">
-              <h2 className="text-4xl font-semibold tracking-tight">Hi there,</h2>
-              <p className="mt-2 text-xl text-muted-foreground">How can I help?</p>
+              <h2 className="text-4xl font-semibold tracking-tight">{welcomeTitle}</h2>
+              <p className="mt-2 text-xl text-muted-foreground">{welcomeSubtitle}</p>
               <div className="mt-6 space-y-2">
                 <p className="text-sm font-medium">Try asking:</p>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Show me my daily briefing</li>
-                  <li>• What's my performance this month?</li>
-                  <li>• How much commission have I earned?</li>
-                  <li>• Show me my upcoming interviews</li>
+                  {suggestedPrompts.map((prompt) => (
+                    <li key={prompt}>• {prompt}</li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -402,13 +421,13 @@ export function AiAssistantSidebar({
 
               {/* Textarea */}
               <div className="relative">
-                <textarea
+                <Textarea
                   value={input}
                   onChange={handleInputChange}
                   placeholder="Start a conversation..."
                   disabled={isStreaming}
                   rows={3}
-                  className="w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
+                  className="w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50 border-0 focus-visible:ring-0 shadow-none"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();

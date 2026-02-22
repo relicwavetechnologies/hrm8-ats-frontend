@@ -19,12 +19,14 @@ export interface Annotation {
 
 interface UseResumeAnnotationsOptions {
   documentId: string;
+  applicationId?: string;
   currentUserId: string;
   currentUserName: string;
 }
 
 export const useResumeAnnotations = ({
   documentId,
+  applicationId,
   currentUserId,
   currentUserName,
 }: UseResumeAnnotationsOptions) => {
@@ -71,6 +73,7 @@ export const useResumeAnnotations = ({
       try {
         const newAnnotation = await resumeAnnotationService.createAnnotation({
           resume_id: documentId,
+          application_id: applicationId,
           user_id: currentUserId,
           user_name: currentUserName,
           user_color: userColor,
@@ -94,7 +97,7 @@ export const useResumeAnnotations = ({
         throw error;
       }
     },
-    [documentId, currentUserId, currentUserName]
+    [documentId, applicationId, currentUserId, currentUserName]
   );
 
   const removeAnnotation = useCallback(async (annotationId: string) => {

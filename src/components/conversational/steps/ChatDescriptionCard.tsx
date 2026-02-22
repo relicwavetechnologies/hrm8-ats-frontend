@@ -56,34 +56,34 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <FileText className="h-6 w-6 text-primary" />
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
+            <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4 text-foreground" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Job Description</h3>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h3 className="text-base font-semibold">Job Description</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">
                         Describe the role, responsibilities, and what makes this opportunity exciting.
                     </p>
                 </div>
             </div>
 
-            <Card className="p-5 space-y-4">
+            <Card className="p-3.5 space-y-3 rounded-md shadow-none border">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-base font-medium">
+                    <Label htmlFor="description" className="text-sm font-medium">
                         Description
                     </Label>
                     <div className="flex items-center gap-2">
                         {isParsed && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <Badge variant="outline" className="text-[10px] h-5 px-1.5">
                                 From JD
                             </Badge>
                         )}
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="text-primary gap-1"
+                            className="h-7 text-xs gap-1"
                             onClick={handleAiAssist}
                             disabled={aiLoading}
                         >
@@ -98,13 +98,13 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                     value={description}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder="Describe what this role involves, what the day-to-day looks like, and why candidates should be excited about this opportunity..."
-                    className="min-h-[200px] resize-none"
+                    className="min-h-[150px] resize-none text-sm"
                 />
 
                 {showAiSuggestion && (
-                    <div className="p-3 bg-muted/30 border rounded-lg space-y-2 animate-in fade-in zoom-in-95">
+                    <div className="p-2.5 bg-muted/20 border rounded-md space-y-2 animate-in fade-in zoom-in-95">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-primary flex items-center gap-1">
+                            <span className="text-[11px] font-medium text-foreground flex items-center gap-1">
                                 <Sparkles className="h-3 w-3" /> AI Suggestion
                             </span>
                             <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setShowAiSuggestion(false); setAiError(null); }}>
@@ -113,21 +113,21 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                             </Button>
                         </div>
                         {aiLoading && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" /> Generating using company context and your job details...
                             </p>
                         )}
                         {aiError && (
-                            <p className="text-sm text-destructive">{aiError}</p>
+                            <p className="text-xs text-destructive">{aiError}</p>
                         )}
                         {!aiLoading && aiSuggestion && (
                             <>
-                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{aiSuggestion}</p>
+                                <p className="text-xs text-muted-foreground whitespace-pre-wrap">{aiSuggestion}</p>
                                 <div className="flex gap-2">
                                     <Button
                                         size="sm"
                                         variant="secondary"
-                                        className="flex-1 text-xs"
+                                        className="flex-1 text-xs h-8"
                                         onClick={() => {
                                             onChange(aiSuggestion);
                                             setShowAiSuggestion(false);
@@ -139,7 +139,7 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="flex-1 text-xs"
+                                        className="flex-1 text-xs h-8"
                                         onClick={() => {
                                             onChange(description + (description ? "\n\n" : "") + aiSuggestion);
                                             setShowAiSuggestion(false);
@@ -154,7 +154,7 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                     </div>
                 )}
 
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>{description.length} characters</span>
                     <span>{description.length < 50 ? `${50 - description.length} more needed` : '✓ Good length'}</span>
                 </div>
@@ -163,8 +163,7 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
             <Button
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="w-full gap-2"
-                size="lg"
+                className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
             >
                 Continue <ArrowRight className="h-4 w-4" />
             </Button>

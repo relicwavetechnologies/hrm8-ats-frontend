@@ -1,108 +1,394 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '@/app/providers/AuthContext';
-import { useWebSocket } from '@/app/providers/WebSocketContext';
-import { messagingService } from '@/shared/lib/messagingService';
-import { ConversationList } from '@/modules/messages/components/ConversationList';
-import { ConversationHeader } from '@/modules/messages/components/ConversationHeader';
-import { MessageList } from '@/modules/messages/components/MessageList';
-import { MessageInput } from '@/modules/messages/components/MessageInput';
-import { Card } from '@/shared/components/ui/card';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { DashboardPageLayout } from '@/app/layouts/DashboardPageLayout';
+import { AtsPageHeader } from '@/app/layouts/AtsPageHeader';
+import { Card, CardContent } from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/components/ui/table';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { Loader2, Mail, RefreshCw, Search, AlertTriangle } from 'lucide-react';
+import { apiClient } from '@/shared/lib/api';
+import { applicationService } from '@/shared/lib/applicationService';
+import { GmailMessage, GmailThread, gmailThreadService } from '@/shared/lib/gmailThreadService';
+import { EmailThreadDetailView } from '@/modules/jobs/components/candidate-assessment/EmailThreadDetailView';
+import { EmailReplyDrawer } from '@/modules/jobs/components/candidate-assessment/EmailReplyDrawer';
+import type { Application } from '@/shared/types/application';
+import { cn } from '@/shared/lib/utils';
+
+interface GmailStatus {
+  connected: boolean;
+  email?: string;
+}
+
+interface UnifiedThreadRow {
+  id: string;
+  applicationId: string;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
+  jobId: string;
+  thread: GmailThread;
+  inbound: boolean;
+  lastMessageDate: string;
+}
+
+const toTitleCaseName = (value?: string) => {
+  if (!value) return 'Unknown Candidate';
+  return value
+    .replace(/[._-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ');
+};
+
+const candidateNameFromApp = (app: any) => {
+  return (
+    app?.candidateName ||
+    app?.candidate_name ||
+    app?.candidate?.name ||
+    `${app?.candidate?.first_name || ''} ${app?.candidate?.last_name || ''}`.trim() ||
+    (app?.candidateEmail ? toTitleCaseName(String(app.candidateEmail).split('@')[0]) : '') ||
+    (app?.candidate_email ? toTitleCaseName(String(app.candidate_email).split('@')[0]) : '') ||
+    'Unknown Candidate'
+  );
+};
+
+const candidateEmailFromApp = (app: any) => {
+  return (
+    app?.candidateEmail ||
+    app?.candidate_email ||
+    app?.email ||
+    app?.candidate?.email ||
+    ''
+  );
+};
+
+const jobTitleFromApp = (app: any) => {
+  return app?.jobTitle || app?.job_title || app?.job?.title || 'Unknown Job';
+};
+
+function formatRelativeDate(dateStr: string): string {
+  if (!dateStr) return 'Recently';
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  } catch {
+    return 'Recently';
+  }
+}
 
 export default function InboxPage() {
-  const { conversationId } = useParams<{ conversationId?: string }>();
-  const { user } = useAuth();
-  const { conversations, setConversations, messages, joinConversation } = useWebSocket();
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [threads, setThreads] = useState<UnifiedThreadRow[]>([]);
+  const [selected, setSelected] = useState<UnifiedThreadRow | null>(null);
+  const [replyDrawerOpen, setReplyDrawerOpen] = useState(false);
+  const [composerMode, setComposerMode] = useState<'new' | 'reply'>('new');
+  const [replyingToMessage, setReplyingToMessage] = useState<GmailMessage | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadConversations();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (conversationId) {
-      joinConversation(conversationId);
-    }
-  }, [conversationId, joinConversation]);
-
-  const loadConversations = async () => {
-    setIsLoading(true);
+  const checkGmailStatus = async () => {
     try {
-      // Use admin endpoint for HR inbox
-      const response = await messagingService.getAdminConversations();
+      const response = await apiClient.get<GmailStatus>('/api/auth/google/status');
       if (response.success && response.data) {
-        setConversations(response.data);
+        setGmailConnected(response.data.connected);
+      } else {
+        setGmailConnected(false);
       }
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    } finally {
-      setIsLoading(false);
+    } catch {
+      setGmailConnected(false);
     }
   };
 
-  const currentConversation = conversations.find(c => c.id === conversationId);
-  const currentMessages = conversationId ? messages[conversationId] || [] : [];
+  const loadThreads = async () => {
+    setLoading(true);
+    try {
+      await checkGmailStatus();
+      const appsRes = await applicationService.getCompanyApplications();
+      const applications = (appsRes.data?.applications || []) as Application[];
 
-  if (!user) {
-    return null;
-  }
+      const settled = await Promise.allSettled(
+        applications.map(async (app) => {
+          const data = await gmailThreadService.getEmailThreads(app.id);
+          return data.gmailThreads.map((thread) => {
+            const last = thread.messages[thread.messages.length - 1];
+            const inbound = last?.isInbound ?? false;
+            return {
+              id: `${app.id}::${thread.threadId}`,
+              applicationId: app.id,
+              candidateName: candidateNameFromApp(app),
+              candidateEmail: candidateEmailFromApp(app),
+              jobTitle: jobTitleFromApp(app),
+              jobId: (app as any).jobId || (app as any).job_id || '',
+              thread,
+              inbound,
+              lastMessageDate: thread.lastMessageDate || last?.date || '',
+            } satisfies UnifiedThreadRow;
+          });
+        }),
+      );
+
+      const merged = settled
+        .filter((result): result is PromiseFulfilledResult<UnifiedThreadRow[]> => result.status === 'fulfilled')
+        .flatMap((result) => result.value)
+        .sort(
+          (a, b) => new Date(b.lastMessageDate || 0).getTime() - new Date(a.lastMessageDate || 0).getTime(),
+        );
+
+      setThreads(merged);
+      setSelected((prev) => {
+        if (!prev) return merged[0] || null;
+        return merged.find((item) => item.id === prev.id) || merged[0] || null;
+      });
+    } catch (error) {
+      console.error('Failed to load inbox threads:', error);
+      setThreads([]);
+      setSelected(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadThreads();
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return threads;
+    const q = query.toLowerCase();
+    return threads.filter((row) => {
+      return (
+        row.candidateName.toLowerCase().includes(q) ||
+        row.candidateEmail.toLowerCase().includes(q) ||
+        row.jobTitle.toLowerCase().includes(q) ||
+        row.thread.subject.toLowerCase().includes(q) ||
+        row.thread.snippet.toLowerCase().includes(q)
+      );
+    });
+  }, [threads, query]);
+
+  const stats = useMemo(() => {
+    const totalThreads = threads.length;
+    const inboundWaiting = threads.filter((item) => item.inbound).length;
+    const uniqueJobs = new Set(threads.map((item) => item.jobTitle)).size;
+    const totalMessages = threads.reduce((sum, item) => sum + item.thread.messageCount, 0);
+    return { totalThreads, inboundWaiting, uniqueJobs, totalMessages };
+  }, [threads]);
+
+  const handleReply = (message: GmailMessage) => {
+    setComposerMode('reply');
+    setReplyingToMessage(message);
+    setReplyDrawerOpen(true);
+  };
+
+  const handleCompose = () => {
+    setComposerMode('new');
+    setReplyingToMessage(null);
+    setReplyDrawerOpen(true);
+  };
 
   return (
     <DashboardPageLayout>
-      <div className="p-6 h-[calc(100vh-100px)] flex flex-col">
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
-            <p className="text-muted-foreground">Manage your conversations</p>
-          </div>
-          <div className="flex-1 flex border rounded-lg overflow-hidden bg-background shadow-sm">
-            <div className="w-full md:w-1/3 lg:w-1/4 border-r bg-muted/10">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="p-4 md:p-5 space-y-3.5">
+        <AtsPageHeader
+          title="Inbox"
+          subtitle="All email threads across all jobs, same as candidate assessment email flow"
+        >
+          <Button size="sm" variant="outline" onClick={loadThreads} disabled={loading}>
+            <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', loading && 'animate-spin')} />
+            Refresh
+          </Button>
+        </AtsPageHeader>
+
+        {!gmailConnected && (
+          <Card className="border-amber-200/80 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-800/70 shadow-none">
+            <CardContent className="p-2.5 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Gmail not connected</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">Connect Gmail to load real email threads and replies.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Threads</p>
+              <p className="text-lg font-semibold mt-1 leading-none">{stats.totalThreads}</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Waiting Reply</p>
+              <p className="text-lg font-semibold mt-1 leading-none">{stats.inboundWaiting}</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Jobs Covered</p>
+              <p className="text-lg font-semibold mt-1 leading-none">{stats.uniqueJobs}</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none border-border/80">
+            <CardContent className="p-2.5">
+              <p className="text-[11px] text-muted-foreground">Messages</p>
+              <p className="text-lg font-semibold mt-1 leading-none">{stats.totalMessages}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[50%_50%] h-[calc(100vh-300px)] min-h-[560px]">
+          <Card className="border-border/80 shadow-none overflow-hidden">
+            <CardContent className="p-2.5 h-full flex flex-col gap-2.5">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search candidate, job or thread"
+                    className="h-8 pl-8 text-xs border-border/70 bg-background"
+                  />
                 </div>
+                <Button size="sm" className="h-8 px-3 text-xs" onClick={handleCompose} disabled={!selected}>
+                  <Mail className="h-3.5 w-3.5 mr-1.5" />
+                  Compose
+                </Button>
+              </div>
+
+              <div className="rounded-md border border-border/70 overflow-hidden flex-1 min-h-0 bg-background">
+                <ScrollArea className="h-full">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/25">
+                        <TableHead className="h-8 text-[11px] font-semibold">Candidate</TableHead>
+                        <TableHead className="h-8 text-[11px] font-semibold">Job</TableHead>
+                        <TableHead className="h-8 text-[11px] font-semibold">Thread</TableHead>
+                        <TableHead className="h-8 text-[11px] font-semibold">Updated</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        Array.from({ length: 8 }).map((_, idx) => (
+                          <TableRow key={`thread-skeleton-${idx}`}>
+                            <TableCell colSpan={4} className="h-10">
+                              <div className="h-4 w-full rounded bg-muted/60 animate-pulse" />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : filtered.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="h-24 text-center text-sm text-muted-foreground">
+                            No email threads found.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filtered.map((row) => (
+                          <TableRow
+                            key={row.id}
+                            className={cn(
+                              'cursor-pointer border-b border-border/60',
+                              selected?.id === row.id ? 'bg-primary/5' : 'hover:bg-muted/15',
+                            )}
+                            onClick={() => setSelected(row)}
+                          >
+                            <TableCell className="py-2.5">
+                              <p className="text-sm font-medium truncate max-w-[180px]">{row.candidateName}</p>
+                              <p className="text-xs text-muted-foreground truncate max-w-[180px]">{row.candidateEmail || 'No email'}</p>
+                            </TableCell>
+                            <TableCell className="py-2.5 text-xs text-muted-foreground max-w-[160px] truncate">{row.jobTitle}</TableCell>
+                            <TableCell className="py-2.5">
+                              <p className="text-xs font-medium truncate max-w-[240px]">{row.thread.subject}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <Badge variant="secondary" className="h-4 text-[10px] px-1.5 font-medium">{row.thread.messageCount}</Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'h-4 text-[10px] px-1.5',
+                                    row.inbound
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                  )}
+                                >
+                                  {row.inbound ? 'Received' : 'Sent'}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatRelativeDate(row.lastMessageDate)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/80 shadow-none overflow-hidden">
+            <CardContent className="p-0 h-full min-h-0">
+              {selected ? (
+                <EmailThreadDetailView
+                  thread={selected.thread}
+                  onBack={() => setSelected(null)}
+                  onReply={handleReply}
+                  onCompose={handleCompose}
+                  showReplyButton
+                />
               ) : (
-                <ConversationList
-                  conversations={conversations}
-                  currentConversationId={conversationId || null}
-                  currentUserEmail={user?.email}
-                  messages={messages}
-                  onSelectConversation={(id) => navigate(`/messages/${id}`)}
-                />
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm bg-muted/[0.15]">
+                  {loading ? (
+                    <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading threads...</div>
+                  ) : (
+                    'Select a thread to view details'
+                  )}
+                </div>
               )}
-            </div>
-            {conversationId && currentConversation ? (
-              <div className="flex-1 bg-background flex flex-col min-w-0">
-                <ConversationHeader 
-                  conversation={currentConversation}
-                  currentUserEmail={user.email}
-                />
-                <MessageList 
-                  messages={currentMessages}
-                  currentUserEmail={user.email}
-                  viewerType="HR"
-                />
-                <MessageInput 
-                  conversationId={conversationId}
-                  conversationStatus={currentConversation.status}
-                />
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center bg-muted/30">
-                <Card className="p-8 text-center border-none shadow-none bg-transparent">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">No conversation selected</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Select a conversation from the list to start messaging
-                  </p>
-                </Card>
-              </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {selected && (
+          <EmailReplyDrawer
+            open={replyDrawerOpen}
+            mode={composerMode}
+            thread={selected.thread}
+            replyingToMessage={replyingToMessage}
+            applicationId={selected.applicationId}
+            candidateName={selected.candidateName}
+            candidateEmail={selected.candidateEmail}
+            jobTitle={selected.jobTitle}
+            jobId={selected.jobId}
+            onClose={() => {
+              setReplyDrawerOpen(false);
+              setReplyingToMessage(null);
+            }}
+            onEmailSent={async () => {
+              await loadThreads();
+            }}
+          />
+        )}
       </div>
     </DashboardPageLayout>
   );

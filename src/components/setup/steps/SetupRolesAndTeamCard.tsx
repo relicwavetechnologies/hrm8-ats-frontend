@@ -476,14 +476,14 @@ export function SetupRolesAndTeamCard({
               </div>
               <div className="flex flex-wrap gap-2">
                 {roles.map((role) => (
-                  <label key={role.id} className="flex items-center gap-1.5 cursor-pointer">
+                  <Label key={role.id} className="flex items-center gap-1.5 cursor-pointer">
                     <Checkbox
                       checked={(member.roles ?? []).includes(role.id)}
                       onCheckedChange={() => toggleMemberRole(member, role.id)}
                       disabled={updatingMemberId === member.id}
                     />
                     <span className="text-xs">{role.name}</span>
-                  </label>
+                  </Label>
                 ))}
               </div>
             </div>

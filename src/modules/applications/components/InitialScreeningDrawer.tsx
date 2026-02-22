@@ -6,13 +6,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/shared/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Application, ApplicationStage } from "@/shared/types/application";
 import { applicationService } from "@/shared/lib/applicationService";
 import { AutomatedScreeningPanel } from "./screening/AutomatedScreeningPanel";
-import { ManualScreeningPanel } from "./screening/ManualScreeningPanel";
 import type { Job } from '@/shared/types/job';
-import type { JobRound } from "@/shared/lib/jobRoundService";
 
 interface InitialScreeningDrawerProps {
   open: boolean;
@@ -39,7 +36,6 @@ export function InitialScreeningDrawer({
 }: InitialScreeningDrawerProps) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"automated" | "manual">("automated");
 
   useEffect(() => {
     if (open) {
@@ -161,18 +157,13 @@ export function InitialScreeningDrawer({
     }
   };
 
-  const handleScreeningComplete = () => {
-    // Refresh applications after screening
-    loadApplications();
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-4xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Initial Screening - {roundName}</SheetTitle>
+          <SheetTitle>AI Screening - {roundName}</SheetTitle>
           <SheetDescription>
-            Use AI-powered matching to highlight top candidates, or manually review resumes and answers based on predefined criteria.
+            AI-ranked candidates with detailed analysis and bulk re-analysis.
           </SheetDescription>
         </SheetHeader>
 
@@ -186,35 +177,14 @@ export function InitialScreeningDrawer({
           </div>
         ) : (
           <div className="mt-6">
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "automated" | "manual")}>
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="automated">Automated Screening</TabsTrigger>
-                <TabsTrigger value="manual">Manual Screening</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="automated" className="mt-6">
-                <AutomatedScreeningPanel
-                  job={job}
-                  applications={applications}
-                  onRefresh={loadApplications}
-                />
-              </TabsContent>
-
-              <TabsContent value="manual" className="mt-6">
-                <ManualScreeningPanel
-                  jobId={jobId}
-                  jobTitle={jobTitle}
-                  jobRequirements={jobRequirements || []}
-                  jobDescription={jobDescription}
-                  applications={applications}
-                  onRefresh={loadApplications}
-                />
-              </TabsContent>
-            </Tabs>
+            <AutomatedScreeningPanel
+              job={job}
+              applications={applications}
+              onRefresh={loadApplications}
+            />
           </div>
         )}
       </SheetContent>
     </Sheet>
   );
 }
-

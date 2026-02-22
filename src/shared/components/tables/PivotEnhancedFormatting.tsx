@@ -85,7 +85,7 @@ export function PivotEnhancedFormatting({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Field</label>
+                  <Label className="text-xs font-medium mb-1 block">Field</Label>
                   <Select
                     value={rule.field}
                     onValueChange={(value) => updateRule(rule.id, { field: value })}
@@ -106,7 +106,7 @@ export function PivotEnhancedFormatting({
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Condition</label>
+                  <Label className="text-xs font-medium mb-1 block">Condition</Label>
                   <Select
                     value={rule.condition}
                     onValueChange={(value) =>
@@ -134,7 +134,7 @@ export function PivotEnhancedFormatting({
                 rule.condition === "less" ||
                 rule.condition === "equal") && (
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Value</label>
+                  <Label className="text-xs font-medium mb-1 block">Value</Label>
                   <Input
                     type="number"
                     value={rule.value || 0}
@@ -148,7 +148,7 @@ export function PivotEnhancedFormatting({
               {rule.condition === "between" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Min Value</label>
+                    <Label className="text-xs font-medium mb-1 block">Min Value</Label>
                     <Input
                       type="number"
                       value={rule.value || 0}
@@ -158,7 +158,7 @@ export function PivotEnhancedFormatting({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Max Value</label>
+                    <Label className="text-xs font-medium mb-1 block">Max Value</Label>
                     <Input
                       type="number"
                       value={rule.value2 || 0}
@@ -172,7 +172,7 @@ export function PivotEnhancedFormatting({
 
               {(rule.condition === "top" || rule.condition === "bottom") && (
                 <div>
-                  <label className="text-xs font-medium mb-1 block">N (count)</label>
+                  <Label className="text-xs font-medium mb-1 block">N (count)</Label>
                   <Input
                     type="number"
                     value={rule.topBottomN || 10}
@@ -185,7 +185,7 @@ export function PivotEnhancedFormatting({
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Background</label>
+                  <Label className="text-xs font-medium mb-1 block">Background</Label>
                   <Input
                     type="color"
                     value={rule.backgroundColor || "#22c55e"}
@@ -195,7 +195,7 @@ export function PivotEnhancedFormatting({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Text Color</label>
+                  <Label className="text-xs font-medium mb-1 block">Text Color</Label>
                   <Input
                     type="color"
                     value={rule.textColor || "#ffffff"}
@@ -203,7 +203,7 @@ export function PivotEnhancedFormatting({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block">Icon</label>
+                  <Label className="text-xs font-medium mb-1 block">Icon</Label>
                   <Select
                     value={rule.icon || "none"}
                     onValueChange={(value) =>

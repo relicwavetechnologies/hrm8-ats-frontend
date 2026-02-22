@@ -26,8 +26,10 @@ import {
   Sparkles,
   Video,
   ArrowUpCircle,
+  GitBranch,
   UserPlus,
-  Users
+  Users,
+  CheckSquare
 } from "lucide-react";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
@@ -53,11 +55,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
 import { ExternalPromotionDialog } from "@/modules/jobs/components/ExternalPromotionDialog";
-import { JobAnalyticsDashboard } from "@/modules/jobs/components/analytics/JobAnalyticsDashboard";
-import { JobCollaborationPanel } from "@/modules/jobs/components/collaboration/JobCollaborationPanel";
-import { JobVersionHistory } from "@/modules/jobs/components/history/JobVersionHistory";
 import { JobBudgetTracker } from "@/modules/jobs/components/budget/JobBudgetTracker";
-import { CandidateMatchingPanel } from "@/modules/jobs/components/matching/CandidateMatchingPanel";
 import { JobAIInterviewsTab } from "@/modules/jobs/components/aiInterview/JobAIInterviewsTab";
 import { useToast } from "@/shared/hooks/use-toast";
 import { jobService } from "@/shared/lib/jobService";
@@ -70,10 +68,8 @@ import { DeleteJobDialog } from "@/modules/jobs/components/DeleteJobDialog";
 import { applicationService } from "@/shared/lib/applicationService";
 import { TalentPoolSearchDialog } from "@/modules/applications/components/TalentPoolSearchDialog";
 import { JobApplicationsFilterBar, JobApplicationsFilters } from "@/modules/applications/components/JobApplicationsFilterBar";
-import { ManualUploadDialog } from "@/modules/applications/components/ManualUploadDialog";
 import { ApplicationListView } from "@/modules/applications/components/ApplicationListView";
-import { JobEmailHubDrawer } from "@/modules/email/components/JobEmailHubDrawer";
-import { Upload, LayoutGrid, List, Inbox } from "lucide-react";
+import { LayoutGrid, List, Inbox } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { filterApplicationsByTags } from "@/shared/lib/applicationTags";
 import { useMemo } from "react";
@@ -83,8 +79,11 @@ import { HiringTeamTab } from "@/modules/jobs/components/team/HiringTeamTab";
 import { JobRound, jobRoundService } from "@/shared/lib/jobRoundService";
 import { RoundDetailView } from "@/modules/applications/components/RoundDetailView";
 import { RoundConfigDrawer, RoundConfigTab } from "@/modules/applications/components/RoundConfigDrawer";
+import { CandidatesTab } from "@/modules/applications/components/CandidatesTab";
 import { JobMessagesTab } from "@/modules/jobs/components/JobMessagesTab";
+import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { MessageSquarePlus } from "lucide-react";
+import { JobInboxTab } from "@/modules/jobs/components/JobInboxTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -100,8 +99,6 @@ export default function JobDetail() {
   const [isProcessingDelete, setIsProcessingDelete] = useState(false);
   const [applicantsCount, setApplicantsCount] = useState<number | undefined>(undefined);
   const [talentPoolDialogOpen, setTalentPoolDialogOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [emailHubOpen, setEmailHubOpen] = useState(false);
   const [allApplications, setAllApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
@@ -727,26 +724,26 @@ export default function JobDetail() {
             <TabsList className="flex flex-col h-auto w-full bg-transparent p-0 space-y-1">
               <TabsTrigger
                 value="overview"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
                 asChild={false}
               >
-                <List className="h-4 w-4" />
+                <List className="h-3.5 w-3.5" />
                 Overview
               </TabsTrigger>
               <TabsTrigger
                 value="team"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
                 asChild={false}
               >
-                <Users className="h-4 w-4" />
+                <Users className="h-3.5 w-3.5" />
                 Team
               </TabsTrigger>
               <TabsTrigger
                 value="applicants"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <UserPlus className="h-4 w-4" />
-                Applicants
+                <GitBranch className="h-3.5 w-3.5" />
+                Pipeline
                 {job.applicantsCount > 0 && (
                   <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 h-5 min-w-5 flex items-center justify-center">{job.applicantsCount}</Badge>
                 )}
@@ -755,80 +752,81 @@ export default function JobDetail() {
               {/* Sub-navigation for Applicants */}
               {activeTab === 'applicants' && (
                 <div className="flex flex-col gap-0.5 mt-0.5 mb-1 px-2 animate-in slide-in-from-top-1 duration-200">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setActiveRoundTab('overview')}
-                    className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                    className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${
+                      activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
                   >
                     Overview
-                  </button>
+                  </Button>
                   {rounds.map(round => (
-                    <button
+                    <Button
                       key={round.id}
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setActiveRoundTab(round.id)}
-                      className={`w-full text-left pl-9 pr-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-2 ${activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                      className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${
+                        activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
                     >
                       <span className="truncate">{round.name}</span>
                       <span className="ml-auto text-[10px] opacity-70">
                         {allApplications.filter(a => a.roundId === round.id).length}
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
               <TabsTrigger
                 value="screening"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <Inbox className="h-4 w-4" />
-                Initial Screening
+                <Inbox className="h-3.5 w-3.5" />
+                AI Screening
               </TabsTrigger>
               <TabsTrigger
-                value="matching"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                value="candidates"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <Sparkles className="h-4 w-4" />
-                Matching
+                <Users className="h-3.5 w-3.5" />
+                Candidates
               </TabsTrigger>
               <TabsTrigger
                 value="ai-interviews"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <Video className="h-4 w-4" />
-                AI Interviews
+                <Video className="h-3.5 w-3.5" />
+                Interviews
+              </TabsTrigger>
+              <TabsTrigger
+                value="tasks"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <CheckSquare className="h-3.5 w-3.5" />
+                Tasks
+              </TabsTrigger>
+              <TabsTrigger
+                value="inbox"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <Inbox className="h-3.5 w-3.5" />
+                Inbox
               </TabsTrigger>
               <TabsTrigger
                 value="messages"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <MessageSquarePlus className="h-4 w-4" />
+                <MessageSquarePlus className="h-3.5 w-3.5" />
                 Messages
               </TabsTrigger>
               <TabsTrigger
-                value="analytics"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
-              >
-                <ArrowUpCircle className="h-4 w-4" />
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger
-                value="collaboration"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
-              >
-                <UserPlus className="h-4 w-4" />
-                Collaboration
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
-              >
-                <ArchiveRestore className="h-4 w-4" />
-                History
-              </TabsTrigger>
-              <TabsTrigger
                 value="settings"
-                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-sm font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
-                <MoreVertical className="h-4 w-4" />
+                <MoreVertical className="h-3.5 w-3.5" />
                 Settings
               </TabsTrigger>
               <TabsTrigger
@@ -844,7 +842,7 @@ export default function JobDetail() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto h-full bg-background p-8">
           <div className="max-w-6xl mx-auto space-y-6">
-            {activeTab !== 'applicants' && activeTab !== 'team' && (
+            {activeTab === 'overview' && (
               <>
                 <AtsPageHeader
                   title={job.title}
@@ -854,26 +852,26 @@ export default function JobDetail() {
                     <div className="flex items-center gap-2 mr-4">
                       <JobStatusBadge status={job.status} />
                       {job.assignedConsultantName ? (
-                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                        <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                           Consultant: {job.assignedConsultantName}
                         </Badge>
                       ) : (
                         <ServiceTypeBadge type="self-managed" />
                       )}
                       {job.pipeline?.stage && (
-                        <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                        <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                           Pipeline: {job.pipeline.stage.replace(/_/g, ' ')}
                         </Badge>
                       )}
                     </div>
                     <Button variant="ghost" size="sm" asChild>
                       <Link to="/ats/jobs">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        <ArrowLeft className="h-3.5 w-3.5 mr-2" />
                         Back
                       </Link>
                     </Button>
                     <Button size="sm" onClick={handleEditJob}>
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="h-3.5 w-3.5 mr-2" />
                       Edit
                     </Button>
                     <JobLifecycleActions
@@ -894,7 +892,7 @@ export default function JobDetail() {
             )}
 
             {/* Overview Tab Content */}
-            <TabsContent value="overview" className="mt-6 space-y-6">
+            <TabsContent value="overview" className="mt-3 space-y-3">
               {/* Payment Status - Show for paid packages */}
               {(job.serviceType !== 'self-managed' && job.serviceType !== 'rpo') && (
                 <JobPaymentStatus job={job} onPaymentComplete={handleJobUpdate} />
@@ -905,15 +903,15 @@ export default function JobDetail() {
                 <Card className="border-primary/20 bg-primary/5">
                   <CardHeader>
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <ArrowUpCircle className="h-4 w-4 text-primary" />
+                      <ArrowUpCircle className="h-3.5 w-3.5 text-primary" />
                       Upgrade to HRM8 Recruitment Service
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Need additional support? Upgrade to one of our recruitment services to get expert help with candidate sourcing, screening, and hiring.
                     </p>
-                    <ul className="space-y-2 text-sm">
+                    <ul className="space-y-2 text-xs">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Professional candidate screening and evaluation</span>
@@ -928,52 +926,52 @@ export default function JobDetail() {
                       </li>
                     </ul>
                     <Button
-                      className="w-full"
+                      className="w-full h-8 text-xs"
                       onClick={() => setUpgradeServiceDialogOpen(true)}
                     >
-                      <ArrowUpCircle className="h-4 w-4 mr-2" />
+                      <ArrowUpCircle className="h-3.5 w-3.5 mr-2" />
                       Upgrade to Recruitment Service
                     </Button>
                   </CardContent>
                 </Card>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div className="lg:col-span-2 space-y-3">
                   {/* Job Details */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Job Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-xs font-semibold">Job Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-0 px-3 pb-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div className="flex items-center gap-2 text-xs">
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">Location:</span>
                           <span>{job.location}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 text-xs">
+                          <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">Arrangement:</span>
-                          <Badge variant="outline" className="h-6 px-2 text-xs rounded-full">
+                          <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                             {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 text-xs">
+                          <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">Type:</span>
                           <EmploymentTypeBadge type={job.employmentType} />
                         </div>
                         {(job.salaryMin || job.salaryMax) && (
                           <div className="space-y-2 col-span-2">
-                            <div className="flex items-center gap-2 text-sm">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex items-center gap-2 text-xs">
+                              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="font-medium">Salary:</span>
                               <span>{formatSalaryRange(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod)}</span>
                             </div>
 
                             {job.salaryDescription && (
-                              <div className="ml-6 text-sm bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
+                              <div className="ml-6 text-xs bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
                                 <p className="text-foreground italic">
                                   💰 {job.salaryDescription}
                                 </p>
@@ -981,20 +979,20 @@ export default function JobDetail() {
                             )}
                           </div>
                         )}
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 text-xs">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">Experience:</span>
                           <span>{formatExperienceLevel(job.experienceLevel)}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 text-xs">
+                          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">Visibility:</span>
-                          <Badge variant="outline" className="h-6 px-2 text-xs rounded-full capitalize">
+                          <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full capitalize">
                             {job.visibility}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2 text-xs">
+                          <Globe className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="font-medium">Service:</span>
                           <ServiceTypeBadge type={job.serviceType} />
                           {!job.serviceType || job.serviceType === 'self-managed' ? (
@@ -1005,37 +1003,37 @@ export default function JobDetail() {
                       <Separator />
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Job Code</p>
-                        <p className="font-mono text-sm font-medium">{job.jobCode}</p>
+                        <p className="font-mono text-xs font-medium">{job.jobCode}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                        <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
+                        <p className="text-xs font-medium">{formatRelativeDate(job.postingDate)}</p>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Description */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Description</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                  <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-sm font-semibold">Description</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 pb-3">
                       <div
-                        className="prose prose-sm max-w-none"
+                        className="prose prose-sm max-w-none text-xs leading-6"
                         dangerouslySetInnerHTML={{ __html: job.description }}
                       />
                     </CardContent>
                   </Card>
 
                   {/* Requirements */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Requirements</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
+                  <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-sm font-semibold">Requirements</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 pb-3">
+                      <ul className="space-y-1.5">
                         {job.requirements.map((req, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
+                          <li key={index} className="flex items-start gap-2 text-xs">
                             <span className="text-primary mt-1">•</span>
                             <span>{req}</span>
                           </li>
@@ -1045,14 +1043,14 @@ export default function JobDetail() {
                   </Card>
 
                   {/* Responsibilities */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Responsibilities</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
+                  <Card className="border-muted/60 shadow-none">
+                  <CardHeader className="px-3 pt-3 pb-2">
+                    <CardTitle className="text-sm font-semibold">Responsibilities</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 pb-3">
+                      <ul className="space-y-1.5">
                         {job.responsibilities.map((resp, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
+                          <li key={index} className="flex items-start gap-2 text-xs">
                             <span className="text-primary mt-1">•</span>
                             <span>{resp}</span>
                           </li>
@@ -1063,14 +1061,14 @@ export default function JobDetail() {
 
                   {/* Distribution */}
                   {job.jobBoardDistribution.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base font-semibold">Job Board Distribution</CardTitle>
+                    <Card className="border-muted/60 shadow-none">
+                      <CardHeader className="px-3 pt-3 pb-2">
+                        <CardTitle className="text-sm font-semibold">Job Board Distribution</CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="pt-0 px-3 pb-3">
                         <div className="flex flex-wrap gap-2">
                           {job.jobBoardDistribution.map((board) => (
-                            <Badge key={board} variant="outline" className="h-6 px-2 text-xs rounded-full">
+                            <Badge key={board} variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                               {board}
                             </Badge>
                           ))}
@@ -1081,29 +1079,29 @@ export default function JobDetail() {
                 </div>
 
                 {/* Activity Sidebar */}
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Quick Stats</CardTitle>
+                <div className="space-y-3">
+                  <Card className="border-muted/60 shadow-none">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Quick Stats</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-2.5 pt-0 px-3 pb-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Eye className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Eye className="h-3.5 w-3.5" />
                           <span>Total Views</span>
                         </div>
                         <span className="font-semibold">{job.viewsCount?.toLocaleString() || 0}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <ArrowUpCircle className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <ArrowUpCircle className="h-3.5 w-3.5" />
                           <span>Apply Clicks</span>
                         </div>
                         <span className="font-semibold">{job.clicksCount?.toLocaleString() || 0}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Briefcase className="h-4 w-4" />
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Briefcase className="h-3.5 w-3.5" />
                           <span>Applicants</span>
                         </div>
                         <span className="font-semibold">{job.applicantsCount || 0}</span>
@@ -1111,22 +1109,22 @@ export default function JobDetail() {
                       <Separator />
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                        <p className="text-sm font-medium">{formatRelativeDate(job.postingDate)}</p>
+                        <p className="text-xs font-medium">{formatRelativeDate(job.postingDate)}</p>
                       </div>
                       {job.closeDate && (
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">Closed</p>
-                          <p className="text-sm font-medium">{formatRelativeDate(job.closeDate)}</p>
+                          <p className="text-xs font-medium">{formatRelativeDate(job.closeDate)}</p>
                         </div>
                       )}
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base font-semibold">Activity</CardTitle>
+                  <Card className="border-muted/60 shadow-none">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Activity</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-0 px-3 pb-3">
                       <JobActivityFeed activities={activities} />
                     </CardContent>
                   </Card>
@@ -1139,24 +1137,6 @@ export default function JobDetail() {
               {/* Action Bar */}
               <div className="flex items-center justify-end mb-4">
                 <div className="flex items-center gap-2 ml-4">
-                  <Button
-                    onClick={() => setEmailHubOpen(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs"
-                  >
-                    <Inbox className="h-3 w-3 mr-2" />
-                    Email Center
-                  </Button>
-                  <Button
-                    onClick={() => setUploadDialogOpen(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs"
-                  >
-                    <Upload className="h-3 w-3 mr-2" />
-                    Upload
-                  </Button>
                   <Button
                     onClick={() => setTalentPoolDialogOpen(true)}
                     variant="ghost"
@@ -1189,11 +1169,6 @@ export default function JobDetail() {
                     jobTitle={job.title}
                     applications={filteredApplications}
                     enableMultiSelect={false}
-                    onApplicationMoved={() => {
-                      setRefreshKey(prev => prev + 1);
-                    }}
-                    key={refreshKey}
-                    allRounds={rounds}
                   />
                 </div>
               ) : (
@@ -1244,21 +1219,42 @@ export default function JobDetail() {
                         const nextRound = rounds[currentIndex + 1];
                         console.log(`[JobDetail] Moving app ${appId} from ${round.name} (${round.id}) to ${nextRound.name} (${nextRound.id})`);
 
-                        try {
-                          // Show loading toast?
-                          toast({ title: "Moving Candidate...", description: `Moving to ${nextRound.name}` });
+                        const previousApplication = allApplications.find((a) => a.id === appId);
+                        // Optimistic UI update for faster perceived movement
+                        setAllApplications((prev) =>
+                          prev.map((app) =>
+                            app.id === appId
+                              ? {
+                                  ...app,
+                                  roundId: nextRound.id,
+                                  stage: app.stage,
+                                }
+                              : app
+                          )
+                        );
 
+                        try {
                           const res = await applicationService.moveStage(appId, nextRound.name, nextRound.id);
 
                           if (res.success) {
                             toast({ title: "Success", description: `Candidate moved to ${nextRound.name}` });
-                            // Force refresh of both applications and rounds statistics if needed
-                            setRefreshKey(prev => prev + 1);
                           } else {
+                            // Rollback optimistic update
+                            if (previousApplication) {
+                              setAllApplications((prev) =>
+                                prev.map((app) => (app.id === appId ? previousApplication : app))
+                              );
+                            }
                             console.error(`[JobDetail] Move failed:`, res);
                             toast({ title: "Move Failed", description: res.error || "Could not move candidate. Check console for details.", variant: "destructive" });
                           }
                         } catch (e: any) {
+                          // Rollback optimistic update
+                          if (previousApplication) {
+                            setAllApplications((prev) =>
+                              prev.map((app) => (app.id === appId ? previousApplication : app))
+                            );
+                          }
                           console.error(`[JobDetail] Exception during move:`, e);
                           toast({ title: "System Error", description: e.message || "Failed to move candidate", variant: "destructive" });
                         }
@@ -1266,13 +1262,25 @@ export default function JobDetail() {
                       onConfigureAssessment={handleConfigureAssessment}
                       onConfigureInterview={handleConfigureInterview}
                       onConfigureEmail={handleConfigureEmail}
+                      isSimpleFlow={job?.setupType === 'simple'}
                     />
                   );
                 })()
               )}
             </TabsContent>
 
-            {/* Initial Screening Tab */}
+            {/* Candidates Tab */}
+            <TabsContent value="candidates" className="mt-2">
+              <CandidatesTab
+                applications={allApplications}
+                jobId={job.id}
+                jobTitle={job.title}
+                rounds={rounds.map((round) => ({ id: round.id, name: round.name }))}
+                onRefresh={handleJobUpdate}
+              />
+            </TabsContent>
+
+            {/* AI Screening Tab */}
             <TabsContent value="screening" className="mt-6">
               <InitialScreeningTab
                 jobId={job.id}
@@ -1283,14 +1291,18 @@ export default function JobDetail() {
               />
             </TabsContent>
 
-            {/* Matching Tab */}
-            <TabsContent value="matching" className="mt-6">
-              <CandidateMatchingPanel job={job} />
-            </TabsContent>
-
-            {/* AI Interviews Tab */}
+            {/* Interviews Tab */}
             <TabsContent value="ai-interviews" className="h-full overflow-hidden p-6 pt-0">
               <JobAIInterviewsTab job={job} />
+            </TabsContent>
+
+            {/* Tasks Tab */}
+            <TabsContent value="tasks" className="h-full overflow-hidden p-6 pt-0">
+              <JobTasksTab job={job} applications={allApplications} onRefresh={handleJobUpdate} />
+            </TabsContent>
+
+            <TabsContent value="inbox" className="h-full overflow-hidden p-6 pt-0">
+              <JobInboxTab jobId={job.id} jobTitle={job.title} applications={allApplications} />
             </TabsContent>
 
             <TabsContent value="messages" className="h-full overflow-hidden p-6 pt-0">
@@ -1303,20 +1315,6 @@ export default function JobDetail() {
                 </div>
                 {job.id && <JobMessagesTab jobId={job.id} />}
               </div>
-            </TabsContent>
-
-            <TabsContent value="analytics" className="h-full overflow-y-auto p-6 pt-0">
-              <JobAnalyticsDashboard jobId={job.id} />
-            </TabsContent>
-
-            {/* Collaboration Tab */}
-            <TabsContent value="collaboration" className="mt-6">
-              <JobCollaborationPanel jobId={job.id} />
-            </TabsContent>
-
-            {/* History Tab */}
-            <TabsContent value="history" className="mt-6">
-              <JobVersionHistory jobId={job.id} onRevert={handleRevertVersion} />
             </TabsContent>
 
             {/* Team Tab */}
@@ -1334,15 +1332,15 @@ export default function JobDetail() {
                 <Card className="border-primary/20 bg-primary/5">
                   <CardHeader>
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <Megaphone className="h-4 w-4 text-primary" />
+                      <Megaphone className="h-3.5 w-3.5 text-primary" />
                       Promote to External Job Boards
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Maximize your job's reach by promoting it to 50M+ candidates across major job boards like Indeed, LinkedIn, and Glassdoor.
                     </p>
-                    <ul className="space-y-2 text-sm">
+                    <ul className="space-y-2 text-xs">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Get 3-5x more qualified applicants</span>
@@ -1357,10 +1355,10 @@ export default function JobDetail() {
                       </li>
                     </ul>
                     <Button
-                      className="w-full"
+                      className="w-full h-8 text-xs"
                       onClick={() => setPromotionDialogOpen(true)}
                     >
-                      <Megaphone className="h-4 w-4 mr-2" />
+                      <Megaphone className="h-3.5 w-3.5 mr-2" />
                       Promote to External Job Boards
                     </Button>
                   </CardContent>
@@ -1373,7 +1371,7 @@ export default function JobDetail() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Button variant="outline" onClick={handleEditJob} className="w-full justify-start">
-                    <Edit className="h-4 w-4 mr-2" />
+                    <Edit className="h-3.5 w-3.5 mr-2" />
                     Edit Job Details
                   </Button>
                   <Button
@@ -1383,12 +1381,12 @@ export default function JobDetail() {
                   >
                     {job.archived ? (
                       <>
-                        <ArchiveRestore className="h-4 w-4 mr-2" />
+                        <ArchiveRestore className="h-3.5 w-3.5 mr-2" />
                         Unarchive Job
                       </>
                     ) : (
                       <>
-                        <Archive className="h-4 w-4 mr-2" />
+                        <Archive className="h-3.5 w-3.5 mr-2" />
                         Archive Job
                       </>
                     )}
@@ -1398,7 +1396,7 @@ export default function JobDetail() {
                     className="w-full justify-start"
                     onClick={() => setDeleteDialogOpen(true)}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-3.5 w-3.5 mr-2" />
                     Delete Job
                   </Button>
                 </CardContent>
@@ -1499,28 +1497,6 @@ export default function JobDetail() {
             };
             loadCount();
           }}
-        />
-      )}
-
-      {/* Manual Upload Dialog */}
-      {job && (
-        <ManualUploadDialog
-          open={uploadDialogOpen}
-          onOpenChange={setUploadDialogOpen}
-          jobId={job.id}
-          jobTitle={job.title}
-          onSuccess={() => {
-            setRefreshKey(prev => prev + 1);
-          }}
-        />
-      )}
-
-      {/* Email Center Hub Drawer */}
-      {job && (
-        <JobEmailHubDrawer
-          open={emailHubOpen}
-          onOpenChange={setEmailHubOpen}
-          jobId={job.id}
         />
       )}
 

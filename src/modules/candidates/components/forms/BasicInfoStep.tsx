@@ -38,7 +38,7 @@ export function BasicInfoStep({ form }: { form: UseFormReturn<any> }) {
           </AvatarFallback>
         </Avatar>
         <div>
-          <input
+          <Input
             type="file"
             id="photo-upload"
             className="hidden"

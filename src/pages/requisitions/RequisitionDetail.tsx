@@ -8,6 +8,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { ArrowLeft, Check, X, MessageSquare } from "lucide-react";
 import { getRequisitionById, updateRequisition } from "@/shared/lib/mockRequisitionStorage";
 import { JobRequisition } from "@/shared/types/requisition";
+import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { toast } from "@/shared/hooks/use-toast";
 
@@ -175,7 +176,7 @@ export default function RequisitionDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Comments</label>
+                <Label className="text-sm font-medium">Comments</Label>
                 <Textarea
                   placeholder="Add your comments or feedback..."
                   value={comments}

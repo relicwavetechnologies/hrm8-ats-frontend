@@ -407,19 +407,21 @@ export default function Register() {
                         disabled={isLoading}
                         className="h-10 pr-10"
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         )}
-                      </button>
+                      </Button>
                     </div>
                     {errors.password && (
                       <p className="text-sm text-destructive">{errors.password.message}</p>

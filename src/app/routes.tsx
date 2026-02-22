@@ -32,6 +32,7 @@ const JobsPage = lazy(() => import('@/pages/jobs/Jobs'));
 const JobTemplatesPage = lazy(() => import('@/pages/jobs/JobTemplates'));
 const JobDetailPage = lazy(() => import('@/pages/jobs/JobDetail'));
 const CandidatesPage = lazy(() => import('@/pages/candidates/Candidates'));
+const TasksPage = lazy(() => import('@/pages/tasks/Tasks'));
 const ApplicationsPage = lazy(() => import('@/pages/applications/Applications'));
 const InterviewsPage = lazy(() => import('@/pages/interviews/Interviews'));
 const AiInterviewsPage = lazy(() => import('@/pages/ai-interviews/AIInterviews'));
@@ -167,6 +168,12 @@ export function AppRoutes() {
                 <Route path="/candidates/*" element={
                     <Suspense fallback={<PageLoader />}>
                         <CandidatesPage />
+                    </Suspense>
+                } />
+
+                <Route path="/tasks/*" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <TasksPage />
                     </Suspense>
                 } />
 

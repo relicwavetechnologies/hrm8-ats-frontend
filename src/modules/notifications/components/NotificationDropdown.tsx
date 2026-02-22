@@ -132,11 +132,12 @@ export function NotificationDropdown({
                 ) : (
                     <div className="divide-y">
                         {notifications.map((notification) => (
-                            <button
+                            <Button
                                 key={notification.id}
+                                variant="ghost"
                                 onClick={() => handleNotificationClick(notification)}
                                 className={cn(
-                                    'w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors',
+                                    'w-full h-auto text-left px-4 py-3 rounded-none justify-start',
                                     !notification.read && 'bg-blue-50/50 dark:bg-blue-950/20'
                                 )}
                             >
@@ -170,7 +171,7 @@ export function NotificationDropdown({
                                         <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                                     )}
                                 </div>
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 )}

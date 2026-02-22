@@ -2,6 +2,7 @@ import React, { useState, KeyboardEvent, useRef } from 'react';
 import { Send, PlusCircle, Paperclip } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
+import { Input } from '@/shared/components/ui/input';
 
 interface InputAreaProps {
     onSend: (message: string) => void;
@@ -36,7 +37,7 @@ export const InputArea: React.FC<InputAreaProps> = ({ onSend, onFileUpload, disa
 
     return (
         <div className="relative group">
-            <input
+            <Input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}

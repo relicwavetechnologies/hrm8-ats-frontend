@@ -9,13 +9,20 @@ import { getEmployees as getEmployeesFromApi } from '@/modules/employees/apiServ
 import { getEmployees as getEmployeesFromStorage } from '@/shared/lib/employeeStorage';
 import { userService, CompanyUser } from '@/shared/lib/userService';
 import { Button } from '@/shared/components/ui/button';
-import { Card } from '@/shared/components/ui/card';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { Checkbox } from '@/shared/components/ui/checkbox';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/components/ui/table';
 import { useToast } from '@/shared/hooks/use-toast';
 import {
   UserPlus,
@@ -445,44 +452,44 @@ export function HiringTeamTab({ jobId }: HiringTeamTabProps) {
     : true;
 
   const availableCompanyUsers = companyUsers.filter((cu) => !isInTeam(cu.email, cu.id));
+  const pendingInvites = members.filter((m) => m.status === 'pending_invite').length;
 
   return (
-    <div className="max-w-7xl mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Hiring Team</h2>
-          <p className="text-muted-foreground mt-1">Manage team members and assign per-job roles.</p>
+    <div className="h-full px-2 py-2 space-y-2">
+      <div className="flex items-center justify-between gap-2 border rounded-md bg-muted/10 px-2 py-1.5">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <Badge variant="outline" className="h-6 rounded-md bg-background text-[11px]">Members {members.length}</Badge>
+          <Badge variant="outline" className="h-6 rounded-md bg-background text-[11px]">Roles {roles.length}/20</Badge>
+          <Badge variant="outline" className="h-6 rounded-md bg-background text-[11px]">Pending {pendingInvites}</Badge>
+          {!hasHiringManager && (
+            <Badge variant="outline" className="h-6 rounded-md bg-amber-50 text-amber-700 border-amber-200 text-[11px]">
+              Assign Hiring Manager
+            </Badge>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setCreateRoleDrawerOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
+        <div className="flex items-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => setCreateRoleDrawerOpen(true)} className="h-7 text-xs gap-1.5">
+            <Plus className="h-3.5 w-3.5" />
             Create Role
           </Button>
-          <Button onClick={() => setAddMemberDrawerOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
+          <Button size="sm" onClick={() => setAddMemberDrawerOpen(true)} className="h-7 text-xs gap-1.5">
+            <UserPlus className="h-3.5 w-3.5" />
             Add Member
           </Button>
         </div>
       </div>
 
-      {/* Roles Overview */}
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-xs font-medium uppercase text-muted-foreground">Job Roles</Label>
-          </div>
-          <Badge variant="secondary" className="text-xs">
-            {roles.length} / 20
-          </Badge>
+      <div className="border rounded-md bg-background p-2">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+          <Label className="text-[11px] font-medium uppercase text-muted-foreground tracking-wide">Roles</Label>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {roles.map((role) => (
-            <div key={role.id} className="flex items-center gap-1 bg-muted rounded-lg px-3 py-1.5">
-              <span className="text-sm font-medium">{role.name}</span>
+            <div key={role.id} className="flex items-center gap-1 rounded-md border bg-muted/40 px-2 py-1">
+              <span className="text-xs font-medium">{role.name}</span>
               {role.isDefault && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1">
+                <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">
                   Default
                 </Badge>
               )}
@@ -490,7 +497,7 @@ export function HiringTeamTab({ jobId }: HiringTeamTabProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-4 w-4 ml-1 text-muted-foreground hover:text-destructive"
+                  className="h-4 w-4 ml-0.5 text-muted-foreground hover:text-destructive"
                   onClick={() => handleDeleteRole(role.id)}
                 >
                   <X className="h-3 w-3" />
@@ -498,28 +505,25 @@ export function HiringTeamTab({ jobId }: HiringTeamTabProps) {
               )}
             </div>
           ))}
-          {roles.length === 0 && <p className="text-sm text-muted-foreground">No roles created yet.</p>}
+          {roles.length === 0 && <p className="text-xs text-muted-foreground">No roles created yet.</p>}
         </div>
-      </Card>
+      </div>
 
-      {/* Role Assignment Matrix */}
       {members.length > 0 && (
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs font-medium uppercase text-muted-foreground">
-              Team & Role Assignment ({members.length} member{members.length !== 1 ? 's' : ''})
+        <div className="border rounded-md bg-background overflow-hidden">
+          <div className="flex items-center justify-between px-2 py-1.5 border-b bg-muted/10">
+            <Label className="text-[11px] font-medium uppercase text-muted-foreground tracking-wide">
+              Team Assignment
             </Label>
-
-            {/* Batch Operations */}
             {roles.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {roles.slice(0, 3).map((role) => (
                   <Button
                     key={role.id}
                     variant="outline"
                     size="sm"
                     onClick={() => handleBatchAssign(role.id)}
-                    className="gap-1 text-xs"
+                    className="h-6 gap-1 text-[10px] px-2"
                   >
                     <UserCheck className="h-3 w-3" />
                     All as {role.name}
@@ -529,56 +533,55 @@ export function HiringTeamTab({ jobId }: HiringTeamTabProps) {
             )}
           </div>
 
-          {/* Matrix Table */}
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-sm text-muted-foreground">Team Member</th>
+            <Table>
+              <TableHeader>
+                <TableRow className="h-8 bg-muted/20">
+                  <TableHead className="text-[11px] font-semibold min-w-[240px]">Team Member</TableHead>
                   {roles.map((role) => (
-                    <th key={role.id} className="text-center p-3 font-medium text-sm text-muted-foreground">
-                      <div className="flex flex-col items-center gap-1">
-                        <span>{role.name}</span>
+                    <TableHead key={role.id} className="text-[11px] font-semibold text-center min-w-[110px]">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="truncate max-w-[100px]">{role.name}</span>
                         {role.isDefault && (
-                          <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0">
                             Default
                           </Badge>
                         )}
                       </div>
-                    </th>
+                    </TableHead>
                   ))}
-                  <th className="text-center p-3 font-medium text-sm text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+                  <TableHead className="text-[11px] font-semibold text-center w-[80px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {members.map((member) => (
-                  <tr
+                  <TableRow
                     key={member.id}
                     className={cn(
-                      'border-b last:border-0 hover:bg-muted/30 transition-colors',
+                      'hover:bg-muted/20 transition-colors',
                       updatingMemberId === member.id && 'opacity-50'
                     )}
                   >
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">{getInitials(member.name || member.email)}</AvatarFallback>
+                    <TableCell className="py-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar className="h-7 w-7">
+                          <AvatarFallback className="text-[10px]">{getInitials(member.name || member.email)}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{member.name || member.email}</p>
+                          <p className="text-xs font-medium truncate">{member.name || member.email}</p>
                           <div className="flex items-center gap-2">
-                            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{member.email}</p>
                             {member.status === 'pending_invite' && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                              <Badge variant="outline" className="text-[9px] px-1 py-0">
                                 Pending
                               </Badge>
                             )}
                           </div>
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
                     {roles.map((role) => (
-                      <td key={role.id} className="p-3 text-center">
+                      <TableCell key={role.id} className="py-2.5 text-center">
                         <div className="flex justify-center">
                           <Checkbox
                             checked={(member.roles ?? []).includes(role.id)}
@@ -587,51 +590,51 @@ export function HiringTeamTab({ jobId }: HiringTeamTabProps) {
                             aria-label={`Assign ${role.name} to ${member.name || member.email}`}
                           />
                         </div>
-                      </td>
+                      </TableCell>
                     ))}
-                    <td className="p-3 text-center">
+                    <TableCell className="py-2.5 text-center">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => setRemovingMemberId(member.id)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
-          {/* Validation Messages */}
           {!hasHiringManager && (
-            <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 p-4 flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="border-t px-2 py-2">
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-2.5 py-2 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Recommended: Assign a Hiring Manager</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Recommended: Assign a Hiring Manager</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   At least one team member should have the <strong>Hiring Manager</strong> role.
                 </p>
               </div>
             </div>
+            </div>
           )}
-        </Card>
+        </div>
       )}
 
-      {/* Empty State */}
       {members.length === 0 && (
-        <div className="text-center py-20 border border-dashed rounded-xl bg-muted/5">
-          <div className="bg-muted/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="h-8 w-8 text-muted-foreground" />
+        <div className="text-center py-12 border border-dashed rounded-md bg-muted/5">
+          <div className="bg-muted/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
-          <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+          <h3 className="text-sm font-semibold mb-1">No team members yet</h3>
+          <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
             Add your first team member to start collaborating. They'll be able to review applications and help manage this job.
           </p>
-          <Button onClick={() => setAddMemberDrawerOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
+          <Button size="sm" onClick={() => setAddMemberDrawerOpen(true)} className="h-7 text-xs gap-1.5">
+            <UserPlus className="h-3.5 w-3.5" />
             Add First Member
           </Button>
         </div>

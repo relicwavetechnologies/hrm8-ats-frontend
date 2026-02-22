@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Layers, Trash2 } from "lucide-react";
+import { Label } from "@/shared/components/ui/label";
 import { toast } from "@/shared/hooks/use-toast";
 
 export interface GroupingConfig {
@@ -94,7 +95,7 @@ export function PivotGrouping({
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Add Grouping</label>
+        <Label className="text-sm font-medium mb-2 block">Add Grouping</Label>
         <Select onValueChange={addGrouping}>
           <SelectTrigger>
             <SelectValue placeholder="Select field to group..." />
@@ -138,7 +139,7 @@ export function PivotGrouping({
 
             {grouping.type === "date" && (
               <div>
-                <label className="text-sm font-medium mb-2 block">Date Interval</label>
+                <Label className="text-sm font-medium mb-2 block">Date Interval</Label>
                 <Select
                   value={grouping.dateInterval}
                   onValueChange={(value) =>
@@ -164,7 +165,7 @@ export function PivotGrouping({
             {grouping.type === "numeric" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Numeric Ranges</label>
+                  <Label className="text-sm font-medium">Numeric Ranges</Label>
                   <Button
                     variant="outline"
                     size="sm"

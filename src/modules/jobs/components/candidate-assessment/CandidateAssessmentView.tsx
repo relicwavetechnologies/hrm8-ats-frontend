@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus, Loader2, Sparkles } from "lucide-react";
 import { Application } from "@/shared/types/application";
-import { OverviewTab } from "./tabs/OverviewTab";
+import { ActivityTimelineTab } from "./tabs/ActivityTimelineTab";
 import { ExperienceSkillsTab } from "./tabs/ExperienceSkillsTab";
 import { QuestionnaireResponsesTab } from "./tabs/QuestionnaireResponsesTab";
 import { InterviewsTab } from "./tabs/InterviewsTab";
@@ -23,6 +24,8 @@ import { NotificationCenter } from "@/modules/notifications/components/Notificat
 import { CandidateInfoPanel } from "./CandidateInfoPanel";
 import { CandidateNotesPanelEnhanced } from "./CandidateNotesPanelEnhanced";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/shared/components/ui/resizable";
+import { useToast } from "@/shared/hooks/use-toast";
+import { AiAssistantSidebar } from "@/shared/components/common/AiAssistantSidebar";
 
 interface CandidateAssessmentViewProps {
   application: Application;
@@ -53,9 +56,22 @@ export function CandidateAssessmentView({
   isSimpleFlow,
   jobId,
 }: CandidateAssessmentViewProps) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("activity");
   const [topActiveTab, setTopActiveTab] = useState("notes");
   const [fullApplication, setFullApplication] = useState<Application>(application);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+
+  const statusToStageMap: Record<string, string> = {
+    applied: "New Application",
+    screening: "Resume Review",
+    interview: "Technical Interview",
+    offer: "Offer Extended",
+    hired: "Offer Accepted",
+    rejected: "Rejected",
+    withdrawn: "Withdrawn",
+  };
 
   useEffect(() => {
     const fetchFullDetails = async () => {
@@ -80,6 +96,33 @@ export function CandidateAssessmentView({
     enabled: open,
   });
 
+  const assistantRequestBody = useMemo(
+    () => ({
+      context: {
+        mode: "candidate_assessment",
+        applicationId: fullApplication.id,
+        candidateId: fullApplication.candidateId,
+        candidateName: fullApplication.candidateName || "Candidate",
+        candidateEmail: fullApplication.candidateEmail || fullApplication.email || undefined,
+        jobId: fullApplication.jobId,
+        jobTitle,
+        currentStage: fullApplication.stage ? String(fullApplication.stage) : undefined,
+        currentStatus: fullApplication.status ? String(fullApplication.status) : undefined,
+      },
+    }),
+    [
+      fullApplication.id,
+      fullApplication.candidateId,
+      fullApplication.candidateName,
+      fullApplication.candidateEmail,
+      fullApplication.email,
+      fullApplication.jobId,
+      fullApplication.stage,
+      fullApplication.status,
+      jobTitle,
+    ]
+  );
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       onOpenChange(false);
@@ -87,6 +130,36 @@ export function CandidateAssessmentView({
       onNext();
     } else if (e.key === "p" && hasPrevious && onPrevious) {
       onPrevious();
+    }
+  };
+
+  const handleStatusChange = async (nextStatus: string) => {
+    if (!fullApplication.id || !nextStatus || nextStatus === fullApplication.status) return;
+    const nextStage = statusToStageMap[nextStatus] || fullApplication.stage || "New Application";
+
+    setIsUpdatingStatus(true);
+    try {
+      const { applicationService } = await import("@/modules/applications/lib/applicationService");
+      const response = await applicationService.updateStage(fullApplication.id, nextStage);
+
+      if (!response.success) {
+        throw new Error(response.error || "Failed to update status");
+      }
+
+      setFullApplication((prev) => ({
+        ...prev,
+        status: nextStatus as Application["status"],
+        stage: nextStage as Application["stage"],
+      }));
+      toast({ title: "Status updated" });
+    } catch (error) {
+      toast({
+        title: "Failed to update status",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -105,16 +178,52 @@ export function CandidateAssessmentView({
         <div ref={containerRef} className="flex flex-col h-full relative overflow-hidden">
           {/* Compact Header */}
           <div className="bg-background flex-shrink-0">
-            <div className="flex items-center justify-end py-1 px-2 gap-1">
-              <NotificationCenter userId="current-user" />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onOpenChange(false)}
-                className="h-7 w-7"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between py-1.5 px-2 gap-2 border-b">
+              <div className="flex items-center gap-2 min-w-0">
+                <Badge variant="outline" className="h-6 text-[10px] px-2 max-w-[180px] truncate">
+                  {fullApplication.candidateName || "Candidate"}
+                </Badge>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">Status</span>
+                <Select
+                  value={String(fullApplication.status || "applied")}
+                  onValueChange={handleStatusChange}
+                  disabled={isUpdatingStatus}
+                >
+                  <SelectTrigger className="h-7 w-[160px] text-[11px] bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="screening">Screening</SelectItem>
+                    <SelectItem value="interview">Interview</SelectItem>
+                    <SelectItem value="offer">Offer</SelectItem>
+                    <SelectItem value="hired">Hired</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isUpdatingStatus && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAiAssistantOpen(true)}
+                  className="h-7 px-2 text-[11px] gap-1.5 border-muted-foreground/20"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Ask AI
+                </Button>
+                <NotificationCenter userId="current-user" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onOpenChange(false)}
+                  className="h-7 w-7"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -160,9 +269,9 @@ export function CandidateAssessmentView({
                       <div className="border-b px-2 bg-muted/20 flex-shrink-0">
                         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
                           <TabsList className="h-10 bg-transparent inline-flex w-max gap-1 whitespace-nowrap">
-                            <TabsTrigger value="overview" className="gap-1.5 text-xs">
-                              <FileText className="h-3.5 w-3.5" />
-                              Overview
+                            <TabsTrigger value="activity" className="gap-1.5 text-xs">
+                              <Activity className="h-3.5 w-3.5" />
+                              Activity
                             </TabsTrigger>
 
                             <TabsTrigger value="notes" className="gap-1.5 text-xs">
@@ -211,8 +320,8 @@ export function CandidateAssessmentView({
 
                       <ScrollArea className="flex-1">
                         <div className="p-4">
-                          <TabsContent value="overview" className="mt-0">
-                            <OverviewTab application={fullApplication} />
+                          <TabsContent value="activity" className="mt-0">
+                            <ActivityTimelineTab application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="notes" className="mt-0">
@@ -261,7 +370,7 @@ export function CandidateAssessmentView({
                           </TabsContent>
 
                           <TabsContent value="annotations" className="mt-0">
-                            <ResumeAnnotationsTab candidateId={fullApplication.id} />
+                            <ResumeAnnotationsTab candidateId={fullApplication.id} application={fullApplication} />
                           </TabsContent>
 
                           <TabsContent value="email" className="mt-0">
@@ -289,6 +398,31 @@ export function CandidateAssessmentView({
           </div>
         </div>
       </SheetContent>
+
+      <Sheet open={isAiAssistantOpen} onOpenChange={setIsAiAssistantOpen}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-[560px] p-0"
+          overlayClassName="bg-black/25 backdrop-blur-[1px]"
+        >
+          <SheetTitle className="sr-only">Ask AI about this candidate</SheetTitle>
+          <SheetDescription className="sr-only">
+            Candidate-scoped assistant for analysis and actions
+          </SheetDescription>
+          <AiAssistantSidebar
+            streamEndpoint="/api/assistant/chat/stream"
+            requestBody={assistantRequestBody}
+            welcomeTitle="Candidate Copilot"
+            welcomeSubtitle="Ask anything about this candidate or run actions."
+            suggestedPrompts={[
+              "Give me a full summary of this candidate",
+              "What are the top strengths and concerns?",
+              "Move this candidate to Technical Interview",
+              "Add a note: Strong communication and stakeholder handling",
+            ]}
+          />
+        </SheetContent>
+      </Sheet>
     </Sheet >
   );
 }

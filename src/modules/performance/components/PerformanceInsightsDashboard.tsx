@@ -221,10 +221,10 @@ export function PerformanceInsightsDashboard({ goals, reviews, employees }: Perf
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
-      case 'high': return 'text-green-600 bg-green-50 border-green-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-gray-600 bg-gray-50 border-gray-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'high': return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
+      case 'low': return 'text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700';
     }
   };
 
@@ -290,7 +290,7 @@ export function PerformanceInsightsDashboard({ goals, reviews, employees }: Perf
                 </>
               ) : (
                 <>
-                  <Badge className="bg-green-500">Low</Badge>
+                  <Badge className="bg-green-500 dark:bg-green-600">Low</Badge>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 </>
               )}

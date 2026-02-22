@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { Badge } from '@/shared/components/ui/badge';
 import { Input } from '@/shared/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
 
 export interface TagInputProps {
   tags: string[];
@@ -59,13 +60,15 @@ export function TagInput({
           <Badge key={index} variant="secondary" className="gap-1">
             {tag}
             {!disabled && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => removeTag(index)}
-                className="hover:bg-secondary-foreground/20 rounded-full p-0.5"
+                className="h-4 w-4 p-0 hover:bg-secondary-foreground/20 rounded-full ml-1"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             )}
           </Badge>
         ))}
@@ -88,14 +91,15 @@ export function TagInput({
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 border border-border rounded-lg bg-popover shadow-lg max-h-60 overflow-auto">
           {filteredSuggestions.map((suggestion, index) => (
-            <button
+            <Button
               key={index}
               type="button"
+              variant="ghost"
               onClick={() => addTag(suggestion)}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+              className="w-full px-3 py-2 h-auto text-left text-sm hover:bg-accent transition-colors justify-start rounded-none"
             >
               {suggestion}
-            </button>
+            </Button>
           ))}
         </div>
       )}

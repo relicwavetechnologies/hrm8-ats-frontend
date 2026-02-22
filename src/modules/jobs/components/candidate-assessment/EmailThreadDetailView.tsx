@@ -2,7 +2,7 @@ import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card } from '@/shared/components/ui/card';
-import { ArrowLeft, Reply, Mail } from 'lucide-react';
+import { ArrowLeft, Reply, Mail, Plus } from 'lucide-react';
 import { GmailThread, GmailMessage } from '@/shared/lib/gmailThreadService';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -10,26 +10,17 @@ interface EmailThreadDetailViewProps {
   thread: GmailThread;
   onBack: () => void;
   onReply: (message: GmailMessage) => void;
+  onCompose: () => void;
   showReplyButton?: boolean;
-}
-
-function stripHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
 }
 
 export function EmailThreadDetailView({
   thread,
   onBack,
   onReply,
+  onCompose,
   showReplyButton = true,
 }: EmailThreadDetailViewProps) {
-  // Find the last outbound message (sent to candidate)
-  const lastOutboundMessage = thread.messages
-    .filter(msg => !msg.isInbound)
-    .pop();
-
-  // Find the last inbound message (from candidate) to reply to
   const lastInboundMessage = thread.messages
     .filter(msg => msg.isInbound)
     .pop();
@@ -37,52 +28,54 @@ export function EmailThreadDetailView({
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-4 py-3 border-b bg-muted/30 flex-shrink-0">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-3 py-2 border-b bg-muted/20 flex-shrink-0">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7"
               onClick={onBack}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
             <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-primary" />
-              <h2 className="text-base font-semibold truncate">{thread.subject}</h2>
-              <Badge variant="secondary" className="text-xs flex-shrink-0">
+              <Mail className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold truncate">{thread.subject}</h2>
+              <Badge variant="secondary" className="h-4 text-[10px] flex-shrink-0">
                 {thread.messageCount}
               </Badge>
             </div>
           </div>
+          <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1" onClick={onCompose}>
+            <Plus className="h-3.5 w-3.5" />
+            Compose
+          </Button>
         </div>
       </div>
 
-      {/* Messages - Only show outbound (sent to candidate) messages */}
+      {/* Messages */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
-          {thread.messages
-            .filter(msg => !msg.isInbound)
-            .map((message) => (
+        <div className="p-2.5 space-y-1.5">
+          {thread.messages.map((message) => (
               <Card
                 key={message.id}
-                className="p-4 bg-primary/10 border-primary/20 ml-8"
+                className={`p-2.5 border-border/80 shadow-none ${message.isInbound ? "mr-6 bg-muted/30" : "ml-6 bg-primary/[0.04]"}`}
               >
-                <div className="flex items-start justify-between mb-2 flex-row-reverse">
+                <div className={`flex items-start justify-between mb-1.5 ${message.isInbound ? "" : "flex-row-reverse"}`}>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{message.from}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs font-medium text-foreground">{message.from}</p>
+                    <p className="text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(message.date), { addSuffix: true })}
                     </p>
                   </div>
-                  <Badge variant="default" className="text-[10px]">
-                    Sent
+                  <Badge variant={message.isInbound ? "secondary" : "default"} className="h-4 text-[10px]">
+                    {message.isInbound ? "Received" : "Sent"}
                   </Badge>
                 </div>
 
                 <div
-                  className="mt-2 text-sm text-foreground leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                  className="mt-1 text-xs text-foreground leading-relaxed prose prose-sm dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: message.body }}
                 />
               </Card>
@@ -92,19 +85,19 @@ export function EmailThreadDetailView({
 
       {/* Footer */}
       {showReplyButton && lastInboundMessage && (
-        <div className="p-4 border-t bg-muted/30 flex-shrink-0">
+        <div className="p-2.5 border-t bg-muted/20 flex-shrink-0">
           <Button
             size="sm"
-            className="w-full gap-2"
+            className="w-full gap-2 h-8 text-xs"
             onClick={() => onReply(lastInboundMessage)}
           >
-            <Reply className="h-4 w-4" />
+            <Reply className="h-3.5 w-3.5" />
             Reply to Last Message
           </Button>
         </div>
       )}
-      {!lastOutboundMessage && (
-        <div className="p-4 border-t bg-muted/30 flex-shrink-0 text-center text-xs text-muted-foreground">
+      {thread.messages.length === 0 && (
+        <div className="p-3 border-t bg-muted/20 flex-shrink-0 text-center text-xs text-muted-foreground">
           No emails sent to candidate yet
         </div>
       )}

@@ -301,7 +301,7 @@ export function ManualUploadDialog({
                 className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-primary transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <input
+                <Input
                   ref={fileInputRef}
                   type="file"
                   accept=".csv,.xlsx,.xls"

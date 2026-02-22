@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate, useMatch } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, Filter, X, Zap, Eye, FileEdit, Check } from "lucide-react";
+import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, X, Eye, FileEdit, Check, Filter, Zap } from "lucide-react";
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { jobService } from "@/shared/lib/jobService";
@@ -11,6 +11,7 @@ import { Job } from "@/shared/types/job";
 import { useJobPostingPermission } from "@/shared/hooks/useJobPostingPermission";
 import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { useAuth } from "@/app/providers/AuthContext";
+import { companyProfileService } from "@/shared/lib/companyProfileService";
 import { FormDrawer } from "@/shared/components/ui/form-drawer";
 import { JobWizard } from "@/modules/jobs/components/JobWizard";
 import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
@@ -37,11 +38,8 @@ import { getCountryFromLocation, getRegionForCountry } from "@/shared/lib/countr
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
 import { useJobsList } from "@/shared/hooks/useJobsList";
 
-import { AdvancedFilterBuilder } from "@/modules/jobs/components/filters/AdvancedFilterBuilder";
-import { SavedFiltersPanel } from "@/modules/jobs/components/filters/SavedFiltersPanel";
 import { BulkActionsToolbar } from "@/modules/jobs/components/bulk/BulkActionsToolbar";
-import { FilterCriteria, SavedFilter } from "@/shared/lib/savedFiltersService";
-import { Collapsible, CollapsibleContent } from "@/shared/components/ui/collapsible";
+import { FilterCriteria } from "@/shared/lib/savedFiltersService";
 import { JobsPageSkeleton } from "@/modules/jobs/components/JobsPageSkeleton";
 import {
   AlertDialog,
@@ -81,8 +79,6 @@ export default function Jobs() {
   const [selectedStatus, setSelectedStatus] = useState("all");
 
   // Advanced filters
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [showSavedFilters, setShowSavedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<FilterCriteria>({});
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
@@ -92,6 +88,7 @@ export default function Jobs() {
   const [pendingFromTemplate, setPendingFromTemplate] = useState(false);
   /** Toggle between Jobs list and Drafts list */
   const [viewMode, setViewMode] = useState<'jobs' | 'drafts'>('jobs');
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   /** When opening wizard from a draft, pass step so wizard opens at correct step */
   const [editingDraftStep, setEditingDraftStep] = useState<number>(1);
   /** Job Setup Drawer state */
@@ -137,6 +134,32 @@ export default function Jobs() {
       });
     }
   }, [jobsError, toast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCompanyLogo = async () => {
+      if (!user?.companyId) {
+        if (!cancelled) setCompanyLogoUrl("");
+        return;
+      }
+      try {
+        const response = await companyProfileService.getProfile(user.companyId);
+        if (!response.success || !response.data || cancelled) return;
+        const profile = response.data.profile?.profileData;
+        const logo =
+          profile?.branding?.logoUrl ||
+          profile?.basicDetails?.logoUrl ||
+          "";
+        setCompanyLogoUrl(logo);
+      } catch {
+        if (!cancelled) setCompanyLogoUrl("");
+      }
+    };
+    loadCompanyLogo();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.companyId]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -494,20 +517,6 @@ export default function Jobs() {
     }
   };
 
-  const handleApplyAdvancedFilters = (filters: FilterCriteria) => {
-    setAdvancedFilters(filters);
-    setShowAdvancedFilters(false);
-  };
-
-  const handleSelectSavedFilter = (filter: SavedFilter) => {
-    setAdvancedFilters(filter.filters);
-    setShowSavedFilters(false);
-    toast({
-      title: "Filter applied",
-      description: `"${filter.name}" filter has been applied.`,
-    });
-  };
-
   const handleBulkAction = (action: string) => {
     if (action.startsWith('status:')) {
       const status = action.split(':')[1];
@@ -561,17 +570,6 @@ export default function Jobs() {
     }
   };
 
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (advancedFilters.status?.length) count++;
-    if (advancedFilters.department?.length) count++;
-    if (advancedFilters.employmentType?.length) count++;
-    if (advancedFilters.experienceLevel?.length) count++;
-    if (advancedFilters.salaryRange?.min || advancedFilters.salaryRange?.max) count++;
-    if (advancedFilters.applicantRange?.min || advancedFilters.applicantRange?.max) count++;
-    return count;
-  }, [advancedFilters]);
-
   const [editingJobData, setEditingJobData] = useState<any>(null);
 
   useEffect(() => {
@@ -614,10 +612,10 @@ export default function Jobs() {
         const companyId = job.employerId || user?.companyId || "";
 
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <EntityAvatar
               name={companyName}
-              src={job.employerLogo}
+              src={job.employerLogo || companyLogoUrl}
               type="logo"
             />
             <div className="min-w-0 flex-1">
@@ -628,16 +626,16 @@ export default function Jobs() {
                 return (
                   <>
                     <div
-                      className="font-semibold text-base truncate block w-full"
+                      className="font-semibold text-sm truncate block w-full"
                     >
                       {role}
                     </div>
                     {domain && (
-                      <span className="text-sm text-muted-foreground truncate block w-full">
+                      <span className="text-xs text-muted-foreground truncate block w-full">
                         {domain}
                       </span>
                     )}
-                    <span className="text-sm text-muted-foreground truncate block w-full">
+                    <span className="text-xs text-muted-foreground truncate block w-full">
                       {companyName}
                     </span>
                   </>
@@ -655,12 +653,12 @@ export default function Jobs() {
       render: (job) => {
         if (job.location.toLowerCase() === 'remote') {
           return (
-            <div className="text-sm">
+            <div className="text-xs">
               <p className="font-medium">Remote</p>
               {job.country && (
                 <p className="text-xs text-muted-foreground">{job.country}</p>
               )}
-              <Badge variant="outline" className="text-xs mt-1">
+              <Badge variant="outline" className="text-[10px] h-5 mt-1">
                 {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
               </Badge>
             </div>
@@ -669,13 +667,13 @@ export default function Jobs() {
 
         return (
           <div>
-            <div className="text-sm">
+            <div className="text-xs">
               <p className="font-medium">{job.location}</p>
               {job.country && (
                 <p className="text-xs text-muted-foreground">{job.country}</p>
               )}
             </div>
-            <Badge variant="outline" className="text-xs mt-1">
+            <Badge variant="outline" className="text-[10px] h-5 mt-1">
               {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
             </Badge>
           </div>
@@ -710,7 +708,7 @@ export default function Jobs() {
             {job.applicantsCount ?? 0}
           </span>
           {job.unreadApplicants && job.unreadApplicants > 0 && (
-            <span className="text-xs text-muted-foreground/70">
+            <span className="text-[10px] text-muted-foreground/70">
               {job.unreadApplicants} unread
             </span>
           )}
@@ -725,16 +723,18 @@ export default function Jobs() {
         <div className="flex flex-col gap-1">
           <ServiceTypeBadge type={job.serviceType} />
           {job.serviceType !== 'self-managed' && (
-            <button
+            <Button
               type="button"
-              className="text-[11px] text-primary underline-offset-2 hover:underline text-left"
+              variant="link"
+              size="sm"
+              className="text-[10px] h-auto p-0 text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/ats/jobs/${job.id}?tab=service`);
               }}
             >
               View recruitment workflow
-            </button>
+            </Button>
           )}
         </div>
       )
@@ -744,7 +744,7 @@ export default function Jobs() {
       label: 'Posted',
       sortable: true,
       render: (job) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {formatRelativeDate(job.postingDate)}
         </span>
       )
@@ -756,15 +756,16 @@ export default function Jobs() {
       width: "120px",
       render: (job) => {
         const isSetupComplete = job.setupType && job.managementType;
+        const setupLabel = job.setupType === 'advanced' ? 'Advanced' : job.setupType === 'simple' ? 'Simple' : 'Complete';
         return (
           <div className="flex items-center gap-2">
             {isSetupComplete ? (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge variant="outline" className="h-5 text-[10px] bg-green-50 text-green-700 border-green-200">
                 <Check className="h-3 w-3 mr-1" />
-                Complete
+                {setupLabel}
               </Badge>
             ) : (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+              <Badge variant="outline" className="h-5 text-[10px] bg-amber-50 text-amber-700 border-amber-200">
                 <Clock className="h-3 w-3 mr-1" />
                 Pending
               </Badge>
@@ -781,24 +782,24 @@ export default function Jobs() {
         <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <MoreVertical className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleEditJob(job.id)}>
-                <Pencil className="h-4 w-4 mr-2" />
+              <DropdownMenuItem className="text-xs" onClick={() => handleEditJob(job.id)}>
+                <Pencil className="h-3.5 w-3.5 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Copy className="h-4 w-4 mr-2" />
+              <DropdownMenuItem className="text-xs">
+                <Copy className="h-3.5 w-3.5 mr-2" />
                 Duplicate
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive"
+                className="text-xs text-destructive"
                 onClick={() => handleDelete(job.id)}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -806,7 +807,7 @@ export default function Jobs() {
         </div>
       )
     },
-  ], [navigate, user, profileSummary, handleEditJob, handleDelete]);
+  ], [navigate, user, profileSummary, companyLogoUrl, handleEditJob, handleDelete]);
 
   const draftColumns = useMemo((): Column<Job>[] => [
     {
@@ -814,7 +815,7 @@ export default function Jobs() {
       label: 'Title',
       sortable: true,
       render: (job) => (
-        <div className="font-medium truncate max-w-[280px]">
+        <div className="font-medium text-xs truncate max-w-[280px]">
           {job.title?.trim() || 'Untitled draft'}
         </div>
       ),
@@ -824,7 +825,7 @@ export default function Jobs() {
       label: 'Last updated',
       sortable: true,
       render: (job) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {formatRelativeDate(job.updatedAt)}
         </span>
       ),
@@ -836,7 +837,7 @@ export default function Jobs() {
         const raw = job.draftStep ?? (job as any).draft_step;
         const step = Math.max(1, Number(raw) || 1);
         return (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             Step {step}
           </span>
         );
@@ -845,33 +846,33 @@ export default function Jobs() {
     {
       key: 'actions',
       label: 'Actions',
-      width: '240px',
+      width: '220px',
       render: (job) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
             variant="default"
             onClick={() => handleContinueDraft(job)}
-            className="gap-1"
+            className="gap-1 h-7 text-xs"
           >
-            <FileEdit className="h-4 w-4" />
+            <FileEdit className="h-3.5 w-3.5" />
             Continue
           </Button>
           <Button
             size="sm"
             variant={job.savedAsTemplate ? "ghost" : "outline"}
             onClick={() => handleSaveAsTemplate(job)}
-            className="gap-1"
+            className="gap-1 h-7 text-xs"
             disabled={job.savedAsTemplate}
           >
             {job.savedAsTemplate ? (
               <>
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-3.5 w-3.5 text-green-500" />
                 Saved
               </>
             ) : (
               <>
-                <FileText className="h-4 w-4" />
+                <FileText className="h-3.5 w-3.5" />
                 Save as Template
               </>
             )}
@@ -880,9 +881,9 @@ export default function Jobs() {
             size="sm"
             variant="ghost"
             onClick={() => handleDelete(job.id)}
-            className="text-destructive hover:text-destructive"
+            className="h-7 text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
@@ -904,7 +905,7 @@ export default function Jobs() {
         </>
       }
     >
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-4">
         {!permissionLoading && !canPostJobs && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
@@ -919,61 +920,17 @@ export default function Jobs() {
             <AtsPageHeader
               title="Jobs"
               subtitle="Create and manage job postings"
-            >
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSavedFilters(!showSavedFilters)}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Saved Filters
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/ats/jobs/templates">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Templates
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/ats/jobs/automation">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Automation
-                  </Link>
-                </Button>
-                {canPostJobs ? (
-                  <Button size="sm" onClick={() => {
-                    // Clear any URL params first to avoid interference
-                    setSearchParams({}, { replace: true });
-                    handleCreateJob(false);
-                  }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Post Job
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" disabled title="Contact your administrator to request job posting permissions">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Post Job
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/dashboard/ats/jobs">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    View Dashboard
-                  </Link>
-                </Button>
-              </div>
-            </AtsPageHeader>
+            />
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               <EnhancedStatCard
                 title="Total Jobs"
                 value={stats.total}
                 change="+8%"
                 trend="up"
-                icon={<Briefcase className="h-6 w-6" />}
+                icon={<Briefcase className="h-5 w-5" />}
                 variant="neutral"
-                showMenu={true}
+                showMenu={false}
                 menuItems={[
                   { label: "View all jobs", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
                   { label: "View templates", icon: <FileText className="h-4 w-4" />, onClick: () => { } },
@@ -985,9 +942,9 @@ export default function Jobs() {
                 value={stats.active}
                 change="+12%"
                 trend="up"
-                icon={<Clock className="h-6 w-6" />}
+                icon={<Clock className="h-5 w-5" />}
                 variant="success"
-                showMenu={true}
+                showMenu={false}
                 menuItems={[
                   { label: "View active jobs", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
                   {
@@ -1003,9 +960,9 @@ export default function Jobs() {
                 value={stats.applicants}
                 change="+15%"
                 trend="up"
-                icon={<FileText className="h-6 w-6" />}
+                icon={<FileText className="h-5 w-5" />}
                 variant="primary"
-                showMenu={true}
+                showMenu={false}
                 menuItems={[
                   { label: "View applicants", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
                   { label: "Export data", icon: <Download className="h-4 w-4" />, onClick: () => { } },
@@ -1016,19 +973,15 @@ export default function Jobs() {
                 value={stats.filled}
                 change="+5%"
                 trend="up"
-                icon={<CheckCircle className="h-6 w-6" />}
+                icon={<CheckCircle className="h-5 w-5" />}
                 variant="warning"
-                showMenu={true}
+                showMenu={false}
                 menuItems={[
                   { label: "View filled", icon: <CheckCircle className="h-4 w-4" />, onClick: () => { } },
                   { label: "View analytics", icon: <BarChart3 className="h-4 w-4" />, onClick: () => { } },
                 ]}
               />
             </div>
-
-            {showSavedFilters && (
-              <SavedFiltersPanel onSelectFilter={handleSelectSavedFilter} />
-            )}
 
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
@@ -1048,30 +1001,7 @@ export default function Jobs() {
                   currentUserId="admin-1"
                 />
               </div>
-              <Button
-                variant={showAdvancedFilters ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="shrink-0 h-9"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Advanced
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
             </div>
-
-            <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
-              <CollapsibleContent>
-                <AdvancedFilterBuilder
-                  onApply={handleApplyAdvancedFilters}
-                  initialFilters={advancedFilters}
-                />
-              </CollapsibleContent>
-            </Collapsible>
 
             {viewMode === 'jobs' && selectedJobs.length > 0 && (
               <BulkActionsToolbar
@@ -1082,15 +1012,16 @@ export default function Jobs() {
             )}
 
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'jobs' | 'drafts')} className="w-full">
-              <TabsList className="grid w-full max-w-[240px] grid-cols-2 mb-4">
-                <TabsTrigger value="jobs">Jobs</TabsTrigger>
-                <TabsTrigger value="drafts">Drafts</TabsTrigger>
+              <TabsList className="grid w-full max-w-[220px] grid-cols-2 mb-3 h-8">
+                <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
+                <TabsTrigger value="drafts" className="text-xs">Drafts</TabsTrigger>
               </TabsList>
 
               {viewMode === 'jobs' && (
                 <DataTable
                   data={filteredJobs}
                   columns={columns}
+                  compact
                   searchable={false}
                   selectable
                   onSelectedRowsChange={setSelectedJobs}
@@ -1118,6 +1049,7 @@ export default function Jobs() {
                 <DataTable
                   data={filteredDrafts}
                   columns={draftColumns}
+                  compact
                   searchable={false}
                   selectable={false}
                   onRowClick={() => { }}

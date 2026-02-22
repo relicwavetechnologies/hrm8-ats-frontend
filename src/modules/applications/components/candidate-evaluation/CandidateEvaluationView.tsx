@@ -129,29 +129,29 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="right" 
-        className="w-full sm:max-w-4xl lg:max-w-5xl p-0 gap-0 h-full flex flex-col border-l shadow-2xl bg-white"
+        className="w-full sm:max-w-4xl lg:max-w-5xl p-0 gap-0 h-full flex flex-col border-l shadow-2xl bg-background"
       >
         {/* Header */}
-        <div className="bg-white px-8 py-6 flex flex-col gap-6 border-b">
+        <div className="bg-background px-8 py-6 flex flex-col gap-6 border-b border-border">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-4">
-               <Avatar className="h-14 w-14 ring-2 ring-slate-100 shadow-sm">
-                  <AvatarFallback className="bg-indigo-50 text-indigo-600 text-lg font-bold">
+               <Avatar className="h-14 w-14 ring-2 ring-muted shadow-sm">
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                     {getInitials(application.candidateName || "U N")}
                   </AvatarFallback>
                </Avatar>
                <div className="space-y-1">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    <h2 className="text-2xl font-bold text-foreground tracking-tight">
                         {application.candidateName}
                     </h2>
                     <Badge variant={application.shortlisted ? "default" : "secondary"} className="text-[10px] font-bold uppercase tracking-wider h-5">
                         {application.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium">
                     <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {application.email || application.candidateEmail || "No email provided"}</span>
-                    <span className="text-slate-300">•</span>
+                    <span className="text-muted-foreground/30">•</span>
                     <span>{application.jobTitle || "Unknown Job"}</span>
                   </div>
                </div>
@@ -160,7 +160,7 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-9 px-4 bg-white border-slate-200 hover:bg-slate-50 text-slate-700 font-medium" 
+                className="h-9 px-4 bg-background border-border hover:bg-muted text-muted-foreground hover:text-foreground font-medium" 
                 onClick={() => {
                   const url = application.resumeUrl || (application as any).resume_url;
                   if (url) {
@@ -174,15 +174,15 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                   }
                 }}
                >
-                 <FileText className="mr-2 h-4 w-4 text-indigo-500" /> Resume
+                 <FileText className="mr-2 h-4 w-4 text-primary" /> Resume
                </Button>
-               <Button variant="ghost" size="icon" onClick={() => onClose()} className="h-9 w-9 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+               <Button variant="ghost" size="icon" onClick={() => onClose()} className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                  <XCircle className="h-6 w-6" />
                </Button>
             </div>
           </div>
           
-          <div className="flex items-center gap-6 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          <div className="flex items-center gap-6 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
              <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5" />
                 <span>Applied {safeFormatDistance(application.appliedDate || application.createdAt || (application as any).created_at)}</span>
@@ -195,19 +195,19 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden flex flex-col bg-white">
+        <div className="flex-1 overflow-hidden flex flex-col bg-background">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="px-8 bg-white border-b">
+            <div className="px-8 bg-background border-b border-border">
               <TabsList className="h-14 w-full justify-start gap-8 bg-transparent p-0 rounded-none">
                 <TabsTrigger 
                   value="questionnaire" 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 data-[state=active]:text-slate-900 rounded-none h-full px-0 font-semibold text-sm text-slate-400 transition-all"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none h-full px-0 font-semibold text-sm text-muted-foreground transition-all"
                 >
                   Questionnaire
                 </TabsTrigger>
                 <TabsTrigger 
                   value="evaluation" 
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 data-[state=active]:text-slate-900 rounded-none h-full px-0 font-semibold text-sm text-slate-400 transition-all"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none h-full px-0 font-semibold text-sm text-muted-foreground transition-all"
                 >
                   Evaluation
                 </TabsTrigger>
@@ -215,27 +215,27 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-10 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto p-10 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               <div className="max-w-4xl mx-auto">
                 <TabsContent value="questionnaire" className="mt-0 space-y-6 focus-visible:outline-none focus-visible:ring-0">
                     {application.custom_answers && Array.isArray(application.custom_answers) && application.custom_answers.length > 0 ? (
                       <div className="grid gap-6">
                         {application.custom_answers.map((answer: any, index: number) => (
                           <div key={index} className="space-y-3 group">
-                               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                                 <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                               <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                                  {answer.question}
                                </h4>
-                               <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/30 group-hover:bg-slate-50 group-hover:border-slate-200 transition-all">
-                                 <p className="text-sm text-slate-700 leading-relaxed font-medium">{answer.answer}</p>
+                               <div className="p-5 rounded-xl border border-border bg-muted/30 group-hover:bg-muted/50 group-hover:border-muted-foreground/30 transition-all">
+                                 <p className="text-sm text-foreground leading-relaxed font-medium">{answer.answer}</p>
                                </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-32 text-slate-300 border-2 border-dashed border-slate-100 rounded-3xl">
+                      <div className="flex flex-col items-center justify-center py-32 text-muted-foreground border-2 border-dashed border-border rounded-3xl">
                         <MessageSquare className="h-12 w-12 opacity-20 mb-4" />
-                        <h3 className="text-lg font-bold text-slate-400">No Responses</h3>
+                        <h3 className="text-lg font-bold text-muted-foreground">No Responses</h3>
                         <p className="text-sm">Candidate has not provided questionnaire answers.</p>
                       </div>
                     )}
@@ -248,13 +248,13 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                      <div className="lg:col-span-5 space-y-8">
                        <div className="space-y-6 sticky top-0">
                           <div className="space-y-1">
-                            <h3 className="text-lg font-bold text-slate-900">Your Assessment</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">Provide your professional perspective on this candidate's fit for the role.</p>
+                            <h3 className="text-lg font-bold text-foreground">Your Assessment</h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">Provide your professional perspective on this candidate's fit for the role.</p>
                           </div>
                           
                           <div className="space-y-6">
                               <div className="space-y-3">
-                                  <Label htmlFor="score" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Score (1-10)</Label>
+                                  <Label htmlFor="score" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Score (1-10)</Label>
                                   <div className="flex items-center gap-4">
                                       <Input
                                           id="score"
@@ -264,19 +264,19 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                                           placeholder="0"
                                           value={score}
                                           onChange={(e) => setScore(e.target.value ? Number(e.target.value) : "")}
-                                          className="h-10 text-lg font-bold border-slate-200 focus:ring-0 focus:border-slate-900 transition-all rounded-lg w-24"
+                                          className="h-10 text-lg font-bold border-border focus:ring-0 focus:border-primary transition-all rounded-lg w-24"
                                       />
-                                      <div className="text-lg font-bold text-slate-300">/ 10</div>
+                                      <div className="text-lg font-bold text-muted-foreground">/ 10</div>
                                   </div>
                               </div>
                               <div className="space-y-3">
-                                  <Label htmlFor="comment" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Detailed Review</Label>
+                                  <Label htmlFor="comment" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Detailed Review</Label>
                                   <Textarea
                                       id="comment"
                                       placeholder="What impression did they make? Highlight key evidence for your score..."
                                       value={comment}
                                       onChange={(e) => setComment(e.target.value)}
-                                      className="min-h-[150px] border-slate-200 focus:ring-0 focus:border-slate-900 resize-none text-sm p-4 rounded-lg bg-slate-50/20 focus:bg-white transition-all shadow-sm"
+                                      className="min-h-[150px] border-border focus:ring-0 focus:border-primary resize-none text-sm p-4 rounded-lg bg-muted/20 focus:bg-background transition-all shadow-sm"
                                   />
                               </div>
                           </div>
@@ -285,7 +285,7 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                              <Button 
                                onClick={() => handleSubmit('PENDING')} 
                                disabled={isSubmitting}
-                               className="w-full bg-slate-900 hover:bg-black text-white rounded-lg h-10 font-semibold text-sm transition-all active:scale-[0.98]"
+                               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg h-10 font-semibold text-sm transition-all active:scale-[0.98]"
                              >
                                {isSubmitting ? "Processing..." : "Submit Review"}
                              </Button>
@@ -295,7 +295,7 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                                  <Button 
                                    variant="outline"
                                    size="sm"
-                                   className="border-green-100 bg-green-50/30 hover:bg-green-50 text-green-700 font-semibold rounded-lg h-9 border text-xs"
+                                   className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 font-semibold rounded-lg h-9 border text-xs"
                                     onClick={() => handleSubmit('APPROVE')}
                                     disabled={isSubmitting}
                                   >
@@ -304,7 +304,7 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                                   <Button 
                                    variant="outline"
                                    size="sm"
-                                   className="border-red-100 bg-red-50/30 hover:bg-red-50 text-red-700 font-semibold rounded-lg h-9 border text-xs"
+                                   className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 font-semibold rounded-lg h-9 border text-xs"
                                     onClick={() => handleSubmit('REJECT')}
                                     disabled={isSubmitting}
                                   >
@@ -319,55 +319,55 @@ export function CandidateEvaluationView({ application, isOpen, onClose, onEvalua
                      {/* Right Column: Reviews Feed */}
                      <div className="lg:col-span-7 space-y-6">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-slate-900">Collective Feedback</h3>
+                            <h3 className="text-lg font-bold text-foreground">Collective Feedback</h3>
                         </div>
                         
                         {isLoading ? (
                             <div className="space-y-6">
                                {[1, 2].map(i => (
-                                 <div key={i} className="h-32 bg-slate-50 animate-pulse rounded-2xl w-full" />
+                                 <div key={i} className="h-32 bg-muted animate-pulse rounded-2xl w-full" />
                                ))}
                             </div>
                         ) : evaluations.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-slate-300 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                               <Users className="h-12 w-12 opacity-10 mb-4" />
-                               <p className="text-sm font-bold text-slate-400">No team evaluations yet.</p>
+                            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground bg-muted/30 rounded-3xl border border-dashed border-border">
+                               <Users className="h-12 w-12 opacity-20 mb-4" />
+                               <p className="text-sm font-bold text-muted-foreground">No team evaluations yet.</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
                                {evaluations.map((evalItem) => (
-                                 <div key={evalItem.id} className="p-6 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all bg-white shadow-sm ring-1 ring-slate-100/50">
+                                 <div key={evalItem.id} className="p-6 rounded-2xl border border-border hover:border-muted-foreground/30 transition-all bg-card shadow-sm ring-1 ring-border/50">
                                      <div className="flex justify-between items-start mb-6">
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-10 w-10">
-                                                <AvatarFallback className="bg-slate-100 text-slate-600 font-bold text-xs">
+                                                <AvatarFallback className="bg-muted text-muted-foreground font-bold text-xs">
                                                   {getInitials(evalItem.user.name)}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <p className="text-sm font-bold text-slate-900 leading-none">{evalItem.user.name}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{evalItem.user.role?.replace(/_/g, " ")}</p>
+                                                <p className="text-sm font-bold text-foreground leading-none">{evalItem.user.name}</p>
+                                                <p className="text-[10px] font-bold text-muted-foreground mt-1 uppercase tracking-widest">{evalItem.user.role?.replace(/_/g, " ")}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                           <div className="flex items-center gap-2">
                                             {evalItem.decision === 'APPROVE' && (
-                                              <Badge className="bg-green-500 hover:bg-green-500 text-white border-0 text-[9px] font-black uppercase tracking-tighter h-5">Approve</Badge>
+                                              <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 text-[9px] font-black uppercase tracking-tighter h-5">Approve</Badge>
                                             )}
                                             {evalItem.decision === 'REJECT' && (
                                               <Badge variant="destructive" className="border-0 text-[10px] font-black uppercase tracking-tighter h-5">Reject</Badge>
                                             )}
-                                            <span className="font-bold text-lg text-slate-900">
-                                                {evalItem.score}<span className="text-slate-300 text-sm">/10</span>
+                                            <span className="font-bold text-lg text-foreground">
+                                                {evalItem.score}<span className="text-muted-foreground text-sm">/10</span>
                                             </span>
                                           </div>
                                         </div>
                                      </div>
                                      
                                      <div className="pl-0">
-                                       <p className="text-sm text-slate-700 leading-relaxed font-normal italic">"{evalItem.comment}"</p>
-                                       <div className="mt-4 pt-4 border-t border-slate-50 flex justify-end">
-                                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                       <p className="text-sm text-foreground leading-relaxed font-normal italic">"{evalItem.comment}"</p>
+                                       <div className="mt-4 pt-4 border-t border-border flex justify-end">
+                                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                                             {safeFormatDistance(evalItem.created_at)}
                                          </p>
                                        </div>

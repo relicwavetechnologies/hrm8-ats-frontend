@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
+import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Badge } from '@/shared/components/ui/badge';
@@ -98,7 +99,7 @@ export function DecisionRecorder({ candidateId, candidateName, onDecisionRecorde
 
         {/* Decision Selection */}
         <div className="space-y-3">
-          <label className="text-sm font-medium">Decision Type</label>
+          <Label className="text-sm font-medium">Decision Type</Label>
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant={decision === 'offer-extended' ? 'default' : 'outline'}
@@ -137,7 +138,7 @@ export function DecisionRecorder({ candidateId, candidateName, onDecisionRecorde
 
         {/* Rationale */}
         <div className="space-y-3">
-          <label className="text-sm font-medium">Decision Rationale</label>
+          <Label className="text-sm font-medium">Decision Rationale</Label>
           <Textarea
             placeholder="Explain the reasoning behind this decision, referencing team feedback and consensus..."
             value={rationale}

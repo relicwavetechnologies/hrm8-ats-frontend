@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Calendar, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
+import { BrandIconPlate, GoogleMeetBrandIcon } from "@/modules/settings/components/integrations/BrandIcons";
 import {
   connectCalendarProvider,
   disconnectCalendarIntegration,
@@ -88,7 +89,13 @@ export function CalendarIntegrationCard({ provider, name, description }: Calenda
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-              <Calendar className="h-6 w-6" />
+              {provider === 'google' ? (
+                <BrandIconPlate className="h-9 w-9">
+                  <GoogleMeetBrandIcon className="h-5 w-5" />
+                </BrandIconPlate>
+              ) : (
+                <Calendar className="h-6 w-6" />
+              )}
             </div>
             <div>
               <CardTitle className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { Camera, X, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/shared/lib/utils';
@@ -118,7 +119,7 @@ export function EmployeePhotoUpload({ photo, name, onPhotoChange }: EmployeePhot
       </Avatar>
 
       <div className="flex-1 space-y-3">
-        <input
+        <Input
           ref={fileInputRef}
           type="file"
           accept="image/*"

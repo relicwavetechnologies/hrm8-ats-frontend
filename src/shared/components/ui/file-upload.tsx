@@ -2,6 +2,8 @@ import React, { useCallback, useState } from 'react';
 import { Upload, X, FileIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
 
 export interface FileUploadProps {
   onFilesSelected: (files: File[]) => void;
@@ -97,7 +99,7 @@ export function FileUpload({
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
-        <input
+        <Input
           type="file"
           id="file-upload"
           className="hidden"
@@ -106,7 +108,7 @@ export function FileUpload({
           onChange={handleFileInput}
           disabled={disabled}
         />
-        <label htmlFor="file-upload" className="cursor-pointer">
+        <Label htmlFor="file-upload" className="cursor-pointer">
           <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground mb-1">
             Drop files here or click to upload
@@ -114,7 +116,7 @@ export function FileUpload({
           <p className="text-xs text-muted-foreground">
             {accept || 'All files'} • Max {Math.round(maxSize / 1024 / 1024)}MB • Up to {maxFiles} files
           </p>
-        </label>
+        </Label>
       </div>
 
       {error && (

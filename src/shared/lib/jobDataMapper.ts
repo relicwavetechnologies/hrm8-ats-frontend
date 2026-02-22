@@ -71,7 +71,11 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     id: backendJob.id,
     employerId: backendJob.companyId || '',
     employerName: backendJob.company?.name || backendJob.companyName || '',
-    employerLogo: backendJob.company?.logo || backendJob.companyLogo,
+    employerLogo:
+      backendJob.company?.logo ||
+      backendJob.company?.logoUrl ||
+      backendJob.companyLogo ||
+      backendJob.logoUrl,
     createdBy: backendJob.createdBy || '',
     createdByName: backendJob.createdByName || '',
     title: backendJob.title || '',
@@ -213,4 +217,3 @@ export function mapBackendJobToFormData(backendJob: any): Partial<JobFormData> {
     videoInterviewingEnabled: normalizedJob.videoInterviewingEnabled || false,
   };
 }
-

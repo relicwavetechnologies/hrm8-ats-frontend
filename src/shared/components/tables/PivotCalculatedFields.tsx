@@ -3,6 +3,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Card } from "@/shared/components/ui/card";
+import { Label } from "@/shared/components/ui/label";
 import { Plus, Trash2, Calculator } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { toast } from "@/shared/hooks/use-toast";
@@ -153,7 +154,7 @@ export function PivotCalculatedFields({
 
       {calculatedFields.length > 0 && (
         <div className="space-y-2">
-          <label className="text-sm font-medium">Calculated Fields</label>
+          <Label className="text-sm font-medium">Calculated Fields</Label>
           {calculatedFields.map((field) => (
             <Card key={field.id} className="p-3">
               <div className="flex items-start justify-between">

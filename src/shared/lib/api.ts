@@ -17,7 +17,18 @@ class ApiClient {
   private baseURL: string;
 
   constructor(baseURL: string) {
-    this.baseURL = baseURL;
+    this.baseURL = baseURL.replace(/\/+$/, '');
+  }
+
+  private buildUrl(endpoint: string): string {
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+    // Prevent accidental double-prefix like /api/api/... when VITE_API_URL already includes /api
+    if (this.baseURL.endsWith('/api') && normalizedEndpoint.startsWith('/api/')) {
+      return `${this.baseURL}${normalizedEndpoint.slice(4)}`;
+    }
+
+    return `${this.baseURL}${normalizedEndpoint}`;
   }
 
   private async parseResponseBody(response: Response): Promise<any> {
@@ -53,7 +64,7 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const url = `${this.baseURL}${endpoint}`;
+    const url = this.buildUrl(endpoint);
 
     const config: RequestInit = {
       ...options,
@@ -97,7 +108,7 @@ class ApiClient {
   }
 
   async upload<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
-    const url = `${this.baseURL}${endpoint}`;
+    const url = this.buildUrl(endpoint);
 
     // Do not set Content-Type header for FormData, browser sets it with boundary
     const config: RequestInit = {

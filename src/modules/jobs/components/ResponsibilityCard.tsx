@@ -44,14 +44,15 @@ export function ResponsibilityCard({ responsibility, onEdit, onDelete }: Respons
       style={style}
       className="p-3 flex items-start gap-3 bg-secondary/10 border-0"
     >
-      <button
-        type="button"
-        className="cursor-grab active:cursor-grabbing mt-0.5 text-muted-foreground hover:text-foreground transition-colors"
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 cursor-grab active:cursor-grabbing mt-0 p-0 hover:bg-transparent text-muted-foreground hover:text-foreground"
         {...attributes}
         {...listeners}
       >
         <GripVertical className="h-4 w-4" />
-      </button>
+      </Button>
       
       <div className="flex-1 text-sm">
         {responsibility.text}

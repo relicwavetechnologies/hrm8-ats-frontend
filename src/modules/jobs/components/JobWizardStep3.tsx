@@ -26,6 +26,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/toggle-group";
 import { Button } from "@/shared/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -34,6 +35,7 @@ import {
 import { Calendar } from "@/shared/components/ui/calendar";
 import { usePublicTags } from "@/shared/hooks/useJobCategoriesTags";
 import { cn } from "@/shared/lib/utils";
+import { Label } from "@/shared/components/ui/label";
 
 interface JobWizardStep3Props {
   form: UseFormReturn<JobFormData>;
@@ -79,13 +81,13 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
     form.setValue('hiringTeam', hiringTeam.filter((m) => m.id !== memberId));
   };
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-base font-semibold flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
           Additional Details
         </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Set application deadline and visibility options
         </p>
       </div>
@@ -119,23 +121,23 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
           };
 
           return (
-            <FormItem>
+            <FormItem className="rounded-md border bg-muted/20 p-3">
               <FormLabel>Application Deadline (Optional)</FormLabel>
               <FormControl>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <ToggleGroup
                       type="single"
                       value={selectedPreset}
                       onValueChange={handlePresetSelect}
-                      className="gap-2"
+                      className="gap-1"
                     >
                       {TIMELINE_PRESETS.map((preset) => (
                         <ToggleGroupItem
                           key={preset.days}
                           value={preset.days.toString()}
                           variant="outline"
-                          className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                          className="h-8 px-2.5 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                         >
                           {preset.label}
                         </ToggleGroupItem>
@@ -148,7 +150,7 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                           type="button"
                           variant="outline"
                           size="icon"
-                          className="h-10 w-10"
+                          className="h-8 w-8"
                         >
                           <CalendarIcon className="h-4 w-4" />
                         </Button>
@@ -166,27 +168,27 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                     </Popover>
 
                     {field.value && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={handleClear}
-                        className="h-10 w-10 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleClear}
+                          className="h-8 w-8 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                     )}
                   </div>
 
                   {field.value && (
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       Selected: {format(new Date(field.value), "MMMM dd, yyyy")}
                       {selectedPreset && ` (${selectedPreset} days from now)`}
                     </div>
                   )}
                 </div>
               </FormControl>
-              <FormDescription>
+              <FormDescription className="text-[11px]">
                 Leave blank if the position is open until filled
               </FormDescription>
               <FormMessage />
@@ -195,13 +197,13 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
         }}
       />
 
-      <div className="space-y-4 pt-6 border-t">
+      <div className="space-y-3 pt-4 border-t">
         <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
+          <h3 className="text-base font-semibold flex items-center gap-2">
             <Eye className="h-5 w-5" />
             Job Visibility
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Control who can see this job posting
           </p>
         </div>
@@ -213,28 +215,24 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
             <FormItem className="space-y-3">
               <FormLabel className="sr-only">Job Visibility</FormLabel>
               <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="flex flex-row gap-4"
-                >
-                  <div className="flex items-center space-x-2 flex-1">
+                <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="flex items-center space-x-2 rounded-md border p-2.5">
                     <RadioGroupItem value="public" id="public" />
-                    <label htmlFor="public" className="flex-1 cursor-pointer">
-                      <div className="font-medium">Public</div>
-                      <div className="text-sm text-muted-foreground">
+                    <Label htmlFor="public" className="flex-1 cursor-pointer">
+                      <div className="text-sm font-medium">Public</div>
+                      <div className="text-xs text-muted-foreground">
                         Visible everywhere
                       </div>
-                    </label>
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2 flex-1">
+                  <div className="flex items-center space-x-2 rounded-md border p-2.5">
                     <RadioGroupItem value="private" id="private" />
-                    <label htmlFor="private" className="flex-1 cursor-pointer">
-                      <div className="font-medium">Private</div>
-                      <div className="text-sm text-muted-foreground">
+                    <Label htmlFor="private" className="flex-1 cursor-pointer">
+                      <div className="text-sm font-medium">Private</div>
+                      <div className="text-xs text-muted-foreground">
                         Only accessible via direct link
                       </div>
-                    </label>
+                    </Label>
                   </div>
                 </RadioGroup>
               </FormControl>
@@ -243,7 +241,7 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
           )}
         />
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Want to keep your hiring activity confidential? Activate <span className="font-semibold">STEALTH MODE</span>, and we will promote your vacancy under HRM8 branding to keep your company information private.
         </p>
 
@@ -260,7 +258,7 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
               </FormControl>
               <div className="flex-1">
                 <FormLabel className="font-medium">Stealth Mode</FormLabel>
-                <FormDescription>
+                <FormDescription className="text-[11px]">
                   Company name hidden
                 </FormDescription>
               </div>
@@ -269,8 +267,8 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
         />
 
         {isStealthActive && (
-          <div className="rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-2.5">
+            <p className="text-xs text-blue-900 dark:text-blue-100">
               <span className="font-semibold">Note:</span> Your job is now in Stealth Mode. This means it will not be listed on your corporate careers page.
             </p>
           </div>
@@ -286,15 +284,15 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
             const videoInterviewingEnabled = field.value || false;
 
             return (
-              <FormItem className="flex flex-row items-center justify-between space-x-3 space-y-0 rounded-lg border p-4">
+              <FormItem className="flex flex-row items-center justify-between space-x-3 space-y-0 rounded-md border p-3">
                 <div className="flex-1 space-y-0.5">
                   <FormLabel className="font-medium">Video Interviewing</FormLabel>
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     Enable video interviewing for candidates applying to this job
                   </FormDescription>
                   {videoInterviewingEnabled && !hasSubscription && (
                     <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-2">
-                      <p className="text-xs text-amber-900 dark:text-amber-100">
+                      <p className="text-[11px] text-amber-900 dark:text-amber-100">
                         <span className="font-semibold">Note:</span> Charges will apply for video interviewing. Upgrade to a subscription plan to use this feature for free.
                       </p>
                     </div>
@@ -329,10 +327,10 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
             };
 
             return (
-              <FormItem className="rounded-lg border p-4">
+              <FormItem className="rounded-md border p-3">
                 <div className="space-y-2">
                   <FormLabel>Job Tags (up to 5)</FormLabel>
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     Add tags to help candidates find this job. Select up to 5 tags.
                   </FormDescription>
                 </div>
@@ -346,12 +344,11 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                       {tags.map((tag) => {
                         const isSelected = selectedTags.includes(tag.id);
                         return (
-                          <button
+                          <Badge
                             key={tag.id}
-                            type="button"
                             onClick={() => toggleTag(tag.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                              "px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer border-0",
                               isSelected
                                 ? "ring-2 ring-offset-2 shadow-sm"
                                 : "opacity-70 hover:opacity-100"
@@ -359,13 +356,12 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
                             style={{
                               backgroundColor: isSelected ? tag.color : tag.color + '40',
                               color: isSelected ? '#fff' : tag.color,
-                              ringColor: tag.color
-                            }}
-                            disabled={!isSelected && selectedTags.length >= 5}
+                              "--ring-color": tag.color
+                            } as React.CSSProperties}
                           >
                             {tag.name}
                             {isSelected && <span className="ml-1">✓</span>}
-                          </button>
+                          </Badge>
                         );
                       })}
                     </div>
@@ -382,13 +378,13 @@ export function JobWizardStep3({ form, jobId }: JobWizardStep3Props) {
       </div>
 
       {/* Hiring Team Section */}
-      <div className="space-y-4 pt-6 border-t">
+      <div className="space-y-3 pt-4 border-t">
         <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
+          <h3 className="text-base font-semibold flex items-center gap-2">
             <Users className="h-5 w-5" />
             Hiring Team
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Assign team members who can manage applications
           </p>
         </div>

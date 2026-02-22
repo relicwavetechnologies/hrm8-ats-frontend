@@ -479,9 +479,10 @@ Hiring Team`;
                   }}
                 >
                   {filteredTeam.slice(0, 4).map((member) => (
-                    <button
+                    <Button
                       key={member.id}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted text-left text-sm"
+                      variant="ghost"
+                      className="w-full flex items-center gap-2 px-3 py-2 h-auto text-left text-sm justify-start rounded-none"
                       onClick={() => insertMention(member)}
                     >
                       <Avatar className="h-5 w-5 flex-shrink-0">
@@ -494,7 +495,7 @@ Hiring Team`;
                         <span className="font-medium text-xs">{member.name}</span>
                         <span className="text-[10px] text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-md">{member.role}</span>
                       </div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

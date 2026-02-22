@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import { CheckCircle2, Edit2, Send, MapPin, Briefcase, DollarSign, Users, FileText, FileCheck } from 'lucide-react';
 import {
     Dialog,
@@ -90,31 +91,31 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
             <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Review Your Job Post</h3>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <h3 className="text-base font-semibold">Review Job Post</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">
                         Double-check everything before publishing.
                     </p>
                 </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2.5">
                 {sections.map((section) => {
                     const Icon = section.icon;
                     return (
-                        <Card key={section.id} className="p-4">
-                            <div className="flex items-center justify-between mb-3">
+                        <Card key={section.id} className="p-3 rounded-md shadow-none border">
+                            <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                    <Icon className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium text-sm">{section.title}</span>
+                                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="font-medium text-xs">{section.title}</span>
                                 </div>
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-7 text-xs gap-1"
+                                    className="h-7 text-[11px] gap-1"
                                     onClick={() => onEdit(section.id)}
                                 >
                                     <Edit2 className="h-3 w-3" /> Edit
@@ -122,9 +123,9 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                             </div>
                             <div className="space-y-1.5">
                                 {section.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm">
+                                    <div key={idx} className="flex justify-between text-xs gap-2">
                                         <span className="text-muted-foreground">{item.label}</span>
-                                        <span className="font-medium">{item.value || '—'}</span>
+                                        <span className="font-medium text-right">{item.value || '—'}</span>
                                     </div>
                                 ))}
                             </div>
@@ -133,14 +134,14 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                 })}
             </div>
 
-            <Card className="p-4 bg-primary/5 border-primary/20">
+            <Card className="p-3 bg-muted/20 border rounded-md shadow-none">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                    <div className="w-7 h-7 rounded-md bg-muted border flex items-center justify-center">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-foreground" />
                     </div>
                     <div className="flex-1">
-                        <p className="font-medium">Ready to publish?</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm font-medium">Ready to publish?</p>
+                        <p className="text-xs text-muted-foreground">
                             Your job will be visible based on your visibility settings.
                         </p>
                     </div>
@@ -148,18 +149,17 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
             </Card>
 
             <div className="space-y-4">
-                <div className="flex items-start gap-3 px-1">
-                    <input
-                        type="checkbox"
+                <div className="flex items-start gap-2.5 px-0.5">
+                    <Checkbox
                         id="terms"
-                        className="mt-1 h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer"
+                        className="mt-0.5"
                         checked={termsAccepted}
-                        onChange={(e) => onTermsAcceptedChange?.(e.target.checked)}
+                        onCheckedChange={(checked) => onTermsAcceptedChange?.(checked === true)}
                     />
                     <div className="grid gap-1.5 leading-none">
                         <label
                             htmlFor="terms"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                         >
                             I accept the Terms and Conditions
                         </label>
@@ -167,7 +167,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                             By publishing this job, you agree to our{' '}
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <button className="underline text-primary hover:text-primary/80 font-medium">Terms of Service</button>
+                                    <Button variant="ghost" className="underline text-primary hover:text-primary/80 font-medium h-auto p-0 text-xs">Terms of Service</Button>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
                                     <DialogHeader>
@@ -219,18 +219,17 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-start gap-3 px-1">
-                    <input
-                        type="checkbox"
+                <div className="flex items-start gap-2.5 px-0.5">
+                    <Checkbox
                         id="save-template"
-                        className="mt-1 h-4 w-4 rounded border-primary text-primary focus:ring-primary cursor-pointer"
+                        className="mt-0.5"
                         checked={saveAsTemplate}
-                        onChange={(e) => onSaveAsTemplateChange?.(e.target.checked)}
+                        onCheckedChange={(checked) => onSaveAsTemplateChange?.(checked === true)}
                     />
                     <div className="grid gap-1.5 leading-none">
                         <label
                             htmlFor="save-template"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                         >
                             Save this job as a template
                         </label>
@@ -244,8 +243,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
             <Button
                 onClick={onSubmit}
                 disabled={isSubmitting || !termsAccepted}
-                className="w-full gap-2"
-                size="lg"
+                className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
             >
                 {isSubmitting ? 'Publishing...' : 'Publish Job'}
                 <Send className="h-4 w-4" />

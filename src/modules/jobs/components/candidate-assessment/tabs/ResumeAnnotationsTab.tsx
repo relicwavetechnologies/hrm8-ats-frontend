@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { ResumeAnnotations } from '../ResumeAnnotations';
 import { applicationService } from '@/shared/lib/applicationService';
-import { Loader2, FileText, ExternalLink } from 'lucide-react';
+import { Loader2, FileText, ExternalLink, Highlighter } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { NotesTab } from './NotesTab';
+import type { Application } from '@/shared/types/application';
 
 interface ResumeAnnotationsTabProps {
   candidateId: string; // Note: This is actually the application ID in the current usage
+  application: Application;
 }
 
-export function ResumeAnnotationsTab({ candidateId }: ResumeAnnotationsTabProps) {
+export function ResumeAnnotationsTab({ candidateId, application }: ResumeAnnotationsTabProps) {
   const [resumeText, setResumeText] = useState<string>('');
   const [resumeId, setResumeId] = useState<string>('');
   const [resumeUrl, setResumeUrl] = useState<string>('');
@@ -86,14 +91,34 @@ export function ResumeAnnotationsTab({ candidateId }: ResumeAnnotationsTabProps)
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/50 p-2 rounded text-xs font-mono text-muted-foreground mb-4">
-        DEBUG: Resume ID: {resumeId} | Length: {resumeText.length} chars
+    <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-lg border bg-background px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+            <Highlighter className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Resume Annotation Workspace</p>
+            <p className="text-xs text-muted-foreground">Highlight key evidence and add comments for team review.</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="text-[11px] font-medium">{resumeText.length.toLocaleString()} chars</Badge>
       </div>
       <ResumeAnnotations
         candidateId={resumeId}
+        applicationId={candidateId}
         resumeText={resumeText}
       />
+      <div className="rounded-lg border bg-background">
+        <div className="border-b px-4 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Annotation Notes</p>
+        </div>
+        <ScrollArea className="max-h-[280px]">
+          <div className="p-3">
+            <NotesTab application={application} scope="annotation" />
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 }

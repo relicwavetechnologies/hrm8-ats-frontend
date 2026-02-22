@@ -5,6 +5,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Badge } from "@/shared/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Label } from "@/shared/components/ui/label";
 import { MessageSquare, CheckSquare, Plus, Lock, Globe } from "lucide-react";
 import { getJobNotes, addJobNote, getJobTasks, addJobTask } from "@/shared/lib/jobCollaborationService";
 import { formatDistanceToNow } from "date-fns";
@@ -60,10 +61,10 @@ export function JobCollaborationPanel({ jobId }: JobCollaborationPanelProps) {
                     checked={isPrivate}
                     onCheckedChange={(checked) => setIsPrivate(checked as boolean)}
                   />
-                  <label htmlFor="private" className="text-sm flex items-center gap-1">
+                  <Label htmlFor="private" className="text-sm flex items-center gap-1">
                     {isPrivate ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
                     {isPrivate ? "Private" : "Visible to team"}
-                  </label>
+                  </Label>
                 </div>
                 <Button size="sm" onClick={handleAddNote}>
                   <Plus className="h-4 w-4 mr-2" />

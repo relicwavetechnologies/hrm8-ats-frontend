@@ -1,193 +1,190 @@
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { Progress } from "@/shared/components/ui/progress";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/components/ui/table";
 import { Application } from "@/shared/types/application";
-import { bulkScoreCandidates, ScoringCriteria, BulkScoringProgress } from "@/shared/lib/bulkAIScoring";
+import { bulkScoreCandidates, BulkScoringProgress, ScoringCriteria } from "@/shared/lib/bulkAIScoring";
 import { applicationService } from "@/shared/lib/applicationService";
 import { useToast } from "@/shared/hooks/use-toast";
-import { Sparkles, Play, Filter, TrendingUp, Users, CheckCircle2, XCircle, Loader2, Zap, ArrowRight } from "lucide-react";
-import { ScreeningCandidateCard } from "./ScreeningCandidateCard";
+import { Loader2, Sparkles, RotateCcw, UserRound, Brain } from "lucide-react";
+import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
+import { AIScreeningAnalysisDrawer } from "./AIScreeningAnalysisDrawer";
 
 interface AutomatedScreeningPanelProps {
-  job: any; // Full job object
+  job: any;
   applications: Application[];
   onRefresh: () => void;
 }
 
-export function AutomatedScreeningPanel({
-  job,
-  applications,
-  onRefresh,
-}: AutomatedScreeningPanelProps) {
-  // Extract job properties for backward compatibility
-  const jobId = job?.id || '';
-  const jobTitle = job?.title || '';
-  const jobRequirements = job?.requirements || [];
-  const jobDescription = job?.description || '';
+const asText = (value: unknown): string | null => {
+  if (typeof value === "string") return value.trim() || null;
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => asText(item))
+      .filter((item): item is string => Boolean(item));
+    return parts.length ? parts.join(" | ") : null;
+  }
+  if (value && typeof value === "object") {
+    const objectValues = Object.values(value as Record<string, unknown>)
+      .map((item) => asText(item))
+      .filter((item): item is string => Boolean(item));
+    return objectValues.length ? objectValues.join(" | ") : null;
+  }
+  return null;
+};
+
+const formatRecommendation = (recommendation?: unknown) => {
+  if (!recommendation || typeof recommendation !== "string") return "Pending";
+  return recommendation
+    .split("_")
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(" ");
+};
+
+const getScore = (application: Application, analysis?: any) => {
+  return (
+    analysis?.overallScore ??
+    analysis?.scores?.overall ??
+    application.aiMatchScore ??
+    application.score ??
+    0
+  );
+};
+
+const getReviewSummary = (analysis?: any) => {
+  if (!analysis) return "No AI review yet.";
+  const justification = asText(analysis.justification);
+  if (justification) return justification;
+
+  const detailed = asText(analysis.detailedAnalysis);
+  if (detailed) return detailed;
+
+  const strengths = asText(analysis.strengths);
+  if (strengths) return strengths;
+
+  return "AI review available in profile drawer.";
+};
+
+const scoreBadgeClass = (score: number) => {
+  if (score >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (score >= 60) return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
+};
+
+export function AutomatedScreeningPanel({ job, applications, onRefresh }: AutomatedScreeningPanelProps) {
   const { toast } = useToast();
   const [isScoring, setIsScoring] = useState(false);
   const [scoringProgress, setScoringProgress] = useState<BulkScoringProgress | null>(null);
-  const [sortBy, setSortBy] = useState<"score" | "date" | "name">("score");
-  const [minScore, setMinScore] = useState<number | undefined>(undefined);
-  const [maxScore, setMaxScore] = useState<number | undefined>(undefined);
   const [analysisResults, setAnalysisResults] = useState<Map<string, any>>(new Map());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [drawerApplication, setDrawerApplication] = useState<Application | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
+  const [analysisDrawerCandidate, setAnalysisDrawerCandidate] = useState<Application | null>(null);
+  const [analysisDrawerData, setAnalysisDrawerData] = useState<any>(null);
 
-  // Filter and sort applications
-  const filteredAndSortedApplications = useMemo(() => {
-    let filtered = [...applications];
-
-    // Filter by score range
-    if (minScore !== undefined) {
-      filtered = filtered.filter(
-        (app) => (app.aiMatchScore ?? app.score ?? 0) >= minScore
-      );
-    }
-    if (maxScore !== undefined) {
-      filtered = filtered.filter(
-        (app) => (app.aiMatchScore ?? app.score ?? 0) <= maxScore
-      );
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "score":
-          const scoreA = a.aiMatchScore ?? a.score ?? 0;
-          const scoreB = b.aiMatchScore ?? b.score ?? 0;
-          return scoreB - scoreA;
-        case "date":
-          return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
-        case "name":
-          return a.candidateName.localeCompare(b.candidateName);
-        default:
-          return 0;
-      }
+  const rankedApplications = useMemo(() => {
+    const ranked = [...applications].sort((a, b) => {
+      const analysisA = analysisResults.get(a.id) || a.aiAnalysis;
+      const analysisB = analysisResults.get(b.id) || b.aiAnalysis;
+      const scoreA = getScore(a, analysisA);
+      const scoreB = getScore(b, analysisB);
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
     });
+    return ranked;
+  }, [applications, analysisResults]);
 
-    return filtered;
-  }, [applications, sortBy, minScore, maxScore]);
+  const allSelected = rankedApplications.length > 0 && rankedApplications.every((app) => selectedIds.has(app.id));
 
-  // Calculate statistics
   const stats = useMemo(() => {
-    const scores = filteredAndSortedApplications
-      .map((app) => app.aiMatchScore ?? app.score ?? 0)
-      .filter((score) => score > 0);
-
-    const topMatches = scores.filter((score) => score >= 80).length;
-    const mediumMatches = scores.filter((score) => score >= 60 && score < 80).length;
-    const lowMatches = scores.filter((score) => score < 60).length;
-    const noScore = filteredAndSortedApplications.length - scores.length;
-
+    const scores = rankedApplications.map((app) => getScore(app, analysisResults.get(app.id) || app.aiAnalysis));
+    const scored = scores.filter((score) => score > 0);
     return {
-      total: filteredAndSortedApplications.length,
-      topMatches,
-      mediumMatches,
-      lowMatches,
-      noScore,
-      averageScore: scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : 0,
+      total: rankedApplications.length,
+      top: scores.filter((score) => score >= 80).length,
+      average: scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : 0,
     };
-  }, [filteredAndSortedApplications]);
+  }, [rankedApplications, analysisResults]);
 
-  const handleBulkScore = async () => {
-    if (applications.length === 0) {
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(rankedApplications.map((app) => app.id)));
+  };
+
+  const handleBulkScore = async (targetIds?: string[]) => {
+    const candidates = targetIds?.length
+      ? rankedApplications.filter((app) => targetIds.includes(app.id))
+      : rankedApplications;
+
+    if (candidates.length === 0) {
       toast({
-        title: "No applications",
-        description: "There are no applications to score.",
+        title: "No candidates selected",
+        description: "Select candidates to run AI re-analysis.",
         variant: "destructive",
       });
       return;
     }
 
-    console.log('🚀 Starting bulk AI scoring via backend...', {
-      candidateCount: applications.length,
-      jobId: job.id,
-      jobTitle: job.title,
-    });
-
     setIsScoring(true);
-    setScoringProgress({
-      total: applications.length,
-      completed: 0,
-      failed: 0,
-    });
+    setScoringProgress({ total: candidates.length, completed: 0, failed: 0 });
 
     try {
-      const criteria: ScoringCriteria = {
-        job: job, // Pass full job object
-      };
-
-      console.log('📋 Scoring criteria prepared:', {
-        jobId: criteria.job.id,
-        jobTitle: criteria.job.title,
-        hasRequirements: criteria.job.requirements?.length > 0,
-        hasDescription: !!criteria.job.description,
-      });
-
-      const results = await bulkScoreCandidates(applications, criteria, (progress) => {
+      const criteria: ScoringCriteria = { job };
+      const results = await bulkScoreCandidates(candidates, criteria, (progress) => {
         setScoringProgress(progress);
-        console.log('📊 Progress update:', progress);
       });
 
-      console.log('✅ Bulk scoring completed:', {
-        total: results.length,
-        successful: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length,
-        errors: results.filter(r => !r.success).map(r => ({
-          candidate: r.candidateName,
-          error: r.error,
-        })),
-      });
-
-      // Store analysis results
       const newAnalysisMap = new Map(analysisResults);
-      results.forEach((result) => {
-        if (result.success && result.fullAnalysis) {
-          newAnalysisMap.set(result.applicationId, result.fullAnalysis);
-        }
-      });
-      setAnalysisResults(newAnalysisMap);
-
-      // Update scores in backend
       const updatePromises = results
-        .filter((r) => r.success)
-        .map((result) =>
-          applicationService.updateScore(result.applicationId, result.newScore)
-        );
+        .filter((result) => result.success)
+        .map((result) => {
+          if (result.fullAnalysis) {
+            newAnalysisMap.set(result.applicationId, result.fullAnalysis);
+          }
+          return applicationService.updateScore(result.applicationId, result.newScore);
+        });
 
       await Promise.all(updatePromises);
+      setAnalysisResults(newAnalysisMap);
 
-      const successCount = results.filter((r) => r.success).length;
-      const failedCount = results.filter((r) => !r.success).length;
-      const failedResults = results.filter((r) => !r.success);
-
-      if (failedCount > 0) {
-        console.error('❌ Some candidates failed to score:', failedResults);
-        const errorMessages = failedResults
-          .map(r => `${r.candidateName}: ${r.error || 'Unknown error'}`)
-          .join('; ');
-        console.error('Error details:', errorMessages);
-      }
+      const successCount = results.filter((result) => result.success).length;
+      const failedCount = results.length - successCount;
 
       toast({
-        title: "AI Screening Complete",
-        description: `Scored ${successCount} candidates${failedCount > 0 ? `, ${failedCount} failed. Check console for details.` : ""}.`,
-        variant: failedCount > 0 ? "destructive" : "default",
+        title: "AI re-analysis complete",
+        description: `${successCount} updated${failedCount ? `, ${failedCount} failed` : ""}.`,
+        variant: failedCount ? "destructive" : "default",
       });
 
       onRefresh();
     } catch (error) {
-      console.error("❌ Bulk scoring failed with exception:", error);
-      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       toast({
-        title: "Scoring Failed",
-        description: error instanceof Error ? error.message : "Failed to score candidates. Check console for details.",
+        title: "Re-analysis failed",
+        description: error instanceof Error ? error.message : "Failed to run AI re-analysis.",
         variant: "destructive",
       });
     } finally {
@@ -197,271 +194,182 @@ export function AutomatedScreeningPanel({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Action Bar */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+    <div className="space-y-3">
+      <Card className="border-border/80 shadow-none">
+        <CardHeader className="px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                AI-Powered Screening
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                AI Screening
               </CardTitle>
-              <CardDescription>
-                Use AI to automatically score and rank candidates based on job requirements
-              </CardDescription>
-            </div>
-            <Button
-              onClick={handleBulkScore}
-              disabled={isScoring || applications.length === 0}
-              size="lg"
-            >
-              {isScoring ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Scoring...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Run AI Screening
-                </>
-              )}
-            </Button>
-          </div>
-        </CardHeader>
-        {isScoring && scoringProgress && (
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  Scoring {scoringProgress.currentCandidate || "candidates"}...
-                </span>
-                <span>
-                  {scoringProgress.completed} / {scoringProgress.total}
-                </span>
-              </div>
-              <Progress
-                value={(scoringProgress.completed / scoringProgress.total) * 100}
-                className="h-2"
-              />
-              {scoringProgress.failed > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {scoringProgress.failed} failed
-                </p>
-              )}
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Candidates</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Top Matches (≥80)</p>
-                <p className="text-2xl font-bold text-green-600">{stats.topMatches}</p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Medium (60-79)</p>
-                <p className="text-2xl font-bold text-amber-600">{stats.mediumMatches}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Low (&lt;60)</p>
-                <p className="text-2xl font-bold text-red-600">{stats.lowMatches}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Sort */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Filter & Sort</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Sort By</Label>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="score">AI Score (High to Low)</SelectItem>
-                  <SelectItem value="date">Applied Date (Newest)</SelectItem>
-                  <SelectItem value="name">Candidate Name</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Min Score</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                placeholder="0"
-                value={minScore ?? ""}
-                onChange={(e) =>
-                  setMinScore(e.target.value ? parseInt(e.target.value) : undefined)
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Max Score</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                placeholder="100"
-                value={maxScore ?? ""}
-                onChange={(e) =>
-                  setMaxScore(e.target.value ? parseInt(e.target.value) : undefined)
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions Bar */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Quick Actions:</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  const topCandidates = filteredAndSortedApplications
-                    .filter(app => (app.aiMatchScore ?? app.score ?? 0) >= 80)
-                    .slice(0, 10);
-                  if (topCandidates.length === 0) {
-                    toast({
-                      title: "No Top Candidates",
-                      description: "No candidates with score ≥80 found.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  toast({
-                    title: "Top Candidates",
-                    description: `Found ${topCandidates.length} candidates with score ≥80.`,
-                  });
-                }}
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Show Top 10 (≥80)
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  const lowCandidates = filteredAndSortedApplications
-                    .filter(app => (app.aiMatchScore ?? app.score ?? 0) < 50);
-                  if (lowCandidates.length === 0) {
-                    toast({
-                      title: "No Low Scored Candidates",
-                      description: "No candidates with score <50 found.",
-                    });
-                    return;
-                  }
-                  toast({
-                    title: "Low Scored Candidates",
-                    description: `Found ${lowCandidates.length} candidates with score <50.`,
-                  });
-                }}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Show Low Scores (&lt;50)
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Candidate List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">
-            Candidates ({filteredAndSortedApplications.length})
-          </h3>
-          <div className="flex items-center gap-2">
-          {stats.averageScore > 0 && (
-            <Badge variant="outline" className="text-sm">
-                Avg: {stats.averageScore}%
-              </Badge>
-            )}
-            {stats.topMatches > 0 && (
-              <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-200">
-                {stats.topMatches} Top Matches
-            </Badge>
-          )}
-          </div>
-        </div>
-
-        {filteredAndSortedApplications.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">
-                {applications.length === 0
-                  ? "No applications found for this job."
-                  : "No candidates match the current filters."}
+              <p className="text-xs text-muted-foreground mt-1">
+                Ranked by AI score. Use bulk selection to re-analyze quickly.
               </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredAndSortedApplications.map((application) => {
-              // Use application's aiAnalysis if available, otherwise use analysisResults Map
-              const aiAnalysis = application.aiAnalysis || analysisResults.get(application.id);
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-[11px]">{stats.total} candidates</Badge>
+              <Badge variant="outline" className="text-[11px]">Top {stats.top}</Badge>
+              <Badge variant="outline" className="text-[11px]">Avg {stats.average}%</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 pb-3 pt-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "No selection"}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                disabled={isScoring || selectedIds.size === 0}
+                onClick={() => handleBulkScore(Array.from(selectedIds))}
+              >
+                {isScoring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
+                Re-analyze Selected
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 text-xs"
+                disabled={isScoring || rankedApplications.length === 0}
+                onClick={() => handleBulkScore()}
+              >
+                {isScoring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
+                Re-analyze All
+              </Button>
+            </div>
+          </div>
+          {isScoring && scoringProgress && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Processing {scoringProgress.completed}/{scoringProgress.total}
+              {scoringProgress.currentCandidate ? ` • ${scoringProgress.currentCandidate}` : ""}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="rounded-lg border border-border/80 bg-background overflow-hidden">
+        <Table className="text-xs">
+          <TableHeader>
+            <TableRow className="hover:bg-transparent bg-muted/30">
+              <TableHead className="h-9 w-10 px-3">
+                <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" />
+              </TableHead>
+              <TableHead className="h-9 w-12 px-3">Rank</TableHead>
+              <TableHead className="h-9 px-3">Candidate</TableHead>
+              <TableHead className="h-9 px-3">AI Score</TableHead>
+              <TableHead className="h-9 px-3">Recommendation</TableHead>
+              <TableHead className="h-9 px-3">AI Review Summary</TableHead>
+              <TableHead className="h-9 px-3">Current Round</TableHead>
+              <TableHead className="h-9 px-3">Applied</TableHead>
+              <TableHead className="h-9 px-3 text-right">Profile</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rankedApplications.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                  No applications found.
+                </TableCell>
+              </TableRow>
+            )}
+            {rankedApplications.map((application, index) => {
+              const analysis = analysisResults.get(application.id) || application.aiAnalysis;
+              const score = getScore(application, analysis);
+              const recommendation = formatRecommendation(analysis?.recommendation);
+              const summary = getReviewSummary(analysis);
+
               return (
-                <ScreeningCandidateCard
-                  key={application.id}
-                  application={application}
-                  jobId={jobId}
-                  onUpdate={onRefresh}
-                  aiAnalysis={aiAnalysis}
-                />
+                <TableRow key={application.id}>
+                  <TableCell className="px-3 py-2.5">
+                    <Checkbox
+                      checked={selectedIds.has(application.id)}
+                      onCheckedChange={() => toggleSelect(application.id)}
+                      aria-label={`Select ${application.candidateName || "candidate"}`}
+                    />
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 font-semibold text-foreground">
+                    #{index + 1}
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 min-w-[170px]">
+                    <p className="font-medium text-foreground truncate">
+                      {application.candidateName || application.candidateEmail?.split("@")[0] || "Unknown Candidate"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">{application.candidateEmail || "No email"}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-1.5 mt-1 text-[10px] text-primary"
+                      onClick={() => {
+                        setAnalysisDrawerCandidate(application);
+                        setAnalysisDrawerData(analysis);
+                        setAnalysisDrawerOpen(true);
+                      }}
+                    >
+                      <Brain className="mr-1 h-3 w-3" />
+                      AI Analysis
+                    </Button>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5">
+                    <Badge variant="outline" className={`text-[11px] ${scoreBadgeClass(score)}`}>
+                      {score > 0 ? `${Math.round(score)}%` : "Pending"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5">
+                    <span className="text-[11px] text-foreground">{recommendation}</span>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 max-w-[380px]">
+                    <p className="text-[11px] text-muted-foreground leading-5 line-clamp-2">{summary}</p>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5">
+                    <Badge variant="secondary" className="text-[10px] font-medium">
+                      {application.stage || "New Application"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-[11px] text-muted-foreground whitespace-nowrap">
+                    {application.appliedDate && !Number.isNaN(new Date(application.appliedDate).getTime())
+                      ? formatDistanceToNow(new Date(application.appliedDate), { addSuffix: true })
+                      : "Unknown"}
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px]"
+                      onClick={() => {
+                        setDrawerApplication(application);
+                        setDrawerOpen(true);
+                      }}
+                    >
+                      <UserRound className="mr-1.5 h-3.5 w-3.5" />
+                      View Profile
+                    </Button>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </div>
-        )}
+          </TableBody>
+        </Table>
       </div>
+
+      {drawerApplication && (
+        <CandidateAssessmentView
+          application={drawerApplication}
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          jobTitle={drawerApplication.jobTitle || job?.title || "Job"}
+          jobId={job?.id}
+        />
+      )}
+
+      <AIScreeningAnalysisDrawer
+        open={analysisDrawerOpen}
+        onOpenChange={setAnalysisDrawerOpen}
+        application={analysisDrawerCandidate}
+        analysis={analysisDrawerData}
+      />
     </div>
   );
 }
-

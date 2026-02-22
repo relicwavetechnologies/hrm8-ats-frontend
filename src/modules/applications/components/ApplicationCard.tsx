@@ -57,6 +57,7 @@ interface ApplicationCardProps {
   onMoveToRound?: (applicationId: string, roundId: string) => void;
   isOptimisticMove?: boolean; // Visual state for optimistic updates
   hasFailed?: boolean; // Visual state for failed moves
+  isSimpleFlow?: boolean;
 }
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -78,7 +79,8 @@ export function ApplicationCard({
   allRounds,
   onMoveToRound,
   isOptimisticMove = false,
-  hasFailed = false
+  hasFailed = false,
+  isSimpleFlow = false,
 }: ApplicationCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -211,7 +213,7 @@ export function ApplicationCard({
         style={style}
         {...attributes}
         {...listeners}
-        className={`p-2.5 cursor-pointer hover:shadow-md transition-all relative group ${
+        className={`${variant === 'minimal' ? 'p-2 border-muted/60 shadow-none hover:shadow-sm' : 'p-2.5'} cursor-pointer transition-all relative group ${
           isSelected ? 'ring-2 ring-primary' : ''
         } ${
           isOptimisticMove ? 'opacity-70 animate-pulse' : ''
@@ -268,6 +270,7 @@ export function ApplicationCard({
               )}
 
               {/* Minimal Actions */}
+               {!isSimpleFlow && (
                <div className="flex items-center gap-2 mt-1">
                     <Button
                       variant="outline"
@@ -343,6 +346,7 @@ export function ApplicationCard({
                       return null;
                     })()}
                   </div>
+                  )}
             </div>
           ) : (
             // Default Header Layout
