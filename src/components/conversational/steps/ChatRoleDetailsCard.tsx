@@ -111,16 +111,10 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
 
             <Button
                 onClick={onContinue}
-<<<<<<< HEAD
-                className="w-full h-10 text-sm rounded-md font-medium transition-all"
-            >
-                Continue <ChevronRight className="ml-1.5 h-4 w-4" />
-=======
                 className="w-full h-11 font-semibold rounded-lg"
             >
                 Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
->>>>>>> 972b97f03fafa0f6422bd85c2b2f37feffaa2335
             </Button>
         </div>
     );

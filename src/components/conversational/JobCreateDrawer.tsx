@@ -9,7 +9,6 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Sparkles, X, ChevronRight, Loader2 } from 'lucide-react';
-import { cn } from '@/shared/lib/utils';
 import { useJobCreateStore, WizardStepId, WIZARD_STEPS } from '@/modules/jobs/store/useJobCreateStore';
 import { JobFormData } from '@/shared/types/job';
 import { JobPreviewPanel } from '@/components/conversational/JobPreviewPanel';
