@@ -3,7 +3,8 @@ import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Sparkles } from 'lucide-react';
+import { Badge } from '@/shared/components/ui/badge';
 
 interface ChatBasicDetailsCardProps {
     title: string;
@@ -27,63 +28,69 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
     const canContinue = title.trim().length >= 3;
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-xl">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400">
+            {/* Job Title */}
             <div className="space-y-2">
-                <Label htmlFor="job-title" className="text-base font-semibold">
-                    Job Title <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                    <Input
-                        id="job-title"
-                        value={title}
-                        onChange={(e) => onTitleChange(e.target.value)}
-                        placeholder="e.g., Senior Software Engineer"
-                        className={cn(
-                            "text-lg h-14 px-4 rounded-xl transition-all",
-                            isParsedTitle && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
-                        )}
-                        autoFocus
-                    />
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="job-title" className="text-sm font-semibold">
+                        Job Title <span className="text-destructive">*</span>
+                    </Label>
                     {isParsedTitle && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-green-600 font-bold">
-                            From JD
-                        </span>
+                        <Badge variant="outline" className="text-[10px] gap-1 text-green-600 border-green-500/40 bg-green-50 dark:bg-green-950/30">
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Auto-filled from JD
+                        </Badge>
                     )}
                 </div>
-                <p className="text-xs text-muted-foreground pl-1">
-                    Enter a clear, specific title. This is what candidates will see first!
+                <Input
+                    id="job-title"
+                    value={title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    placeholder="e.g., Senior Software Engineer"
+                    className={cn(
+                        "text-base h-11 rounded-lg transition-all",
+                        isParsedTitle && "border-green-500/50 bg-green-50/50 dark:bg-green-950/20",
+                        canContinue && !isParsedTitle && "border-primary/40"
+                    )}
+                    autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                    Be specific — e.g. "Senior Backend Engineer" beats "Engineer"
                 </p>
             </div>
 
+            {/* Department */}
             <div className="space-y-2">
-                <Label htmlFor="department" className="text-base font-semibold">
-                    Department
-                </Label>
-                <div className="relative">
-                    <Input
-                        id="department"
-                        value={department}
-                        onChange={(e) => onDepartmentChange(e.target.value)}
-                        placeholder="e.g., Engineering, Marketing, Sales"
-                        className={cn(
-                            "text-base h-12 px-4 rounded-xl transition-all",
-                            isParsedDept && "border-green-500/50 bg-green-50 dark:bg-green-950/20"
-                        )}
-                    />
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="department" className="text-sm font-semibold">
+                        Department
+                    </Label>
                     {isParsedDept && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-wider text-green-600 font-bold">
-                            From JD
-                        </span>
+                        <Badge variant="outline" className="text-[10px] gap-1 text-green-600 border-green-500/40 bg-green-50 dark:bg-green-950/30">
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Auto-filled from JD
+                        </Badge>
                     )}
                 </div>
+                <Input
+                    id="department"
+                    value={department}
+                    onChange={(e) => onDepartmentChange(e.target.value)}
+                    placeholder="e.g., Engineering, Marketing, Sales"
+                    className={cn(
+                        "text-base h-11 rounded-lg transition-all",
+                        isParsedDept && "border-green-500/50 bg-green-50/50 dark:bg-green-950/20"
+                    )}
+                />
             </div>
 
             <Button
                 onClick={onContinue}
                 disabled={!canContinue}
-                className="w-full h-12 text-base rounded-xl font-semibold transition-all"
+                className="w-full h-11 font-semibold rounded-lg"
             >
-                Continue <ChevronRight className="ml-2 h-5 w-5" />
+                Continue
+                <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
         </div>
     );
