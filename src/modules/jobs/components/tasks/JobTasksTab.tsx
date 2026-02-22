@@ -91,16 +91,16 @@ interface TaskKanbanCardProps {
 }
 
 const priorityClass = (priority: TaskPriority) => {
-  if (priority === 'URGENT') return 'bg-red-50 text-red-700 border-red-200';
-  if (priority === 'HIGH') return 'bg-orange-50 text-orange-700 border-orange-200';
-  if (priority === 'MEDIUM') return 'bg-amber-50 text-amber-700 border-amber-200';
-  return 'bg-sky-50 text-sky-700 border-sky-200';
+  if (priority === 'URGENT') return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+  if (priority === 'HIGH') return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
+  if (priority === 'MEDIUM') return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+  return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800';
 };
 
 const statusClass = (status: TaskStatus) => {
-  if (status === 'COMPLETED') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (status === 'IN_PROGRESS') return 'bg-blue-50 text-blue-700 border-blue-200';
-  return 'bg-slate-50 text-slate-700 border-slate-200';
+  if (status === 'COMPLETED') return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
+  if (status === 'IN_PROGRESS') return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+  return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800';
 };
 
 function WeeklyTaskBars({ data }: { data: Array<{ label: string; created: number; completed: number }> }) {
@@ -112,10 +112,10 @@ function WeeklyTaskBars({ data }: { data: Array<{ label: string; created: number
         <div key={item.label} className="grid grid-cols-[34px_1fr] items-center gap-2">
           <span className="text-[10px] text-muted-foreground">{item.label}</span>
           <div className="space-y-1">
-            <div className="h-2 rounded bg-blue-100 overflow-hidden">
+            <div className="h-2 rounded bg-blue-100 dark:bg-blue-900/30 overflow-hidden">
               <div className="h-full bg-blue-500" style={{ width: `${(item.created / max) * 100}%` }} />
             </div>
-            <div className="h-2 rounded bg-emerald-100 overflow-hidden">
+            <div className="h-2 rounded bg-emerald-100 dark:bg-emerald-900/30 overflow-hidden">
               <div className="h-full bg-emerald-500" style={{ width: `${(item.completed / max) * 100}%` }} />
             </div>
           </div>
@@ -126,9 +126,9 @@ function WeeklyTaskBars({ data }: { data: Array<{ label: string; created: number
 }
 
 const taskColumnTheme: Record<TaskStatus, string> = {
-  PENDING: 'bg-gradient-to-b from-slate-50/90 to-slate-50/40 border-slate-200/70',
-  IN_PROGRESS: 'bg-gradient-to-b from-blue-50/90 to-blue-50/40 border-blue-200/70',
-  COMPLETED: 'bg-gradient-to-b from-emerald-50/90 to-emerald-50/40 border-emerald-200/70',
+  PENDING: 'bg-gradient-to-b from-slate-50/90 to-slate-50/40 border-slate-200/70 dark:from-slate-900/90 dark:to-slate-900/40 dark:border-slate-800/70',
+  IN_PROGRESS: 'bg-gradient-to-b from-blue-50/90 to-blue-50/40 border-blue-200/70 dark:from-blue-900/20 dark:to-blue-900/10 dark:border-blue-800/70',
+  COMPLETED: 'bg-gradient-to-b from-emerald-50/90 to-emerald-50/40 border-emerald-200/70 dark:from-emerald-900/20 dark:to-emerald-900/10 dark:border-emerald-800/70',
 };
 
 function TaskKanbanColumn({ id, label, count, children }: TaskKanbanColumnProps) {

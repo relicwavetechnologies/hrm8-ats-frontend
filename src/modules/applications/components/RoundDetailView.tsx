@@ -313,11 +313,11 @@ export function RoundDetailView({
             <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-3">
               {/* Status Badge */}
               {displayState === 'NOT_INVITED' && (
-                <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-gray-300 text-gray-500">Not Invited</Badge>
+                <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-gray-300 text-gray-500 dark:border-gray-700 dark:text-gray-400">Not Invited</Badge>
               )}
               {displayState === 'INVITED' && (
                 <>
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-yellow-400 text-yellow-600 bg-yellow-50">Invited</Badge>
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-yellow-400 text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800">Invited</Badge>
                   {assessment?.invitedAt && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3 opacity-70" />
@@ -327,11 +327,11 @@ export function RoundDetailView({
                 </>
               )}
               {displayState === 'IN_PROGRESS' && (
-                <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-blue-400 text-blue-600 bg-blue-50">In Progress</Badge>
+                <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-blue-400 text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">In Progress</Badge>
               )}
               {displayState === 'COMPLETED' && (
                 <>
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-400 text-green-600 bg-green-50">Completed</Badge>
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-green-400 text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">Completed</Badge>
                   {assessment?.completedAt && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3 opacity-70" />
@@ -341,7 +341,7 @@ export function RoundDetailView({
                 </>
               )}
               {displayState === 'PASSED' && (
-                <Badge className="text-[10px] h-5 px-1.5 bg-green-500 text-white">Passed</Badge>
+                <Badge className="text-[10px] h-5 px-1.5 bg-green-500 text-white dark:bg-green-600 dark:text-white">Passed</Badge>
               )}
               {displayState === 'FAILED' && (
                 <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Failed</Badge>

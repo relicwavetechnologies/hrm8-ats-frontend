@@ -373,19 +373,19 @@ function TaskItem({ task, onDelete, onUpdateStatus, onAddNote }: {
 
   const statusBadgeClass =
     task.status === "COMPLETED"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
       : task.status === "IN_PROGRESS"
-        ? "bg-blue-50 text-blue-700 border-blue-200"
-        : "bg-slate-50 text-slate-700 border-slate-200";
+        ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+        : "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800";
 
   const priorityBadgeClass =
     task.priority === "URGENT"
-      ? "bg-red-50 text-red-700 border-red-200"
+      ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800"
       : task.priority === "HIGH"
-        ? "bg-orange-50 text-orange-700 border-orange-200"
+        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800"
         : task.priority === "MEDIUM"
-          ? "bg-amber-50 text-amber-700 border-amber-200"
-          : "bg-sky-50 text-sky-700 border-sky-200";
+          ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
+          : "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800";
 
   const onSubmitNote = async () => {
     if (!noteText.trim()) return;

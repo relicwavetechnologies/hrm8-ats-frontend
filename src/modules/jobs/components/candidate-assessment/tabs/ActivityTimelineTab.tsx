@@ -138,30 +138,30 @@ export function ActivityTimelineTab({ application }: ActivityTimelineTabProps) {
     switch (type) {
       case "stage_changed":
       case "round_changed":
-        return "bg-slate-100 text-slate-700 border-slate-200";
+        return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800";
       case "note_added":
       case "notes_updated":
       case "annotation_commented":
       case "annotation_highlighted":
       case "interview_note_added":
       case "interview_note_deleted":
-        return "bg-zinc-100 text-zinc-700 border-zinc-200";
+        return "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-900/50 dark:text-zinc-300 dark:border-zinc-800";
       case "email_sent":
       case "email_reply_sent":
-        return "bg-stone-100 text-stone-700 border-stone-200";
+        return "bg-stone-100 text-stone-700 border-stone-200 dark:bg-stone-900/50 dark:text-stone-300 dark:border-stone-800";
       case "interview_scheduled":
       case "interview_updated":
       case "interview_cancelled":
-        return "bg-neutral-100 text-neutral-700 border-neutral-200";
+        return "bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-900/50 dark:text-neutral-300 dark:border-neutral-800";
       case "task_created":
       case "task_updated":
       case "task_assigned":
       case "task_deleted":
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-800";
       case "sms_sent":
       case "slack_message_sent":
       case "call_logged":
-        return "bg-slate-100 text-slate-700 border-slate-200";
+        return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800";
       default:
         return "bg-muted/60 text-muted-foreground border-border";
     }

@@ -230,33 +230,33 @@ export default function EmailTemplates() {
         value,
         tone:
           idx === 0
-            ? "bg-blue-500"
+            ? "bg-blue-500 dark:bg-blue-600"
             : idx === 1
-              ? "bg-emerald-500"
+              ? "bg-emerald-500 dark:bg-emerald-600"
               : idx === 2
-                ? "bg-amber-500"
+                ? "bg-amber-500 dark:bg-amber-600"
                 : idx === 3
-                  ? "bg-violet-500"
-                  : "bg-slate-500",
+                  ? "bg-violet-500 dark:bg-violet-600"
+                  : "bg-slate-500 dark:bg-slate-600",
       }));
   }, [templates]);
 
   const getTypeColor = (type: EmailTemplate["type"]) => {
     const colors: Record<string, string> = {
-      NEW: "bg-blue-50 text-blue-700 border-blue-200",
-      ASSESSMENT: "bg-violet-50 text-violet-700 border-violet-200",
-      INTERVIEW: "bg-amber-50 text-amber-700 border-amber-200",
-      INTERVIEW_INVITATION: "bg-amber-50 text-amber-700 border-amber-200",
-      OFFER: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      OFFER_EXTENDED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      OFFER_ACCEPTED: "bg-green-50 text-green-700 border-green-200",
-      HIRED: "bg-teal-50 text-teal-700 border-teal-200",
-      REJECTED: "bg-rose-50 text-rose-700 border-rose-200",
-      CUSTOM: "bg-slate-50 text-slate-700 border-slate-200",
-      REMINDER: "bg-cyan-50 text-cyan-700 border-cyan-200",
-      FOLLOW_UP: "bg-indigo-50 text-indigo-700 border-indigo-200",
-      STAGE_CHANGE: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
-      APPLICATION_CONFIRMATION: "bg-sky-50 text-sky-700 border-sky-200",
+      NEW: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+      ASSESSMENT: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800",
+      INTERVIEW: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+      INTERVIEW_INVITATION: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+      OFFER: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+      OFFER_EXTENDED: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+      OFFER_ACCEPTED: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+      HIRED: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800",
+      REJECTED: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800",
+      CUSTOM: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700",
+      REMINDER: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800",
+      FOLLOW_UP: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800",
+      STAGE_CHANGE: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-400 dark:border-fuchsia-800",
+      APPLICATION_CONFIRMATION: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800",
     };
     return colors[type] || colors.CUSTOM;
   };
@@ -536,8 +536,8 @@ export default function EmailTemplates() {
                               className={cn(
                                 "text-[10px]",
                                 template.isActive
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-slate-50 text-slate-600 border-slate-200",
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                                  : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700",
                               )}
                             >
                               {template.isActive ? "Active" : "Inactive"}

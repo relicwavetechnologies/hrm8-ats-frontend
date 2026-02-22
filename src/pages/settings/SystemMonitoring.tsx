@@ -59,10 +59,10 @@ export default function SystemMonitoring() {
 
   const getStatusColor = (status: SystemIntegration['status']) => {
     switch (status) {
-      case 'active': return 'text-green-600 bg-green-50 border-green-200';
-      case 'error': return 'text-red-600 bg-red-50 border-red-200';
-      case 'maintenance': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'inactive': return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'active': return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'error': return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+      case 'maintenance': return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
+      case 'inactive': return 'text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700';
     }
   };
 
@@ -86,10 +86,10 @@ export default function SystemMonitoring() {
 
   const getAlertColor = (type: string) => {
     switch (type) {
-      case 'error': return 'text-red-600 bg-red-50 border-red-200';
-      case 'warning': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'info': return 'text-blue-600 bg-blue-50 border-blue-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'error': return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+      case 'warning': return 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
+      case 'info': return 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700';
     }
   };
 
@@ -217,13 +217,13 @@ export default function SystemMonitoring() {
                       dataKey="time"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                       dy={10}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     />
                     <Tooltip
                       cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '5 5' }}
@@ -270,13 +270,13 @@ export default function SystemMonitoring() {
                       dataKey="time"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                       dy={10}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     />
                     <Tooltip
                       cursor={false}
