@@ -49,10 +49,11 @@ const atsNavItems = [
     title: "Offers",
     url: "/offers",
     icon: FileSignature,
-    subItems: [
-      { title: "All Offers", url: "/offers" },
-      { title: "Management", url: "/offers/manage" },
-    ]
+  },
+  {
+    title: "Hired",
+    url: "/hired",
+    icon: UserCheck,
   },
   // {
   //   title: "AI Interviews",
@@ -80,7 +81,6 @@ const atsNavItems = [
   { title: "Careers Page", url: "/ats/careers-page", icon: Building2 },
   { title: "Email Templates", url: "/email-templates", icon: MailPlus },
   { title: "Inbox", url: "/messages", icon: Inbox },
-  { title: "Onboarding", url: "/recruitment-integration", icon: Users },
 ];
 
 
@@ -286,12 +286,12 @@ export function AppSidebar() {
     onMouseEnter={() => !open && setIsHovering(true)}
     onMouseLeave={() => !open && setIsHovering(false)}
   >
-    <SidebarHeader className="border-b border-sidebar-border p-0 bg-sidebar">
+    <SidebarHeader className="border-b border-sidebar-border px-2 py-2 bg-sidebar">
       <NavLink
         to="/home"
         className={cn(
-          "flex items-center transition-all duration-200 hover:opacity-80",
-          isExpanded ? "justify-start px-2" : "justify-center"
+          "flex items-center transition-all duration-200 hover:opacity-80 rounded-md",
+          isExpanded ? "justify-start px-2 py-1.5" : "justify-center p-1.5"
         )}
       >
         {isExpanded ? (

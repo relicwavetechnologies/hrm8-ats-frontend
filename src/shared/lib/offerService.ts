@@ -66,7 +66,66 @@ export interface OfferDocument {
   updatedAt: string;
 }
 
+export type OfferWorkflowStep =
+  | 'negotiation'
+  | 'amount'
+  | 'offer_letter'
+  | 'document_request'
+  | 'documents'
+  | 'hired';
+
+export interface OfferWorkflowState {
+  currentStep: OfferWorkflowStep;
+  negotiationComplete: boolean;
+  amount: string;
+  offerLetterSent: boolean;
+  documentRequestSent: boolean;
+  stepNotes: Partial<Record<OfferWorkflowStep, string>>;
+  hiredAt?: string;
+}
+
+export interface OfferWorkflowResponse {
+  offerId: string;
+  applicationId: string;
+  workflow: OfferWorkflowState;
+  documents: OfferDocument[];
+}
+
 class OfferService {
+  async getOfferWorkflow(applicationId: string) {
+    return apiClient.get<OfferWorkflowResponse>(`/api/offers/application/${applicationId}/workflow`);
+  }
+
+  async updateOfferWorkflow(
+    applicationId: string,
+    data: {
+      negotiationComplete?: boolean;
+      amount?: string;
+      offerLetterSent?: boolean;
+      documentRequestSent?: boolean;
+      step?: OfferWorkflowStep;
+      note?: string;
+      markHired?: boolean;
+    }
+  ) {
+    return apiClient.put<OfferWorkflowResponse>(`/api/offers/application/${applicationId}/workflow`, data);
+  }
+
+  async uploadOfferWorkflowDocuments(
+    applicationId: string,
+    files: File[],
+    options?: {
+      category?: string;
+      note?: string;
+    }
+  ) {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+    if (options?.category) formData.append('category', options.category);
+    if (options?.note) formData.append('note', options.note);
+    return apiClient.upload<OfferWorkflowResponse>(`/api/offers/application/${applicationId}/workflow/documents`, formData);
+  }
+
   /**
    * Create a new offer
    */
@@ -207,5 +266,3 @@ class OfferService {
 }
 
 export const offerService = new OfferService();
-
-

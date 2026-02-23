@@ -3,12 +3,13 @@ import { Card, CardContent } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Input } from '@/shared/components/ui/input';
+import { Badge } from '@/shared/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import { RichTextEditor } from '@/shared/components/ui/rich-text-editor';
-import { MessageSquare, Send, AtSign, Loader2, Mail, Sparkles, FileText, Phone, Calendar, CheckSquare } from 'lucide-react';
+import { MessageSquare, Send, AtSign, Loader2, Mail, Sparkles, FileText, Phone, Calendar, CheckSquare, ClipboardCheck, Plus, X, Users } from 'lucide-react';
 import { apiClient } from '@/shared/lib/api';
 import { useToast } from '@/shared/hooks/use-toast';
 import { getApplicationEmailTemplates } from '@/shared/lib/applicationEmailTemplates';
@@ -16,6 +17,7 @@ import { Application } from '@/shared/types/application';
 import { SendSmsTab } from './tabs/SendSmsTab';
 import { ScheduleMeetingTab } from './tabs/ScheduleMeetingTab';
 import { CreateTaskTab } from './tabs/CreateTaskTab';
+import { AssessmentRoundCreatePanel } from './tabs/AssessmentRoundTab';
 import { getCaretCoordinates } from '@/shared/lib/textareaUtils';
 
 interface Note {
@@ -33,6 +35,7 @@ interface HiringTeamMember {
   name: string;
   role: string;
   avatar?: string;
+  email?: string;
 }
 
 interface CandidateNotesPanelProps {
@@ -85,6 +88,9 @@ export function CandidateNotesPanelEnhanced({
   const [templates] = useState(getApplicationEmailTemplates());
   const [aiContext, setAiContext] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [ccEmails, setCcEmails] = useState<string[]>([]);
+  const [ccInput, setCcInput] = useState('');
+  const [showCc, setShowCc] = useState(false);
 
   // Fetch hiring team
   useEffect(() => {
@@ -100,10 +106,11 @@ export function CandidateNotesPanelEnhanced({
 
         if (response.success && response.data) {
           const mappedTeam = response.data.map(member => ({
-            id: member.userId,
-            name: member.name,
-            role: member.role,
-            avatar: member.avatar
+            id: member.userId || member.id,
+            name: member.name || member.user?.name || 'Team Member',
+            role: member.role || member.userRole || 'Team',
+            avatar: member.avatar || member.user?.avatar,
+            email: member.email || member.user?.email || member.userEmail,
           }));
           console.log('CandidateNotesPanelEnhanced: Mapped team:', mappedTeam);
           setHiringTeam(mappedTeam);
@@ -390,6 +397,7 @@ Hiring Team`;
           subject: emailSubject,
           body: emailBody,
           templateId: selectedTemplate || undefined,
+          cc: ccEmails.length ? ccEmails : undefined,
         }
       );
 
@@ -400,6 +408,9 @@ Hiring Team`;
         });
         setEmailSubject('');
         setEmailBody('');
+        setCcEmails([]);
+        setCcInput('');
+        setShowCc(false);
         onEmailSent?.();
       } else {
         throw new Error(response.error || 'Failed to send email');
@@ -416,12 +427,24 @@ Hiring Team`;
     }
   };
 
+  const addCcEmail = (value: string) => {
+    const email = value.trim().toLowerCase();
+    if (!email || !/.+@.+\..+/.test(email) || ccEmails.includes(email)) {
+      return;
+    }
+    setCcEmails(prev => [...prev, email]);
+  };
+
+  const removeCcEmail = (email: string) => {
+    setCcEmails(prev => prev.filter(item => item !== email));
+  };
+
   return (
     <Card className="h-full flex flex-col border-0 shadow-none overflow-hidden">
       <CardContent className="flex-1 flex flex-col p-3 min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          {/* Tabs Header - 5 tabs */}
-          <TabsList className="grid w-full grid-cols-5 h-8 mb-1 flex-shrink-0">
+          {/* Tabs Header - 6 tabs */}
+          <TabsList className="grid w-full grid-cols-6 h-8 mb-1 flex-shrink-0">
             <TabsTrigger value="notes" className="text-xs gap-1">
               <MessageSquare className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Note</span>
@@ -441,6 +464,10 @@ Hiring Team`;
             <TabsTrigger value="task" className="text-xs gap-1">
               <CheckSquare className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Task</span>
+            </TabsTrigger>
+            <TabsTrigger value="assessment" className="text-xs gap-1">
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Assess</span>
             </TabsTrigger>
           </TabsList>
 
@@ -518,15 +545,111 @@ Hiring Team`;
                     {candidateEmail || "No Email"}
                   </div>
                 </div>
-                <Button
-                  onClick={handleSendEmail}
-                  disabled={!emailSubject.trim() || !emailBody.trim() || isSendingEmail || !candidateEmail}
-                  className="h-6 px-3 text-[10px] font-bold"
-                  size="sm"
-                >
-                  {isSendingEmail ? <Loader2 className="h-3 w-3 animate-spin" /> : "Send"}
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={() => setShowCc(prev => !prev)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    CC
+                  </Button>
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={!emailSubject.trim() || !emailBody.trim() || isSendingEmail || !candidateEmail}
+                    className="h-6 px-3 text-[10px] font-bold"
+                    size="sm"
+                  >
+                    {isSendingEmail ? <Loader2 className="h-3 w-3 animate-spin" /> : "Send"}
+                  </Button>
+                </div>
               </div>
+
+              {(showCc || ccEmails.length > 0) && (
+                <div className="px-3 py-1.5 border-b bg-background">
+                  <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">CC:</span>
+                    {ccEmails.map((email) => (
+                      <Badge key={email} variant="outline" className="h-5 text-[10px] px-1.5 gap-1">
+                        <span className="max-w-[180px] truncate">{email}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCcEmail(email)}
+                          className="rounded-full hover:bg-muted"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[10px]">
+                          <Users className="h-3 w-3 mr-1" />
+                          Team
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-1" align="start">
+                        <div className="max-h-52 overflow-auto">
+                          {hiringTeam.filter(member => member.email).length === 0 ? (
+                            <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+                              No hiring team emails found
+                            </div>
+                          ) : (
+                            hiringTeam
+                              .filter(member => member.email)
+                              .map(member => {
+                                const teamEmail = member.email as string;
+                                const isSelected = ccEmails.includes(teamEmail.toLowerCase());
+                                return (
+                                  <button
+                                    key={member.id}
+                                    type="button"
+                                    onClick={() => addCcEmail(teamEmail)}
+                                    disabled={isSelected}
+                                    className="w-full flex items-center justify-between px-2 py-1.5 text-left rounded hover:bg-muted disabled:opacity-50"
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="text-[11px] font-medium truncate">{member.name}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate">{teamEmail}</p>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground">{member.role}</span>
+                                  </button>
+                                );
+                              })
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="email"
+                      value={ccInput}
+                      onChange={(e) => setCcInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addCcEmail(ccInput);
+                          setCcInput('');
+                        }
+                        if (e.key === ',' || e.key === ';') {
+                          e.preventDefault();
+                          addCcEmail(ccInput);
+                          setCcInput('');
+                        }
+                      }}
+                      onBlur={() => {
+                        if (ccInput.trim()) {
+                          addCcEmail(ccInput);
+                          setCcInput('');
+                        }
+                      }}
+                      placeholder="Add CC email"
+                      className="h-6 text-[10px] max-w-[180px]"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Subject & Tools Row */}
               <div className="flex items-center gap-2 px-2 py-1 border-b">
@@ -600,6 +723,16 @@ Hiring Team`;
           {/* Create Task Tab Content */}
           <TabsContent value="task" className="m-0 data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
             <CreateTaskTab application={applicationObj} />
+          </TabsContent>
+
+          {/* Assessment Create/Send Tab Content */}
+          <TabsContent value="assessment" className="m-0 data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col min-h-0 overflow-hidden">
+            <AssessmentRoundCreatePanel
+              applicationId={applicationId}
+              jobId={currentJobId}
+              jobTitle={jobTitle}
+              compact
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

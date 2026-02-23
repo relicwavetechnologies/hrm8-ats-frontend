@@ -148,7 +148,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   );
 }, (prevProps, nextProps) => {
   return (
-    prevProps.round.id === nextProps.round.id &&
+    prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
     prevProps.isSimpleFlow === nextProps.isSimpleFlow &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
@@ -404,9 +404,9 @@ const StageColumn = React.memo(function StageColumn({
             </div>
           </div>
           <div ref={setNodeRef} className="flex-1 min-h-[150px]">
-            <SortableContext items={applications.map((app) => app.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={applications.filter((app): app is Application => !!app?.id).map((app) => app.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-1 flex-1 overflow-y-auto min-h-[150px]">
-                {applications.map((application) => (
+                {applications.filter((application): application is Application => !!application?.id).map((application) => (
                   <div key={application.id} className="relative group">
                     <ApplicationCard
                       application={application}
@@ -439,7 +439,7 @@ const StageColumn = React.memo(function StageColumn({
   );
 }, (prevProps, nextProps) => {
   return (
-    prevProps.round.id === nextProps.round.id &&
+    prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
     prevProps.isOver === nextProps.isOver &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
@@ -601,7 +601,7 @@ export function ApplicationPipeline({
     if (providedApplications !== undefined) {
       // Merge optimistic moves with provided applications
       // This prevents overwriting optimistic state when parent re-renders
-      const mergedApplications = providedApplications.map(app => {
+      const mergedApplications = providedApplications.filter((app): app is Application => !!app?.id).map(app => {
         const optimisticRoundId = optimisticMoves.get(app.id);
         if (optimisticRoundId) {
           return { ...app, roundId: optimisticRoundId };
@@ -725,7 +725,7 @@ export function ApplicationPipeline({
 
         // Map API applications to frontend Application type
         // Handle both pre-transformed consultant data and raw employer API data
-        const mappedApplications: Application[] = apiApplications.map((app: any) => {
+        const mappedApplications: Application[] = apiApplications.filter((app: any) => !!app?.id).map((app: any) => {
           const extractedRoundId = app.roundId || app.round_id || roundMap[app.id];
 
           // Debug logging
@@ -933,6 +933,23 @@ export function ApplicationPipeline({
 
     // If we found a target round, move application to that round
     if (targetRound) {
+      const currentRound = findRoundForApplication(application);
+      if (targetRound.fixedKey === 'HIRED') {
+        toast.error("Direct move blocked", {
+          description: "Use the Offer tab onboarding flow to move a candidate to Hired.",
+          duration: 3500,
+        });
+        setActiveId(null);
+        return;
+      }
+      if (currentRound?.fixedKey === 'HIRED') {
+        toast.error("Move blocked", {
+          description: "A hired candidate cannot be moved to another round.",
+          duration: 3500,
+        });
+        setActiveId(null);
+        return;
+      }
       await handleMoveToRound(application.id, targetRound.id);
     }
 
@@ -1076,7 +1093,7 @@ export function ApplicationPipeline({
 
   const handleMoveToRound = async (applicationId: string, roundId: string) => {
     // 1. Identify Application and Target Round
-    const application = applications.find(app => app.id === applicationId);
+    const application = applications.find(app => app?.id === applicationId);
     const targetRound = rounds.find(r => r.id === roundId);
 
     if (!application || !targetRound) {
@@ -1086,6 +1103,22 @@ export function ApplicationPipeline({
 
     // 2. Identify Current Round
     const currentRound = findRoundForApplication(application);
+
+    // Global hard restrictions for hired stage
+    if (targetRound.fixedKey === 'HIRED') {
+      toast.error("Direct move blocked", {
+        description: "Use the Offer tab onboarding flow to move a candidate to Hired.",
+        duration: 3500,
+      });
+      return;
+    }
+    if (currentRound?.fixedKey === 'HIRED') {
+      toast.error("Move blocked", {
+        description: "A hired candidate cannot be moved to another round.",
+        duration: 3500,
+      });
+      return;
+    }
 
     // 3. Validation Logic - SKIP FOR SIMPLE FLOW (no restrictions)
     if (!isSimpleFlow) {
@@ -1175,7 +1208,7 @@ export function ApplicationPipeline({
           aiAnalysis: apiApp.aiAnalysis,
         };
 
-        setApplications(prev => prev.map(app => app.id === appId ? updatedApp : app));
+        setApplications(prev => prev.map(app => app?.id === appId ? updatedApp : app));
       }
     } catch (error) {
       console.error('Failed to refresh single application:', error);
@@ -1234,11 +1267,24 @@ export function ApplicationPipeline({
 
     // Simple Mode Fast Path - Optimistic Updates
     if (isSimpleFlow) {
+      const optimisticStatus =
+        targetRound.fixedKey === 'REJECTED'
+          ? 'rejected'
+          : targetRound.fixedKey === 'OFFER'
+            ? 'offer'
+            : application.status;
       // 1. Optimistic update (instant UI response)
       setOptimisticMoves(prev => new Map(prev).set(applicationId, actualRoundId));
       setApplications(prev => prev.map(app =>
-        app.id === applicationId ? { ...app, roundId: actualRoundId } : app
+        app?.id === applicationId
+          ? { ...app, roundId: actualRoundId, stage: targetRound.name as any, status: optimisticStatus as any }
+          : app
       ));
+      setSelectedApplication(prev =>
+        prev?.id === applicationId
+          ? { ...prev, roundId: actualRoundId, stage: targetRound.name as any, status: optimisticStatus as any }
+          : prev
+      );
 
       // 2. Quick success toast
       toast.success(`Moved to ${targetRound.name}`, { duration: 800 });
@@ -1360,9 +1406,32 @@ export function ApplicationPipeline({
     setDetailPanelOpen(true);
   };
 
+  const handleOfferCandidate = useCallback((applicationId: string) => {
+    const offerRound = rounds.find((r) => r.fixedKey === "OFFER" || String(r.name).toLowerCase() === "offer");
+    if (!offerRound) {
+      toast.error("Offer stage not found");
+      return;
+    }
+    handleMoveToRound(applicationId, offerRound.id);
+  }, [rounds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRejectCandidate = useCallback((applicationId: string) => {
+    const rejectedRound = rounds.find(
+      (r) =>
+        r.fixedKey === "REJECTED" ||
+        String(r.name).toLowerCase() === "rejected" ||
+        String(r.name).toLowerCase() === "declined"
+    );
+    if (!rejectedRound) {
+      toast.error("Rejected stage not found");
+      return;
+    }
+    handleMoveToRound(applicationId, rejectedRound.id);
+  }, [rounds]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleNext = () => {
     if (!selectedApplication) return;
-    const currentIndex = applications.findIndex(app => app.id === selectedApplication.id);
+    const currentIndex = applications.findIndex(app => app?.id === selectedApplication.id);
     if (currentIndex < applications.length - 1) {
       setSelectedApplication(applications[currentIndex + 1]);
     }
@@ -1370,19 +1439,19 @@ export function ApplicationPipeline({
 
   const handlePrevious = () => {
     if (!selectedApplication) return;
-    const currentIndex = applications.findIndex(app => app.id === selectedApplication.id);
+    const currentIndex = applications.findIndex(app => app?.id === selectedApplication.id);
     if (currentIndex > 0) {
       setSelectedApplication(applications[currentIndex - 1]);
     }
   };
 
   const currentIndex = selectedApplication
-    ? applications.findIndex(app => app.id === selectedApplication.id)
+    ? applications.findIndex(app => app?.id === selectedApplication.id)
     : -1;
   const hasNext = currentIndex < applications.length - 1;
   const hasPrevious = currentIndex > 0;
 
-  const activeApplication = activeId ? applications.find((app) => app.id === activeId) : null;
+  const activeApplication = activeId ? applications.find((app) => app?.id === activeId) : null;
 
   const handleDeleteRound = useCallback(async (roundId: string) => {
     if (!jobId) return;
@@ -1471,6 +1540,7 @@ export function ApplicationPipeline({
 
     // Single pass through applications
     applications.forEach(app => {
+      if (!app?.id) return;
       // Check for optimistic move first (takes precedence)
       const appRoundId = optimisticMoves.get(app.id) || app.roundId;
 
@@ -1610,7 +1680,17 @@ export function ApplicationPipeline({
           </div>
 
           <DragOverlay>
-            {activeApplication && <ApplicationCard application={activeApplication} onClick={() => { }} />}
+            {activeApplication && (
+              <ApplicationCard
+                application={activeApplication}
+                onClick={() => { }}
+                variant="minimal"
+                allRounds={rounds}
+                onMoveToRound={handleMoveToRound}
+                isSimpleFlow={isSimpleFlow}
+                isDragOverlay
+              />
+            )}
             {activeRoundId && (() => {
               const draggedRound = rounds.find(r => `round-${r.id}` === activeRoundId);
               if (draggedRound) {
@@ -1639,7 +1719,7 @@ export function ApplicationPipeline({
 
 
 
-      {selectedApplication && (
+      {selectedApplication?.id && (
         <CandidateAssessmentView
           key={selectedApplication.id}
           application={selectedApplication}
@@ -1652,6 +1732,8 @@ export function ApplicationPipeline({
           hasNext={hasNext}
           hasPrevious={hasPrevious}
           isSimpleFlow={isSimpleFlow}
+          onOfferCandidate={handleOfferCandidate}
+          onRejectCandidate={handleRejectCandidate}
 
           // Next Stage Logic
           nextStageName={(() => {

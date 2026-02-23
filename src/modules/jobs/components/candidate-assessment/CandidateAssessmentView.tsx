@@ -19,6 +19,7 @@ import { SmsTab } from "./tabs/SmsTab";
 import { SlackTab } from "./tabs/SlackTab";
 import { NotesTab } from "./tabs/NotesTab";
 import { TaskCreationTab, TaskListTab } from "./tabs/CreateTaskTab";
+import { CandidateAssessmentListTab } from "./tabs/AssessmentRoundTab";
 import { useCursorTracking } from "@/shared/hooks/useCursorTracking";
 import { NotificationCenter } from "@/modules/notifications/components/NotificationCenter";
 import { CandidateInfoPanel } from "./CandidateInfoPanel";
@@ -40,6 +41,8 @@ interface CandidateAssessmentViewProps {
   onMoveToNextStage?: () => void;
   isSimpleFlow?: boolean;
   jobId?: string;
+  onOfferCandidate?: (applicationId: string) => void;
+  onRejectCandidate?: (applicationId: string) => void;
 }
 
 export function CandidateAssessmentView({
@@ -55,6 +58,8 @@ export function CandidateAssessmentView({
   onMoveToNextStage,
   isSimpleFlow,
   jobId,
+  onOfferCandidate,
+  onRejectCandidate,
 }: CandidateAssessmentViewProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("activity");
@@ -135,6 +140,15 @@ export function CandidateAssessmentView({
 
   const handleStatusChange = async (nextStatus: string) => {
     if (!fullApplication.id || !nextStatus || nextStatus === fullApplication.status) return;
+    const currentStatus = String(fullApplication.status || "").toLowerCase();
+    if (currentStatus === "hired") {
+      toast({ title: "Status locked", description: "Hired candidate status cannot be changed.", variant: "destructive" });
+      return;
+    }
+    if (nextStatus === "hired") {
+      toast({ title: "Use Offer Flow", description: "Move candidate to Hired from the Offer tab onboarding flow.", variant: "destructive" });
+      return;
+    }
     const nextStage = statusToStageMap[nextStatus] || fullApplication.stage || "New Application";
 
     setIsUpdatingStatus(true);
@@ -187,7 +201,7 @@ export function CandidateAssessmentView({
                 <Select
                   value={String(fullApplication.status || "applied")}
                   onValueChange={handleStatusChange}
-                  disabled={isUpdatingStatus}
+                  disabled={isUpdatingStatus || String(fullApplication.status || "").toLowerCase() === "hired"}
                 >
                   <SelectTrigger className="h-7 w-[160px] text-[11px] bg-background">
                     <SelectValue />
@@ -197,7 +211,6 @@ export function CandidateAssessmentView({
                     <SelectItem value="screening">Screening</SelectItem>
                     <SelectItem value="interview">Interview</SelectItem>
                     <SelectItem value="offer">Offer</SelectItem>
-                    <SelectItem value="hired">Hired</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
                     <SelectItem value="withdrawn">Withdrawn</SelectItem>
                   </SelectContent>
@@ -240,6 +253,8 @@ export function CandidateAssessmentView({
                 <CandidateInfoPanel
                   application={fullApplication}
                   jobTitle={jobTitle}
+                  onOfferCandidate={onOfferCandidate}
+                  onRejectCandidate={onRejectCandidate}
                 />
               </ResizablePanel>
 
@@ -293,6 +308,10 @@ export function CandidateAssessmentView({
                             <TabsTrigger value="interviews" className="gap-1.5 text-xs">
                               <Calendar className="h-3.5 w-3.5" />
                               Interviews
+                            </TabsTrigger>
+                            <TabsTrigger value="assessment" className="gap-1.5 text-xs">
+                              <ClipboardCheck className="h-3.5 w-3.5" />
+                              Assessment
                             </TabsTrigger>
                             <TabsTrigger value="reviews" className="gap-1.5 text-xs">
                               <Users className="h-3.5 w-3.5" />
@@ -349,6 +368,13 @@ export function CandidateAssessmentView({
 
                           <TabsContent value="interviews" className="mt-0">
                             <InterviewsTab application={fullApplication} />
+                          </TabsContent>
+
+                          <TabsContent value="assessment" className="mt-0">
+                            <CandidateAssessmentListTab
+                              application={fullApplication}
+                              jobId={jobId || fullApplication.jobId || ""}
+                            />
                           </TabsContent>
 
                           <TabsContent value="reviews" className="mt-0">

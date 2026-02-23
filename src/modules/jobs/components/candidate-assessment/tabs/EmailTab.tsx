@@ -50,7 +50,8 @@ export function EmailTab({ application }: EmailTabProps) {
     setLoading(true);
     try {
       const data: EmailThreadsResponse = await gmailThreadService.getEmailThreads(application.id);
-      setThreads(data.gmailThreads);
+      setThreads(data.gmailThreads || []);
+      setGmailConnected(Boolean(data.gmailConnected));
       // Use local response for initial load, but check backend status separately
       if (!gmailConnected) {
         await checkGmailStatus();

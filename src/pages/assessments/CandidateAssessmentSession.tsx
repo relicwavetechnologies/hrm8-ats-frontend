@@ -43,7 +43,7 @@ interface AssessmentQuestion {
   type: string; // 'single-choice' | 'multiple-choice' | 'text-short' | 'text-long' | 'coding'
   points: number;
   timeLimit?: number;
-  options?: any[]; // Parse JSON options
+  options?: Array<{ id: string; text: string }>;
   order: number;
 }
 
@@ -162,12 +162,11 @@ export default function CandidateAssessmentSession() {
 
           // Parse questions and options
           const parsedQuestions = data.assessment_question.map(q => {
-             const options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
              return {
                 ...q,
                 text: (q as any).question_text || (q as any).text,
-                type: (q as any).question_type || (q as any).type,
-                options: Array.isArray(options) ? options : []
+                type: normalizeQuestionType((q as any).question_type || (q as any).type),
+                options: normalizeQuestionOptions((q as any).options)
              };
           });
           
@@ -446,7 +445,7 @@ export default function CandidateAssessmentSession() {
                 value={answers[currentQuestion.id]}
                 onValueChange={handleAnswer}
               >
-                {currentQuestion.options?.map((option: any) => (
+                {(currentQuestion.options || []).map((option: any) => (
                   <div key={option.id} className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer">
                     <RadioGroupItem value={option.id} id={option.id} />
                     <Label htmlFor={option.id} className="flex-1 cursor-pointer">
@@ -459,7 +458,7 @@ export default function CandidateAssessmentSession() {
 
             {currentQuestion.type === 'multiple-choice' && (
               <div className="space-y-2">
-                {currentQuestion.options?.map((option: any) => (
+                {(currentQuestion.options || []).map((option: any) => (
                   <div key={option.id} className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent">
                     <Checkbox
                       id={option.id}
@@ -486,7 +485,7 @@ export default function CandidateAssessmentSession() {
                 value={answers[currentQuestion.id]}
                 onValueChange={handleAnswer}
               >
-                {currentQuestion.options?.map((option: any) => (
+                {(currentQuestion.options || []).map((option: any) => (
                   <div key={option.id} className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-accent cursor-pointer">
                     <RadioGroupItem value={option.id} id={option.id} />
                     <Label htmlFor={option.id} className="flex-1 cursor-pointer">
@@ -525,6 +524,16 @@ export default function CandidateAssessmentSession() {
                  className="font-mono text-sm"
                />
             )}
+
+            {!['single-choice', 'multiple-choice', 'true-false', 'text-short', 'text-long', 'coding'].includes(currentQuestion.type) && (
+              <Textarea
+                value={answers[currentQuestion.id] || ''}
+                onChange={(e) => handleAnswer(e.target.value)}
+                placeholder="Type your answer..."
+                rows={6}
+                className="text-base"
+              />
+            )}
           </div>
         </Card>
 
@@ -558,3 +567,51 @@ export default function CandidateAssessmentSession() {
     </div>
   );
 }
+  const normalizeQuestionType = (rawType: unknown): string => {
+    const normalized = String(rawType || '').trim().toUpperCase().replace(/-/g, '_');
+    if (normalized === 'MULTIPLE_CHOICE' || normalized === 'SINGLE_CHOICE' || normalized === 'SINGLE_SELECT') return 'single-choice';
+    if (normalized === 'MULTIPLE_SELECT') return 'multiple-choice';
+    if (normalized === 'LONG_ANSWER') return 'text-long';
+    if (normalized === 'SHORT_ANSWER') return 'text-short';
+    if (normalized === 'CODE') return 'coding';
+    if (normalized === 'TRUE_FALSE') return 'true-false';
+    return 'text-short';
+  };
+
+  const normalizeQuestionOptions = (rawOptions: unknown): Array<{ id: string; text: string }> => {
+    const toOptionList = (arr: unknown[]): Array<{ id: string; text: string }> =>
+      arr
+        .map((item, idx) => {
+          if (item && typeof item === 'object') {
+            const obj = item as any;
+            const id = String(obj.id ?? obj.value ?? `opt-${idx}`);
+            const text = String(obj.text ?? obj.label ?? obj.value ?? '').trim();
+            return text ? { id, text } : null;
+          }
+          const text = String(item ?? '').trim();
+          return text ? { id: `opt-${idx}`, text } : null;
+        })
+        .filter((opt): opt is { id: string; text: string } => Boolean(opt));
+
+    if (Array.isArray(rawOptions)) return toOptionList(rawOptions);
+
+    if (rawOptions && typeof rawOptions === 'object') {
+      const nested = (rawOptions as any).options;
+      if (Array.isArray(nested)) return toOptionList(nested);
+      return [];
+    }
+
+    if (typeof rawOptions === 'string') {
+      const trimmed = rawOptions.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return toOptionList(parsed);
+      } catch {
+        // continue to CSV fallback
+      }
+      return toOptionList(trimmed.split(',').map((part) => part.trim()).filter(Boolean));
+    }
+
+    return [];
+  };

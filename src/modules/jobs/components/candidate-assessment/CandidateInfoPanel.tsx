@@ -24,14 +24,10 @@ import {
   Sparkles,
   Download,
   Eye,
-  Star,
-  Flag,
-  Bell,
-  BellOff,
-  Linkedin,
-  Globe,
   Tag,
   ClipboardList,
+  UserX,
+  Check,
 } from 'lucide-react';
 import { format, isValid, parseISO, formatDistanceToNow } from 'date-fns';
 import { applicationService } from '@/modules/applications/lib/applicationService';
@@ -39,6 +35,8 @@ import { applicationService } from '@/modules/applications/lib/applicationServic
 interface CandidateInfoPanelProps {
   application: Application;
   jobTitle: string;
+  onOfferCandidate?: (applicationId: string) => void;
+  onRejectCandidate?: (applicationId: string) => void;
 }
 
 // Helper function to safely format dates
@@ -76,11 +74,8 @@ function formatTimeAgo(dateInput: string | Date | undefined | null): string {
   return 'Just now';
 }
 
-export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanelProps) {
+export function CandidateInfoPanel({ application, jobTitle, onOfferCandidate, onRejectCandidate }: CandidateInfoPanelProps) {
   const [activeTab, setActiveTab] = useState<'content' | 'ai-review'>('content');
-  const [rating, setRating] = useState((application as any).rating || 0);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isPriority, setIsPriority] = useState(false);
   const [resumeContent, setResumeContent] = useState<string>('');
   const [resumeContentLoading, setResumeContentLoading] = useState(false);
 
@@ -117,6 +112,14 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
   const strengths = aiAnalysis?.strengths || [];
   const concerns = aiAnalysis?.concerns || [];
   const recommendation = aiAnalysis?.recommendation || 'pending';
+  const normalizedStage = String(application.stage || '').toLowerCase();
+  const normalizedStatus = String(application.status || '').toLowerCase();
+  const isHiredState = normalizedStage.includes('hired') || normalizedStatus === 'hired';
+  const isRejectedState = normalizedStage.includes('reject') || normalizedStatus === 'rejected';
+  const isShortlistedState =
+    !isRejectedState &&
+    !isHiredState &&
+    (normalizedStage.includes('offer') || normalizedStatus === 'offer' || Boolean(application.shortlisted));
 
   useEffect(() => {
     let cancelled = false;
@@ -207,10 +210,19 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
                   {application.stage}
                 </Badge>
               )}
-              {isPriority && (
-                <Badge variant="destructive" className="gap-1 text-[10px] py-0">
-                  <Flag className="h-2.5 w-2.5" />
-                  Priority
+              {isShortlistedState && (
+                <Badge className="text-[10px] py-0 bg-green-600 hover:bg-green-600">
+                  Shortlisted
+                </Badge>
+              )}
+              {isHiredState && (
+                <Badge className="text-[10px] py-0 bg-emerald-600 hover:bg-emerald-600">
+                  Hired
+                </Badge>
+              )}
+              {isRejectedState && (
+                <Badge variant="destructive" className="text-[10px] py-0">
+                  Rejected
                 </Badge>
               )}
             </div>
@@ -253,64 +265,26 @@ export function CandidateInfoPanel({ application, jobTitle }: CandidateInfoPanel
 
         {/* Quick Actions */}
         <div className="flex items-center gap-1 mt-3 flex-wrap">
-          {/* Star Rating */}
-          <div className="flex items-center">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Button
-                key={star}
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setRating(star)}
-              >
-                <Star
-                  className={`h-3.5 w-3.5 ${star <= rating
-                      ? "fill-yellow-500 text-yellow-500"
-                      : "text-muted-foreground"
-                    }`}
-                />
-              </Button>
-            ))}
-          </div>
-
-          <div className="h-4 w-px bg-border mx-1" />
-
-          {/* Priority & Follow */}
           <Button
-            variant={isPriority ? "default" : "ghost"}
+            variant="default"
             size="sm"
-            className="h-6 px-2 text-[10px] gap-1"
-            onClick={() => setIsPriority(!isPriority)}
+            className="h-6 px-2 text-[10px] gap-1 bg-green-600 hover:bg-green-700"
+            onClick={() => onOfferCandidate?.(application.id)}
+            disabled={isShortlistedState || isHiredState}
           >
-            <Flag className="h-3 w-3" />
-            {isPriority ? "Priority" : "Set"}
+            <Check className="h-3 w-3" />
+            Offer
           </Button>
-
           <Button
-            variant={isFollowing ? "default" : "ghost"}
+            variant="ghost"
             size="sm"
-            className="h-6 px-2 text-[10px] gap-1"
-            onClick={() => setIsFollowing(!isFollowing)}
+            className="h-6 px-2 text-[10px] gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+            onClick={() => onRejectCandidate?.(application.id)}
+            disabled={isRejectedState || isHiredState}
           >
-            {isFollowing ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-            {isFollowing ? "Following" : "Follow"}
+            <UserX className="h-3 w-3" />
+            Reject
           </Button>
-
-          {/* External Links */}
-          {application.linkedInUrl && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-              <a href={application.linkedInUrl} target="_blank" rel="noopener noreferrer">
-                <Linkedin className="h-3 w-3" />
-              </a>
-            </Button>
-          )}
-          {application.portfolioUrl && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-              <a href={application.portfolioUrl} target="_blank" rel="noopener noreferrer">
-                <Globe className="h-3 w-3" />
-              </a>
-            </Button>
-          )}
         </div>
       </div>
 

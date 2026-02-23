@@ -5,7 +5,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Badge } from "@/shared/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
-import { Sparkles, Loader2, Send, Users, X } from "lucide-react";
+import { Sparkles, Loader2, Send, Users, X, Plus } from "lucide-react";
 import { apiClient } from "@/shared/lib/api";
 import { GmailMessage, GmailThread, gmailThreadService } from "@/shared/lib/gmailThreadService";
 import { useToast } from "@/shared/hooks/use-toast";
@@ -70,6 +70,7 @@ export function EmailComposer({
   const [ccInput, setCcInput] = useState('');
   const [hiringTeam, setHiringTeam] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [ccPickerOpen, setCcPickerOpen] = useState(false);
+  const [showCc, setShowCc] = useState(mode === "new");
 
   useEffect(() => {
     if (!jobId) return;
@@ -205,14 +206,27 @@ export function EmailComposer({
               {mode === "reply" ? replyingToMessage?.from : candidateEmail || "Candidate email unavailable"}
             </p>
           </div>
-          <Badge variant="outline" className="h-5 text-[10px]">
-            {mode === "reply" ? "Thread Reply" : "New Message"}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] gap-1"
+              onClick={() => setShowCc((prev) => !prev)}
+            >
+              <Plus className="h-3 w-3" />
+              Add CC
+            </Button>
+            <Badge variant="outline" className="h-5 text-[10px]">
+              {mode === "reply" ? "Thread Reply" : "New Message"}
+            </Badge>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
-        <div className="space-y-1.5">
+        {(showCc || ccEmails.length > 0) && (
+          <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-1.5 min-h-[28px]">
             <span className="text-xs text-muted-foreground w-6 shrink-0">CC</span>
             {ccEmails.map((email) => (
@@ -279,7 +293,8 @@ export function EmailComposer({
               </Popover>
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         <div className="grid gap-2 sm:grid-cols-[1fr_150px_auto]">
           <Input

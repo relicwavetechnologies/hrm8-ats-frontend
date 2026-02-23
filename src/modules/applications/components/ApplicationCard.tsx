@@ -15,7 +15,6 @@ import { AIInterviewScoreBadge } from "./AIInterviewScoreBadge";
 import { TagManager } from "./TagManager";
 import { QuickScoringWidget } from "./shortlisting/QuickScoringWidget";
 import { RankingWidget } from "./shortlisting/RankingWidget";
-import { ShortlistButton } from "./shortlisting/ShortlistButton";
 import { StageDropdownMenu } from "./stages/StageDropdownMenu";
 import { ProfileCompletenessIndicator } from "./parsing/ProfileCompletenessIndicator";
 import {
@@ -58,6 +57,7 @@ interface ApplicationCardProps {
   isOptimisticMove?: boolean; // Visual state for optimistic updates
   hasFailed?: boolean; // Visual state for failed moves
   isSimpleFlow?: boolean;
+  isDragOverlay?: boolean;
 }
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -81,7 +81,12 @@ export function ApplicationCard({
   isOptimisticMove = false,
   hasFailed = false,
   isSimpleFlow = false,
+  isDragOverlay = false,
 }: ApplicationCardProps) {
+  if (!application || !application.id) {
+    return null;
+  }
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
@@ -127,16 +132,50 @@ export function ApplicationCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: application.id });
+  } = useSortable({ id: application.id, disabled: isDragOverlay });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+  const style = isDragOverlay
+    ? undefined
+    : {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      };
+
+  const normalizedStage = String(application.stage || "").toLowerCase();
+  const normalizedStatus = String(application.status || "").toLowerCase();
+
+  const findRound = (target: "OFFER" | "REJECTED" | "HIRED") => {
+    if (!allRounds || allRounds.length === 0) return null;
+    return (
+      allRounds.find((r) => r.fixedKey === target) ||
+      allRounds.find((r) => {
+        const name = String(r.name || "").toLowerCase();
+        if (target === "OFFER") return name === "offer";
+        if (target === "HIRED") return name === "hired";
+        return name === "rejected" || name === "declined";
+      }) ||
+      null
+    );
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const offerRound = findRound("OFFER");
+  const hiredRound = findRound("HIRED");
+  const rejectedRound = findRound("REJECTED");
+  const isInHiredRound = !!(application.roundId && hiredRound && application.roundId === hiredRound.id);
+  const isInOfferRound = !!(application.roundId && offerRound && application.roundId === offerRound.id);
+  const isInRejectedRound = !!(application.roundId && rejectedRound && application.roundId === rejectedRound.id);
+  const isHiredState = isInHiredRound || normalizedStage.includes("hired") || normalizedStatus === "hired";
+  const isRejectedState = isInRejectedRound || normalizedStage.includes("reject") || normalizedStatus === "rejected";
+  const isShortlistedState =
+    !isRejectedState &&
+    !isHiredState &&
+    (isInOfferRound || normalizedStage.includes("offer") || normalizedStatus === "offer" || Boolean(application.shortlisted));
+
+  const displayCandidateName = application.candidateName?.trim() || "Unknown Candidate";
+
+  const getInitials = (name?: string) => {
+    return (name || "Unknown Candidate")
       .split(" ")
       .map((n) => n[0])
       .join("")
@@ -146,16 +185,21 @@ export function ApplicationCard({
 
   const handleShortlist = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (application.shortlisted) {
+    if (isShortlistedState || isHiredState) {
+      return;
+    }
+
+    if (offerRound && onMoveToRound) {
+      onMoveToRound(application.id, offerRound.id);
       return;
     }
 
     setIsShortlisting(true);
     try {
-      await applicationService.shortlistCandidate(application.id);
+      await applicationService.updateStage(application.id, "Offer Extended");
       toast({
-        title: "Candidate Shortlisted",
-        description: `${application.candidateName || "Candidate"} has been added to shortlist.`,
+        title: "Candidate moved",
+        description: `${application.candidateName || "Candidate"} moved to Offer.`,
       });
       // Refresh if there's a refresh callback
       if (onClick) {
@@ -164,7 +208,7 @@ export function ApplicationCard({
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to shortlist candidate.",
+        description: "Failed to move candidate to Offer.",
         variant: "destructive",
       });
     } finally {
@@ -174,25 +218,36 @@ export function ApplicationCard({
 
   const handleReject = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!onMoveToRound || !allRounds) return;
+    if (isRejectedState || isHiredState) return;
     
     // Find the Rejected round
     // Try to find by fixedKey first, then name
-    const rejectedRound = allRounds.find(r => r.fixedKey === 'REJECTED' || r.name === 'Rejected' || r.name === 'Declined');
-    
-    if (rejectedRound) {
+    if (rejectedRound && onMoveToRound) {
        onMoveToRound(application.id, rejectedRound.id);
-       toast({
-         title: "Candidate Rejected",
-         description: `Moved ${application.candidateName} to Rejected.`,
-       });
-    } else {
-       toast({
-         title: "Error",
-         description: "Could not find 'Rejected' stage.",
-         variant: "destructive"
-       });
+       return;
     }
+
+    applicationService.updateStage(application.id, "Rejected").then((res) => {
+      if (res.success) {
+        toast({
+          title: "Candidate moved",
+          description: `Moved ${application.candidateName} to Rejected.`,
+        });
+        onClick?.();
+      } else {
+        toast({
+          title: "Error",
+          description: "Could not move candidate to Rejected.",
+          variant: "destructive"
+        });
+      }
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Could not move candidate to Rejected.",
+        variant: "destructive"
+      });
+    });
   };
 
   const handleGenerateQuestions = (e: React.MouseEvent) => {
@@ -211,8 +266,8 @@ export function ApplicationCard({
       <Card
         ref={setNodeRef}
         style={style}
-        {...attributes}
-        {...listeners}
+        {...(!isDragOverlay ? attributes : {})}
+        {...(!isDragOverlay ? listeners : {})}
         className={`${variant === 'minimal' ? 'p-2 border-muted/60 shadow-none hover:shadow-sm' : 'p-2.5'} cursor-pointer transition-all relative group ${
           isSelected ? 'ring-2 ring-primary' : ''
         } ${
@@ -243,22 +298,49 @@ export function ApplicationCard({
             // Minimal Header Layout
             <div className="flex flex-col w-full gap-2">
               <div className="flex items-center gap-3">
-                 <Avatar className="h-9 w-9 flex-shrink-0 border border-border">
+                  <Avatar className="h-9 w-9 flex-shrink-0 border border-border">
                   <AvatarImage src={application.candidatePhoto} />
                   <AvatarFallback className="bg-primary/5 text-primary text-xs font-medium">
-                    {getInitials(application.candidateName)}
+                    {getInitials(displayCandidateName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <h4 className={`text-sm font-semibold truncate ${!application.isRead ? 'font-bold' : ''}`}>
-                    {application.candidateName}
+                    {displayCandidateName}
                   </h4>
-
+                  {!isSimpleFlow && (
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {application.jobTitle || "Candidate"}
+                    </p>
+                  )}
                 </div>
               </div>
 
+              <div className="flex items-center justify-center gap-1 flex-wrap">
+                {isShortlistedState && (
+                  <Badge variant="default" className="h-5 px-2 text-[10px] bg-green-600 hover:bg-green-600">
+                    Shortlisted
+                  </Badge>
+                )}
+                {isHiredState && (
+                  <Badge className="h-5 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-600">
+                    Hired
+                  </Badge>
+                )}
+                {isRejectedState && (
+                  <Badge variant="destructive" className="h-5 px-2 text-[10px]">
+                    Rejected
+                  </Badge>
+                )}
+                {!isSimpleFlow && !isShortlistedState && !isRejectedState && !isHiredState && application.stage && (
+                  <Badge variant="outline" className="h-5 px-2 text-[10px]">
+                    {application.stage}
+                  </Badge>
+                )}
+              </div>
+
               {/* Centered Score */}
-              {(application.score !== undefined || application.aiMatchScore !== undefined) && (
+              {(isSimpleFlow || application.score !== undefined || application.aiMatchScore !== undefined) && (
                 <div className="flex justify-center py-1">
                    <Badge 
                     variant="secondary" 
@@ -270,83 +352,55 @@ export function ApplicationCard({
               )}
 
               {/* Minimal Actions */}
-               {!isSimpleFlow && (
-               <div className="flex items-center gap-2 mt-1">
+               <div className={`flex items-center gap-2 mt-1 ${isSimpleFlow ? "justify-center" : ""}`}>
+                    {!isSimpleFlow && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs h-7 px-0 bg-background hover:bg-muted"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onClick?.();
+                        }}
+                      >
+                        <Eye className="h-3 w-3 mr-1.5 opacity-70" />
+                        View
+                      </Button>
+                    )}
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
-                      className="flex-1 text-xs h-7 px-0 bg-background hover:bg-muted"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClick?.();
-                      }}
+                      className={`${isSimpleFlow ? "h-7 min-w-[84px] px-3 text-[11px]" : "h-7 px-2 text-[10px]"}`}
+                      onClick={handleShortlist}
+                      disabled={isShortlisting || isShortlistedState || isHiredState}
+                      title="Move to Offer"
                     >
-                      <Eye className="h-3 w-3 mr-1.5 opacity-70" />
-                      View
+                      Offer
                     </Button>
-                    
-                    {/* Reject Button (Minimal) */}
-                    <Button 
-                       variant="ghost" 
-                       size="sm"
-                       className="h-7 w-7 px-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
-                       onClick={handleReject}
-                       title="Reject Candidate"
-                    >
-                       <UserX className="h-3.5 w-3.5" />
-                    </Button>
-
-                    {/* Next Stage Button (Minimal) */}
-                    {(() => {
-                      if (!allRounds || !onMoveToRound) return null;
-                      
-                      let currentRoundIndex = -1;
-                      
-                      // 1. Try to match by round ID (most accurate)
-                      if (application.roundId) {
-                        currentRoundIndex = allRounds.findIndex(r => r.id === application.roundId);
-                      }
-                      
-                      // 2. Fallback to name match if ID not found
-                      if (currentRoundIndex === -1 && application.stage) {
-                        currentRoundIndex = allRounds.findIndex(r => {
-                          const roundName = r.name.toLowerCase();
-                          const stageName = application.stage.toLowerCase();
-                          
-                          // Direct match
-                          if (roundName === stageName) return true;
-                          
-                          // Known aliases/mappings
-                          if (stageName === 'new application' && roundName === 'new') return true;
-                          if (stageName === 'resume review' && roundName === 'screening') return true;
-                          if (stageName === 'offer extended' && roundName === 'offer') return true;
-                          if (stageName === 'offer accepted' && roundName === 'hired') return true;
-                          
-                          return false;
-                        });
-                      }
-
-                      if (currentRoundIndex !== -1 && currentRoundIndex < allRounds.length - 1) {
-                        const nextRound = allRounds[currentRoundIndex + 1];
-                        return (
-                          <Button 
-                             variant="ghost" 
-                             size="sm"
-                             className="h-7 w-7 px-0 text-primary hover:text-primary hover:bg-primary/10"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               onMoveToRound(application.id, nextRound.id);
-                             }}
-                             title={`Move to ${nextRound.name}`}
-                          >
-                             <ArrowRight className="h-3.5 w-3.5" />
-                          </Button>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {isSimpleFlow ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 min-w-[84px] px-3 text-[11px] border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                        onClick={handleReject}
+                        disabled={isRejectedState || isHiredState}
+                        title="Reject Candidate"
+                      >
+                        Reject
+                      </Button>
+                    ) : (
+                      <Button
+                         variant="ghost"
+                         size="sm"
+                         className="h-7 w-7 px-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                         onClick={handleReject}
+                         disabled={isRejectedState || isHiredState}
+                         title="Reject Candidate"
+                      >
+                         <UserX className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
-                  )}
             </div>
           ) : (
             // Default Header Layout
@@ -504,13 +558,19 @@ export function ApplicationCard({
                     />
                   )}
                   {!isCompareMode && (
-                    <ShortlistButton
-                      applicationId={application.id}
-                      shortlisted={application.shortlisted}
-                      onShortlistChange={(shortlisted) => onShortlistChange?.(application.id, shortlisted)}
-                      variant="icon"
-                      size="sm"
-                    />
+                    isHiredState ? (
+                      <Badge className="text-[10px] px-1.5 py-0 h-4 bg-emerald-600 hover:bg-emerald-600">
+                        Hired
+                      </Badge>
+                    ) : isRejectedState ? (
+                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+                        Rejected
+                      </Badge>
+                    ) : isShortlistedState ? (
+                      <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-green-600 hover:bg-green-600">
+                        Shortlisted
+                      </Badge>
+                    ) : null
                   )}
                   {application.shortlisted && isCompareMode && (
                     <Badge variant="default" className="text-[10px] px-1 py-0 h-4 bg-green-500">
@@ -619,18 +679,19 @@ export function ApplicationCard({
                             <Eye className="h-3 w-3 mr-1" />
                             Review
                           </Button>
-                          {/* Reject Button */}
-                          <Button 
-                             variant="ghost" 
-                             size="sm"
-                             className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
-                             onClick={handleReject}
-                             title="Reject Candidate"
-                          >
-                             <UserX className="h-3.5 w-3.5" />
-                          </Button>
+                          {!isShortlistedState && !isRejectedState && !isHiredState && (
+                            <Button 
+                               variant="ghost" 
+                               size="sm"
+                               className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
+                               onClick={handleReject}
+                               title="Reject Candidate"
+                            >
+                               <UserX className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
-                        {!application.shortlisted && (
+                        {!isShortlistedState && !isRejectedState && !isHiredState && (
                           <Button
                             variant="default"
                             size="sm"
@@ -639,12 +700,22 @@ export function ApplicationCard({
                             disabled={isShortlisting}
                           >
                             <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Shortlist
+                            Offer
                           </Button>
                         )}
-                        {application.shortlisted && (
+                        {isShortlistedState && (
                           <Badge variant="default" className="bg-green-500 text-xs w-full justify-center h-7">
                             Shortlisted
+                          </Badge>
+                        )}
+                        {isHiredState && (
+                          <Badge className="text-xs w-full justify-center h-7 bg-emerald-600 hover:bg-emerald-600">
+                            Hired
+                          </Badge>
+                        )}
+                        {isRejectedState && (
+                          <Badge variant="destructive" className="text-xs w-full justify-center h-7">
+                            Rejected
                           </Badge>
                         )}
                       </>
