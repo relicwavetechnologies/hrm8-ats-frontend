@@ -421,28 +421,45 @@ Hiring Team`;
       <CardContent className="flex-1 flex flex-col p-3 min-h-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
           {/* Tabs Header - 5 tabs */}
-          <TabsList className="grid w-full grid-cols-5 h-8 mb-1 flex-shrink-0">
-            <TabsTrigger value="notes" className="text-xs gap-1">
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Note</span>
-            </TabsTrigger>
-            <TabsTrigger value="email" className="text-xs gap-1">
-              <Mail className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Email</span>
-            </TabsTrigger>
-            <TabsTrigger value="sms" className="text-xs gap-1">
-              <Phone className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">SMS</span>
-            </TabsTrigger>
-            <TabsTrigger value="meeting" className="text-xs gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Meet</span>
-            </TabsTrigger>
-            <TabsTrigger value="task" className="text-xs gap-1">
-              <CheckSquare className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Task</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="border-b mb-3">
+            <TabsList className="h-9 bg-transparent p-0 flex justify-start space-x-4 border-none w-full relative -bottom-[1px]">
+              <TabsTrigger 
+                value="notes" 
+                className="relative h-9 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2 text-[13px] font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent outline-none transition-none"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Note</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="email" 
+                className="relative h-9 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2 text-[13px] font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent outline-none transition-none"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Email</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="sms" 
+                className="relative h-9 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2 text-[13px] font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent outline-none transition-none"
+              >
+                <Phone className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">SMS</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="meeting" 
+                className="relative h-9 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2 text-[13px] font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent outline-none transition-none"
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Meet</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="task" 
+                className="relative h-9 gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2 text-[13px] font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent outline-none transition-none"
+              >
+                <CheckSquare className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Task</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Notes Tab Content */}
           <TabsContent value="notes" className="m-0 data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col min-h-0 space-y-3">

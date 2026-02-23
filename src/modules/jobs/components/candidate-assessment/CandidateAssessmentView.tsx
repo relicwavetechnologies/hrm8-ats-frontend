@@ -294,87 +294,135 @@ export function CandidateAssessmentView({
                 <Tabs
                   value={activeTab}
                   onValueChange={setActiveTab}
-                  className="h-full flex flex-col overflow-hidden"
+                  className="h-full flex flex-row overflow-hidden"
                 >
-                  {/* ── Single Tab Row ───────────────────────────────── */}
-                  <div className="border-b bg-background flex-shrink-0 px-2">
-                    <TabsList className="h-10 bg-transparent inline-flex gap-0.5 w-auto">
-
-                      <TabsTrigger value="compose" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <PenLine className="h-3.5 w-3.5" />
-                        Compose
+                  {/* ── Left Sidebar Nav for Right Panel ────────────────────────── */}
+                  <div className="w-[160px] bg-muted/30 border-r flex-shrink-0 flex flex-col py-3 overflow-y-auto hidden sm:flex">
+                    <TabsList className="flex flex-col h-auto bg-transparent w-full space-y-0.5 p-2">
+                      
+                      {/* Overview Section */}
+                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mt-1 mb-1.5 w-full text-left">
+                        Overview
+                      </div>
+                      
+                      <TabsTrigger 
+                        value="compose" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                      >
+                        <PenLine className="h-3.5 w-3.5 mr-2" />
+                        Notes & Tasks
+                      </TabsTrigger>
+                      
+                      <TabsTrigger 
+                        value="activity" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                      >
+                        <Activity className="h-3.5 w-3.5 mr-2" />
+                        Activity Map
                       </TabsTrigger>
 
-                      <TabsTrigger value="activity" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <Activity className="h-3.5 w-3.5" />
-                        Activity
-                      </TabsTrigger>
-
-                      <TabsTrigger value="tasks" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <CheckSquare className="h-3.5 w-3.5" />
+                      <TabsTrigger 
+                        value="tasks" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                      >
+                        <CheckSquare className="h-3.5 w-3.5 mr-2" />
                         Tasks
                       </TabsTrigger>
 
-                      <TabsTrigger value="annotations" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <Highlighter className="h-3.5 w-3.5" />
+                      {/* Evaluation Section */}
+                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mt-5 mb-1.5 w-full text-left">
+                        Evaluation
+                      </div>
+
+                      <TabsTrigger 
+                        value="interviews" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                      >
+                        <Calendar className="h-3.5 w-3.5 mr-2" />
+                        Interviews
+                      </TabsTrigger>
+                      
+                      <TabsTrigger 
+                        value="reviews" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                       >
+                        <Users className="h-3.5 w-3.5 mr-2" />
+                        Scorecards
+                      </TabsTrigger>
+                      
+                      <TabsTrigger 
+                        value="questionnaire" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5 mr-2" />
+                        Questionnaire
+                      </TabsTrigger>
+                      
+                      <TabsTrigger 
+                        value="annotations" 
+                        className="w-full justify-start h-8 px-2.5 text-xs font-medium rounded-md text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-muted/60 transition-none"
+                      >
+                        <Highlighter className="h-3.5 w-3.5 mr-2" />
                         Annotations
                       </TabsTrigger>
 
-                      <TabsTrigger value="questionnaire" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <ClipboardCheck className="h-3.5 w-3.5" />
-                        Questionnaire
-                      </TabsTrigger>
+                      {/* Communications Section */}
+                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mt-5 mb-1.5 w-full text-left">
+                        Communications
+                      </div>
 
-                      <TabsTrigger value="interviews" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <Calendar className="h-3.5 w-3.5" />
-                        Interviews
-                      </TabsTrigger>
+                      <button
+                        onClick={() => { setActiveTab("comms"); setCommsTab("email-thread"); }}
+                        className={`w-full flex items-center justify-start h-8 px-2.5 text-xs font-medium rounded-md transition-none select-none ${
+                           activeTab === "comms" && commsTab === "email-thread"
+                             ? "bg-primary/10 text-primary"
+                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        }`}
+                      >
+                        <Mail className="h-3.5 w-3.5 mr-2" />
+                        Emails
+                      </button>
+                      
+                      <button
+                        onClick={() => { setActiveTab("comms"); setCommsTab("calls"); }}
+                        className={`w-full flex items-center justify-start h-8 px-2.5 text-xs font-medium rounded-md transition-none select-none ${
+                           activeTab === "comms" && commsTab === "calls"
+                             ? "bg-primary/10 text-primary"
+                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        }`}
+                      >
+                        <Phone className="h-3.5 w-3.5 mr-2" />
+                        Call Logs
+                      </button>
 
-                      <TabsTrigger value="reviews" className="gap-1.5 text-xs rounded-sm data-[state=active]:bg-muted data-[state=active]:shadow-none">
-                        <Users className="h-3.5 w-3.5" />
-                        Team Reviews
-                      </TabsTrigger>
+                      <button
+                        onClick={() => { setActiveTab("comms"); setCommsTab("sms"); }}
+                        className={`w-full flex items-center justify-start h-8 px-2.5 text-xs font-medium rounded-md transition-none select-none ${
+                           activeTab === "comms" && commsTab === "sms"
+                             ? "bg-primary/10 text-primary"
+                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        }`}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 mr-2" />
+                        SMS
+                      </button>
 
-                      {/* Comms dropdown trigger — activates the tab AND opens sub-menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className={`
-                              inline-flex items-center gap-1.5 text-xs px-3 h-9 rounded-sm transition-colors
-                              ${activeTab === "comms"
-                                ? "bg-muted text-foreground font-medium"
-                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                              }
-                            `}
-                            onClick={() => setActiveTab("comms")}
-                          >
-                            {commsLabels[commsTab].icon}
-                            {commsLabels[commsTab].label}
-                            <ChevronDown className="h-3 w-3 opacity-60" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="min-w-[150px]">
-                          {(Object.keys(commsLabels) as CommsTab[]).map((key) => (
-                            <DropdownMenuItem
-                              key={key}
-                              className="gap-2 text-xs"
-                              onClick={() => { setActiveTab("comms"); setCommsTab(key); }}
-                            >
-                              {commsLabels[key].icon}
-                              {commsLabels[key].label}
-                              {commsTab === key && activeTab === "comms" && (
-                                <Badge variant="secondary" className="ml-auto text-[9px] py-0 px-1">active</Badge>
-                              )}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-
+                      <button
+                        onClick={() => { setActiveTab("comms"); setCommsTab("slack"); }}
+                        className={`w-full flex items-center justify-start h-8 px-2.5 text-xs font-medium rounded-md transition-none select-none ${
+                           activeTab === "comms" && commsTab === "slack"
+                             ? "bg-primary/10 text-primary"
+                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        }`}
+                      >
+                        <Hash className="h-3.5 w-3.5 mr-2" />
+                        Slack
+                      </button>
                     </TabsList>
                   </div>
 
                   {/* ── Tab Content Area ─────────────────────────────── */}
-                  <div className="flex-1 overflow-hidden">
+                  <div className="flex-1 overflow-hidden bg-background">
 
                     {/* Compose tab — the notes/email/sms/meet/task panel, full height */}
                     <TabsContent value="compose" className="h-full mt-0 data-[state=active]:flex flex-col">
