@@ -43,18 +43,10 @@ import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import {
     ChatServiceTypeCard,
-    ChatBasicDetailsCard,
-    ChatLocationCard,
-    ChatCompensationCard,
-    ChatRoleDetailsCard,
-    ChatVacanciesCard,
     ChatDocumentUploadCard,
-    ChatDescriptionCard,
-    ChatListBuilderCard,
-    ChatTagsCard,
-    ChatApplicationConfigCard,
-    ChatScreeningQuestionsCard,
-    ChatLogisticsCard,
+    ChatJobOverviewCard,
+    ChatContentCard,
+    ChatAppSettingsCard,
     ChatReviewCard,
     ChatPlaceholderCard,
     stepTitles,
@@ -441,50 +433,36 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         uploadComplete={uploadComplete}
                     />
                 );
-            case 'basic-details':
+            case 'job-overview':
                 return (
-                    <ChatBasicDetailsCard
+                    <ChatJobOverviewCard
                         title={jobData.title || ''}
                         department={jobData.department || ''}
                         onTitleChange={(v) => setJobData({ title: v })}
                         onDepartmentChange={(v) => setJobData({ department: v })}
-                        onContinue={nextStep}
                         isParsedTitle={isParsed('title')}
                         isParsedDept={isParsed('department')}
-                    />
-                );
-            case 'location':
-                return (
-                    <ChatLocationCard
+
                         location={jobData.location || ''}
                         workArrangement={jobData.workArrangement || 'on-site'}
                         onLocationChange={(v) => setJobData({ location: v })}
                         onWorkArrangementChange={(v) => setJobData({ workArrangement: v })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('location')}
-                    />
-                );
-            case 'role-details':
-                return (
-                    <ChatRoleDetailsCard
+                        isParsedLocation={isParsed('location')}
+
                         employmentType={jobData.employmentType || 'full-time'}
                         experienceLevel={jobData.experienceLevel || 'mid'}
                         onEmploymentTypeChange={(v) => setJobData({ employmentType: v })}
                         onExperienceLevelChange={(v) => setJobData({ experienceLevel: v })}
+
+                        numberOfVacancies={jobData.numberOfVacancies || 1}
+                        onNumberOfVacanciesChange={(v) => setJobData({ numberOfVacancies: v })}
+
                         onContinue={nextStep}
                     />
                 );
-            case 'vacancies':
+            case 'content':
                 return (
-                    <ChatVacanciesCard
-                        value={jobData.numberOfVacancies || 1}
-                        onChange={(v) => setJobData({ numberOfVacancies: v })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'compensation':
-                return (
-                    <ChatCompensationCard
+                    <ChatContentCard
                         salaryMin={jobData.salaryMin}
                         salaryMax={jobData.salaryMax}
                         salaryCurrency={jobData.salaryCurrency || 'AUD'}
@@ -495,88 +473,47 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         onCurrencyChange={(v) => setJobData({ salaryCurrency: v })}
                         onPeriodChange={(v) => setJobData({ salaryPeriod: v })}
                         onHideSalaryChange={(v) => setJobData({ hideSalary: v })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('salaryMin') || isParsed('salaryMax')}
-                    />
-                );
-            case 'description':
-                return (
-                    <ChatDescriptionCard
+                        isParsedSalary={isParsed('salaryMin') || isParsed('salaryMax')}
+
                         description={jobData.description || ''}
-                        onChange={(v) => setJobData({ description: v })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('description')}
-                        jobData={jobData}
-                        companyContext={companyContext}
+                        onDescriptionChange={(v) => setJobData({ description: v })}
+                        isParsedDescription={isParsed('description')}
                         onGenerateDescription={async (currentDescription) => {
                             const additionalContext = [
                                 companyContext ? `Company context:\n${companyContext}` : '',
                                 currentDescription.trim() ? `User's current description (expand or improve this):\n${currentDescription}` : '',
                             ].filter(Boolean).join('\n\n');
                             const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
-                            return result.description;
+                            return result.description || '';
                         }}
-                    />
-                );
-            case 'requirements': {
-                const reqItems = (jobData.requirements || []).map(r => typeof r === 'string' ? r : r.text);
-                return (
-                    <ChatListBuilderCard
-                        title="Requirements"
-                        subtitle="List what candidates need to qualify for this role."
-                        items={reqItems}
-                        onChange={(items) => setJobData({ requirements: items.map((text, i) => ({ id: `req-${i}`, text, order: i })) })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('requirements')}
-                        placeholder="e.g. 3+ years of experience in..."
-                        minItems={1}
-                        onGenerateList={async (currentItems) => {
-                            const additionalContext = [
-                                companyContext ? `Company context:\n${companyContext}` : '',
-                                'Generate only requirements/qualifications for this role. Return them as the requirements array.',
-                                currentItems.length > 0 ? `User's current requirements (expand or improve):\n${currentItems.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
-                            ].filter(Boolean).join('\n\n');
+
+                        requirements={(jobData.requirements || []).map(r => typeof r === 'string' ? r : r.text)}
+                        onRequirementsChange={(items) => setJobData({ requirements: items.map((text, i) => ({ id: `req-${i}`, text, order: i })) })}
+                        isParsedRequirements={isParsed('requirements')}
+                        onGenerateRequirements={async (currentItems) => {
+                            const additionalContext = [COMPANY_CONTEXT_PROMPT, 'Generate only requirements/qualifications.', currentItems.length > 0 ? `Current:\n${currentItems.join('\n')}` : ''].filter(Boolean).join('\n\n');
                             const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
                             return result.requirements ?? [];
                         }}
-                    />
-                );
-            }
-            case 'responsibilities': {
-                const respItems = (jobData.responsibilities || []).map(r => typeof r === 'string' ? r : r.text);
-                return (
-                    <ChatListBuilderCard
-                        title="Responsibilities"
-                        subtitle="Describe the key duties for this position."
-                        items={respItems}
-                        onChange={(items) => setJobData({ responsibilities: items.map((text, i) => ({ id: `resp-${i}`, text, order: i })) })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('responsibilities')}
-                        placeholder="e.g. Lead a team of 5 engineers..."
-                        minItems={1}
-                        onGenerateList={async (currentItems) => {
-                            const additionalContext = [
-                                companyContext ? `Company context:\n${companyContext}` : '',
-                                'Generate only responsibilities/duties for this role. Return them as the responsibilities array.',
-                                currentItems.length > 0 ? `User's current responsibilities (expand or improve):\n${currentItems.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
-                            ].filter(Boolean).join('\n\n');
+
+                        responsibilities={(jobData.responsibilities || []).map(r => typeof r === 'string' ? r : r.text)}
+                        onResponsibilitiesChange={(items) => setJobData({ responsibilities: items.map((text, i) => ({ id: `resp-${i}`, text, order: i })) })}
+                        isParsedResponsibilities={isParsed('responsibilities')}
+                        onGenerateResponsibilities={async (currentItems) => {
+                            const additionalContext = [COMPANY_CONTEXT_PROMPT, 'Generate only responsibilities/duties.', currentItems.length > 0 ? `Current:\n${currentItems.join('\n')}` : ''].filter(Boolean).join('\n\n');
                             const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
                             return result.responsibilities ?? [];
                         }}
-                    />
-                );
-            }
-            case 'tags':
-                return (
-                    <ChatTagsCard
+
                         tags={jobData.tags || []}
-                        onChange={(tags) => setJobData({ tags })}
+                        onTagsChange={(tags) => setJobData({ tags })}
+
                         onContinue={nextStep}
                     />
                 );
-            case 'application-config':
+            case 'app-settings':
                 return (
-                    <ChatApplicationConfigCard
+                    <ChatAppSettingsCard
                         config={jobData.applicationForm || {
                             id: 'temp-id',
                             name: 'Default Form',
@@ -589,33 +526,24 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                                 website: { included: false, required: false },
                             }
                         }}
-                        onChange={(config) => setJobData({ applicationForm: config })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'screening-questions': {
-                const formQuestions = jobData.applicationForm?.questions || [];
-                return (
-                    <ChatScreeningQuestionsCard
-                        questions={formQuestions}
-                        onChange={(questions) => setJobData({
+                        onConfigChange={(config) => setJobData({ applicationForm: config })}
+
+                        questions={jobData.applicationForm?.questions || []}
+                        onQuestionsChange={(questions) => setJobData({
                             applicationForm: {
-                                ...jobData.applicationForm,
-                                id: jobData.applicationForm?.id || 'temp-id',
-                                name: jobData.applicationForm?.name || 'Default Form',
-                                includeStandardFields: jobData.applicationForm?.includeStandardFields || {
-                                    resume: { included: true, required: true },
-                                    coverLetter: { included: true, required: false },
-                                    portfolio: { included: false, required: false },
-                                    linkedIn: { included: false, required: false },
-                                    website: { included: false, required: false },
-                                },
-                                questions: questions.map((q, index) => ({ ...q, order: index })),
+                                ...(jobData.applicationForm || {
+                                    id: 'temp-id', name: 'Default Form',
+                                    includeStandardFields: {
+                                        resume: { included: true, required: true },
+                                        coverLetter: { included: true, required: false },
+                                        portfolio: { included: false, required: false },
+                                        linkedIn: { included: false, required: false },
+                                        website: { included: false, required: false },
+                                    }
+                                }),
+                                questions: questions.map((q, i) => ({ ...q, order: i })),
                             }
                         })}
-                        onContinue={nextStep}
-                        jobData={jobData}
-                        companyContext={companyContext}
                         onGenerateQuestions={async (existing) => {
                             const generated = await screeningQuestionService.generateScreeningQuestions({
                                 jobTitle: (jobData.title as string) || 'Role',
@@ -628,18 +556,14 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                             });
                             return generated;
                         }}
-                    />
-                );
-            }
-            case 'logistics':
-                return (
-                    <ChatLogisticsCard
+
                         closeDate={jobData.closeDate}
                         visibility={jobData.visibility || 'public'}
                         stealth={jobData.stealth || false}
                         onCloseDateChange={(v) => setJobData({ closeDate: v })}
                         onVisibilityChange={(v) => setJobData({ visibility: v })}
                         onStealthChange={(v) => setJobData({ stealth: v })}
+
                         onContinue={nextStep}
                     />
                 );
@@ -669,21 +593,11 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     };
 
     const stepMeta: Record<string, { label: string; heading: string; description: string }> = {
-        'document-upload':      { label: 'Upload JD',     heading: 'Start with a Job Description',  description: 'Upload an existing JD to auto-fill the form, or skip to start from scratch.' },
-        'basic-details':        { label: 'Basics',        heading: 'Job Title & Department',         description: 'The first thing candidates see — make it clear and specific.' },
-        'location':             { label: 'Location',      heading: 'Where is this role?',            description: 'Set the work location and arrangement for this position.' },
-        'role-details':         { label: 'Role Type',     heading: 'Role Type & Experience',         description: 'Define the employment arrangement and required seniority level.' },
-        'vacancies':            { label: 'Vacancies',     heading: 'Open Positions',                 description: 'How many people are you looking to hire for this role?' },
-        'compensation':         { label: 'Pay',           heading: 'Compensation Package',           description: 'Transparent salaries attract 30% more applicants.' },
-        'description':          { label: 'Description',   heading: 'Write the Job Description',      description: 'A compelling overview of the role, team, and opportunity.' },
-        'requirements':         { label: 'Requirements',  heading: 'Requirements',                   description: 'What must candidates have to be considered for this role?' },
-        'responsibilities':     { label: 'Duties',        heading: 'Key Responsibilities',           description: 'What will this person be doing on a day-to-day basis?' },
-        'tags':                 { label: 'Tags',          heading: 'Skills & Tags',                  description: 'Add keywords to help candidates discover your listing.' },
-        'application-config':   { label: 'Application',  heading: 'Application Form',               description: 'Choose what information to collect from applicants.' },
-        'screening-questions':  { label: 'Screening',    heading: 'Screening Questions',             description: 'Pre-screen applicants automatically with targeted questions.' },
-        'logistics':            { label: 'Logistics',     heading: 'Closing Date & Visibility',      description: 'Control when the role closes and who can see it.' },
-        'review':               { label: 'Review',        heading: 'Final Review',                   description: 'Double-check everything before publishing.' },
-        'payment':              { label: 'Payment',       heading: 'Complete Payment',               description: 'Activate your service to reach the right candidates.' },
+        'document-upload': { label: 'Upload JD',     heading: 'Start with a Job Description',  description: 'Upload an existing JD to auto-fill the form, or skip to start from scratch.' },
+        'job-overview':    { label: 'Overview',      heading: 'Job Overview',                  description: 'Title, department, location, and role specifics.' },
+        'content':         { label: 'Content',       heading: 'Pay & Content',                 description: 'Compensation and comprehensive job description elements.' },
+        'app-settings':    { label: 'App Settings',  heading: 'Application & Questions',       description: 'Form configuration, screening questions, and visibility.' },
+        'review':          { label: 'Review',        heading: 'Final Review',                  description: 'Double-check everything before publishing.' },
     };
     const currentMeta = stepMeta[currentStepId] || { label: currentStepId, heading: currentStepId, description: '' };
     const currentStepIndex = WIZARD_STEPS.indexOf(currentStepId);

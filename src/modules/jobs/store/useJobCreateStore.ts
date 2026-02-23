@@ -2,23 +2,19 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { JobFormData } from '@/shared/types/job';
 
-// Define the steps in order
+// ─── 5-Step Smart Wizard ──────────────────────────────────────────────────────
+// Was 15 steps. Consolidated into:
+//  1. document-upload  → Upload JD for AI parse (or skip)
+//  2. job-overview     → Title + Dept + Location + Work Arrangement + Employment Type + Experience + Vacancies
+//  3. content          → Compensation + Description + Requirements + Responsibilities + Tags
+//  4. app-settings     → Application config + Screening questions + Close date + Visibility
+//  5. review           → Full review + Publish (payment inline)
 export const WIZARD_STEPS = [
-  'document-upload', // First step - upload JD for smart parsing
-  'basic-details',   // Title + Department
-  'location',       // Location + Work Arrangement
-  'role-details',   // Employment Type + Experience
-  'vacancies',
-  'compensation',
-  'description',
-  'requirements',
-  'responsibilities',
-  'tags',
-  'application-config',
-  'screening-questions',
-  'logistics',      // Close Date + Visibility
+  'document-upload',
+  'job-overview',
+  'content',
+  'app-settings',
   'review',
-  'payment'
 ] as const;
 
 export type WizardStepId = typeof WIZARD_STEPS[number];
@@ -75,97 +71,88 @@ const INITIAL_JOB_DATA: Partial<JobFormData> = {
 };
 
 const storeImpl = (set: any, get: any) => ({
-        // Initial State
-        currentStepId: 'document-upload',
-        stepOrder: [...WIZARD_STEPS],
-        history: [],
-        highestStepReached: 'document-upload',
-        jobData: INITIAL_JOB_DATA,
-        parsedFields: [],
-        isLoading: false,
-        error: null,
+  // Initial State
+  currentStepId: 'document-upload' as WizardStepId,
+  stepOrder: [...WIZARD_STEPS],
+  history: [] as WizardStepId[],
+  highestStepReached: 'document-upload' as WizardStepId,
+  jobData: INITIAL_JOB_DATA,
+  parsedFields: [] as string[],
+  isLoading: false,
+  error: null,
 
-        setJobData: (data) => set((state) => ({
-          jobData: { ...state.jobData, ...data }
-        })),
+  setJobData: (data: Partial<JobFormData>) => set((state: JobCreateState) => ({
+    jobData: { ...state.jobData, ...data }
+  })),
 
-        loadJobData: (data) => set({
-          jobData: data,
-          parsedFields: Object.keys(data).filter(key => {
-            const val = data[key as keyof JobFormData];
-            return val !== null && val !== undefined && val !== '';
-          })
-        }),
+  loadJobData: (data: Partial<JobFormData>) => set({
+    jobData: data,
+    parsedFields: Object.keys(data).filter(key => {
+      const val = data[key as keyof JobFormData];
+      return val !== null && val !== undefined && val !== '';
+    })
+  }),
 
-        ingestParsedData: (data, confidence) => {
-          const state = get();
+  ingestParsedData: (data: any, confidence: Record<string, number>) => {
+    const state = get();
+    const newJobData = { ...state.jobData, ...data };
+    const reliableFields = Object.keys(data).filter(key => {
+      const val = data[key as keyof JobFormData];
+      return val !== null && val !== undefined && val !== '';
+    });
 
-          // 1. Merge data
-          const newJobData = { ...state.jobData, ...data };
+    set({
+      jobData: newJobData,
+      parsedFields: reliableFields
+    });
+  },
 
-          // 2. Identify reliable fields (simplified logic for now)
-          // In a real scenario, we'd check confidence scores > threshold
-          const reliableFields = Object.keys(data).filter(key => {
-            const val = data[key as keyof JobFormData];
-            return val !== null && val !== undefined && val !== '';
-          });
+  nextStep: () => {
+    const { currentStepId, stepOrder, history, highestStepReached } = get();
+    const currentIndex = stepOrder.indexOf(currentStepId);
 
-          // 3. Logic to remove steps if data is present?
-          // For now, we keeps all steps to allow review, but we could mark them as "filled"
-          // Or we could re-order to put filled steps at the end (Review phase)
-
-          set({
-            jobData: newJobData,
-            parsedFields: reliableFields
-          });
-        },
-
-        nextStep: () => {
-          const { currentStepId, stepOrder, history, highestStepReached } = get();
-          const currentIndex = stepOrder.indexOf(currentStepId);
-
-          if (currentIndex < stepOrder.length - 1) {
-            const nextStep = stepOrder[currentIndex + 1];
-            set({
-              currentStepId: nextStep,
-              history: [...history, currentStepId],
-              highestStepReached: stepOrder.indexOf(nextStep) > stepOrder.indexOf(highestStepReached)
-                ? nextStep
-                : highestStepReached
-            });
-          }
-        },
-
-        prevStep: () => {
-          const { history } = get();
-          if (history.length > 0) {
-            const prevStep = history[history.length - 1];
-            set({
-              currentStepId: prevStep,
-              history: history.slice(0, -1)
-            });
-          }
-        },
-
-        jumpToStep: (stepId) => {
-          const { currentStepId, history } = get();
-          if (stepId !== currentStepId) {
-            set({
-              currentStepId: stepId,
-              history: [...history, currentStepId]
-            });
-          }
-        },
-
-        reset: () => set({
-          currentStepId: 'document-upload',
-          stepOrder: [...WIZARD_STEPS],
-          history: [],
-          highestStepReached: 'document-upload',
-          jobData: INITIAL_JOB_DATA,
-          parsedFields: [],
-          error: null
-        })
+    if (currentIndex < stepOrder.length - 1) {
+      const nextStep = stepOrder[currentIndex + 1];
+      set({
+        currentStepId: nextStep,
+        history: [...history, currentStepId],
+        highestStepReached: stepOrder.indexOf(nextStep) > stepOrder.indexOf(highestStepReached)
+          ? nextStep
+          : highestStepReached
       });
+    }
+  },
+
+  prevStep: () => {
+    const { history } = get();
+    if (history.length > 0) {
+      const prevStep = history[history.length - 1];
+      set({
+        currentStepId: prevStep,
+        history: history.slice(0, -1)
+      });
+    }
+  },
+
+  jumpToStep: (stepId: WizardStepId) => {
+    const { currentStepId, history } = get();
+    if (stepId !== currentStepId) {
+      set({
+        currentStepId: stepId,
+        history: [...history, currentStepId]
+      });
+    }
+  },
+
+  reset: () => set({
+    currentStepId: 'document-upload' as WizardStepId,
+    stepOrder: [...WIZARD_STEPS],
+    history: [],
+    highestStepReached: 'document-upload' as WizardStepId,
+    jobData: INITIAL_JOB_DATA,
+    parsedFields: [],
+    error: null
+  })
+});
 
 export const useJobCreateStore = create<JobCreateState>()(devtools(storeImpl));
