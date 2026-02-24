@@ -29,7 +29,8 @@ import {
   GitBranch,
   UserPlus,
   Users,
-  CheckSquare
+  CheckSquare,
+  CheckCircle2,
 } from "lucide-react";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
@@ -84,6 +85,7 @@ import { JobMessagesTab } from "@/modules/jobs/components/JobMessagesTab";
 import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { MessageSquarePlus } from "lucide-react";
 import { JobInboxTab } from "@/modules/jobs/components/JobInboxTab";
+import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -802,6 +804,20 @@ export default function JobDetail() {
                 Interviews
               </TabsTrigger>
               <TabsTrigger
+                value="offers"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <Briefcase className="h-3.5 w-3.5" />
+                Offers
+              </TabsTrigger>
+              <TabsTrigger
+                value="hired"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Hired
+              </TabsTrigger>
+              <TabsTrigger
                 value="tasks"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
               >
@@ -1217,6 +1233,14 @@ export default function JobDetail() {
                         }
 
                         const nextRound = rounds[currentIndex + 1];
+                        if (nextRound.fixedKey === "HIRED") {
+                          toast({
+                            title: "Use Offer Tab",
+                            description: "Move candidate to Hired from the Offer onboarding flow.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
                         console.log(`[JobDetail] Moving app ${appId} from ${round.name} (${round.id}) to ${nextRound.name} (${nextRound.id})`);
 
                         const previousApplication = allApplications.find((a) => a.id === appId);
@@ -1294,6 +1318,28 @@ export default function JobDetail() {
             {/* Interviews Tab */}
             <TabsContent value="ai-interviews" className="h-full overflow-hidden p-6 pt-0">
               <JobAIInterviewsTab job={job} />
+            </TabsContent>
+
+            {/* Tasks Tab */}
+            <TabsContent value="offers" className="h-full overflow-hidden p-6 pt-0">
+              <JobOffersTab
+                jobId={job.id}
+                jobTitle={job.title}
+                applications={allApplications}
+                rounds={rounds}
+                onRefresh={handleJobUpdate}
+              />
+            </TabsContent>
+
+            <TabsContent value="hired" className="h-full overflow-hidden p-6 pt-0">
+              <JobOffersTab
+                mode="hired"
+                jobId={job.id}
+                jobTitle={job.title}
+                applications={allApplications}
+                rounds={rounds}
+                onRefresh={handleJobUpdate}
+              />
             </TabsContent>
 
             {/* Tasks Tab */}

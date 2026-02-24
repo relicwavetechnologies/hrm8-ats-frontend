@@ -29,7 +29,8 @@ import {
   ArrowUpCircle,
   UserPlus,
   Users,
-  CheckSquare
+  CheckSquare,
+  CheckCircle2,
 } from "lucide-react";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
@@ -80,6 +81,7 @@ import { useMemo } from "react";
 import { verifyJobPayment } from "@/shared/lib/payments";
 import { useAuth } from "@/app/providers/AuthContext";
 import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
+import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -744,6 +746,20 @@ export default function JobDetail() {
                 Interviews
               </TabsTrigger>
               <TabsTrigger
+                value="offers"
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
+                Offers
+              </TabsTrigger>
+              <TabsTrigger
+                value="hired"
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                Hired
+              </TabsTrigger>
+              <TabsTrigger
                 value="tasks"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
@@ -1110,6 +1126,28 @@ export default function JobDetail() {
           {/* Interviews Tab */}
           <TabsContent value="ai-interviews" className="mt-6">
             <JobAIInterviewsTab job={job} />
+          </TabsContent>
+
+          {/* Offers Tab */}
+          <TabsContent value="offers" className="mt-6">
+            <JobOffersTab
+              jobId={job.id}
+              jobTitle={job.title}
+              applications={allApplications}
+              rounds={[]}
+              onRefresh={handleJobUpdate}
+            />
+          </TabsContent>
+
+          <TabsContent value="hired" className="mt-6">
+            <JobOffersTab
+              mode="hired"
+              jobId={job.id}
+              jobTitle={job.title}
+              applications={allApplications}
+              rounds={[]}
+              onRefresh={handleJobUpdate}
+            />
           </TabsContent>
 
           {/* Tasks Tab */}

@@ -58,7 +58,7 @@ export function ActivityTimelineTab({ application }: ActivityTimelineTabProps) {
             title: item.subject || getActivityTitle(item.action || item.type || "other"),
             description: item.description || "",
             userId: item.createdBy,
-            userName: item.createdBy === "system" ? "System" : undefined,
+            userName: item.createdByName || (item.createdBy === "system" ? "System" : undefined),
             timestamp: new Date(item.createdAt),
             metadata: item.metadata || {},
           }));
@@ -109,6 +109,8 @@ export function ActivityTimelineTab({ application }: ActivityTimelineTabProps) {
       case "notes_updated":
       case "annotation_commented":
       case "annotation_highlighted":
+      case "annotation_deleted":
+      case "assessment_comment_added":
       case "interview_note_added":
       case "interview_note_deleted":
         return <MessageSquare className="h-3.5 w-3.5" />;
@@ -116,9 +118,37 @@ export function ActivityTimelineTab({ application }: ActivityTimelineTabProps) {
       case "email_reply_sent":
         return <Mail className="h-3.5 w-3.5" />;
       case "interview_scheduled":
+      case "interview_status_updated":
       case "interview_updated":
       case "interview_cancelled":
+      case "interview_feedback_added":
         return <CheckCircle2 className="h-3.5 w-3.5" />;
+      case "assessment_invited":
+      case "assessment_started":
+      case "assessment_response_saved":
+      case "assessment_submitted":
+      case "assessment_resend":
+      case "assessment_graded":
+      case "assessment_vote_added":
+      case "assessment_finalized":
+        return <FileText className="h-3.5 w-3.5" />;
+      case "application_submitted":
+      case "application_created_manual":
+      case "application_created_talent_pool":
+      case "application_shortlisted":
+      case "application_unshortlisted":
+      case "application_withdrawn":
+      case "application_deleted":
+      case "application_marked_read":
+        return <UserCheck className="h-3.5 w-3.5" />;
+      case "score_updated":
+      case "rank_updated":
+      case "tags_updated":
+      case "manual_screening_updated":
+      case "evaluation_added":
+      case "ai_analysis_completed":
+      case "ai_analysis_failed":
+        return <Star className="h-3.5 w-3.5" />;
       case "task_created":
       case "task_updated":
       case "task_assigned":
@@ -143,6 +173,8 @@ export function ActivityTimelineTab({ application }: ActivityTimelineTabProps) {
       case "notes_updated":
       case "annotation_commented":
       case "annotation_highlighted":
+      case "annotation_deleted":
+      case "assessment_comment_added":
       case "interview_note_added":
       case "interview_note_deleted":
         return "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-900/50 dark:text-zinc-300 dark:border-zinc-800";
@@ -150,9 +182,36 @@ export function ActivityTimelineTab({ application }: ActivityTimelineTabProps) {
       case "email_reply_sent":
         return "bg-stone-100 text-stone-700 border-stone-200 dark:bg-stone-900/50 dark:text-stone-300 dark:border-stone-800";
       case "interview_scheduled":
+      case "interview_status_updated":
       case "interview_updated":
       case "interview_cancelled":
+      case "interview_feedback_added":
         return "bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-900/50 dark:text-neutral-300 dark:border-neutral-800";
+      case "assessment_invited":
+      case "assessment_started":
+      case "assessment_response_saved":
+      case "assessment_submitted":
+      case "assessment_resend":
+      case "assessment_graded":
+      case "assessment_vote_added":
+      case "assessment_finalized":
+        return "bg-stone-100 text-stone-700 border-stone-200 dark:bg-stone-900/50 dark:text-stone-300 dark:border-stone-800";
+      case "application_submitted":
+      case "application_created_manual":
+      case "application_created_talent_pool":
+      case "application_shortlisted":
+      case "application_unshortlisted":
+      case "application_withdrawn":
+      case "application_deleted":
+      case "application_marked_read":
+      case "score_updated":
+      case "rank_updated":
+      case "tags_updated":
+      case "manual_screening_updated":
+      case "evaluation_added":
+      case "ai_analysis_completed":
+      case "ai_analysis_failed":
+        return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/50 dark:text-slate-300 dark:border-slate-800";
       case "task_created":
       case "task_updated":
       case "task_assigned":
@@ -251,20 +310,72 @@ function getActivityTitle(type: string): string {
       return "Stage Changed";
     case "round_changed":
       return "Round Changed";
+    case "application_submitted":
+      return "Application Submitted";
+    case "application_created_manual":
+      return "Application Added Manually";
+    case "application_created_talent_pool":
+      return "Application Added From Talent Pool";
+    case "application_shortlisted":
+      return "Candidate Shortlisted";
+    case "application_unshortlisted":
+      return "Candidate Unshortlisted";
+    case "application_withdrawn":
+      return "Application Withdrawn";
+    case "application_deleted":
+      return "Application Deleted";
+    case "application_marked_read":
+      return "Application Marked Read";
+    case "score_updated":
+      return "Score Updated";
+    case "rank_updated":
+      return "Rank Updated";
+    case "tags_updated":
+      return "Tags Updated";
+    case "manual_screening_updated":
+      return "Manual Screening Updated";
+    case "evaluation_added":
+      return "Evaluation Added";
+    case "ai_analysis_completed":
+      return "AI Analysis Completed";
+    case "ai_analysis_failed":
+      return "AI Analysis Failed";
     case "note_added":
       return "Note Added";
     case "notes_updated":
       return "Notes Updated";
+    case "assessment_invited":
+      return "Assessment Sent";
+    case "assessment_started":
+      return "Assessment Started";
+    case "assessment_response_saved":
+      return "Assessment Response Saved";
+    case "assessment_submitted":
+      return "Assessment Submitted";
+    case "assessment_resend":
+      return "Assessment Resent";
+    case "assessment_graded":
+      return "Assessment Graded";
+    case "assessment_vote_added":
+      return "Assessment Vote Added";
+    case "assessment_comment_added":
+      return "Assessment Comment Added";
+    case "assessment_finalized":
+      return "Assessment Finalized";
     case "email_sent":
       return "Email Sent";
     case "email_reply_sent":
       return "Email Reply Sent";
     case "interview_scheduled":
       return "Interview Scheduled";
+    case "interview_status_updated":
+      return "Interview Status Updated";
     case "interview_updated":
       return "Interview Updated";
     case "interview_cancelled":
       return "Interview Cancelled";
+    case "interview_feedback_added":
+      return "Interview Feedback Added";
     case "interview_note_added":
       return "Interview Note Added";
     case "interview_note_deleted":
@@ -281,6 +392,8 @@ function getActivityTitle(type: string): string {
       return "Annotation Commented";
     case "annotation_highlighted":
       return "Annotation Highlighted";
+    case "annotation_deleted":
+      return "Annotation Deleted";
     case "sms_sent":
       return "SMS Sent";
     case "slack_message_sent":

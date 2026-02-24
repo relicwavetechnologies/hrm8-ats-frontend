@@ -41,6 +41,7 @@ const AiInterviewDetailPage = lazy(() => import('@/pages/ai-interviews/AIIntervi
 const AiInterviewReportsPage = lazy(() => import('@/pages/ai-interviews/AIInterviewReports'));
 const AiInterviewSessionPage = lazy(() => import('@/pages/ai-interviews/AIInterviewSession'));
 const OffersPage = lazy(() => import('@/pages/offers/Offers'));
+const HiredPage = lazy(() => import('@/pages/offers/Hired'));
 const RequisitionsPage = lazy(() => import('@/pages/requisitions/Requisitions'));
 const RequisitionDetailPage = lazy(() => import('@/pages/requisitions/RequisitionDetail'));
 const AssessmentsPage = lazy(() => import('@/pages/assessments/Assessments'));
@@ -194,9 +195,24 @@ export function AppRoutes() {
                     </Suspense>
                 } />
 
+                <Route path="/offers" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <OffersPage />
+                    </Suspense>
+                } />
                 <Route path="/offers/*" element={
                     <Suspense fallback={<PageLoader />}>
                         <OffersPage />
+                    </Suspense>
+                } />
+                <Route path="/hired" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <HiredPage />
+                    </Suspense>
+                } />
+                <Route path="/hired/*" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <HiredPage />
                     </Suspense>
                 } />
 
