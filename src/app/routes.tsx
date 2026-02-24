@@ -93,7 +93,6 @@ const NotificationPreferencesPage = lazy(() => import('@/pages/settings/Notifica
 const NotificationCenterPage = lazy(() => import('@/pages/notifications/NotificationCenterPage'));
 const NotificationDetailPage = lazy(() => import('@/pages/notifications/NotificationDetailPage'));
 const SubscriptionsPage = lazy(() => import('@/modules/wallet/components/SubscriptionManagementPage').then(m => ({ default: m.SubscriptionManagementPage })));
-const StripeMockCheckoutPage = lazy(() => import('@/pages/dev/StripeMockCheckout'));
 
 export function AppRoutes() {
     return (
@@ -107,7 +106,6 @@ export function AppRoutes() {
             <Route path="/verify-company" element={<VerifyCompanyPage />} />
 
             {/* Dev/Mock Routes */}
-            <Route path="/dev/stripe-mock-checkout" element={<StripeMockCheckoutPage />} />
 
             {/* Public Assessment Route */}
             <Route path="/assessment/:token" element={
@@ -505,11 +503,6 @@ export function AppRoutes() {
             </Route>
 
             {/* Dev & Mock Routes (Outside AuthGuard to simulate external Stripe) */}
-            <Route path="/dev/stripe-mock-checkout" element={
-                <Suspense fallback={<PageLoader />}>
-                    <StripeMockCheckoutPage />
-                </Suspense>
-            } />
 
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/home" replace />} />

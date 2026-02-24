@@ -156,7 +156,7 @@ class JobService {
 
   /**
    * Upgrade an existing job to HRM8 managed service.
-   * For OPEN jobs this debits wallet + auto-assigns consultant.
+   * For OPEN jobs this runs invoice checkout + auto-assigns consultant.
    * For DRAFT jobs this routes through publish flow.
    */
   async upgradeManagedService(

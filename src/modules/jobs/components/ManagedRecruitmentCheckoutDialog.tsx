@@ -1,15 +1,13 @@
 import { type ComponentType, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
-import { Check, CreditCard, Loader2, Wallet, AlertCircle, Users, Star, Crown } from 'lucide-react';
+import { Check, CreditCard, Loader2, AlertCircle, Users, Star, Crown } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 import { jobService } from '@/shared/lib/jobService';
 import { pricingService, type ExecutiveSearchBand, type RecruitmentService } from '@/shared/lib/pricingService';
-import { walletService } from '@/shared/services/walletService';
 import { useToast } from '@/shared/hooks/use-toast';
 import type { Job } from '@/shared/types/job';
 
@@ -75,7 +73,7 @@ const SERVICE_META: Record<ManagedServiceType, ServiceMeta> = {
     perks: [
       'Dedicated recruiter aligned to your hiring plan',
       'Ongoing pipeline management and progress tracking',
-      'Wallet-based managed delivery with consultant ownership',
+      'Invoice-based managed delivery with consultant ownership',
     ],
   },
   'executive-search': {
@@ -144,10 +142,8 @@ export function ManagedRecruitmentCheckoutDialog({
   initialServiceType = 'full-service',
   onSuccess,
 }: ManagedRecruitmentCheckoutDialogProps) {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [job, setJob] = useState<Job | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
   const [executiveBands, setExecutiveBands] = useState<ExecutiveSearchBand[]>([]);
   const [serviceQuotes, setServiceQuotes] = useState<Record<ManagedServiceType, ServiceQuote | null>>(EMPTY_QUOTES);
   const [selectedService, setSelectedService] = useState<ManagedServiceType>(initialServiceType);
@@ -170,7 +166,7 @@ export function ManagedRecruitmentCheckoutDialog({
       setExecutiveBands([]);
 
       try {
-        const [jobRes, wallet] = await Promise.all([jobService.getJobById(jobId), walletService.getBalance()]);
+        const jobRes = await jobService.getJobById(jobId);
         if (!jobRes.success || !jobRes.data?.job) {
           throw new Error(jobRes.error || 'Failed to load job details');
         }
@@ -178,7 +174,6 @@ export function ManagedRecruitmentCheckoutDialog({
         const loadedJob = jobRes.data.job;
         const salaryForPricing = Number(loadedJob.salaryMax ?? loadedJob.salaryMin ?? 0);
         setJob(loadedJob);
-        setWalletBalance(Number(wallet.balance || 0));
 
         const [servicesResult, execBandsResult] = await Promise.allSettled([
           pricingService.getRecruitmentServices(),
@@ -266,16 +261,6 @@ export function ManagedRecruitmentCheckoutDialog({
 
   const selectedQuote = useMemo(() => serviceQuotes[selectedService], [selectedService, serviceQuotes]);
 
-  const hasSufficientWallet = useMemo(() => {
-    if (!selectedQuote) return false;
-    return walletBalance >= selectedQuote.price;
-  }, [selectedQuote, walletBalance]);
-
-  const shortfall = useMemo(() => {
-    if (!selectedQuote) return 0;
-    return Math.max(0, selectedQuote.price - walletBalance);
-  }, [selectedQuote, walletBalance]);
-
   const formatJobSalary = (targetJob: Job): string | null => {
     const min = targetJob.salaryMin != null ? Number(targetJob.salaryMin) : null;
     const max = targetJob.salaryMax != null ? Number(targetJob.salaryMax) : null;
@@ -304,7 +289,7 @@ export function ManagedRecruitmentCheckoutDialog({
 
       toast({
         title: 'Managed service activated',
-        description: 'Wallet payment completed. Continuing to advanced setup.',
+        description: 'Invoice payment completed. Continuing to advanced setup.',
       });
 
       onSuccess?.(res.data?.job);
@@ -314,12 +299,12 @@ export function ManagedRecruitmentCheckoutDialog({
       const message = err?.message || 'Failed to activate managed service';
 
       if (status === 402) {
-        const walletMessage =
-          message || 'Insufficient wallet balance. Please top up and try again.';
-        setError(walletMessage);
+        const paymentMessage =
+          message || 'Payment is required to activate HRM8 managed service.';
+        setError(paymentMessage);
         toast({
-          title: 'Insufficient wallet balance',
-          description: walletMessage,
+          title: 'Payment required',
+          description: paymentMessage,
           variant: 'destructive',
         });
       } else if (status === 503) {
@@ -351,7 +336,7 @@ export function ManagedRecruitmentCheckoutDialog({
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-2xl font-bold">Choose HRM8 managed service</DialogTitle>
           <DialogDescription className="text-sm">
-            Job publishing uses subscription quota. HRM8 managed service is paid separately from wallet, then you continue into advanced setup.
+            Job publishing uses subscription quota. HRM8 managed service is paid through invoice checkout, then you continue into advanced setup.
           </DialogDescription>
         </DialogHeader>
 
@@ -369,7 +354,7 @@ export function ManagedRecruitmentCheckoutDialog({
                 <CardContent className="space-y-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">Posting: Subscription quota</Badge>
-                    <Badge variant="outline">Managed delivery: Wallet payment</Badge>
+                    <Badge variant="outline">Managed delivery: Invoice payment</Badge>
                   </div>
                   {formatJobSalary(job) && (
                     <p className="text-muted-foreground">
@@ -433,7 +418,7 @@ export function ManagedRecruitmentCheckoutDialog({
                               {pricingService.formatPrice(quote.price, quote.currency)}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              Wallet payment
+                              Invoice payment
                               {quote.bandName ? ` · ${quote.bandName}` : ''}
                             </div>
                           </>
@@ -489,31 +474,11 @@ export function ManagedRecruitmentCheckoutDialog({
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Wallet balance</span>
-                  <span className={hasSufficientWallet ? 'font-medium' : 'font-medium text-destructive'}>
-                    {selectedQuote
-                      ? pricingService.formatPrice(walletBalance, selectedQuote.currency)
-                      : walletBalance.toLocaleString()}
-                  </span>
+                  <span className="text-muted-foreground">Payment rail</span>
+                  <span className="font-medium">Airwallex + Xero Invoice</span>
                 </div>
               </CardContent>
             </Card>
-
-            {!hasSufficientWallet && selectedQuote && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Insufficient wallet balance</AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p>
-                    You need{' '}
-                    <span className="font-semibold">
-                      {pricingService.formatPrice(shortfall, selectedQuote.currency)}
-                    </span>{' '}
-                    more to activate this service.
-                  </p>
-                </AlertDescription>
-              </Alert>
-            )}
 
             {error && (
               <Alert variant="destructive">
@@ -527,25 +492,19 @@ export function ManagedRecruitmentCheckoutDialog({
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
                 Cancel
               </Button>
-              {!hasSufficientWallet && selectedQuote && (
-                <Button variant="outline" onClick={() => navigate('/subscriptions')}>
-                  <Wallet className="h-4 w-4 mr-2" />
-                  Top Up Wallet
-                </Button>
-              )}
               <Button
                 onClick={handleConfirm}
-                disabled={processing || loading || !selectedQuote || !hasSufficientWallet}
+                disabled={processing || loading || !selectedQuote}
               >
                 {processing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing payment
+                    Processing invoice payment
                   </>
                 ) : (
                   <>
                     <CreditCard className="h-4 w-4 mr-2" />
-                    Pay from Wallet & Continue
+                    Pay & Continue
                   </>
                 )}
               </Button>
