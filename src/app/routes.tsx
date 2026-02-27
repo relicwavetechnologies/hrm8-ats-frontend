@@ -89,6 +89,7 @@ const AdminSettingsPage = lazy(() => import('@/pages/settings/AdminSettings'));
 const SupportTicketsPage = lazy(() => import('@/pages/settings/SupportTickets'));
 const SystemMonitoringPage = lazy(() => import('@/pages/settings/SystemMonitoring'));
 const CareersPageAdmin = lazy(() => import('@/pages/ats/CareersPageAdmin'));
+const DocumentHubPage = lazy(() => import('@/pages/document-hub/DocumentHub'));
 const NotificationPreferencesPage = lazy(() => import('@/pages/settings/NotificationPreferences'));
 const NotificationCenterPage = lazy(() => import('@/pages/notifications/NotificationCenterPage'));
 const NotificationDetailPage = lazy(() => import('@/pages/notifications/NotificationDetailPage'));
@@ -292,6 +293,11 @@ export function AppRoutes() {
                 <Route path="/messages" element={
                     <Suspense fallback={<PageLoader />}>
                         <InboxPage />
+                    </Suspense>
+                } />
+                <Route path="/document-hub" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <DocumentHubPage />
                     </Suspense>
                 } />
                 <Route path="/messages/:conversationId" element={
