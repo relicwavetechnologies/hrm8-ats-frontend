@@ -7,6 +7,25 @@ import { apiClient } from './api';
 import { Job, JobFormData } from '@/shared/types/job';
 export type { Job, JobFormData };
 
+export interface ManagedServiceCompleted {
+  status: 'COMPLETED';
+  job: Job;
+}
+
+export interface ManagedServicePendingPayment {
+  status: 'PENDING_PAYMENT';
+  checkoutUrl: string;
+  paymentAttemptId: string;
+  amount: number;
+  currency: string;
+  xeroInvoiceId: string;
+  xeroInvoiceNumber: string;
+  jobId: string;
+  servicePackage: string;
+}
+
+export type ManagedServiceUpgradeResponse = ManagedServiceCompleted | ManagedServicePendingPayment;
+
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'VISITOR';
 export type JobStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'ON_HOLD' | 'FILLED' | 'CANCELLED' | 'TEMPLATE';
 export type HiringMode = 'SELF_MANAGED' | 'SHORTLISTING' | 'FULL_SERVICE' | 'EXECUTIVE_SEARCH';
@@ -156,14 +175,18 @@ class JobService {
 
   /**
    * Upgrade an existing job to HRM8 managed service.
-   * For OPEN jobs this runs invoice checkout + auto-assigns consultant.
-   * For DRAFT jobs this routes through publish flow.
+   *
+   * Returns a union: COMPLETED (200 with job) or PENDING_PAYMENT (202
+   * with checkoutUrl when async payment is required).
    */
   async upgradeManagedService(
     id: string,
     servicePackage: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo'
   ) {
-    return apiClient.post<{ job: Job }>(`/api/jobs/${id}/upgrade-managed-service`, { servicePackage });
+    return apiClient.post<ManagedServiceUpgradeResponse | { job: Job }>(
+      `/api/jobs/${id}/upgrade-managed-service`,
+      { servicePackage }
+    );
   }
 
   /**

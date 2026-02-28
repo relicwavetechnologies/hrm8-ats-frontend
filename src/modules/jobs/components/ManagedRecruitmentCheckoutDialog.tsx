@@ -6,10 +6,19 @@ import { Button } from '@/shared/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
 import { Check, CreditCard, Loader2, AlertCircle, Users, Star, Crown } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
-import { jobService } from '@/shared/lib/jobService';
+import { jobService, type ManagedServicePendingPayment } from '@/shared/lib/jobService';
 import { pricingService, type ExecutiveSearchBand, type RecruitmentService } from '@/shared/lib/pricingService';
 import { useToast } from '@/shared/hooks/use-toast';
 import type { Job } from '@/shared/types/job';
+
+function isManagedServicePending(data: unknown): data is ManagedServicePendingPayment {
+  return (
+    !!data &&
+    typeof data === 'object' &&
+    (data as Record<string, unknown>).status === 'PENDING_PAYMENT' &&
+    typeof (data as Record<string, unknown>).checkoutUrl === 'string'
+  );
+}
 
 type ManagedServiceType = 'shortlisting' | 'full-service' | 'rpo' | 'executive-search';
 
@@ -287,12 +296,24 @@ export function ManagedRecruitmentCheckoutDialog({
         throw err;
       }
 
+      const payload = res.data;
+
+      if (isManagedServicePending(payload)) {
+        toast({
+          title: 'Redirecting to payment',
+          description: 'Invoice created. Completing payment with Airwallex.',
+        });
+        window.location.href = payload.checkoutUrl;
+        return;
+      }
+
       toast({
         title: 'Managed service activated',
         description: 'Invoice payment completed. Continuing to advanced setup.',
       });
 
-      onSuccess?.(res.data?.job);
+      const completedJob = (payload as { job?: Job })?.job;
+      onSuccess?.(completedJob);
       onOpenChange(false);
     } catch (err: any) {
       const status = err?.status;
