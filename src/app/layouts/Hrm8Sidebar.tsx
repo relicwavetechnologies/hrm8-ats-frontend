@@ -100,19 +100,14 @@ export function Hrm8Sidebar() {
           {isExpanded ? (
             <>
               <img
-                src={logoLight}
-                alt="HRM8"
-                className="h-8 block dark:hidden"
-                style={{
-                  filter:
-                    "brightness(0) saturate(100%) invert(27%) sepia(95%) saturate(2878%) hue-rotate(224deg) brightness(96%) contrast(95%)",
-                }}
-              />
-              <img
                 src={logoDark}
                 alt="HRM8"
+                className="h-8 block dark:hidden"
+              />
+              <img
+                src={logoLight}
+                alt="HRM8"
                 className="h-8 hidden dark:block opacity-100"
-                style={{ filter: "brightness(0) saturate(100%) invert(1)" }}
               />
             </>
           ) : (

@@ -24,6 +24,7 @@ import { OfferConfigurationDrawer } from "./OfferConfigurationDrawer";
 import { OfferExecutionDrawer } from "./OfferExecutionDrawer";
 import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/jobRoundService";
 import { jobService } from "@/shared/lib/jobService";
+import type { Job } from "@/shared/types/job";
 import { MoveStageDialog } from "./MoveStageDialog";
 
 interface ApplicationPipelineProps {
@@ -39,6 +40,84 @@ interface ApplicationPipelineProps {
   onApplicationMoved?: () => void; // Callback when application is moved (for parent to refresh)
   isConsultantView?: boolean; // When true, uses consultant API endpoints
 }
+
+type DragHandleProps = React.HTMLAttributes<HTMLDivElement>;
+
+type PipelineApiCandidate = {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  photo?: string;
+  resume_url?: string;
+  linked_in_url?: string;
+};
+
+type PipelineApiApplication = {
+  id: string;
+  candidateId?: string;
+  candidate_id?: string;
+  candidateName?: string;
+  candidateEmail?: string;
+  candidatePhoto?: string;
+  jobId?: string;
+  job_id?: string;
+  jobTitle?: string;
+  employerName?: string;
+  appliedDate?: string | Date;
+  applied_date?: string | Date;
+  status: string;
+  stage: string;
+  roundId?: string;
+  round_id?: string;
+  resumeUrl?: string;
+  resume_url?: string;
+  coverLetterUrl?: string;
+  cover_letter_url?: string;
+  portfolioUrl?: string;
+  portfolio_url?: string;
+  linkedInUrl?: string;
+  linked_in_url?: string;
+  customAnswers?: unknown[];
+  custom_answers?: unknown[];
+  isRead?: boolean;
+  is_read?: boolean;
+  isNew?: boolean;
+  is_new?: boolean;
+  tags?: string[];
+  recruiterNotes?: string;
+  recruiter_notes?: string;
+  createdAt?: string | Date;
+  created_at?: string | Date;
+  updatedAt?: string | Date;
+  updated_at?: string | Date;
+  shortlisted?: boolean;
+  manuallyAdded?: boolean;
+  manually_added?: boolean;
+  score?: number;
+  aiMatchScore?: number;
+  aiScore?: number;
+  aiAnalysis?: string;
+  candidate?: PipelineApiCandidate;
+  job?: {
+    title?: string;
+    company?: {
+      name?: string;
+    };
+  };
+};
+
+type PipelineRoundProgressMap = Record<string, { roundId?: string }>;
+type PipelineJobApplicationsResponse = {
+  applications?: PipelineApiApplication[];
+  roundProgress?: PipelineRoundProgressMap;
+};
+
+type PipelineJobData = {
+  job: Job;
+};
 
 const pipelineStages: { stage: ApplicationStage; label: string; color: string }[] = [
   { stage: "New Application", label: "New", color: "bg-blue-50 dark:bg-blue-950/30" },
@@ -97,7 +176,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   isSimpleFlow?: boolean;
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
-  dragHandleProps?: any;
+  dragHandleProps?: DragHandleProps;
 }) {
   const {
     attributes,
@@ -204,7 +283,7 @@ const StageColumn = React.memo(function StageColumn({
   isSimpleFlow?: boolean;
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
-  dragHandleProps?: any;
+  dragHandleProps?: DragHandleProps;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: round.id,
@@ -441,7 +520,6 @@ const StageColumn = React.memo(function StageColumn({
   return (
     prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
-    prevProps.isOver === nextProps.isOver &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
     prevProps.failedMoves === nextProps.failedMoves
   );
@@ -466,7 +544,7 @@ export function ApplicationPipeline({
   // Core state
   const [applications, setApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
-  const [jobData, setJobData] = useState<any>(null);
+  const [jobData, setJobData] = useState<PipelineJobData | null>(null);
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -709,15 +787,14 @@ export function ApplicationPipeline({
       // Load from API if jobId is provided
       try {
         const response = await appService.getJobApplications(jobId);
-        const apiApplications = response.data?.applications || [];
+        const responseData = response.data as PipelineJobApplicationsResponse | undefined;
+        const apiApplications = responseData?.applications || [];
 
         // Extract round progress mapping
         const roundMap: Record<string, string> = {};
-        // @ts-expect-error - roundProgress exists in backend response but might not be in type definition
-        if (response.data?.roundProgress) {
-          // @ts-expect-error - iterating over unknown type
-          Object.entries(response.data.roundProgress).forEach(([appId, progress]: [string, any]) => {
-            if (progress?.roundId) {
+        if (responseData?.roundProgress) {
+          Object.entries(responseData.roundProgress).forEach(([appId, progress]) => {
+            if (progress.roundId) {
               roundMap[appId] = progress.roundId;
             }
           });
@@ -725,7 +802,9 @@ export function ApplicationPipeline({
 
         // Map API applications to frontend Application type
         // Handle both pre-transformed consultant data and raw employer API data
-        const mappedApplications: Application[] = apiApplications.filter((app: any) => !!app?.id).map((app: any) => {
+        const mappedApplications: Application[] = apiApplications
+          .filter((app): app is PipelineApiApplication => !!app?.id)
+          .map((app) => {
           const extractedRoundId = app.roundId || app.round_id || roundMap[app.id];
 
           // Debug logging
@@ -742,7 +821,7 @@ export function ApplicationPipeline({
 
           return {
             id: app.id,
-            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || (app as any).candidate_id,
+            candidateId: app.candidateId || app.candidate_id || app.candidate?.id || '',
             // Handle pre-transformed data (candidateName) or raw data (candidate.firstName/first_name)
             candidateName: app.candidateName || (
               (app.candidate?.firstName && app.candidate?.lastName)
@@ -1170,7 +1249,7 @@ export function ApplicationPipeline({
         // Map the single application using same logic as loadApplications
         const updatedApp: Application = {
           id: apiApp.id,
-          candidateId: apiApp.candidateId || apiApp.candidate_id || apiApp.candidate?.id || (apiApp as any).candidate_id,
+          candidateId: apiApp.candidateId || apiApp.candidate_id || apiApp.candidate?.id || '',
           candidateName: apiApp.candidateName || (
             (apiApp.candidate?.firstName && apiApp.candidate?.lastName)
               ? `${apiApp.candidate.firstName} ${apiApp.candidate.lastName}`
@@ -1186,7 +1265,7 @@ export function ApplicationPipeline({
           appliedDate: apiApp.appliedDate ? new Date(apiApp.appliedDate) : (apiApp.applied_date ? new Date(apiApp.applied_date) : new Date()),
           status: mapApplicationStatus(apiApp.status),
           stage: mapApplicationStage(apiApp.stage),
-          roundId: (apiApp as any).roundId,
+          roundId: apiApp.roundId || apiApp.round_id,
           resumeUrl: apiApp.resumeUrl || apiApp.resume_url || apiApp.candidate?.resume_url,
           coverLetterUrl: apiApp.coverLetterUrl || apiApp.cover_letter_url,
           portfolioUrl: apiApp.portfolioUrl || apiApp.portfolio_url,
@@ -1213,7 +1292,7 @@ export function ApplicationPipeline({
     } catch (error) {
       console.error('Failed to refresh single application:', error);
     }
-  }, [appService]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [appService]);
 
   // Helper: Rollback optimistic move on error
   const rollbackMove = useCallback((appId: string, errorMsg: string) => {
@@ -1273,16 +1352,24 @@ export function ApplicationPipeline({
           : targetRound.fixedKey === 'OFFER'
             ? 'offer'
             : application.status;
+      const optimisticStage: ApplicationStage =
+        targetRound.fixedKey === 'REJECTED'
+          ? 'Rejected'
+          : targetRound.fixedKey === 'OFFER'
+            ? 'Offer Extended'
+            : targetRound.fixedKey === 'NEW'
+              ? 'New Application'
+              : application.stage;
       // 1. Optimistic update (instant UI response)
       setOptimisticMoves(prev => new Map(prev).set(applicationId, actualRoundId));
       setApplications(prev => prev.map(app =>
         app?.id === applicationId
-          ? { ...app, roundId: actualRoundId, stage: targetRound.name as any, status: optimisticStatus as any }
+          ? { ...app, roundId: actualRoundId, stage: optimisticStage, status: optimisticStatus }
           : app
       ));
       setSelectedApplication(prev =>
         prev?.id === applicationId
-          ? { ...prev, roundId: actualRoundId, stage: targetRound.name as any, status: optimisticStatus as any }
+          ? { ...prev, roundId: actualRoundId, stage: optimisticStage, status: optimisticStatus }
           : prev
       );
 
@@ -1335,7 +1422,7 @@ export function ApplicationPipeline({
         // 2. Save Comment (if provided)
         if (comment && !isConsultantView) {
           try {
-            const response = await (appService as any).getApplication(applicationId);
+            const response = await applicationService.getApplication(applicationId);
             const latestApp = response.data?.application || response.application;
 
             const currentNotes = latestApp?.recruiterNotes || "";
@@ -1346,7 +1433,7 @@ export function ApplicationPipeline({
               ? `${currentNotes}\n\n${newNoteEntry}`
               : newNoteEntry;
 
-            await (appService as any).updateNotes(applicationId, appendText);
+            await applicationService.updateNotes(applicationId, appendText);
 
             // Update selected application if it's the one being moved
             if (selectedApplication && selectedApplication.id === applicationId) {
@@ -1828,10 +1915,10 @@ export function ApplicationPipeline({
             }
           }}
           jobId={jobId}
-          jobTitle={jobData?.title || jobTitle}
-          jobRequirements={jobData?.requirements || []}
-          jobDescription={jobData?.description || ''}
-          job={jobData || { id: jobId, title: jobTitle, requirements: [], description: '' } as any}
+          jobTitle={jobData?.job?.title || jobTitle}
+          jobRequirements={jobData?.job?.requirements || []}
+          jobDescription={jobData?.job?.description || ''}
+          job={jobData?.job || { id: jobId, title: jobTitle, requirements: [], description: '' } as Job}
           roundId={selectedRoundForScreening.id}
           roundName={selectedRoundForScreening.name}
         />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -67,6 +67,7 @@ export function CandidateAssessmentView({
   const [fullApplication, setFullApplication] = useState<Application>(application);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+  const [notesRefreshKey, setNotesRefreshKey] = useState(0);
 
   const statusToStageMap: Record<string, string> = {
     applied: "New Application",
@@ -105,6 +106,7 @@ export function CandidateAssessmentView({
     () => ({
       context: {
         mode: "candidate_assessment",
+        pageContext: "candidate_drawer",
         applicationId: fullApplication.id,
         candidateId: fullApplication.candidateId,
         candidateName: fullApplication.candidateName || "Candidate",
@@ -113,6 +115,9 @@ export function CandidateAssessmentView({
         jobTitle,
         currentStage: fullApplication.stage ? String(fullApplication.stage) : undefined,
         currentStatus: fullApplication.status ? String(fullApplication.status) : undefined,
+        roundId: fullApplication.roundId || undefined,
+        activeTab,
+        pipelineMode: isSimpleFlow ? "simple" : "advanced",
       },
     }),
     [
@@ -124,9 +129,21 @@ export function CandidateAssessmentView({
       fullApplication.jobId,
       fullApplication.stage,
       fullApplication.status,
+      fullApplication.roundId,
       jobTitle,
+      activeTab,
+      isSimpleFlow,
     ]
   );
+
+  // When AI sidebar closes, bump refresh key so notes re-fetch (AI may have written one)
+  const prevAiOpenRef = useRef(isAiAssistantOpen);
+  useEffect(() => {
+    if (prevAiOpenRef.current && !isAiAssistantOpen) {
+      setNotesRefreshKey((k) => k + 1);
+    }
+    prevAiOpenRef.current = isAiAssistantOpen;
+  }, [isAiAssistantOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -275,6 +292,7 @@ export function CandidateAssessmentView({
                       candidateEmail={fullApplication.candidateEmail}
                       candidatePhone={fullApplication.candidatePhone}
                       application={fullApplication}
+                      refreshTrigger={notesRefreshKey}
                     />
                   </div>
 

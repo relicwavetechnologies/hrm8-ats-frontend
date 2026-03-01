@@ -51,6 +51,8 @@ interface CandidateNotesPanelProps {
   onSmsSent?: () => void;
   onMeetingScheduled?: () => void;
   onTaskCreated?: () => void;
+  /** Bump this value to trigger a notes re-fetch (e.g. after AI writes a note) */
+  refreshTrigger?: number;
 }
 
 
@@ -68,6 +70,7 @@ export function CandidateNotesPanelEnhanced({
   onSmsSent: _onSmsSent,
   onMeetingScheduled: _onMeetingScheduled,
   onTaskCreated: _onTaskCreated,
+  refreshTrigger,
 }: CandidateNotesPanelProps) {
   const [activeTab, setActiveTab] = useState('notes');
   const [notes, setNotes] = useState<Note[]>([]);
@@ -95,14 +98,20 @@ export function CandidateNotesPanelEnhanced({
   // Fetch hiring team
   useEffect(() => {
     const fetchTeam = async () => {
-      // Use currentJobId defined in component scope
-      if (!currentJobId) {
+      const resolvedJobId = jobId || application?.jobId || '';
+      if (!resolvedJobId) {
         return;
       }
 
       try {
-        const url = `/api/jobs/${currentJobId}/team`;
-        const response = await apiClient.get<any[]>(url);
+        type RawTeamMember = {
+          userId?: string; id?: string; name?: string; role?: string;
+          userRole?: string; avatar?: string; userEmail?: string;
+          user?: { name?: string; avatar?: string; email?: string };
+          email?: string;
+        };
+        const url = `/api/jobs/${resolvedJobId}/team`;
+        const response = await apiClient.get<RawTeamMember[]>(url);
 
         if (response.success && response.data) {
           const mappedTeam = response.data.map(member => ({
@@ -160,11 +169,15 @@ export function CandidateNotesPanelEnhanced({
     const fetchNotes = async () => {
       if (!applicationId) return;
       try {
-        const response = await apiClient.get<{ notes: any[] }>(
+        type RawNote = {
+          id: string; content: string; createdAt: string; mentions?: string[];
+          author?: { id?: string; name?: string; avatar?: string };
+        };
+        const response = await apiClient.get<{ notes: RawNote[] }>(
           `/api/applications/${applicationId}/notes`
         );
         if (response.success && response.data?.notes) {
-          const mappedNotes = response.data.notes.map((note: any) => ({
+          const mappedNotes = response.data.notes.map((note) => ({
             id: note.id,
             content: note.content,
             authorId: note.author?.id || 'unknown',
@@ -189,7 +202,7 @@ export function CandidateNotesPanelEnhanced({
     };
 
     fetchNotes();
-  }, [applicationId]);
+  }, [applicationId, refreshTrigger]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -253,7 +266,8 @@ export function CandidateNotesPanelEnhanced({
     setIsSubmitting(true);
 
     try {
-      const response = await apiClient.post<{ note: any }>(
+      type SavedNote = { id: string; content: string; createdAt: string; mentions?: string[]; author?: { id?: string; name?: string; avatar?: string } };
+      const response = await apiClient.post<{ note: SavedNote }>(
         `/api/applications/${applicationId}/notes`,
         {
           content: noteContent.trim(),
