@@ -84,11 +84,11 @@ export function useWallet() {
         },
     });
 
-    // Stripe status query
-    const stripeStatusQuery = useQuery({
-        queryKey: ['wallet', 'stripe', 'status'],
+    // Payout status query
+    const payoutStatusQuery = useQuery({
+        queryKey: ['wallet', 'payout', 'status'],
         queryFn: async () => {
-            const response = await apiClient.get<StripeStatus>(`${API_BASE}/stripe/status`);
+            const response = await apiClient.get<StripeStatus>(`/api/payouts/status`);
             if (!response.success) throw new Error(response.error);
             return response.data;
         },
@@ -117,21 +117,21 @@ export function useWallet() {
         },
     });
 
-    // Stripe onboard mutation
-    const stripeOnboardMutation = useMutation({
+    // Payout provider onboard mutation
+    const payoutOnboardMutation = useMutation({
         mutationFn: async () => {
             const response = await apiClient.post<{ accountId: string; onboardingUrl: string }>(
-                `${API_BASE}/stripe/onboard`
+                `/api/payouts/beneficiaries`
             );
             if (!response.success) throw new Error(response.error);
             return response.data;
         },
     });
 
-    // Stripe login mutation
-    const stripeLoginMutation = useMutation({
+    // Payout dashboard link mutation
+    const payoutDashboardMutation = useMutation({
         mutationFn: async () => {
-            const response = await apiClient.post<{ url: string }>(`${API_BASE}/stripe/login`);
+            const response = await apiClient.post<{ url: string }>(`/api/payouts/login-link`);
             if (!response.success) throw new Error(response.error);
             return response.data;
         },
@@ -142,13 +142,17 @@ export function useWallet() {
         balance: balanceQuery.data,
         earnings: earningsQuery.data,
         transactions: transactionsQuery.data,
-        stripeStatus: stripeStatusQuery.data,
+        payoutStatus: payoutStatusQuery.data,
+        /** @deprecated Use payoutStatus instead */
+        stripeStatus: payoutStatusQuery.data,
         minimumWithdrawal: minimumQuery.data || 50,
 
         // Loading states
         isLoading: balanceQuery.isLoading || earningsQuery.isLoading,
         isLoadingTransactions: transactionsQuery.isLoading,
-        isLoadingStripe: stripeStatusQuery.isLoading,
+        isLoadingPayoutStatus: payoutStatusQuery.isLoading,
+        /** @deprecated Use isLoadingPayoutStatus instead */
+        isLoadingStripe: payoutStatusQuery.isLoading,
 
         // Errors
         error: balanceQuery.error || earningsQuery.error,
@@ -158,11 +162,15 @@ export function useWallet() {
         isWithdrawing: withdrawMutation.isPending,
         withdrawError: withdrawMutation.error,
 
-        stripeOnboard: stripeOnboardMutation.mutateAsync,
-        isOnboarding: stripeOnboardMutation.isPending,
+        onboardPayoutProvider: payoutOnboardMutation.mutateAsync,
+        /** @deprecated Use onboardPayoutProvider instead */
+        stripeOnboard: payoutOnboardMutation.mutateAsync,
+        isOnboarding: payoutOnboardMutation.isPending,
 
-        stripeLogin: stripeLoginMutation.mutateAsync,
-        isLoggingIn: stripeLoginMutation.isPending,
+        getPayoutDashboardLink: payoutDashboardMutation.mutateAsync,
+        /** @deprecated Use getPayoutDashboardLink instead */
+        stripeLogin: payoutDashboardMutation.mutateAsync,
+        isLoggingIn: payoutDashboardMutation.isPending,
 
         // Refresh functions
         refreshBalance: () => queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] }),

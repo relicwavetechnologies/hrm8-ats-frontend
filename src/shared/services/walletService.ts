@@ -212,7 +212,7 @@ class WalletService {
         return response.json();
     }
 
-    // Subscription purchase via Stripe (production-grade)
+    // Subscription purchase via Airwallex billing orchestration
     async createSubscriptionCheckout(data: {
         planType: string;
         name: string;
@@ -221,7 +221,7 @@ class WalletService {
         jobQuota?: number | null;
     }) {
         const origin = window.location.origin;
-        const response = await this.fetchApi('/api/integrations/stripe/create-checkout-session', {
+        const response = await this.fetchApi('/api/billing/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -252,19 +252,20 @@ class WalletService {
         return result;
     }
 
-    // Wallet Recharge
+    // Wallet recharge via Airwallex billing orchestration
     async rechargeWallet(data: {
         amount: number;
         paymentMethod: string;
     }) {
         console.log('[WalletService] rechargeWallet called', data);
-        console.log('[WalletService] Fetching URL:', `${this.apiUrl}/api/integrations/stripe/create-checkout-session`);
+        console.log('[WalletService] Fetching URL:', `${this.apiUrl}/api/billing/checkout`);
 
         try {
-            const response = await this.fetchApi('/api/integrations/stripe/create-checkout-session', {
+            const response = await this.fetchApi('/api/billing/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    type: 'wallet_recharge',
                     amount: data.amount,
                     description: `Wallet recharge - $${data.amount.toFixed(2)}`,
                     metadata: {
@@ -293,7 +294,7 @@ class WalletService {
             const result = await response.json();
             console.log('[WalletService] Recharge Result:', result);
 
-            // Redirect to Stripe Checkout
+            // Redirect to provider checkout/success URL
             if (result.data?.url) {
                 console.log('[WalletService] Redirecting to:', result.data.url);
                 window.location.href = result.data.url;

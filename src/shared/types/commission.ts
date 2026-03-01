@@ -45,6 +45,13 @@ export interface Commission {
   createdAt: string;
   updatedAt: string;
   
+  // FX / Payout
+  payoutCurrency?: string;
+  payoutAmount?: number;
+  fxRate?: number;
+  fxRateLockedAt?: string;
+  fxSource?: string;
+
   // Additional Info
   splitWith?: string[]; // Other consultant IDs if commission is split
   splitPercentage?: number;

@@ -42,9 +42,10 @@ export default function StripeMockCheckoutPage() {
             // Simulate processing delay
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            // Call backend to trigger success
-            const response = await apiClient.post('/api/integrations/stripe/mock-payment-success', {
-                sessionId,
+            // Simulate provider webhook success
+            const response = await apiClient.post('/api/billing/webhooks/airwallex', {
+                paymentAttemptId: sessionId,
+                status: 'SUCCEEDED',
                 amount: amountTotal,
             });
 

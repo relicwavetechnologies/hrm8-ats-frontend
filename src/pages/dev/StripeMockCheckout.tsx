@@ -1,6 +1,6 @@
 /**
- * Mock Stripe Checkout Page
- * Simulates Stripe payment flow for development
+ * Mock Airwallex Checkout Page
+ * Simulates invoice payment flow for development
  */
 
 import { useEffect, useState } from 'react';
@@ -23,14 +23,15 @@ export default function StripeMockCheckout() {
         setProcessing(true);
 
         try {
-            // Call backend to process payment and credit wallet
+            // Simulate provider webhook completion on billing rail
             const apiUrl = import.meta.env.VITE_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/integrations/stripe/mock-payment-success`, {
+            const response = await fetch(`${apiUrl}/api/billing/webhooks/airwallex`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                    sessionId,
+                    paymentAttemptId: sessionId,
+                    status: 'SUCCEEDED',
                     amount: parseInt(amount || '0'),
                 }),
             });
@@ -89,7 +90,7 @@ export default function StripeMockCheckout() {
                 <CardHeader>
                     <div className="flex items-center gap-2 mb-2">
                         <CreditCard className="h-5 w-5" />
-                        <span className="text-sm font-medium text-muted-foreground">Mock Stripe Checkout</span>
+                        <span className="text-sm font-medium text-muted-foreground">Mock Airwallex Checkout</span>
                     </div>
                     <CardTitle className="text-2xl">Complete Your Payment</CardTitle>
                     <CardDescription>

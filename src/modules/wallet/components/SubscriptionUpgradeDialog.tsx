@@ -62,7 +62,7 @@ export function SubscriptionUpgradeDialog({
     const [selectedPlan, setSelectedPlan] = useState<string>('');
     const { toast } = useToast();
     const queryClient = useQueryClient();
-    const { showPrompt, setShowPrompt, redirectPath, checkStripeRequired } = useStripeIntegration();
+    const { showPrompt, setShowPrompt, redirectPath } = useStripeIntegration();
 
     const { data: apiTiers, isLoading: tiersLoading } = useQuery({
         queryKey: ['pricing', 'subscription-tiers'],
@@ -108,7 +108,7 @@ export function SubscriptionUpgradeDialog({
                 });
             }
 
-            // Paid plans: Stripe checkout (production-grade) – redirects to Stripe; webhook creates subscription
+            // Paid plans: invoice checkout on Airwallex rail; webhook finalizes subscription activation
             await walletService.createSubscriptionCheckout({
                 planType: plan.planType,
                 name: plan.name,
@@ -136,7 +136,11 @@ export function SubscriptionUpgradeDialog({
             }
         },
         onError: (error: any) => {
-            if (error.response?.status === 402 || error.errorCode === 'STRIPE_NOT_CONNECTED') {
+            if (
+                error.response?.status === 402 ||
+                error.errorCode === 'AIRWALLEX_NOT_CONNECTED' ||
+                error.errorCode === 'STRIPE_NOT_CONNECTED'
+            ) {
                 return;
             }
             toast({
@@ -264,7 +268,7 @@ export function SubscriptionUpgradeDialog({
                 </div>
             </DialogContent>
 
-            {/* Stripe Connection Prompt */}
+            {/* Payment Integration Prompt */}
             <StripePromptDialog
                 open={showPrompt}
                 onOpenChange={setShowPrompt}

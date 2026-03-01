@@ -62,7 +62,7 @@ export default function Integrations() {
                 <BrandIconPlate className="h-6 w-6 rounded-md">
                   <StripeBrandIcon className="h-4 w-4" />
                 </BrandIconPlate>
-                Stripe
+                Airwallex
               </p>
             </CardContent>
           </Card>
@@ -125,7 +125,7 @@ export default function Integrations() {
           <TabsContent value="payments" className="space-y-3">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold">Payment Integration</h2>
-              <Badge variant="outline" className="text-[10px] h-5 px-1.5">Stripe</Badge>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5">Airwallex</Badge>
             </div>
             <div className="max-w-2xl">
               <StripeIntegrationCard />

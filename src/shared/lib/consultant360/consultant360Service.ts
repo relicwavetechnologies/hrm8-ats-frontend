@@ -60,6 +60,12 @@ export interface Commission {
     confirmedAt?: string;
     paidAt?: string;
     paymentReference?: string;
+    currency?: string;
+    payoutCurrency?: string;
+    payoutAmount?: number;
+    fxRate?: number;
+    fxRateLockedAt?: string;
+    fxSource?: string;
     notes?: string;
     createdAt: string;
     updatedAt: string;
@@ -127,6 +133,11 @@ export interface Withdrawal {
     adminNotes?: string;
     rejectionReason?: string;
     rejectedAt?: string;
+    payoutCurrency?: string;
+    payoutAmount?: number;
+    fxRateUsed?: number;
+    airwallexTransferId?: string;
+    xeroBillId?: string;
     notes?: string;
     createdAt: string;
     updatedAt: string;
@@ -148,6 +159,9 @@ export interface StripeAccountStatus {
     detailsSubmitted: boolean;
     requiresAction: boolean;
 }
+
+/** Provider-neutral alias for StripeAccountStatus */
+export type PayoutAccountStatus = StripeAccountStatus;
 
 // ==================== API Functions ====================
 
@@ -278,38 +292,71 @@ export const consultant360Service = {
     },
 
     /**
-     * Start Stripe Connect onboarding
+     * Start payout provider onboarding
+     */
+    async onboardPayoutProvider(): Promise<{
+        success: boolean;
+        data?: { accountLink: { url: string } };
+        error?: string;
+    }> {
+        const response = await apiClient.post<{ accountLink: { url: string } }>('/api/payouts/beneficiaries');
+        return response;
+    },
+
+    /**
+     * @deprecated Use onboardPayoutProvider instead
      */
     async stripeOnboard(): Promise<{
         success: boolean;
         data?: { accountLink: { url: string } };
         error?: string;
     }> {
-        const response = await apiClient.post<{ accountLink: { url: string } }>('/api/consultant360/stripe/onboard');
+        return this.onboardPayoutProvider();
+    },
+
+    /**
+     * Get payout account status
+     */
+    async getPayoutStatus(): Promise<{
+        success: boolean;
+        data?: StripeAccountStatus;
+        error?: string;
+    }> {
+        const response = await apiClient.get<StripeAccountStatus>('/api/payouts/status');
         return response;
     },
 
     /**
-     * Get Stripe account status
+     * @deprecated Use getPayoutStatus instead
      */
     async getStripeStatus(): Promise<{
         success: boolean;
         data?: StripeAccountStatus;
         error?: string;
     }> {
-        const response = await apiClient.get<StripeAccountStatus>('/api/consultant360/stripe/status');
+        return this.getPayoutStatus();
+    },
+
+    /**
+     * Get payout provider dashboard link
+     */
+    async getPayoutDashboardLink(): Promise<{
+        success: boolean;
+        data?: { url: string };
+        error?: string;
+    }> {
+        const response = await apiClient.post<{ url: string }>('/api/payouts/login-link');
         return response;
     },
 
     /**
-     * Get Stripe dashboard login link
+     * @deprecated Use getPayoutDashboardLink instead
      */
     async getStripeLoginLink(): Promise<{
         success: boolean;
         data?: { url: string };
         error?: string;
     }> {
-        const response = await apiClient.post<{ url: string }>('/api/consultant360/stripe/login-link');
-        return response;
+        return this.getPayoutDashboardLink();
     },
 };

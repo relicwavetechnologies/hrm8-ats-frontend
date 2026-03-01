@@ -188,15 +188,15 @@ export const salesService = {
 
   // Stripe Connect
   stripeOnboard: async () => {
-    return await apiClient.post<{ accountId: string; onboardingUrl: string }>('/api/sales/stripe/onboard');
+    return await apiClient.post<{ accountId: string; onboardingUrl: string }>('/api/payouts/beneficiaries');
   },
 
   getStripeStatus: async () => {
-    return await apiClient.get<{ payoutEnabled: boolean; detailsSubmitted: boolean }>('/api/sales/stripe/status');
+    return await apiClient.get<{ payoutEnabled: boolean; detailsSubmitted: boolean }>('/api/payouts/status');
   },
 
   getStripeLoginLink: async () => {
-    return await apiClient.post<{ url: string }>('/api/sales/stripe/login-link');
+    return await apiClient.post<{ url: string }>('/api/payouts/login-link');
   },
 
   executeWithdrawal: async (id: string) => {
