@@ -20,7 +20,8 @@ import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            staleTime: 1000 * 60 * 5, // 5 minutes
+            staleTime: 1000 * 60 * 5,  // 5 min  - after this, background refetch fires on next visit
+            gcTime: 1000 * 60 * 30,    // 30 min - data stays in memory even after stale, no spinner on back-navigation
             refetchOnWindowFocus: false,
             retry: 1,
         },
