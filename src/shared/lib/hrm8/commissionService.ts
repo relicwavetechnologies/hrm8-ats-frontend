@@ -21,6 +21,11 @@ export interface Commission {
   paidAt?: string;
   paidTo?: string;
   description?: string;
+  payoutCurrency?: string;
+  payoutAmount?: number;
+  fxRate?: number;
+  fxRateLockedAt?: string;
+  fxSource?: string;
   createdAt: string;
   updatedAt: string;
 }

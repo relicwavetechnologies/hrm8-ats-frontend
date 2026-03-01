@@ -60,6 +60,12 @@ export interface Commission {
     confirmedAt?: string;
     paidAt?: string;
     paymentReference?: string;
+    currency?: string;
+    payoutCurrency?: string;
+    payoutAmount?: number;
+    fxRate?: number;
+    fxRateLockedAt?: string;
+    fxSource?: string;
     notes?: string;
     createdAt: string;
     updatedAt: string;
@@ -127,6 +133,11 @@ export interface Withdrawal {
     adminNotes?: string;
     rejectionReason?: string;
     rejectedAt?: string;
+    payoutCurrency?: string;
+    payoutAmount?: number;
+    fxRateUsed?: number;
+    airwallexTransferId?: string;
+    xeroBillId?: string;
     notes?: string;
     createdAt: string;
     updatedAt: string;
