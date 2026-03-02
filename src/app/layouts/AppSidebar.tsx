@@ -80,6 +80,7 @@ const atsNavItems = [
   // { title: "Background Checks", url: "/background-checks", icon: ShieldCheck },
   { title: "Careers Page", url: "/ats/careers-page", icon: Building2 },
   { title: "Email Templates", url: "/email-templates", icon: MailPlus },
+  { title: "Documents Hub", url: "/document-hub", icon: FolderOpen },
   { title: "Inbox", url: "/messages", icon: Inbox },
 ];
 
