@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate, useMatch } from "react-router-dom";
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, X, Eye, FileEdit, Check, Filter, Zap } from "lucide-react";
+import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, CheckCircle, Download, Upload, Archive, BarChart3, X, Eye, FileEdit, Check, Filter, Zap, BotMessageSquare } from "lucide-react";
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { jobService } from "@/shared/lib/jobService";
@@ -41,6 +41,9 @@ import { useJobsList } from "@/shared/hooks/useJobsList";
 import { BulkActionsToolbar } from "@/modules/jobs/components/bulk/BulkActionsToolbar";
 import { FilterCriteria } from "@/shared/lib/savedFiltersService";
 import { JobsPageSkeleton } from "@/modules/jobs/components/JobsPageSkeleton";
+import { publishAiReference } from "@/shared/hooks/useAiReferences";
+import { AiContextMenu } from "@/shared/components/common/AiContextMenu";
+import { EntityReference } from "@/shared/types/ai-references";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -114,6 +117,10 @@ export default function Jobs() {
       managedCheckoutServiceParam === 'rpo'
       ? managedCheckoutServiceParam
       : undefined;
+
+  /** Right-click AI context menu state */
+  const [contextMenuRef, setContextMenuRef] = useState<EntityReference | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const jobsPage = 1;
   const {
@@ -570,6 +577,60 @@ export default function Jobs() {
     }
   };
 
+  /**
+   * Publish a job as an AI reference chip in the assistant sidebar.
+   * Deduplicated by (entityType + entityId) in the store.
+   */
+  const handleAddToAiContext = useCallback((job: Job) => {
+    publishAiReference({
+      entityType: 'job',
+      entityId: job.id,
+      label: job.title,
+      source: 'ats.jobs.table',
+      meta: {
+        status: job.status,
+        employmentType: job.employmentType ?? null,
+        location: job.location ?? null,
+      },
+    });
+    // Open AI panel (guaranteed open, not toggle) so the chip is visible
+    window.dispatchEvent(new Event('open-ai-panel'));
+    toast({
+      title: 'Added to AI context',
+      description: `"${job.title}" is now attached to your assistant chat.`,
+      duration: 3000,
+    });
+  }, [toast]);
+
+  /**
+   * Right-click on a jobs row — show context menu with AI option
+   */
+  const handleRowContextMenu = useCallback((job: Job, e: React.MouseEvent) => {
+    setContextMenuRef({
+      entityType: 'job',
+      entityId: job.id,
+      label: job.title,
+      source: 'ats.jobs.table',
+      meta: { status: job.status, location: job.location ?? null },
+    });
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  /**
+   * Drag start — embed entity reference JSON in the drag payload
+   */
+  const handleRowDragStart = useCallback((job: Job, e: React.DragEvent) => {
+    const ref: EntityReference = {
+      entityType: 'job',
+      entityId: job.id,
+      label: job.title,
+      source: 'ats.jobs.table',
+      meta: { status: job.status, location: job.location ?? null },
+    };
+    e.dataTransfer.setData('application/x-ai-reference', JSON.stringify(ref));
+    e.dataTransfer.effectAllowed = 'copy';
+  }, []);
+
   const [editingJobData, setEditingJobData] = useState<any>(null);
 
   useEffect(() => {
@@ -787,6 +848,13 @@ export default function Jobs() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-xs text-blue-600 dark:text-blue-400 focus:text-blue-700 focus:bg-blue-50 dark:focus:bg-blue-950/40"
+                onClick={() => handleAddToAiContext(job)}
+              >
+                <BotMessageSquare className="h-3.5 w-3.5 mr-2" />
+                Ask AI about this job
+              </DropdownMenuItem>
               <DropdownMenuItem className="text-xs" onClick={() => handleEditJob(job.id)}>
                 <Pencil className="h-3.5 w-3.5 mr-2" />
                 Edit
@@ -807,7 +875,7 @@ export default function Jobs() {
         </div>
       )
     },
-  ], [navigate, user, profileSummary, companyLogoUrl, handleEditJob, handleDelete]);
+  ], [navigate, user, profileSummary, companyLogoUrl, handleEditJob, handleDelete, handleAddToAiContext]);
 
   const draftColumns = useMemo((): Column<Job>[] => [
     {
@@ -1025,6 +1093,9 @@ export default function Jobs() {
                   searchable={false}
                   selectable
                   onSelectedRowsChange={setSelectedJobs}
+                  rowDraggable
+                  onRowDragStart={handleRowDragStart}
+                  onRowContextMenu={handleRowContextMenu}
                   onRowClick={(job) => {
                     // Check if job setup is complete
                     const isSetupComplete = job.setupType && job.managementType;
@@ -1058,6 +1129,15 @@ export default function Jobs() {
                 />
               )}
             </Tabs>
+
+            {/* Right-click AI Context Menu */}
+            {contextMenuRef && (
+              <AiContextMenu
+                reference={contextMenuRef}
+                position={contextMenuPos}
+                onClose={() => setContextMenuRef(null)}
+              />
+            )}
 
             <JobCreateDrawer
               open={drawerOpen}

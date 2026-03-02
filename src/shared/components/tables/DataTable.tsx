@@ -71,6 +71,11 @@ interface DataTableProps<T> {
   onPivotConfigChange?: (config: PivotConfig) => void;
   // Row click handler
   onRowClick?: (item: T) => void;
+  // Right-click context menu callback
+  onRowContextMenu?: (item: T, e: React.MouseEvent) => void;
+  // Whether rows are draggable (for AI context drag-drop)
+  rowDraggable?: boolean;
+  onRowDragStart?: (item: T, e: React.DragEvent) => void;
   // Column resizing
   tableId?: string;
   resizable?: boolean;
@@ -109,6 +114,9 @@ export function DataTable<T extends { id: string }>({
   pivotConfig,
   onPivotConfigChange,
   onRowClick,
+  onRowContextMenu,
+  rowDraggable = false,
+  onRowDragStart,
   tableId = "default-table",
   resizable = true,
   compact = false,
@@ -120,12 +128,12 @@ export function DataTable<T extends { id: string }>({
   const [typeFilterValue, setTypeFilterValue] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+
   // Inline editing state
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnKey: string } | null>(null);
-  
+
   // Grouping state
-  const [expandedGroups, setExpandedGroups] = useState<Set<string | number>>(() => 
+  const [expandedGroups, setExpandedGroups] = useState<Set<string | number>>(() =>
     defaultGroupsExpanded ? new Set(['__all__']) : new Set()
   );
 
@@ -156,7 +164,7 @@ export function DataTable<T extends { id: string }>({
     minWidth: 80,
     maxWidth: 600,
   });
-  
+
   // Advanced filtering state
   const [dateRangeFilters, setDateRangeFilters] = useState<DateRangeFilter[]>(initialDateRangeFilters);
   const [multiSelectFilters, setMultiSelectFilters] = useState<MultiSelectFilter[]>(initialMultiSelectFilters);
@@ -362,11 +370,11 @@ export function DataTable<T extends { id: string }>({
   // Get visible and ordered columns
   const displayColumns = useMemo(() => {
     if (!columnCustomization) return columns;
-    
+
     const ordered = columnOrder
       .map(key => columns.find(col => col.key === key))
       .filter(Boolean) as Column<T>[];
-    
+
     return ordered.filter(col => visibleColumns.includes(col.key));
   }, [columns, columnOrder, visibleColumns, columnCustomization]);
 
@@ -449,7 +457,7 @@ export function DataTable<T extends { id: string }>({
     if (!grouping) return null;
 
     const groups = groupData(filteredAndSortedData, grouping.column);
-    
+
     // Calculate aggregates for each group
     return groups.map((group) => ({
       ...group,
@@ -462,9 +470,9 @@ export function DataTable<T extends { id: string }>({
   const paginatedData = groupedData
     ? null // No pagination when grouping is enabled
     : filteredAndSortedData.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-      );
+      (currentPage - 1) * pageSize,
+      currentPage * pageSize
+    );
 
   // Active filters
   const activeFilters: ActiveFilter[] = [];
@@ -633,11 +641,11 @@ export function DataTable<T extends { id: string }>({
                   <Checkbox
                     checked={
                       (paginatedData || filteredAndSortedData).length > 0 &&
-                      (paginatedData || filteredAndSortedData).every(item => selectedIds.includes(item.id))
+                        (paginatedData || filteredAndSortedData).every(item => selectedIds.includes(item.id))
                         ? true
                         : (paginatedData || filteredAndSortedData).some(item => selectedIds.includes(item.id))
-                        ? "indeterminate"
-                        : false
+                          ? "indeterminate"
+                          : false
                     }
                     onCheckedChange={handleSelectAll}
                     aria-label="Select all on this page"
@@ -648,8 +656,8 @@ export function DataTable<T extends { id: string }>({
                 const width = resizable ? getColumnWidth(column.key) : undefined;
                 return (
                   <TableHead
-                    key={column.key} 
-                    style={{ 
+                    key={column.key}
+                    style={{
                       width: width ? `${width}px` : column.width,
                       position: 'relative',
                     }}
@@ -713,14 +721,27 @@ export function DataTable<T extends { id: string }>({
                         group.items.map((item) => (
                           <TableRow
                             key={item.id}
+                            data-row-id={item.id}
+                            draggable={rowDraggable}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              if (onRowClick) {
-                                onRowClick(item);
+                              if (onRowClick) onRowClick(item);
+                            }}
+                            onContextMenu={(e) => {
+                              if (onRowContextMenu) {
+                                e.preventDefault();
+                                onRowContextMenu(item, e);
                               }
                             }}
-                            className={cn(onRowClick && "cursor-pointer", rowClass)}
+                            onDragStart={(e) => {
+                              if (rowDraggable && onRowDragStart) onRowDragStart(item, e);
+                            }}
+                            className={cn(
+                              onRowClick && "cursor-pointer",
+                              rowDraggable && "draggable-row",
+                              rowClass
+                            )}
                           >
                             {selectable && (
                               <TableCell onClick={(e) => e.stopPropagation()} className={cellClass}>
@@ -775,14 +796,27 @@ export function DataTable<T extends { id: string }>({
               paginatedData && paginatedData.map((item) => (
                 <TableRow
                   key={item.id}
+                  data-row-id={item.id}
+                  draggable={rowDraggable}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (onRowClick) {
-                      onRowClick(item);
+                    if (onRowClick) onRowClick(item);
+                  }}
+                  onContextMenu={(e) => {
+                    if (onRowContextMenu) {
+                      e.preventDefault();
+                      onRowContextMenu(item, e);
                     }
                   }}
-                  className={cn(onRowClick && "cursor-pointer", rowClass)}
+                  onDragStart={(e) => {
+                    if (rowDraggable && onRowDragStart) onRowDragStart(item, e);
+                  }}
+                  className={cn(
+                    onRowClick && "cursor-pointer",
+                    rowDraggable && "draggable-row",
+                    rowClass
+                  )}
                 >
                   {selectable && (
                     <TableCell onClick={(e) => e.stopPropagation()} className={cellClass}>

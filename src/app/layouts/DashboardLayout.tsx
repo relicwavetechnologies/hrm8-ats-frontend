@@ -39,9 +39,16 @@ export function DashboardLayout() {
     const handleToggleAi = () => {
       setIsAiPanelOpen((prev) => !prev);
     };
+    const handleOpenAi = () => {
+      setIsAiPanelOpen(true);
+    };
 
     window.addEventListener('toggle-ai-panel', handleToggleAi);
-    return () => window.removeEventListener('toggle-ai-panel', handleToggleAi);
+    window.addEventListener('open-ai-panel', handleOpenAi);
+    return () => {
+      window.removeEventListener('toggle-ai-panel', handleToggleAi);
+      window.removeEventListener('open-ai-panel', handleOpenAi);
+    };
   }, []);
 
   return (
