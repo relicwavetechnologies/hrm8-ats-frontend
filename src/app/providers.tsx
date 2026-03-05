@@ -7,7 +7,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider } from 'next-themes';
-import { Toaster } from '@/shared/components/ui/sonner';
+import { Toaster as SonnerToaster } from '@/shared/components/ui/sonner';
+import { Toaster as RadixToaster } from '@/shared/components/ui/toaster';
 import { AuthProvider, useAuth } from './providers/AuthContext';
 import { CandidateAuthProvider, useCandidateAuth } from '@/contexts/CandidateAuthContext';
 import { ConsultantAuthProvider, useConsultantAuth } from '@/contexts/ConsultantAuthContext';
@@ -59,7 +60,8 @@ export function Providers({ children }: ProvidersProps) {
                                             <CurrencyFormatProvider>
                                                 <WebSocketWrapper>
                                                     {children}
-                                                    <Toaster />
+                                                    <SonnerToaster />
+                                                    <RadixToaster />
                                                 </WebSocketWrapper>
                                             </CurrencyFormatProvider>
                                         </Hrm8AuthProvider>

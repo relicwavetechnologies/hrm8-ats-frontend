@@ -236,7 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           toast({
             title: 'Verification email sent!',
-            description: `Please check your email (${data.adminEmail}) to verify your company.`,
+            description:
+              response.data.message ||
+              `Please check your email (${data.adminEmail}) to verify your company.`,
           });
 
           return {
