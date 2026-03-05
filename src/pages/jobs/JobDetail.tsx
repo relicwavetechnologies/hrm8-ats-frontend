@@ -21,6 +21,9 @@ import {
   Calendar,
   Eye,
   Globe,
+  Globe2,
+  Lock,
+  Send,
   MoreVertical,
   Megaphone,
   Sparkles,
@@ -32,6 +35,7 @@ import {
   CheckSquare,
   CheckCircle2,
 } from "lucide-react";
+import { Switch } from "@/shared/components/ui/switch";
 import { getJobById } from "@/shared/lib/mockJobStorage";
 import { mockJobActivities } from "@/data/mockJobsData";
 import { Job } from "@/shared/types/job";
@@ -101,6 +105,7 @@ export default function JobDetail() {
   const [isProcessingDelete, setIsProcessingDelete] = useState(false);
   const [applicantsCount, setApplicantsCount] = useState<number | undefined>(undefined);
   const [talentPoolDialogOpen, setTalentPoolDialogOpen] = useState(false);
+  const [isTogglingVisibility, setIsTogglingVisibility] = useState(false);
   const [allApplications, setAllApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [activeRoundTab, setActiveRoundTab] = useState<string>("overview");
@@ -642,6 +647,30 @@ export default function JobDetail() {
     setEditDrawerOpen(true);
   };
 
+  const handleToggleVisibility = async () => {
+    if (!job || isTogglingVisibility) return;
+    const newVisibility = job.visibility === 'private' ? 'public' : 'private';
+    setIsTogglingVisibility(true);
+    try {
+      const res = await jobService.updateJob(job.id, { visibility: newVisibility } as any);
+      if (res.success) {
+        toast({
+          title: newVisibility === 'private' ? 'Job set to Private' : 'Job set to Public',
+          description: newVisibility === 'private'
+            ? 'Only invited candidates can view and apply to this job.'
+            : 'This job is now listed on the public job board.',
+        });
+        handleJobUpdate();
+      } else {
+        toast({ title: 'Error', description: res.error || 'Failed to update visibility', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update visibility', variant: 'destructive' });
+    } finally {
+      setIsTogglingVisibility(false);
+    }
+  };
+
   const handleArchive = async () => {
     if (!job) return;
     setIsProcessingArchive(true);
@@ -890,6 +919,37 @@ export default function JobDetail() {
                       <Edit className="h-3.5 w-3.5 mr-2" />
                       Edit
                     </Button>
+
+                    {/* Public / Private Toggle */}
+                    <div className="flex items-center gap-2 ml-1 px-3 py-1.5 rounded-md border border-border bg-muted/30">
+                      {job.visibility === 'private' ? (
+                        <Lock className="h-3.5 w-3.5 text-amber-500" />
+                      ) : (
+                        <Globe2 className="h-3.5 w-3.5 text-emerald-500" />
+                      )}
+                      <span className="text-xs font-medium whitespace-nowrap">
+                        {job.visibility === 'private' ? 'Private' : 'Public'}
+                      </span>
+                      <Switch
+                        checked={job.visibility === 'public'}
+                        onCheckedChange={handleToggleVisibility}
+                        disabled={isTogglingVisibility}
+                        className="data-[state=checked]:bg-emerald-500"
+                      />
+                    </div>
+
+                    {/* Invite button — visible only for private jobs */}
+                    {job.visibility === 'private' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-primary/40 text-primary hover:bg-primary/10"
+                        onClick={() => setTalentPoolDialogOpen(true)}
+                      >
+                        <Send className="h-3.5 w-3.5 mr-2" />
+                        Invite
+                      </Button>
+                    )}
                     <JobLifecycleActions
                       job={job}
                       onJobUpdate={handleJobUpdate}
