@@ -15,6 +15,7 @@ interface ApiResponse<T = unknown> {
 
 class ApiClient {
   private baseURL: string;
+  private readonly requestTimeoutMs = 25000;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL.replace(/\/+$/, '');
@@ -44,9 +45,14 @@ class ApiClient {
     const data = await this.parseResponseBody(response);
 
     if (!response.ok) {
+      const derivedError =
+        data?.error ||
+        data?.message ||
+        (typeof data === 'string' ? data : null) ||
+        `HTTP ${response.status}: ${response.statusText}`;
       return {
         success: false,
-        error: data?.error || `HTTP ${response.status}: ${response.statusText}`,
+        error: derivedError,
         details: data?.details,
         status: response.status,
         data: data?.data,
@@ -65,6 +71,8 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = this.buildUrl(endpoint);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
     const config: RequestInit = {
       ...options,
@@ -73,6 +81,7 @@ class ApiClient {
         ...options.headers,
       },
       credentials: 'include', // Important for cookies
+      signal: controller.signal,
     };
 
     try {
@@ -82,6 +91,12 @@ class ApiClient {
         try {
           return await this.executeRequest<T>(endpoint, config);
         } catch (fallbackError) {
+          if (fallbackError instanceof DOMException && fallbackError.name === 'AbortError') {
+            return {
+              success: false,
+              error: 'Request timed out. Please check your connection and try again.',
+            };
+          }
           return {
             success: false,
             error: fallbackError instanceof Error ? fallbackError.message : 'Network error',
@@ -89,10 +104,19 @@ class ApiClient {
         }
       }
 
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Request timed out. Please check your connection and try again.',
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
       };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -109,12 +133,15 @@ class ApiClient {
 
   async upload<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
     const url = this.buildUrl(endpoint);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
     // Do not set Content-Type header for FormData, browser sets it with boundary
     const config: RequestInit = {
       method: 'POST',
       body: formData,
       credentials: 'include',
+      signal: controller.signal,
     };
 
     try {
@@ -124,6 +151,12 @@ class ApiClient {
         try {
           return await this.executeRequest<T>(endpoint, config);
         } catch (fallbackError) {
+          if (fallbackError instanceof DOMException && fallbackError.name === 'AbortError') {
+            return {
+              success: false,
+              error: 'Request timed out. Please check your connection and try again.',
+            };
+          }
           return {
             success: false,
             error: fallbackError instanceof Error ? fallbackError.message : 'Network error',
@@ -131,10 +164,19 @@ class ApiClient {
         }
       }
 
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Request timed out. Please check your connection and try again.',
+        };
+      }
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
       };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
