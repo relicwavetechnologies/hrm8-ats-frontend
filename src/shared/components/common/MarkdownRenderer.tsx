@@ -165,14 +165,14 @@ function renderTextBlock(content: string, blockIndex: number): ReactElement[] {
       while (listIndex < lines.length && /^[-*]\s+/.test(lines[listIndex].trim())) {
         const itemText = lines[listIndex].trim().replace(/^[-*]\s+/, "");
         items.push(
-          <li key={`ul-item-${blockIndex}-${listIndex}`} className="ml-5 list-disc">
+          <li key={`ul-item-${blockIndex}-${listIndex}`}>
             {renderInline(itemText)}
           </li>
         );
         listIndex += 1;
       }
       rendered.push(
-        <ul key={`ul-${blockIndex}-${index}`} className="my-2 space-y-1 text-sm leading-6">
+        <ul key={`ul-${blockIndex}-${index}`} className="my-2 list-disc space-y-1 pl-5 text-sm leading-6">
           {items}
         </ul>
       );
@@ -186,14 +186,14 @@ function renderTextBlock(content: string, blockIndex: number): ReactElement[] {
       while (listIndex < lines.length && /^\d+\.\s+/.test(lines[listIndex].trim())) {
         const itemText = lines[listIndex].trim().replace(/^\d+\.\s+/, "");
         items.push(
-          <li key={`ol-item-${blockIndex}-${listIndex}`} className="ml-5 list-decimal">
+          <li key={`ol-item-${blockIndex}-${listIndex}`}>
             {renderInline(itemText)}
           </li>
         );
         listIndex += 1;
       }
       rendered.push(
-        <ol key={`ol-${blockIndex}-${index}`} className="my-2 space-y-1 text-sm leading-6">
+        <ol key={`ol-${blockIndex}-${index}`} className="my-2 list-decimal space-y-1 pl-5 text-sm leading-6">
           {items}
         </ol>
       );

@@ -122,6 +122,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resolveAuthErrorMessage = (
+    response: { error?: string; status?: number },
+    fallback: string
+  ) => {
+    const msg = (response.error || '').trim();
+    if (msg) return msg;
+    if (response.status === 409) return 'This account or company already exists. Please review your details.';
+    if (response.status === 404) return 'We could not find the requested record. Please verify your details.';
+    if (response.status === 500) return 'Server error occurred. Please try again in a few minutes.';
+    return fallback;
+  };
+
   const login = async (
     email: string,
     password: string
@@ -224,7 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           toast({
             title: 'Verification email sent!',
-            description: `Please check your email (${data.adminEmail}) to verify your company.`,
+            description:
+              response.data.message ||
+              `Please check your email (${data.adminEmail}) to verify your company.`,
           });
 
           return {
@@ -242,9 +256,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: loginResult.success };
         }
       } else {
+        const errorMessage = resolveAuthErrorMessage(response, 'Failed to register company');
         toast({
           title: 'Registration failed',
-          description: response.error || 'Failed to register company',
+          description: errorMessage,
           variant: 'destructive',
         });
         return { success: false };
@@ -394,20 +409,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           message: response.data.message
         };
       } else {
+        const errorMessage = resolveAuthErrorMessage(response, 'Failed to request access');
         toast({
           title: 'Signup failed',
-          description: response.error || 'Failed to request access',
+          description: errorMessage,
           variant: 'destructive',
         });
-        return { success: false, message: response.error };
+        return { success: false, message: errorMessage };
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       toast({
         title: 'Signup failed',
-        description: error instanceof Error ? error.message : 'An error occurred',
+        description: errorMessage,
         variant: 'destructive',
       });
-      return { success: false };
+      return { success: false, message: errorMessage };
     } finally {
       setIsLoading(false);
     }
@@ -442,4 +459,3 @@ export function useAuth() {
   }
   return context;
 }
-

@@ -35,8 +35,10 @@ import { EmailReplyDrawer } from "@/modules/jobs/components/candidate-assessment
 import { EmailThreadDetailView } from "@/modules/jobs/components/candidate-assessment/EmailThreadDetailView";
 import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { applicationService } from "@/shared/lib/applicationService";
-import { BarChart3, CheckCircle2, Eye, Loader2, Mail, Save, TrendingUp, Upload } from "lucide-react";
+import { BarChart3, CheckCircle2, Eye, Loader2, Mail, Save, TrendingUp, Upload, FolderOpen } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { DocumentHubPicker } from "./DocumentHubPicker";
+import { CompanyDocument } from "@/shared/lib/documentHubService";
 
 interface JobOffersTabProps {
   jobId: string;
@@ -157,6 +159,8 @@ export function JobOffersTab({
   const [loadingProfileId, setLoadingProfileId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [hubPickerOpen, setHubPickerOpen] = useState(false);
+  const [isAttachingFromHub, setIsAttachingFromHub] = useState(false);
 
   const offerRound = useMemo(() => rounds.find((r) => r.fixedKey === "OFFER") || null, [rounds]);
   const hiredRound = useMemo(() => rounds.find((r) => r.fixedKey === "HIRED") || null, [rounds]);
@@ -476,6 +480,37 @@ export function JobOffersTab({
       });
     } finally {
       setIsUploadingDocs(false);
+    }
+  };
+
+  const onAttachFromHub = async (hubDocs: CompanyDocument[]) => {
+    if (!selectedApp?.id || !hubDocs.length) return;
+    setIsAttachingFromHub(true);
+    try {
+      const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      // Fetch each file from its URL and convert to File objects
+      const files: File[] = [];
+      for (const doc of hubDocs) {
+        const url = doc.fileUrl.startsWith('http') ? doc.fileUrl : `${apiBase}${doc.fileUrl}`;
+        const response = await fetch(url, { credentials: 'include' });
+        const blob = await response.blob();
+        files.push(new File([blob], doc.fileName || doc.name, { type: doc.mimeType || blob.type }));
+      }
+      const res = await offerService.uploadOfferWorkflowDocuments(selectedApp.id, files, {
+        category: "OTHER",
+        note: `Attached from Document Hub: ${hubDocs.map((d) => d.name).join(', ')}`,
+      });
+      if (!res.success || !res.data) throw new Error(res.error || "Failed to attach documents");
+      setWorkflowByApp((prev) => ({ ...prev, [selectedApp.id]: res.data! }));
+      toast({ title: `${hubDocs.length} document${hubDocs.length > 1 ? 's' : ''} attached from hub` });
+    } catch (error) {
+      toast({
+        title: "Failed to attach",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAttachingFromHub(false);
     }
   };
 
@@ -946,41 +981,60 @@ export function JobOffersTab({
 
                     {step.key === "documents" && !isReadOnly && (
                       <div className="space-y-2">
-                        <label className="inline-flex">
-                          <input
-                            type="file"
-                            className="hidden"
-                            multiple
-                            onChange={(e) => onUploadDocs(e.target.files)}
-                            disabled={
-                              !selectedWorkflow.documentRequestSent ||
-                              isUploadingDocs ||
-                              isSaving ||
-                              drawerLoading ||
-                              savingNoteStep !== null ||
-                              selectedWorkflow.currentStep !== step.key
-                            }
-                          />
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex">
+                            <input
+                              type="file"
+                              className="hidden"
+                              multiple
+                              onChange={(e) => onUploadDocs(e.target.files)}
+                              disabled={
+                                !selectedWorkflow.documentRequestSent ||
+                                isUploadingDocs ||
+                                isSaving ||
+                                drawerLoading ||
+                                savingNoteStep !== null ||
+                                selectedWorkflow.currentStep !== step.key
+                              }
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              asChild
+                              disabled={
+                                !selectedWorkflow.documentRequestSent ||
+                                isUploadingDocs ||
+                                isSaving ||
+                                drawerLoading ||
+                                savingNoteStep !== null ||
+                                selectedWorkflow.currentStep !== step.key
+                              }
+                            >
+                              <span>
+                                {isUploadingDocs ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                                {isUploadingDocs ? "Uploading..." : "Upload Documents"}
+                              </span>
+                            </Button>
+                          </label>
                           <Button
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            asChild
+                            onClick={() => setHubPickerOpen(true)}
                             disabled={
                               !selectedWorkflow.documentRequestSent ||
-                              isUploadingDocs ||
+                              isAttachingFromHub ||
                               isSaving ||
                               drawerLoading ||
                               savingNoteStep !== null ||
                               selectedWorkflow.currentStep !== step.key
                             }
                           >
-                            <span>
-                              {isUploadingDocs ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-                              {isUploadingDocs ? "Uploading..." : "Upload Documents"}
-                            </span>
+                            {isAttachingFromHub ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <FolderOpen className="h-3.5 w-3.5 mr-1.5" />}
+                            {isAttachingFromHub ? "Attaching..." : "Get from Document Hub"}
                           </Button>
-                        </label>
+                        </div>
                         <p className="text-[11px] text-muted-foreground">
                           <span className="font-medium text-foreground">{selectedDocs.length}</span> uploaded
                         </p>
@@ -1210,6 +1264,12 @@ export function JobOffersTab({
           jobId={selectedProfileApp.jobId || jobId}
         />
       )}
+
+      <DocumentHubPicker
+        open={hubPickerOpen}
+        onOpenChange={setHubPickerOpen}
+        onSelect={onAttachFromHub}
+      />
     </div>
   );
 }

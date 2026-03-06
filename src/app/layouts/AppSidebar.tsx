@@ -7,6 +7,7 @@ import { Home, LayoutGrid, Users, Briefcase, FileText, BarChart3, Calendar, Sett
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, SidebarHeader, SidebarFooter, SidebarSeparator, useSidebar } from "@/shared/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/components/ui/collapsible";
 import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 
 import { cn } from "@/shared/lib/utils";
 import { SidebarFooterContent } from "./SidebarFooterContent";
@@ -80,6 +81,7 @@ const atsNavItems = [
   // { title: "Background Checks", url: "/background-checks", icon: ShieldCheck },
   { title: "Careers Page", url: "/ats/careers-page", icon: Building2 },
   { title: "Email Templates", url: "/email-templates", icon: MailPlus },
+  { title: "Documents Hub", url: "/document-hub", icon: FolderOpen },
   { title: "Inbox", url: "/messages", icon: Inbox },
 ];
 
@@ -297,16 +299,14 @@ export function AppSidebar() {
         {isExpanded ? (
           <>
             <img
-              src={logoLight}
-              alt="HRM8"
-              className="h-8 block dark:hidden"
-              style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(95%) saturate(2878%) hue-rotate(224deg) brightness(96%) contrast(95%)' }}
-            />
-            <img
               src={logoDark}
               alt="HRM8"
+              className="h-8 block dark:hidden"
+            />
+            <img
+              src={logoLight}
+              alt="HRM8"
               className="h-8 hidden dark:block opacity-100"
-              style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}
             />
           </>
         ) : (

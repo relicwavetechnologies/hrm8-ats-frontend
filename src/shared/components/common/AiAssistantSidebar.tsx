@@ -8,11 +8,12 @@ import { FormEvent, useMemo, useState, useEffect, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { Loader2, ArrowUp, Mic, X, Plus, Paperclip, MessageSquarePlus, Tag, Briefcase, User, Building2, FileText, Users, BotMessageSquare } from "lucide-react";
+import { Loader2, ArrowUp, Mic, X, Plus, Paperclip, MessageSquarePlus, Tag, Briefcase, User, Building2, FileText, Users, BotMessageSquare, RefreshCw } from "lucide-react";
 import TextShimmer from "@/shared/components/common/TextShimmer";
 import { MarkdownRenderer } from "@/shared/components/common/MarkdownRenderer";
 import { useAiReferences } from "@/shared/hooks/useAiReferences";
 import { EntityReference } from "@/shared/types/ai-references";
+import { ConfirmationCard } from "@/shared/components/common/ConfirmationCard";
 
 // Use empty string to leverage Vite's proxy configuration for /api requests
 const API_BASE_URL = "";
@@ -20,9 +21,9 @@ const API_BASE_URL = "";
 interface ToolInvocation {
   toolCallId: string;
   toolName: string;
-  args: Record<string, any>;
+  args: Record<string, unknown>;
   state: 'partial-call' | 'call' | 'result';
-  result?: any;
+  result?: unknown;
 }
 
 interface UploadedFile {
@@ -291,7 +292,7 @@ export function AiAssistantSidebar({
   // AI reference context store — shared with any producer component
   const { references, removeReference, clearReferences, addReference } = useAiReferences();
 
-  const { messages, input, handleInputChange, handleSubmit, status, stop, error, setInput, setMessages } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, status, stop, error, setInput, setMessages, append } = useChat({
     api: `${API_BASE_URL}${streamEndpoint}`,
     // Base body — references are injected per-send via handleSubmit second arg
     body: requestBody,
@@ -322,7 +323,7 @@ export function AiAssistantSidebar({
   const chatMessages = useMemo(() => messages as unknown as ChatMessage[], [messages]);
   const isStreaming = status === "submitted" || status === "streaming";
   const [isRecording, setIsRecording] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  const [recognition, setRecognition] = useState<{ start(): void; stop(): void; setRestartFlag?(v: boolean): void } | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   // Per-message attachments: chips + images stored after each send
@@ -358,7 +359,9 @@ export function AiAssistantSidebar({
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      type SpeechRecognitionCtor = new () => { start(): void; stop(): void; continuous: boolean; interimResults: boolean; lang: string; setRestartFlag?: (v: boolean) => void; onstart: (() => void) | null; onresult: ((e: { resultIndex: number; results: { isFinal: boolean; 0: { transcript: string } }[] }) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
+      const win = window as Window & { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
+      const SpeechRecognition = win.SpeechRecognition ?? win.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognitionInstance = new SpeechRecognition();
         recognitionInstance.continuous = true;
@@ -371,7 +374,7 @@ export function AiAssistantSidebar({
           console.log("Speech recognition started");
         };
 
-        recognitionInstance.onresult = (event: any) => {
+        recognitionInstance.onresult = (event) => {
           let finalTranscript = "";
 
           for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -386,7 +389,7 @@ export function AiAssistantSidebar({
           }
         };
 
-        recognitionInstance.onerror = (event: any) => {
+        recognitionInstance.onerror = (event) => {
           console.error("Speech recognition error:", event.error);
           if (event.error === "no-speech" || event.error === "audio-capture") {
             // Don't stop on these errors, just continue
@@ -408,7 +411,7 @@ export function AiAssistantSidebar({
         };
 
         // Store the restart flag in the recognition instance
-        (recognitionInstance as any).setRestartFlag = (value: boolean) => {
+        recognitionInstance.setRestartFlag = (value: boolean) => {
           shouldRestart = value;
         };
 
@@ -427,7 +430,7 @@ export function AiAssistantSidebar({
         }
       }
     };
-  }, [setInput]);
+  }, [setInput, recognition]);
 
   // Stop recording when streaming starts
   useEffect(() => {
@@ -496,7 +499,7 @@ export function AiAssistantSidebar({
     const submitBody: Record<string, unknown> = { ...(requestBody ?? {}) };
     if (snapshotRefs.length > 0) {
       submitBody.context = {
-        ...((requestBody as any)?.context ?? {}),
+        ...((requestBody?.context as Record<string, unknown>) ?? {}),
         references: snapshotRefs,
       };
     }
@@ -531,6 +534,62 @@ export function AiAssistantSidebar({
         formRef.current?.requestSubmit();
       }
     }
+  };
+
+  const handleResend = (messageId: string, text: string) => {
+    if (isStreaming) return;
+
+    // Find the index of the message to resend
+    const messageIndex = chatMessages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Retrieve original attachments (if any) before slicing history
+    const originalAttachments = messageAttachments.get(messageId);
+
+    // Slice the message history to remove this message and everything after it
+    // @ts-ignore - setMessages accepts an array of UIMessage or history objects
+    setMessages(chatMessages.slice(0, messageIndex));
+
+    // Clear composer & capture original context to be sent with the new message
+    clearReferences();
+    setUploadedFiles([]);
+
+    const submitBody: Record<string, unknown> = { ...(requestBody ?? {}) };
+
+    // We only need entity references for the backend context; images are handled internally by AI SDK
+    if (originalAttachments?.refs && originalAttachments.refs.length > 0) {
+      submitBody.context = {
+        ...((requestBody?.context as Record<string, unknown>) ?? {}),
+        references: originalAttachments.refs,
+      };
+
+      // Also restore references visibly so the user knows they were resent
+      originalAttachments.refs.forEach(ref => addReference(ref));
+    }
+
+    if (originalAttachments?.images && originalAttachments.images.length > 0) {
+      setUploadedFiles([...originalAttachments.images]);
+    }
+
+    // Capture attachments as pending, so the new user message id gets mapped to them
+    if ((originalAttachments?.refs && originalAttachments.refs.length > 0) ||
+      (originalAttachments?.images && originalAttachments.images.length > 0)) {
+      pendingAttachmentsRef.current = {
+        refs: originalAttachments.refs ? [...originalAttachments.refs] : [],
+        images: originalAttachments.images ? [...originalAttachments.images] : [],
+      };
+    }
+
+    // Resend using append with the reconstructed body
+    // @ts-ignore
+    append({
+      role: 'user',
+      content: text,
+    }, {
+      data: {
+        body: submitBody
+      }
+    });
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -678,18 +737,73 @@ export function AiAssistantSidebar({
                     {/* Tool Invocations */}
                     {hasToolInvocations && !isUser && (
                       <div className="mb-2">
-                        {message.toolInvocations!.map((invocation) => (
-                          <ToolInvocationDisplay
-                            key={invocation.toolCallId}
-                            invocation={invocation}
-                          />
-                        ))}
+                        {message.toolInvocations!.map((invocation) => {
+                          const requiredConfirm = invocation.state === 'result' && (invocation.result as any)?.confirmationRequired === true;
+
+                          return (
+                            <div key={invocation.toolCallId}>
+                              <ToolInvocationDisplay invocation={invocation} />
+                              {requiredConfirm && (
+                                <ConfirmationCard
+                                  toolName={invocation.toolName}
+                                  message={(invocation.result as any)?.message || "Please confirm this action."}
+                                  onConfirm={() => {
+                                    // Call the tool again with __confirmed: true
+                                    const confirmBody = {
+                                      ...requestBody,
+                                      message: `I confirm the ${invocation.toolName} action.`,
+                                      // Include context references if any
+                                      context: {
+                                        ...((requestBody?.context as any) || {}),
+                                        references: references
+                                      }
+                                    };
+                                    // @ts-ignore - The ai sdk provides this but it's hard to type
+                                    append({
+                                      role: 'user',
+                                      content: `I confirm the ${invocation.toolName} action. Proceed with execution.`,
+                                    }, {
+                                      data: {
+                                        body: {
+                                          ...confirmBody,
+                                          confirmedToolCallId: invocation.toolCallId
+                                        }
+                                      }
+                                    });
+                                  }}
+                                  onReject={() => {
+                                    // @ts-ignore
+                                    append({
+                                      role: 'user',
+                                      content: `I cancel the ${invocation.toolName} action. Do not proceed.`,
+                                    });
+                                  }}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
                     {/* User bubble — attachments + text together */}
                     {isUser ? (
-                      <div className="bg-muted/50 text-foreground rounded-2xl px-4 py-3 space-y-2">
+                      <div className="group relative bg-muted/50 text-foreground rounded-2xl px-4 py-3 space-y-2">
+                        {/* Resend button (hidden until hover) */}
+                        {!isStreaming && (
+                          <div className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              title="Resend this message (removes subsequent messages)"
+                              onClick={() => handleResend(message.id, text)}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                         {/* Attached images */}
                         {attachments?.images && attachments.images.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
