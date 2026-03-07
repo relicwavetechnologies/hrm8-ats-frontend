@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 import { useToast } from "@/shared/hooks/use-toast";
 import { pricingService } from "@/shared/lib/pricingService";
+import { apiClient } from "@/shared/lib/api";
 
 export function SubscriptionManagementPage() {
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -54,54 +55,54 @@ export function SubscriptionManagementPage() {
         }
     }, [searchParams, queryClient, setSearchParams, toast]);
 
-    // Poll for subscription while webhook may still be processing (Stripe redirect often arrives before webhook)
+    // Poll for subscription while webhook may still be processing (redirect often arrives before webhook)
     useEffect(() => {
         if (!justReturnedFromCheckout) return;
         const interval = setInterval(() => {
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription', 'active'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-        }, 2000);
+        }, 4000); // Poll every 4s to avoid hammering; webhook typically completes within 5-10s
         const stop = setTimeout(() => {
             clearInterval(interval);
             setJustReturnedFromCheckout(false);
-        }, 15000); // Stop after 15s max
+        }, 20000); // Stop after 20s to allow slow webhooks
         return () => {
             clearInterval(interval);
             clearTimeout(stop);
         };
     }, [justReturnedFromCheckout, queryClient]);
 
-    // Fetch wallet balance
+    // Fetch wallet balance (use apiClient for correct API URL in prod)
     const { data: walletData, isLoading: walletLoading } = useQuery({
         queryKey: ['wallet', 'balance'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/balance', { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch wallet balance');
-            return response.json();
+            const res = await apiClient.get<{ balance: number; totalCredits: number; totalDebits: number; currency: string; status: string }>('/api/wallet/balance');
+            if (!res.success || !res.data) throw new Error(res.error || 'Failed to fetch wallet balance');
+            return { success: true, data: res.data };
         },
     });
 
-    // Fetch active subscription (from wallet subscriptions list)
+    // Fetch active subscription (use apiClient for correct API URL in prod)
     const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
         queryKey: ['wallet', 'subscription', 'active'],
         queryFn: async () => {
-            // Use authoritative subscription endpoint (includes quota/usage/full plan fields)
-            const response = await fetch('/api/subscriptions/active', { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch active subscription');
-            const result = await response.json();
-            return result?.data?.subscription ?? null;
+            const res = await apiClient.get<{ subscription?: Record<string, unknown> | null }>('/api/subscriptions/active');
+            if (!res.success) throw new Error(res.error || 'Failed to fetch active subscription');
+            const payload = res.data as { subscription?: Record<string, unknown> | null } | null | undefined;
+            return payload?.subscription ?? null;
         },
         refetchOnWindowFocus: true,
     });
 
-    // Fetch recent transactions
+    // Fetch recent transactions (use apiClient for correct API URL in prod)
     const { data: transactionsData, isLoading: transactionsLoading } = useQuery({
         queryKey: ['wallet', 'transactions'],
         queryFn: async () => {
-            const response = await fetch('/api/wallet/transactions?limit=10', { credentials: 'include' });
-            if (!response.ok) throw new Error('Failed to fetch transactions');
-            return response.json();
+            const res = await apiClient.get<{ transactions: unknown[]; total: number; limit: number; offset: number }>('/api/wallet/transactions?limit=10');
+            if (!res.success || !res.data) throw new Error(res.error || 'Failed to fetch transactions');
+            return { success: true, data: res.data };
         },
     });
 
