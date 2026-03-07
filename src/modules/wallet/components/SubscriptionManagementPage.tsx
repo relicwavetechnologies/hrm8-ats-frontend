@@ -41,7 +41,7 @@ export function SubscriptionManagementPage() {
     const [justReturnedFromCheckout, setJustReturnedFromCheckout] = useState(false);
 
     useEffect(() => {
-        const success = searchParams.get('success') || searchParams.get('subscription_success');
+        const success = searchParams.get('success') || searchParams.get('subscription_success') || searchParams.get('payment_success');
         if (success === 'true') {
             setJustReturnedFromCheckout(true);
             queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
