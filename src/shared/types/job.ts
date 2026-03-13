@@ -1,5 +1,27 @@
 import { ApplicationFormConfig } from './applicationForm';
 
+export type DistributionScope = 'HRM8_ONLY' | 'GLOBAL';
+
+export interface GlobalPublishConfig {
+  channels: string[];
+  budgetTier: 'basic' | 'standard' | 'premium' | 'executive' | 'custom' | 'none';
+  customBudget?: number;
+  hrm8ServiceRequiresApproval: boolean;
+  hrm8ServiceApproved: boolean;
+}
+
+export interface JobTargetSyncSummary {
+  remoteJobId?: string;
+  syncStatus: 'NOT_SYNCED' | 'SYNCING' | 'SYNCED' | 'FAILED' | 'CLOSED';
+  lastSyncedAt?: string | Date;
+  lastError?: string;
+  approved: boolean;
+  selectedChannels: string[];
+  budget?: number;
+  budgetSpent?: number;
+  promotionStatus?: string;
+}
+
 /** Per-job role (e.g. Technical Interviewer, Hiring Manager). Production-grade: each job has its own roles. */
 export interface JobRole {
   id: string;
@@ -101,10 +123,14 @@ export interface Job {
   applicationForm?: ApplicationFormConfig;
 
   // JobTarget Promotion & Payment
+  distributionScope?: DistributionScope;
+  globalPublishConfig?: GlobalPublishConfig;
+  jobTargetSync?: JobTargetSyncSummary;
   hasJobTargetPromotion?: boolean;
   jobTargetPromotionId?: string;
   jobTargetChannels?: string[];
   jobTargetBudget?: number;
+  jobTargetBudgetTier?: 'basic' | 'standard' | 'premium' | 'executive' | 'custom' | 'none';
   jobTargetBudgetSpent?: number;
   jobTargetBudgetRemaining?: number;
   jobTargetStatus?: 'pending' | 'active' | 'paused' | 'completed';
@@ -253,6 +279,8 @@ export interface JobFormData {
   jobBoardDistribution: string[];
 
   // Step 6: Payment & JobTarget
+  distributionScope?: DistributionScope;
+  globalPublishConfig?: GlobalPublishConfig;
   includeJobTargetPromotion?: boolean;
   jobTargetBudgetTier?: 'basic' | 'standard' | 'premium' | 'executive' | 'custom' | 'none';
   jobTargetBudgetCustom?: number;

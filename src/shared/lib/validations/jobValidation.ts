@@ -3,6 +3,20 @@ import { z } from 'zod';
 // Base schema without refinements (for merging in jobFormSchema)
 const baseJobBasicDetailsSchema = z.object({
   serviceType: z.enum(['self-managed', 'shortlisting', 'full-service', 'executive-search', 'rpo']),
+  distributionScope: z.enum(['HRM8_ONLY', 'GLOBAL']).default('HRM8_ONLY'),
+  globalPublishConfig: z.object({
+    channels: z.array(z.string()).default([]),
+    budgetTier: z.enum(['basic', 'standard', 'premium', 'executive', 'custom', 'none']).default('none'),
+    customBudget: z.number().optional(),
+    hrm8ServiceRequiresApproval: z.boolean().default(false),
+    hrm8ServiceApproved: z.boolean().default(false),
+  }).default({
+    channels: [],
+    budgetTier: 'none',
+    customBudget: undefined,
+    hrm8ServiceRequiresApproval: false,
+    hrm8ServiceApproved: false,
+  }),
   title: z.string().min(5, "Job title must be at least 5 characters"),
   numberOfVacancies: z.number()
     .min(1, "At least 1 vacancy is required")
@@ -133,6 +147,14 @@ export const jobFormSchema = baseJobBasicDetailsSchema
   }, {
     message: "Maximum salary must be greater than or equal to minimum salary",
     path: ["salaryMax"],
+  })
+  .refine((data) => {
+    if (data.distributionScope !== 'GLOBAL') return true;
+    if (data.serviceType === 'self-managed' || data.serviceType === 'rpo') return true;
+    return !!data.globalPublishConfig.hrm8ServiceApproved;
+  }, {
+    message: "Global publish with HRM8 service requires approval of the distribution plan",
+    path: ['globalPublishConfig', 'hrm8ServiceApproved'],
   });
 
 export const templateSchema = z.object({

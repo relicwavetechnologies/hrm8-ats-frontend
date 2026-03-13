@@ -5,8 +5,10 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescripti
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { Switch } from "@/shared/components/ui/switch";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Label } from "@/shared/components/ui/label";
 import { FileText, Building2, Briefcase as BriefcaseIcon, Plus } from "lucide-react";
 import { ComboboxWithAdd } from "@/shared/components/ui/combobox-with-add";
 import { formatSalaryRange } from "@/shared/lib/jobUtils";
@@ -40,6 +42,11 @@ export function JobWizardStep1({
   } = useToast();
   const { user } = useAuth();
   const { data: profileData, refresh: refreshProfile } = useCompanyProfile();
+  const { data: categories, isLoading } = usePublicCategories();
+  const distributionScope = form.watch('distributionScope');
+  const serviceType = form.watch('serviceType');
+  const isGlobalScope = distributionScope === 'GLOBAL';
+  const isSelfManaged = serviceType === 'self-managed' || serviceType === 'rpo';
 
   // Get company name from user
   const companyName = user?.companyName || "Your Company";
@@ -134,6 +141,72 @@ export function JobWizardStep1({
       </div>
     </div>
 
+    {/* Distribution Scope */}
+    <FormField
+      control={form.control}
+      name="distributionScope"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Where should this job be published? *</FormLabel>
+          <FormControl>
+            <RadioGroup
+              value={field.value}
+              onValueChange={(value) => {
+                field.onChange(value);
+                if (value === 'GLOBAL') {
+                  const currentConfig = form.getValues('globalPublishConfig');
+                  form.setValue('globalPublishConfig', {
+                    channels: currentConfig?.channels || [],
+                    budgetTier: currentConfig?.budgetTier || 'none',
+                    customBudget: currentConfig?.customBudget,
+                    hrm8ServiceRequiresApproval: !isSelfManaged,
+                    hrm8ServiceApproved: currentConfig?.hrm8ServiceApproved || false,
+                  });
+                }
+              }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-3"
+            >
+              <Label
+                htmlFor="scope-hrm8-only"
+                className={`flex items-start gap-3 rounded-md border p-3 cursor-pointer ${field.value === 'HRM8_ONLY' ? 'border-primary bg-primary/5' : ''}`}
+              >
+                <RadioGroupItem id="scope-hrm8-only" value="HRM8_ONLY" className="mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">HRM8 only</p>
+                  <p className="text-xs text-muted-foreground">Publish internally on HRM8 and your careers page.</p>
+                </div>
+              </Label>
+              <Label
+                htmlFor="scope-global"
+                className={`flex items-start gap-3 rounded-md border p-3 cursor-pointer ${field.value === 'GLOBAL' ? 'border-primary bg-primary/5' : ''}`}
+              >
+                <RadioGroupItem id="scope-global" value="GLOBAL" className="mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">Publish globally through JobTarget</p>
+                  <p className="text-xs text-muted-foreground">Review channels and budget in HRM8, then launch JobTarget Marketplace.</p>
+                </div>
+              </Label>
+            </RadioGroup>
+          </FormControl>
+          <FormDescription className="text-[11px]">
+            GLOBAL jobs require JobTarget sync before local publish completes.
+          </FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+
+    {isGlobalScope && (
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription className="text-sm">
+          {isSelfManaged
+            ? 'GLOBAL + self-managed: you manage hiring in HRM8 and choose your external promotion plan.'
+            : 'GLOBAL + HRM8 service: HRM8 manages hiring and you approve/review the global distribution plan.'}
+        </AlertDescription>
+      </Alert>
+    )}
+
     <div className="flex gap-3 items-start">
       {/* Job Title - Takes most of the space */}
       <FormField control={form.control} name="title" render={({
@@ -220,46 +293,42 @@ export function JobWizardStep1({
     <FormField
       control={form.control}
       name="category_id"
-      render={({ field }) => {
-        const { data: categories, isLoading } = usePublicCategories();
-
-        return (
-          <FormItem>
-            <FormLabel>Job Category</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value || ""}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {isLoading ? (
-                  <SelectItem value="_loading" disabled>
-                    Loading categories...
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Job Category</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value || ""}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {isLoading ? (
+                <SelectItem value="_loading" disabled>
+                  Loading categories...
+                </SelectItem>
+              ) : !categories || categories.length === 0 ? (
+                <SelectItem value="_empty" disabled>
+                  No categories available
+                </SelectItem>
+              ) : (
+                categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <div className="flex items-center gap-2">
+                      {cat.icon && <span>{cat.icon}</span>}
+                      <span>{cat.name}</span>
+                    </div>
                   </SelectItem>
-                ) : !categories || categories.length === 0 ? (
-                  <SelectItem value="_empty" disabled>
-                    No categories available
-                  </SelectItem>
-                ) : (
-                  categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      <div className="flex items-center gap-2">
-                        {cat.icon && <span>{cat.icon}</span>}
-                        <span>{cat.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            <FormDescription className="text-[11px]">
-              Helps candidates discover this job
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        );
-      }}
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          <FormDescription className="text-[11px]">
+            Helps candidates discover this job
+          </FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
     />
 
     {/* Employment Details Row - 3 columns */}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/radio-group';
 import { cn } from '@/shared/lib/utils';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
@@ -9,8 +10,11 @@ import { Badge } from '@/shared/components/ui/badge';
 interface ChatBasicDetailsCardProps {
     title: string;
     department: string;
+    distributionScope: 'HRM8_ONLY' | 'GLOBAL';
+    serviceType?: 'self-managed' | 'shortlisting' | 'full-service' | 'executive-search' | 'rpo';
     onTitleChange: (title: string) => void;
     onDepartmentChange: (department: string) => void;
+    onDistributionScopeChange: (scope: 'HRM8_ONLY' | 'GLOBAL') => void;
     onContinue: () => void;
     isParsedTitle?: boolean;
     isParsedDept?: boolean;
@@ -19,13 +23,17 @@ interface ChatBasicDetailsCardProps {
 export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
     title,
     department,
+    distributionScope,
+    serviceType,
     onTitleChange,
     onDepartmentChange,
+    onDistributionScopeChange,
     onContinue,
     isParsedTitle,
     isParsedDept
 }) => {
     const canContinue = title.trim().length >= 3;
+    const isSelfManaged = serviceType === 'self-managed' || serviceType === 'rpo';
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400">
@@ -82,6 +90,39 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
                         isParsedDept && "border-green-500/50 bg-green-50/50 dark:bg-green-950/20"
                     )}
                 />
+            </div>
+
+            <div className="space-y-2">
+                <Label className="text-sm font-semibold">
+                    Where should this job be published?
+                </Label>
+                <RadioGroup
+                    value={distributionScope}
+                    onValueChange={(v) => onDistributionScopeChange(v as 'HRM8_ONLY' | 'GLOBAL')}
+                    className="grid gap-2"
+                >
+                    <label className={cn("flex items-start gap-3 rounded-md border p-3 cursor-pointer", distributionScope === 'HRM8_ONLY' && "border-primary bg-primary/5")}>
+                        <RadioGroupItem value="HRM8_ONLY" className="mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium">HRM8 only</p>
+                            <p className="text-xs text-muted-foreground">Publish internally on HRM8 and your careers page.</p>
+                        </div>
+                    </label>
+                    <label className={cn("flex items-start gap-3 rounded-md border p-3 cursor-pointer", distributionScope === 'GLOBAL' && "border-primary bg-primary/5")}>
+                        <RadioGroupItem value="GLOBAL" className="mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium">Publish globally through JobTarget</p>
+                            <p className="text-xs text-muted-foreground">Review channels and budget in HRM8, then launch marketplace with SSO.</p>
+                        </div>
+                    </label>
+                </RadioGroup>
+                {distributionScope === 'GLOBAL' && (
+                    <p className="text-xs text-muted-foreground">
+                        {isSelfManaged
+                            ? 'GLOBAL + self-managed: customer manages hiring and external promotion plan.'
+                            : 'GLOBAL + HRM8 service: HRM8 manages hiring and user approval is required for distribution plan.'}
+                    </p>
+                )}
             </div>
 
             <Button
