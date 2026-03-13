@@ -28,6 +28,13 @@ class CompanyProfileService {
       `/api/companies/${companyId}/profile/complete`
     );
   }
+
+  async confirmCurrencyPreference(companyId: string, currency: string) {
+    return apiClient.patch<{ company: { billing_currency: string } }>(
+      `/api/companies/${companyId}/currency-preference`,
+      { currency }
+    );
+  }
 }
 
 export const companyProfileService = new CompanyProfileService();

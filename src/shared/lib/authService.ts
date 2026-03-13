@@ -27,6 +27,8 @@ export interface LoginRequest {
 export interface LoginResponse {
   user: User;
   profile: CompanyProfileSummary;
+  requiresCurrencySetup?: boolean;
+  billingCurrency?: string;
 }
 
 export interface RegisterCompanyRequest {
@@ -81,7 +83,12 @@ class AuthService {
   }
 
   async getCurrentUser() {
-    return apiClient.get<{ user: User; profile: CompanyProfileSummary }>('/api/auth/me');
+    return apiClient.get<{
+      user: User;
+      profile: CompanyProfileSummary;
+      requiresCurrencySetup?: boolean;
+      billingCurrency?: string;
+    }>('/api/auth/me');
   }
 
   async verifyCompany(data: VerifyCompanyRequest) {

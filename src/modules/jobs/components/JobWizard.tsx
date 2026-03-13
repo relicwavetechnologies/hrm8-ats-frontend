@@ -693,9 +693,33 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
             const status = publishResponse.status;
             const errorMsg = publishResponse.error || 'Failed to publish job';
 
-            // Handle 402 — Subscription Required or Quota Exhausted
+            // Handle 402 — Subscription Required, Quota Exhausted, or PAYG Invoice Required
             if (status === 402) {
-              // Check if this is a wallet balance issue (HRM8 managed) or subscription issue
+              const errorCode = (publishResponse as { code?: string }).code;
+              const isPaygInvoiceRequired =
+                errorCode === 'PAYG_INVOICE_REQUIRED' ||
+                errorMsg.includes('Complete checkout to continue');
+
+              if (isPaygInvoiceRequired) {
+                // Redirect to invoice-based PAYG checkout (Airwallex + Xero)
+                try {
+                  const checkoutRes = await jobService.initiatePaygJobCheckout(finalJobId!);
+                  if (checkoutRes.success && checkoutRes.data?.checkoutUrl) {
+                    window.location.href = checkoutRes.data.checkoutUrl;
+                    return;
+                  }
+                } catch (checkoutErr) {
+                  console.error('PAYG checkout initiation failed:', checkoutErr);
+                  toast({
+                    title: 'Checkout Error',
+                    description: 'Could not start payment. Please try again.',
+                    variant: 'destructive',
+                  });
+                }
+                setIsPublishing(false);
+                return;
+              }
+
               if (errorMsg.toLowerCase().includes('subscription required')) {
                 toast({
                   title: 'Subscription Required',
@@ -823,9 +847,28 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         } catch (publishError: any) {
           console.error('❌ Publish failed:', publishError);
 
-          // Handle 402 (wallet insufficient) coming from catch
+          // Handle 402 coming from catch (e.g. if error is thrown elsewhere)
           if (publishError.status === 402 || publishError.response?.status === 402) {
             const errorMsg = publishError.response?.data?.error || publishError.message || '';
+            const errorCode = publishError.response?.data?.code || publishError.code;
+            const isPaygInvoiceRequired =
+              errorCode === 'PAYG_INVOICE_REQUIRED' ||
+              errorMsg.includes('Complete checkout to continue');
+
+            if (isPaygInvoiceRequired && finalJobId) {
+              try {
+                const checkoutRes = await jobService.initiatePaygJobCheckout(finalJobId);
+                if (checkoutRes.success && checkoutRes.data?.checkoutUrl) {
+                  window.location.href = checkoutRes.data.checkoutUrl;
+                  return;
+                }
+              } catch (checkoutErr) {
+                console.error('PAYG checkout failed:', checkoutErr);
+                toast({ title: 'Checkout Error', description: 'Could not start payment.', variant: 'destructive' });
+              }
+              setIsPublishing(false);
+              return;
+            }
 
             if (errorMsg.toLowerCase().includes('subscription required')) {
               toast({ title: 'Subscription Required', description: 'You need an active subscription.', variant: 'destructive' });

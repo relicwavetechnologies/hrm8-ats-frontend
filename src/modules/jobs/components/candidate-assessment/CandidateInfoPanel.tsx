@@ -28,9 +28,12 @@ import {
   ClipboardList,
   UserX,
   Check,
+  Lock,
 } from 'lucide-react';
 import { format, isValid, parseISO, formatDistanceToNow } from 'date-fns';
 import { applicationService } from '@/modules/applications/lib/applicationService';
+import { useCanUseAiFeatures } from '@/shared/hooks/useCanUseAiFeatures';
+import { UpgradePlanDialog } from '@/shared/components/UpgradePlanDialog';
 
 interface CandidateInfoPanelProps {
   application: Application;
@@ -75,6 +78,8 @@ function formatTimeAgo(dateInput: string | Date | undefined | null): string {
 }
 
 export function CandidateInfoPanel({ application, jobTitle, onOfferCandidate, onRejectCandidate }: CandidateInfoPanelProps) {
+  const { canUseAi } = useCanUseAiFeatures(true);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'ai-review'>('content');
   const [resumeContent, setResumeContent] = useState<string>('');
   const [resumeContentLoading, setResumeContentLoading] = useState(false);
@@ -296,7 +301,7 @@ export function CandidateInfoPanel({ application, jobTitle, onOfferCandidate, on
             Content
           </TabsTrigger>
           <TabsTrigger value="ai-review" className="gap-1.5 text-xs">
-            <Brain className="h-3.5 w-3.5" />
+            {canUseAi ? <Brain className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5 text-amber-600" />}
             AI Review
           </TabsTrigger>
         </TabsList>
@@ -548,6 +553,31 @@ export function CandidateInfoPanel({ application, jobTitle, onOfferCandidate, on
 
           {/* AI Review Tab */}
           <TabsContent value="ai-review" className="m-0 p-3 space-y-4">
+            {!canUseAi && (
+              <div
+                className="flex items-start gap-2 rounded-lg border border-amber-200/60 bg-amber-50/80 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-950/30"
+                role="alert"
+              >
+                <Lock className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-500" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                    AI Review locked
+                  </p>
+                  <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 mt-0.5">
+                    AI features require a paid plan (Small or higher). Upgrade to unlock AI analysis.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-6 text-[11px] border-amber-300 dark:border-amber-700"
+                    onClick={() => setShowUpgradeDialog(true)}
+                  >
+                    Upgrade to unlock
+                  </Button>
+                </div>
+              </div>
+            )}
             {/* AI Match Score */}
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
               <CardHeader className="pb-2 pt-3 px-3">
@@ -798,6 +828,12 @@ export function CandidateInfoPanel({ application, jobTitle, onOfferCandidate, on
           </TabsContent>
         </ScrollArea>
       </Tabs>
+      <UpgradePlanDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        title="Upgrade to unlock AI Review"
+        description="AI Match Score, Executive Summary, Cultural Fit, and Compensation insights require a paid plan (Small or higher). Upgrade to unlock AI-powered candidate analysis."
+      />
     </div>
   );
 }

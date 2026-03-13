@@ -310,8 +310,31 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 if (!publishResponse.success) {
                     const status = publishResponse.status;
                     const errorMsg = (publishResponse as any).error || 'Failed to publish job';
+                    const errorCode = (publishResponse as { code?: string }).code;
 
                     if (status === 402) {
+                        const isPaygInvoiceRequired =
+                            errorCode === 'PAYG_INVOICE_REQUIRED' ||
+                            errorMsg.includes('Complete checkout to continue');
+
+                        if (isPaygInvoiceRequired) {
+                            try {
+                                const checkoutRes = await jobService.initiatePaygJobCheckout(newJobId);
+                                if (checkoutRes.success && checkoutRes.data?.checkoutUrl) {
+                                    window.location.href = checkoutRes.data.checkoutUrl;
+                                    return;
+                                }
+                            } catch (checkoutErr) {
+                                console.error('PAYG checkout failed:', checkoutErr);
+                                toast({
+                                    title: 'Checkout Error',
+                                    description: 'Could not start payment. Please try again.',
+                                    variant: 'destructive',
+                                });
+                            }
+                            return;
+                        }
+
                         if (errorMsg.toLowerCase().includes('subscription required')) {
                             toast({
                                 title: 'Subscription Required',
@@ -329,8 +352,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                             return;
                         }
                         toast({
-                            title: 'Insufficient Wallet Balance',
-                            description: 'Top up your wallet to use HRM8 managed services.',
+                            title: 'Payment Required',
+                            description: 'Complete checkout to publish this job.',
                             variant: 'destructive',
                         });
                         return;
