@@ -37,16 +37,16 @@ export const SUBSCRIPTION_TIERS = {
   'payg': {
     id: 'payg',
     name: 'Pay As You Go',
-    monthlyPrice: 195,
-    annualPrice: 195 * 12,
-    monthlyFee: 195, // Backward compatibility
-    jobPostingCost: 195, // Backward compatibility
-    maxOpenJobs: 9999, // Unlimited
-    maxUsers: 9999, // Unlimited
+    monthlyPrice: 0,
+    annualPrice: 0,
+    monthlyFee: 0,
+    jobPostingCost: 195,
+    maxOpenJobs: 9999,
+    maxUsers: 9999,
     features: {
-      ats: true, // Backward compatibility
+      ats: true,
       coreATS: true,
-      aiScreening: true,
+      aiScreening: false,
       customForms: true,
       teamCollaboration: true,
       dedicatedTalentPool: true,

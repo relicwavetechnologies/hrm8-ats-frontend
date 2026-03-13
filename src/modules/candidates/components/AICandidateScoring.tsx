@@ -30,6 +30,9 @@ import {
   CandidateScoringResult,
 } from "@/shared/lib/candidateScoringService";
 import { useToast } from "@/shared/hooks/use-toast";
+import { useCanUseAiFeatures } from "@/shared/hooks/useCanUseAiFeatures";
+import { UpgradePlanDialog } from "@/shared/components/UpgradePlanDialog";
+import { Lock } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 interface AICandidateScoringProps {
@@ -58,6 +61,8 @@ export function AICandidateScoring({
   jobData,
 }: AICandidateScoringProps) {
   const { toast } = useToast();
+  const { canUseAi } = useCanUseAiFeatures();
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [scoringResult, setScoringResult] = useState<CandidateScoringResult | null>(null);
   const [weights, setWeights] = useState({
@@ -69,6 +74,10 @@ export function AICandidateScoring({
   });
 
   const handleAnalyze = async () => {
+    if (!canUseAi) {
+      setShowUpgradeDialog(true);
+      return;
+    }
     setIsAnalyzing(true);
     setScoringResult(null);
 
@@ -214,7 +223,7 @@ export function AICandidateScoring({
 
             <Button
               onClick={handleAnalyze}
-              disabled={isAnalyzing || Object.values(weights).reduce((a, b) => a + b, 0) !== 100}
+              disabled={isAnalyzing || (canUseAi && Object.values(weights).reduce((a, b) => a + b, 0) !== 100)}
               className="w-full"
               size="lg"
             >
@@ -222,6 +231,11 @@ export function AICandidateScoring({
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing with AI...
+                </>
+              ) : !canUseAi ? (
+                <>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Upgrade to unlock AI Analysis
                 </>
               ) : (
                 <>
@@ -359,6 +373,12 @@ export function AICandidateScoring({
           </TabsContent>
         </Tabs>
       </DialogContent>
+      <UpgradePlanDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        title="Upgrade to unlock AI Candidate Analysis"
+        description="AI Candidate Analysis requires a paid plan (Small or higher). Upgrade to unlock."
+      />
     </Dialog>
   );
 }

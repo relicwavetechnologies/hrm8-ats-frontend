@@ -12,8 +12,10 @@ import { Loader2, ArrowUp, Mic, X, Plus, Paperclip, MessageSquarePlus, Tag, Brie
 import TextShimmer from "@/shared/components/common/TextShimmer";
 import { MarkdownRenderer } from "@/shared/components/common/MarkdownRenderer";
 import { useAiReferences } from "@/shared/hooks/useAiReferences";
+import { useCanUseAiFeatures } from "@/shared/hooks/useCanUseAiFeatures";
 import { EntityReference } from "@/shared/types/ai-references";
 import { ConfirmationCard } from "@/shared/components/common/ConfirmationCard";
+import { UpgradePlanDialog } from "@/shared/components/UpgradePlanDialog";
 
 // Use empty string to leverage Vite's proxy configuration for /api requests
 const API_BASE_URL = "";
@@ -288,6 +290,10 @@ export function AiAssistantSidebar({
   ],
 }: AiAssistantSidebarProps) {
   const chatId = `ai-chat-${streamEndpoint.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const isCompanyCopilot = !streamEndpoint.includes('consultant') && !streamEndpoint.includes('hrm8');
+  const { canUseAi } = useCanUseAiFeatures(isCompanyCopilot);
+  const inputLocked = isCompanyCopilot && !canUseAi;
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // AI reference context store — shared with any producer component
   const { references, removeReference, clearReferences, addReference } = useAiReferences();
@@ -481,6 +487,10 @@ export function AiAssistantSidebar({
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (inputLocked) {
+      setShowUpgradeDialog(true);
+      return;
+    }
     if (!input.trim() || isStreaming) return;
 
     // Snapshot attachments BEFORE touching the store
@@ -963,8 +973,10 @@ export function AiAssistantSidebar({
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Message AI assistant..."
-                  disabled={isStreaming}
+                  onFocus={inputLocked ? () => setShowUpgradeDialog(true) : undefined}
+                  placeholder={inputLocked ? "Upgrade to unlock AI Copilot" : "Message AI assistant..."}
+                  disabled={isStreaming || inputLocked}
+                  readOnly={inputLocked}
                   className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm font-light outline-none placeholder:text-muted-foreground/60 disabled:opacity-50"
                   rows={2}
                 />
@@ -979,7 +991,7 @@ export function AiAssistantSidebar({
                     size="icon"
                     onClick={toggleRecording}
                     className={`h-8 w-8 ${isRecording ? "animate-pulse" : ""}`}
-                    disabled={isStreaming}
+                    disabled={isStreaming || inputLocked}
                     title="Voice input"
                   >
                     <Mic className={`h-4 w-4 ${isRecording ? "text-primary-foreground" : "text-muted-foreground"}`} />
@@ -1001,7 +1013,7 @@ export function AiAssistantSidebar({
                     size="icon"
                     onClick={() => fileInputRef.current?.click()}
                     className="h-8 w-8"
-                    disabled={isStreaming}
+                    disabled={isStreaming || inputLocked}
                     title="Attach file"
                   >
                     <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -1026,7 +1038,7 @@ export function AiAssistantSidebar({
                     <Button
                       type="submit"
                       size="icon"
-                      disabled={!input.trim()}
+                      disabled={!input.trim() || inputLocked}
                       className="h-8 w-8 rounded-full shadow-none transition-all disabled:opacity-40"
                     >
                       <ArrowUp className="h-4 w-4" />
@@ -1038,6 +1050,12 @@ export function AiAssistantSidebar({
           </form>
         </div>
       </div >
+      <UpgradePlanDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        title="Upgrade to unlock AI Copilot"
+        description="AI Copilot requires a paid plan (Small or higher). Upgrade to unlock AI-powered assistance."
+      />
     </aside >
   );
 }
