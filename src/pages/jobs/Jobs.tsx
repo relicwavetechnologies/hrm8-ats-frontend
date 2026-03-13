@@ -216,6 +216,19 @@ export default function Jobs() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearchParams]);
 
+  // Handle return from PAYG checkout success
+  useEffect(() => {
+    const paygSuccess = searchParams.get('payg_success') === '1';
+    const jobId = searchParams.get('jobId');
+    if (paygSuccess && jobId) {
+      setSearchParams({}, { replace: true });
+      setRefreshKey((k) => k + 1);
+      toast({ title: 'Payment successful', description: 'Your job has been published.' });
+      setSetupJobId(jobId);
+      setSetupDrawerOpen(true);
+    }
+  }, [searchParams, setSearchParams, toast]);
+
   useEffect(() => {
     if (!managedCheckoutJobId) {
       setManagedCheckoutOpen(false);

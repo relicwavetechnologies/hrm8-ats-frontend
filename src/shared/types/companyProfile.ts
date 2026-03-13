@@ -121,6 +121,10 @@ export interface CompanyProfileSummary {
   completedSections: CompanyProfileSection[];
   requiredSections: CompanyProfileSectionKey[];
   optionalSections: CompanyProfileSectionKey[];
+  /** When true, company must complete currency setup before transactions */
+  requiresCurrencySetup?: boolean;
+  /** Suggested billing currency (e.g. from country) */
+  billingCurrency?: string;
 }
 
 export interface CompanyProfileProgressResponse {

@@ -82,6 +82,7 @@ import { verifyJobPayment } from "@/shared/lib/payments";
 import { useAuth } from "@/app/providers/AuthContext";
 import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
 import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
+import { ApprovalQueue } from "@/modules/applications/components/ApprovalQueue";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -1075,6 +1076,16 @@ export default function JobDetail() {
                 </Tabs>
               </div>
             </div>
+
+            {/* HRM8-managed: Pending consultant approval requests */}
+            {(job as any).managementType === 'hrm8-managed' && (
+              <div className="mb-6">
+                <ApprovalQueue
+                  jobId={job.id}
+                  onRequestApproved={() => setRefreshKey(prev => prev + 1)}
+                />
+              </div>
+            )}
 
             {/* Pipeline or List View */}
             {applicationsViewMode === 'pipeline' ? (

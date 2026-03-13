@@ -33,10 +33,14 @@ interface WebSocketProviderProps {
   userEmail?: string;
 }
 
-// WebSocket URL construction
+// WebSocket URL construction – must point to backend (WebSocket server), not frontend
 const getWebSocketUrl = (): string => {
-  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
-  return apiUrl.replace(/^http/, 'ws');
+  const apiUrl = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || '';
+  if (apiUrl) return apiUrl.replace(/^http/, 'ws');
+  const origin = window.location.origin;
+  if (origin.includes(':8080')) return 'ws://localhost:3000'; // ATS dev default
+  if (origin.includes(':5173')) return 'ws://localhost:3000'; // Vite dev default
+  return origin.replace(/^http/, 'ws');
 };
 
 // Exponential backoff configuration

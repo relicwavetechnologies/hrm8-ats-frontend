@@ -33,13 +33,11 @@ interface SubscriptionUpgradeDialogProps {
 /** Plan metadata (features, quota) - API provides price/currency */
 const PLAN_METADATA: Record<string, { name: string; jobQuota: number | null; features: string[]; recommended: boolean }> = {
     FREE: { name: 'ATS Lite', jobQuota: 1, features: ['1 Active Job', 'Basic ATS', 'Email Support'], recommended: false },
-    PAYG: { name: 'Pay As You Go', jobQuota: 1, features: ['1 Active Job', 'Pay per job'], recommended: false },
     SMALL: { name: 'Small Plan', jobQuota: 5, features: ['5 Jobs/month', 'Full ATS', 'AI Screening', 'Priority Support'], recommended: true },
     MEDIUM: { name: 'Medium Plan', jobQuota: 25, features: ['25 Jobs/month', 'Everything in Small', 'Advanced Analytics'], recommended: false },
     LARGE: { name: 'Large Plan', jobQuota: 50, features: ['50 Jobs/month', 'Everything in Medium', 'Custom Integrations'], recommended: false },
     ENTERPRISE: { name: 'Enterprise', jobQuota: null, features: ['Unlimited Jobs', 'Everything in Large', 'Custom SLA'], recommended: false },
     CUSTOM: { name: 'Custom Enterprise', jobQuota: null, features: ['Unlimited Jobs', 'Custom SLA', 'White-label'], recommended: false },
-    RPO: { name: 'RPO', jobQuota: null, features: ['Volume hiring', 'Dedicated team'], recommended: false },
 };
 
 type PlanForDisplay = {
@@ -70,22 +68,25 @@ export function SubscriptionUpgradeDialog({
         enabled: open,
     });
 
+    const SELECTABLE_PLANS = ['SMALL', 'MEDIUM', 'LARGE', 'ENTERPRISE', 'CUSTOM'];
     const plans = useMemo((): PlanForDisplay[] => {
         if (apiTiers && apiTiers.length > 0) {
-            return apiTiers.map((tier) => {
-                const meta = PLAN_METADATA[tier.planType] ?? { name: tier.name, jobQuota: null, features: [], recommended: false };
-                return {
-                    id: tier.planType.toLowerCase(),
-                    planType: tier.planType,
-                    name: meta.name,
-                    price: tier.price,
-                    currency: tier.currency,
-                    billingCycle: 'MONTHLY' as const,
-                    jobQuota: meta.jobQuota,
-                    features: meta.features,
-                    recommended: meta.recommended,
-                };
-            });
+            return apiTiers
+                .filter((tier) => SELECTABLE_PLANS.includes(String(tier.planType).toUpperCase()))
+                .map((tier) => {
+                    const meta = PLAN_METADATA[tier.planType] ?? { name: tier.name, jobQuota: null, features: [], recommended: false };
+                    return {
+                        id: tier.planType.toLowerCase(),
+                        planType: tier.planType,
+                        name: meta.name,
+                        price: tier.price,
+                        currency: tier.currency,
+                        billingCycle: 'MONTHLY' as const,
+                        jobQuota: meta.jobQuota,
+                        features: meta.features,
+                        recommended: meta.recommended,
+                    };
+                });
         }
         return [];
     }, [apiTiers]);
@@ -126,6 +127,7 @@ export function SubscriptionUpgradeDialog({
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscription', 'active'] });
             queryClient.invalidateQueries({ queryKey: ['wallet', 'subscriptions'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            queryClient.invalidateQueries({ queryKey: ['canUseAi'] });
 
             if (isFree) {
                 toast({

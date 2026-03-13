@@ -190,6 +190,20 @@ class JobService {
   }
 
   /**
+   * Initiate PAYG job checkout — when quota/free job exhausted, creates invoice checkout.
+   * Redirect user to returned checkoutUrl to pay; job publishes on payment success.
+   */
+  async initiatePaygJobCheckout(id: string) {
+    return apiClient.post<{
+      checkoutUrl: string;
+      paymentAttemptId: string;
+      amount: number;
+      currency: string;
+      billId: string;
+    }>(`/api/jobs/${id}/payg-checkout`);
+  }
+
+  /**
    * Launch JobTarget marketplace for a synced GLOBAL job.
    */
   async createJobTargetSession(id: string) {
