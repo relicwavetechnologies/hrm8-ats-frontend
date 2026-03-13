@@ -10,9 +10,10 @@ import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Sparkles, X, ChevronRight, Loader2 } from 'lucide-react';
 import { useJobCreateStore, WizardStepId, WIZARD_STEPS } from '@/modules/jobs/store/useJobCreateStore';
-import { JobFormData } from '@/shared/types/job';
+import { Job, JobFormData } from '@/shared/types/job';
 import { JobPreviewPanel } from '@/components/conversational/JobPreviewPanel';
 import { JobSetupDrawer } from '@/components/setup/JobSetupDrawer';
+import { PostPublishFlow } from '@/modules/jobs/components/PostPublishFlow';
 import { useJobConversation } from './useJobConversation';
 import { jobService } from '@/shared/lib/jobService';
 import { jobDescriptionService } from '@/shared/lib/jobDescriptionService';
@@ -21,6 +22,7 @@ import { jobTemplateService } from '@/shared/lib/jobTemplateService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/app/providers/AuthContext';
 import { companyProfileService } from '@/shared/lib/companyProfileService';
+import { mapBackendJobToFrontend } from '@/shared/lib/jobDataMapper';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -82,6 +84,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     const [setupDrawerOpen, setSetupDrawerOpen] = useState(false);
     const [createdJobId, setCreatedJobId] = useState<string | null>(null);
     const [createdJobTitle, setCreatedJobTitle] = useState<string | undefined>(undefined);
+    const [postPublishOpen, setPostPublishOpen] = useState(false);
+    const [publishedJob, setPublishedJob] = useState<Job | null>(null);
     const [showSaveDraftDialog, setShowSaveDraftDialog] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [saveAsTemplate, setSaveAsTemplate] = useState(false);
@@ -175,6 +179,14 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         stealth: jobData.stealth ?? false,
         closeDate: jobData.closeDate,
         draftStep: draftStepIndex,
+        distributionScope: (jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY',
+        globalPublishConfig: jobData.globalPublishConfig || {
+            channels: [],
+            budgetTier: 'none',
+            customBudget: undefined,
+            hrm8ServiceRequiresApproval: false,
+            hrm8ServiceApproved: false,
+        },
     });
 
     const handleSaveDraftAndClose = async () => {
@@ -213,6 +225,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     closeDate: payload.closeDate,
                     servicePackage,
                     publishImmediately: false,
+                    distributionScope: payload.distributionScope,
+                    globalPublishConfig: payload.globalPublishConfig,
                 });
                 if (createRes.success && createRes.data) {
                     const data = createRes.data as { job?: { id: string }; id?: string };
@@ -254,6 +268,17 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
 
         setIsSubmitting(true);
         try {
+            const isGlobal = jobData.distributionScope === 'GLOBAL';
+            const isSelfManaged = (jobData.serviceType || 'self-managed') === 'self-managed' || (jobData.serviceType || 'self-managed') === 'rpo';
+            if (isGlobal && !isSelfManaged && !jobData.globalPublishConfig?.hrm8ServiceApproved) {
+                toast({
+                    title: 'Approval Required',
+                    description: 'Approve the global distribution plan before publishing this HRM8-managed GLOBAL job.',
+                    variant: 'destructive',
+                });
+                return;
+            }
+
             const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
             const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
 
@@ -291,6 +316,14 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 termsAccepted: jobData.termsAccepted,
                 termsAcceptedAt: jobData.termsAccepted ? new Date() : undefined,
                 status: 'DRAFT', // Explicitly set as DRAFT initially
+                distributionScope: (jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY',
+                globalPublishConfig: jobData.globalPublishConfig || {
+                    channels: [],
+                    budgetTier: 'none',
+                    customBudget: undefined,
+                    hrm8ServiceRequiresApproval: (jobData.serviceType || 'self-managed') !== 'self-managed' && (jobData.serviceType || 'self-managed') !== 'rpo',
+                    hrm8ServiceApproved: false,
+                },
             };
 
             // Create the job first
@@ -398,10 +431,29 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     }
                 }
 
-                // Success! Open Job Setup Drawer
+                const publishedRaw = (publishResponse.data || {}) as Record<string, unknown>;
+                const publishedBackend = ((publishedRaw.job || publishedRaw) as Record<string, unknown>) || {};
+                const mappedPublished = mapBackendJobToFrontend({
+                    ...publishedBackend,
+                    id: (publishedBackend.id as string) || newJobId,
+                    companyId: (publishedBackend.companyId as string) || user?.companyId || '',
+                    companyName: user?.companyName || '',
+                    createdBy: (publishedBackend.createdBy as string) || user?.id || '',
+                    createdByName: (publishedBackend.createdByName as string) || user?.name || 'User',
+                });
+                const published: Job = {
+                    ...mappedPublished,
+                    id: mappedPublished.id || newJobId,
+                    title: mappedPublished.title || jobData.title || 'Untitled Job',
+                    distributionScope: mappedPublished.distributionScope || jobData.distributionScope,
+                    globalPublishConfig: mappedPublished.globalPublishConfig || jobData.globalPublishConfig,
+                };
+
+                // Success! Open post-publish flow first.
                 setCreatedJobId(newJobId);
                 setCreatedJobTitle(jobData.title || undefined);
-                setSetupDrawerOpen(true);
+                setPublishedJob(published);
+                setPostPublishOpen(true);
                 reset();
                 setSaveAsTemplate(false);
                 setTemplateNameInput('');
@@ -469,8 +521,28 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     <ChatBasicDetailsCard
                         title={jobData.title || ''}
                         department={jobData.department || ''}
+                        distributionScope={(jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY'}
+                        serviceType={jobData.serviceType as any}
                         onTitleChange={(v) => setJobData({ title: v })}
                         onDepartmentChange={(v) => setJobData({ department: v })}
+                        onDistributionScopeChange={(v) => setJobData({
+                            distributionScope: v,
+                            globalPublishConfig: v === 'GLOBAL'
+                                ? {
+                                    channels: jobData.globalPublishConfig?.channels || [],
+                                    budgetTier: jobData.globalPublishConfig?.budgetTier || 'none',
+                                    customBudget: jobData.globalPublishConfig?.customBudget,
+                                    hrm8ServiceRequiresApproval: (jobData.serviceType || 'self-managed') !== 'self-managed' && (jobData.serviceType || 'self-managed') !== 'rpo',
+                                    hrm8ServiceApproved: jobData.globalPublishConfig?.hrm8ServiceApproved || false,
+                                }
+                                : {
+                                    channels: [],
+                                    budgetTier: 'none',
+                                    customBudget: undefined,
+                                    hrm8ServiceRequiresApproval: false,
+                                    hrm8ServiceApproved: false,
+                                },
+                        })}
                         onContinue={nextStep}
                         isParsedTitle={isParsed('title')}
                         isParsedDept={isParsed('department')}
@@ -677,6 +749,15 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         onTermsAcceptedChange={(v) => setJobData({ termsAccepted: v })}
                         saveAsTemplate={saveAsTemplate}
                         onSaveAsTemplateChange={setSaveAsTemplate}
+                        onGlobalPublishApprovalChange={(approved) => setJobData({
+                            globalPublishConfig: {
+                                channels: jobData.globalPublishConfig?.channels || [],
+                                budgetTier: jobData.globalPublishConfig?.budgetTier || 'none',
+                                customBudget: jobData.globalPublishConfig?.customBudget,
+                                hrm8ServiceRequiresApproval: (jobData.serviceType || 'self-managed') !== 'self-managed' && (jobData.serviceType || 'self-managed') !== 'rpo',
+                                hrm8ServiceApproved: approved,
+                            },
+                        })}
                     />
                 );
             default:
@@ -878,6 +959,23 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                 </AlertDialogContent>
             </AlertDialog>
 
+            {publishedJob && (
+                <PostPublishFlow
+                    job={publishedJob}
+                    open={postPublishOpen}
+                    onOpenChange={(open) => {
+                        setPostPublishOpen(open);
+                        if (!open) {
+                            setSetupDrawerOpen(true);
+                        }
+                    }}
+                    onComplete={() => {
+                        setPostPublishOpen(false);
+                        setSetupDrawerOpen(true);
+                    }}
+                />
+            )}
+
             <JobSetupDrawer
                 open={setupDrawerOpen}
                 onOpenChange={(open, meta) => {
@@ -886,6 +984,8 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         if (meta?.reason === 'managed-checkout') {
                             return;
                         }
+                        setPostPublishOpen(false);
+                        setPublishedJob(null);
                         setCreatedJobId(null);
                         setCreatedJobTitle(undefined);
                         // Reload to refresh jobs list and remove draft

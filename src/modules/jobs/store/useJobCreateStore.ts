@@ -53,6 +53,14 @@ interface JobCreateState extends StepsState {
 
 const INITIAL_JOB_DATA: Partial<JobFormData> = {
   serviceType: 'self-managed',
+  distributionScope: 'HRM8_ONLY',
+  globalPublishConfig: {
+    channels: [],
+    budgetTier: 'none',
+    customBudget: undefined,
+    hrm8ServiceRequiresApproval: false,
+    hrm8ServiceApproved: false,
+  },
   status: 'draft',
   employmentType: 'full-time',
   experienceLevel: 'mid',

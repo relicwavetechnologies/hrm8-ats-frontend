@@ -29,6 +29,7 @@ import {
   X,
   ChevronRight,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { jobService } from "@/shared/lib/jobService";
@@ -70,10 +71,12 @@ export function PostPublishFlow({
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [latestJob, setLatestJob] = useState<Job>(job);
 
   const shareLink = job.shareLink || `${window.location.origin}/jobs/${job.id}`;
   const referralLink = job.referralLink || `${shareLink}?ref=${job.id.substring(0, 8)}`;
   const canUpgradeToManaged = job.serviceType === "self-managed" || job.serviceType === "rpo";
+  const syncJob = latestJob || job;
 
   const handleCopyLink = (link: string, label: string) => {
     navigator.clipboard.writeText(link);
@@ -168,7 +171,7 @@ export function PostPublishFlow({
     }
   };
 
-  const handlePromoteNow = () => {
+  const handleLaunchMarketplace = () => {
     setShowJobTargetDialog(true);
   };
 
@@ -176,7 +179,7 @@ export function PostPublishFlow({
     setCurrentStep("view");
     toast({
       title: "Skipped",
-      description: "You can promote to external boards anytime from the job detail page.",
+      description: "You can launch JobTarget Marketplace any time from the job detail page.",
     });
   };
 
@@ -191,6 +194,15 @@ export function PostPublishFlow({
     onOpenChange(false);
     setShowUpgradeDialog(false);
     navigate(`/ats/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
+  };
+
+  const refreshLatestJob = async () => {
+    if (!job?.id) return;
+    const response = await jobService.getJobById(job.id);
+    const payload = (response.data || {}) as { job?: Job };
+    if (response.success && payload.job) {
+      setLatestJob(payload.job);
+    }
   };
 
   const renderToolsStep = () => (
@@ -449,41 +461,40 @@ export function PostPublishFlow({
     <div className="space-y-6">
       <div className="text-center mb-6">
         <Megaphone className="h-12 w-12 text-primary mx-auto mb-3" />
-        <h3 className="text-xl font-semibold mb-2">Promote Your Job Externally</h3>
+        <h3 className="text-xl font-semibold mb-2">Launch in JobTarget Marketplace</h3>
         <p className="text-sm text-muted-foreground">
-          Reach 50M+ candidates across major job boards through JobTarget
+          Review sync health and open a fresh JobTarget marketplace SSO session
         </p>
       </div>
 
       <Card className="border-primary/30 bg-primary/5">
         <CardHeader>
-          <CardTitle className="text-base">Why Promote to External Job Boards?</CardTitle>
+          <CardTitle className="text-base">JobTarget Sync Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>Reach 50M+ candidates across major job boards like Indeed, LinkedIn, and Glassdoor</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>Get 3-5x more qualified applicants on average</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>Reduce time-to-hire with broader candidate exposure</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary mt-0.5">•</span>
-              <span>Flexible budget options starting from $500</span>
-            </li>
-          </ul>
+          <div className="flex items-center gap-2 text-sm">
+            {syncJob.jobTargetSync?.syncStatus === 'SYNCED' ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            ) : (
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+            )}
+            <span>Status: {syncJob.jobTargetSync?.syncStatus || 'NOT_SYNCED'}</span>
+          </div>
+          {syncJob.jobTargetSync?.remoteJobId && (
+            <p className="text-sm text-muted-foreground">Remote Job ID: {syncJob.jobTargetSync.remoteJobId}</p>
+          )}
+          {syncJob.jobTargetSync?.lastError && (
+            <p className="text-sm text-destructive">Last Error: {syncJob.jobTargetSync.lastError}</p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Marketplace launch generates a new backend SSO URL and keeps users inside HRM8 before external posting.
+          </p>
         </CardContent>
       </Card>
 
       <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
         <p>
-          You can always promote your job to external boards later from the job detail page.
+          You can relaunch JobTarget Marketplace later from the job detail page.
         </p>
       </div>
     </div>
@@ -539,7 +550,7 @@ export function PostPublishFlow({
       case "tools":
         return "Step 1 of 3: Configure Tools";
       case "jobtarget":
-        return "Step 2 of 3: Promote Externally";
+        return "Step 2 of 3: Launch Marketplace";
       case "view":
         return "Step 3 of 3: View Your Job";
       default:
@@ -554,6 +565,18 @@ export function PostPublishFlow({
     }
   }, [open]);
 
+  useEffect(() => {
+    setLatestJob(job);
+  }, [job]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (currentStep !== "jobtarget") return;
+    refreshLatestJob().catch(() => {
+      // Keep existing display values when refresh fails.
+    });
+  }, [open, currentStep, job.id]);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -565,7 +588,7 @@ export function PostPublishFlow({
             </DialogTitle>
             <DialogDescription>
               {currentStep === "tools" && "Configure alerts, share your job, and save it as a template"}
-              {currentStep === "jobtarget" && "Maximize your reach by promoting to external job boards"}
+              {currentStep === "jobtarget" && "Launch a fresh JobTarget marketplace session from HRM8"}
               {currentStep === "view" && "See how your job appears to candidates"}
             </DialogDescription>
           </DialogHeader>
@@ -598,9 +621,9 @@ export function PostPublishFlow({
                     <X className="h-4 w-4 mr-2" />
                     Skip for Now
                   </Button>
-                  <Button onClick={handlePromoteNow}>
-                    <Megaphone className="h-4 w-4 mr-2" />
-                    Promote Now
+                  <Button onClick={handleLaunchMarketplace}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Launch Marketplace
                   </Button>
                 </>
               )}
@@ -629,7 +652,7 @@ export function PostPublishFlow({
             setCurrentStep("view");
           }
         }}
-        job={job}
+        job={syncJob}
         onSuccess={() => {
           setShowJobTargetDialog(false);
           // Move to view step after successful promotion

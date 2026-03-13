@@ -66,6 +66,14 @@ export interface CreateJobRequest {
   experienceLevel?: string;
   /** When false, creates job as DRAFT (for save-draft flow) */
   publishImmediately?: boolean;
+  distributionScope?: 'HRM8_ONLY' | 'GLOBAL';
+  globalPublishConfig?: {
+    channels: string[];
+    budgetTier: 'basic' | 'standard' | 'premium' | 'executive' | 'custom' | 'none';
+    customBudget?: number;
+    hrm8ServiceRequiresApproval: boolean;
+    hrm8ServiceApproved: boolean;
+  };
 }
 
 export interface UpdateJobRequest extends Partial<CreateJobRequest> {
@@ -86,6 +94,14 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
   managementType?: string;
   /** Wizard step (1-based) when saving as draft */
   draftStep?: number;
+}
+
+export interface JobTargetSessionResponse {
+  session: {
+    url: string;
+    remoteJobId?: string;
+    syncStatus?: string;
+  };
 }
 
 export interface GetJobsFilters {
@@ -185,6 +201,13 @@ class JobService {
       currency: string;
       billId: string;
     }>(`/api/jobs/${id}/payg-checkout`);
+  }
+
+  /**
+   * Launch JobTarget marketplace for a synced GLOBAL job.
+   */
+  async createJobTargetSession(id: string) {
+    return apiClient.post<JobTargetSessionResponse>(`/api/jobs/${id}/jobtarget/session`);
   }
 
   /**
