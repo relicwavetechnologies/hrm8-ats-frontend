@@ -6,6 +6,7 @@ import {
   OfferWorkflowResponse,
   OfferWorkflowState,
   OfferWorkflowStep,
+  CompensationBreakdown,
 } from "@/shared/lib/offerService";
 import { GmailMessage, GmailThread, gmailThreadService } from "@/shared/lib/gmailThreadService";
 import { apiClient } from "@/shared/lib/api";
@@ -35,7 +36,7 @@ import { EmailReplyDrawer } from "@/modules/jobs/components/candidate-assessment
 import { EmailThreadDetailView } from "@/modules/jobs/components/candidate-assessment/EmailThreadDetailView";
 import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { applicationService } from "@/shared/lib/applicationService";
-import { BarChart3, CheckCircle2, Eye, Loader2, Mail, Save, TrendingUp, Upload, FolderOpen } from "lucide-react";
+import { BarChart3, CheckCircle2, Eye, Loader2, Mail, Save, TrendingUp, Upload, FolderOpen, ChevronDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { DocumentHubPicker } from "./DocumentHubPicker";
 import { CompanyDocument } from "@/shared/lib/documentHubService";
@@ -70,7 +71,7 @@ type ApplicationNote = {
 
 const STEP_CONFIGS: StepConfig[] = [
   { key: "negotiation", title: "1. Negotiation", description: "Negotiate compensation over email." },
-  { key: "amount", title: "2. Final Amount", description: "Set the decided amount." },
+  { key: "amount", title: "2. Compensation Package", description: "Define the full compensation breakdown." },
   { key: "offer_letter", title: "3. Offer Letter", description: "Send offer letter email." },
   { key: "document_request", title: "4. Document Request", description: "Request documents over email." },
   { key: "documents", title: "5. Documents", description: "Upload candidate documents." },
@@ -78,7 +79,7 @@ const STEP_CONFIGS: StepConfig[] = [
 
 const STEP_LABEL: Record<OfferWorkflowStep, string> = {
   negotiation: "Negotiation",
-  amount: "Amount",
+  amount: "Compensation",
   offer_letter: "Offer Letter",
   document_request: "Doc Request",
   documents: "Documents",
@@ -89,6 +90,7 @@ const emptyWorkflow: OfferWorkflowState = {
   currentStep: "negotiation",
   negotiationComplete: false,
   amount: "",
+  compensation: {},
   offerLetterSent: false,
   documentRequestSent: false,
   stepNotes: {},
@@ -161,6 +163,7 @@ export function JobOffersTab({
   const [pageSize, setPageSize] = useState(20);
   const [hubPickerOpen, setHubPickerOpen] = useState(false);
   const [isAttachingFromHub, setIsAttachingFromHub] = useState(false);
+  const [advancedCompOpen, setAdvancedCompOpen] = useState(false);
 
   const offerRound = useMemo(() => rounds.find((r) => r.fixedKey === "OFFER") || null, [rounds]);
   const hiredRound = useMemo(() => rounds.find((r) => r.fixedKey === "HIRED") || null, [rounds]);
@@ -421,11 +424,14 @@ export function JobOffersTab({
   const onAmountSave = async () => {
     if (!selectedApp?.id) return;
     try {
-      await saveWorkflow(selectedApp.id, { amount: selectedWorkflow.amount });
-      toast({ title: "Amount saved" });
+      await saveWorkflow(selectedApp.id, {
+        amount: selectedWorkflow.amount,
+        compensation: selectedWorkflow.compensation,
+      });
+      toast({ title: "Compensation saved" });
     } catch (error) {
       toast({
-        title: "Failed to save amount",
+        title: "Failed to save compensation",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
@@ -909,53 +915,170 @@ export function JobOffersTab({
                     {step.key === "amount" && (
                       <>
                         {isReadOnly ? (
-                          <div className="rounded-md border border-emerald-200/70 bg-emerald-50/50 px-2.5 py-2">
-                            <p className="text-[11px] text-muted-foreground">Final Amount</p>
-                            <p className="text-xs font-semibold text-emerald-800">{selectedWorkflow.amount || "-"}</p>
+                          <div className="space-y-2">
+                            <div className="rounded-md border border-emerald-200/70 bg-emerald-50/50 px-2.5 py-2">
+                              <p className="text-[11px] text-muted-foreground">Base Salary (CTC)</p>
+                              <p className="text-xs font-semibold text-emerald-800">{selectedWorkflow.amount || "-"}</p>
+                            </div>
+                            {selectedWorkflow.compensation && Object.entries(selectedWorkflow.compensation).some(([, v]) => v) && (
+                              <div className="rounded-md border border-border/70 bg-muted/20 px-2.5 py-2 space-y-1">
+                                <p className="text-[11px] font-medium text-muted-foreground mb-1">Breakdown</p>
+                                {([
+                                  ["variablePay", "Variable Pay / Bonus"],
+                                  ["signingBonus", "Signing Bonus"],
+                                  ["retentionBonus", "Retention Bonus"],
+                                  ["esops", "ESOPs / Stock Options"],
+                                  ["rsus", "RSUs"],
+                                  ["ppf", "PPF Contribution"],
+                                  ["gratuity", "Gratuity"],
+                                  ["healthInsurance", "Health Insurance"],
+                                  ["hra", "HRA"],
+                                  ["travelAllowance", "Travel Allowance"],
+                                  ["mealAllowance", "Meal Allowance"],
+                                  ["learningBudget", "L&D Budget"],
+                                  ["otherBenefits", "Other Benefits"],
+                                ] as [keyof CompensationBreakdown, string][]).map(([key, label]) => {
+                                  const val = selectedWorkflow.compensation?.[key];
+                                  if (!val) return null;
+                                  return (
+                                    <div key={key} className="flex justify-between text-[11px]">
+                                      <span className="text-muted-foreground">{label}</span>
+                                      <span className="font-medium">{val}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={selectedWorkflow.amount}
-                              onChange={(e) =>
-                                setWorkflowByApp((prev) => ({
-                                  ...prev,
-                                  [selectedApp.id]: {
-                                    ...(prev[selectedApp.id] || {
-                                      offerId: "",
-                                      applicationId: selectedApp.id,
-                                      workflow: emptyWorkflow,
-                                      documents: [],
-                                    }),
-                                    workflow: { ...(prev[selectedApp.id]?.workflow || emptyWorkflow), amount: e.target.value },
-                                  },
-                                }))
-                              }
-                              placeholder="e.g. 18,00,000 INR / year"
-                              className="h-8 text-xs"
-                              disabled={
-                                isReadOnly ||
-                                drawerLoading ||
-                                isSaving ||
-                                savingNoteStep !== null ||
-                                selectedWorkflow.currentStep !== step.key
-                              }
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 text-xs"
-                              onClick={onAmountSave}
-                              disabled={
-                                isSaving ||
-                                drawerLoading ||
-                                savingNoteStep !== null ||
-                                selectedWorkflow.currentStep !== step.key
-                              }
+                          <div className="space-y-3">
+                            {/* Base Salary - Primary field */}
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={selectedWorkflow.amount}
+                                onChange={(e) =>
+                                  setWorkflowByApp((prev) => ({
+                                    ...prev,
+                                    [selectedApp.id]: {
+                                      ...(prev[selectedApp.id] || {
+                                        offerId: "",
+                                        applicationId: selectedApp.id,
+                                        workflow: emptyWorkflow,
+                                        documents: [],
+                                      }),
+                                      workflow: { ...(prev[selectedApp.id]?.workflow || emptyWorkflow), amount: e.target.value },
+                                    },
+                                  }))
+                                }
+                                placeholder="e.g. 18,00,000 INR / year"
+                                className="h-8 text-xs"
+                                disabled={
+                                  isReadOnly ||
+                                  drawerLoading ||
+                                  isSaving ||
+                                  savingNoteStep !== null ||
+                                  selectedWorkflow.currentStep !== step.key
+                                }
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs"
+                                onClick={onAmountSave}
+                                disabled={
+                                  isSaving ||
+                                  drawerLoading ||
+                                  savingNoteStep !== null ||
+                                  selectedWorkflow.currentStep !== step.key
+                                }
+                              >
+                                <Save className="h-3.5 w-3.5 mr-1.5" />
+                                Save
+                              </Button>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground -mt-1">Base Salary / CTC — this is the primary offer amount</p>
+
+                            {/* Advanced Compensation Toggle */}
+                            <button
+                              type="button"
+                              className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                              onClick={() => setAdvancedCompOpen(!advancedCompOpen)}
                             >
-                              <Save className="h-3.5 w-3.5 mr-1.5" />
-                              Save
-                            </Button>
+                              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${advancedCompOpen ? 'rotate-180' : ''}`} />
+                              Advanced Compensation Breakdown
+                            </button>
+
+                            {advancedCompOpen && (
+                              <div className="space-y-2 pl-1 border-l-2 border-primary/20 ml-1">
+                                {([
+                                  ["variablePay", "Variable Pay / Bonus", "e.g. 2,00,000 / year"],
+                                  ["signingBonus", "Signing Bonus", "e.g. 50,000 one-time"],
+                                  ["retentionBonus", "Retention Bonus", "e.g. 1,00,000 after 1 year"],
+                                  ["esops", "ESOPs / Stock Options", "e.g. 1000 shares, 4-yr vest"],
+                                  ["rsus", "RSUs", "e.g. 500 units, quarterly vest"],
+                                  ["ppf", "PPF Contribution", "e.g. 1,50,000 / year"],
+                                  ["gratuity", "Gratuity", "e.g. as per statutory"],
+                                  ["healthInsurance", "Health Insurance", "e.g. 5L family floater"],
+                                  ["hra", "HRA", "e.g. 40% of basic"],
+                                  ["travelAllowance", "Travel / Commute Allowance", "e.g. 5,000 / month"],
+                                  ["mealAllowance", "Meal / Food Allowance", "e.g. Sodexo 2,200 / month"],
+                                  ["learningBudget", "Learning & Development Budget", "e.g. 50,000 / year"],
+                                  ["otherBenefits", "Other Benefits", "e.g. WFH setup, gym, etc."],
+                                ] as [keyof CompensationBreakdown, string, string][]).map(([key, label, placeholder]) => (
+                                  <div key={key} className="space-y-0.5 pl-2">
+                                    <label className="text-[10px] font-medium text-muted-foreground">{label}</label>
+                                    <Input
+                                      value={selectedWorkflow.compensation?.[key] || ""}
+                                      onChange={(e) => {
+                                        const comp = { ...(selectedWorkflow.compensation || {}), [key]: e.target.value };
+                                        setWorkflowByApp((prev) => ({
+                                          ...prev,
+                                          [selectedApp.id]: {
+                                            ...(prev[selectedApp.id] || {
+                                              offerId: "",
+                                              applicationId: selectedApp.id,
+                                              workflow: emptyWorkflow,
+                                              documents: [],
+                                            }),
+                                            workflow: {
+                                              ...(prev[selectedApp.id]?.workflow || emptyWorkflow),
+                                              compensation: comp,
+                                            },
+                                          },
+                                        }));
+                                      }}
+                                      placeholder={placeholder}
+                                      className="h-7 text-xs"
+                                      disabled={
+                                        isReadOnly ||
+                                        drawerLoading ||
+                                        isSaving ||
+                                        savingNoteStep !== null ||
+                                        selectedWorkflow.currentStep !== step.key
+                                      }
+                                    />
+                                  </div>
+                                ))}
+
+                                <div className="pt-1 pl-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-[11px]"
+                                    onClick={onAmountSave}
+                                    disabled={
+                                      isSaving ||
+                                      drawerLoading ||
+                                      savingNoteStep !== null ||
+                                      selectedWorkflow.currentStep !== step.key
+                                    }
+                                  >
+                                    <Save className="h-3 w-3 mr-1" />
+                                    Save All Compensation
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </>

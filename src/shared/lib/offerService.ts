@@ -74,10 +74,28 @@ export type OfferWorkflowStep =
   | 'documents'
   | 'hired';
 
+export interface CompensationBreakdown {
+  baseSalary?: string;
+  variablePay?: string;
+  signingBonus?: string;
+  retentionBonus?: string;
+  esops?: string;
+  rsus?: string;
+  ppf?: string;
+  gratuity?: string;
+  healthInsurance?: string;
+  hra?: string;
+  travelAllowance?: string;
+  mealAllowance?: string;
+  learningBudget?: string;
+  otherBenefits?: string;
+}
+
 export interface OfferWorkflowState {
   currentStep: OfferWorkflowStep;
   negotiationComplete: boolean;
   amount: string;
+  compensation?: CompensationBreakdown;
   offerLetterSent: boolean;
   documentRequestSent: boolean;
   stepNotes: Partial<Record<OfferWorkflowStep, string>>;
@@ -101,6 +119,7 @@ class OfferService {
     data: {
       negotiationComplete?: boolean;
       amount?: string;
+      compensation?: CompensationBreakdown;
       offerLetterSent?: boolean;
       documentRequestSent?: boolean;
       step?: OfferWorkflowStep;
