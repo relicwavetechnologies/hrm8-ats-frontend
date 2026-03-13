@@ -8,7 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/aler
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import { RECRUITMENT_SERVICES } from '@/shared/lib/subscriptionConfig';
 import { Checkbox } from '@/shared/components/ui/checkbox';
-import { FormField, FormItem, FormLabel, FormControl } from '@/shared/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/shared/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
+import { Input } from '@/shared/components/ui/input';
 
 interface JobWizardStep6Props {
   form: UseFormReturn<JobFormData>;
@@ -25,12 +27,41 @@ function mapServiceTypeToApi(serviceType: string): string {
 
 export function JobWizardStep6({ form }: JobWizardStep6Props) {
   const formData = form.watch();
+  const globalPublishConfig = form.watch('globalPublishConfig');
 
   const [termsAccepted, setTermsAccepted] = useState(formData.termsAccepted || false);
   const [jobPriceCalc, setJobPriceCalc] = useState<JobPriceCalculation | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
 
   const isSelfManaged = formData.serviceType === 'self-managed' || formData.serviceType === 'rpo';
+  const isGlobalScope = formData.distributionScope === 'GLOBAL';
+
+  const updateGlobalConfig = (patch: Partial<NonNullable<typeof globalPublishConfig>>) => {
+    const current = globalPublishConfig || {
+      channels: [],
+      budgetTier: 'none',
+      customBudget: undefined,
+      hrm8ServiceRequiresApproval: !isSelfManaged,
+      hrm8ServiceApproved: false,
+    };
+    form.setValue('globalPublishConfig', { ...current, ...patch }, { shouldValidate: true, shouldDirty: true });
+  };
+
+  useEffect(() => {
+    if (!globalPublishConfig) {
+      updateGlobalConfig({
+        channels: [],
+        budgetTier: 'none',
+        customBudget: undefined,
+        hrm8ServiceRequiresApproval: !isSelfManaged,
+        hrm8ServiceApproved: false,
+      });
+      return;
+    }
+    if (globalPublishConfig.hrm8ServiceRequiresApproval !== !isSelfManaged) {
+      updateGlobalConfig({ hrm8ServiceRequiresApproval: !isSelfManaged });
+    }
+  }, [isSelfManaged]);
 
   // Fetch recruitment price from pricing API when not self-managed
   useEffect(() => {
@@ -89,10 +120,105 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
             <li>Job will be activated and visible on HRM8 internal job board</li>
             <li>Job will be published on your corporate careers page</li>
             <li>You'll receive access to post-launch tools (alerts, sharing, templates)</li>
-            <li>Option to promote externally via JobTarget will be available</li>
+            {isGlobalScope ? (
+              <li>GLOBAL publish requires JobTarget sync and internal distribution-plan review before launch.</li>
+            ) : (
+              <li>No JobTarget sync is performed for HRM8_ONLY jobs.</li>
+            )}
           </ul>
         </AlertDescription>
       </Alert>
+
+      {isGlobalScope && (
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="text-base">Global Distribution Review (Required)</CardTitle>
+            <CardDescription>
+              Review channels and budget in HRM8 before launching JobTarget Marketplace.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <FormLabel>Selected Channels</FormLabel>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {['indeed', 'linkedin', 'glassdoor', 'ziprecruiter', 'monster', 'seek'].map((channel) => {
+                  const checked = !!globalPublishConfig?.channels?.includes(channel);
+                  return (
+                    <label key={channel} className="flex items-center gap-2 rounded-md border p-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(next) => {
+                          const current = globalPublishConfig?.channels || [];
+                          const channels = next
+                            ? Array.from(new Set([...current, channel]))
+                            : current.filter((c) => c !== channel);
+                          updateGlobalConfig({ channels });
+                        }}
+                      />
+                      <span className="capitalize">{channel}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <FormLabel>Budget Tier</FormLabel>
+                <Select
+                  value={globalPublishConfig?.budgetTier || 'none'}
+                  onValueChange={(value: any) => updateGlobalConfig({ budgetTier: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select budget tier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No external budget</SelectItem>
+                    <SelectItem value="basic">Basic</SelectItem>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="executive">Executive</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {globalPublishConfig?.budgetTier === 'custom' && (
+                <div className="space-y-2">
+                  <FormLabel>Custom Budget</FormLabel>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="Enter custom budget"
+                    value={globalPublishConfig?.customBudget ?? ''}
+                    onChange={(e) => updateGlobalConfig({ customBudget: e.target.value ? Number(e.target.value) : undefined })}
+                  />
+                </div>
+              )}
+            </div>
+
+            {!isSelfManaged && (
+              <FormField
+                control={form.control}
+                name="globalPublishConfig.hrm8ServiceApproved"
+                render={({ field }) => (
+                  <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-3">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>I approve the HRM8-managed global distribution plan</FormLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Required for GLOBAL jobs when HRM8 manages hiring.
+                      </p>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Managed service quote (dynamic only) */}
       {!isSelfManaged && (
@@ -195,12 +321,12 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
         required={true}
       />
 
-      {isSelfManaged && (
+      {isSelfManaged && !isGlobalScope && (
         <Alert className="border-2 border-primary/30 bg-primary/5">
           <Megaphone className="h-5 w-5 text-primary" />
-          <AlertTitle className="text-base font-semibold">🎉 Free Job Posting Activated!</AlertTitle>
+          <AlertTitle className="text-base font-semibold">Free Job Posting Activated</AlertTitle>
           <AlertDescription className="text-base">
-            Your job will be posted to HRM8 at <span className="font-semibold text-primary">no cost</span>. Want to reach 10x more candidates? After publishing, you'll have the option to <span className="font-semibold text-primary">promote to external job boards</span> for maximum visibility.
+            Your HRM8_ONLY job will be posted at no additional service cost.
           </AlertDescription>
         </Alert>
       )}

@@ -40,12 +40,12 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { JobSetupDrawer } from "@/components/setup/JobSetupDrawer";
 import { JobBoardPublicPreview } from "./JobBoardPublicPreview";
-import { ExternalPromotionDialog } from "./ExternalPromotionDialog";
 import { PostPublishFlow } from "./PostPublishFlow";
 import { toast } from "@/shared/hooks/use-toast";
 import { jobService } from "@/shared/lib/jobService";
 import { jobTemplateService } from "@/shared/lib/jobTemplateService";
 import { generateJobCode } from "@/shared/lib/jobUtils";
+import { mapBackendJobToFrontend } from "@/shared/lib/jobDataMapper";
 import { calculateServicePricing, processAccountPayment, processCreditCardPayment } from "@/shared/lib/paymentService";
 import { createJobCheckoutSession } from "@/shared/lib/payments";
 import { cn } from "@/shared/lib/utils";
@@ -129,6 +129,14 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
     reValidateMode: 'onChange', // Re-validate on change
     defaultValues: {
       serviceType: serviceType || defaultValues?.serviceType || 'self-managed',
+      distributionScope: defaultValues?.distributionScope || 'HRM8_ONLY',
+      globalPublishConfig: defaultValues?.globalPublishConfig || {
+        channels: [],
+        budgetTier: 'none',
+        customBudget: undefined,
+        hrm8ServiceRequiresApproval: false,
+        hrm8ServiceApproved: false,
+      },
       title: defaultValues?.title || "",
       numberOfVacancies: defaultValues?.numberOfVacancies || 1,
       department: defaultValues?.department || "",
@@ -277,6 +285,18 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
     return true;
   };
 
+  useEffect(() => {
+    const isSelfManaged = currentServiceType === 'self-managed' || currentServiceType === 'rpo';
+    const current = form.getValues('globalPublishConfig');
+    if (!current) return;
+    if (current.hrm8ServiceRequiresApproval !== !isSelfManaged) {
+      form.setValue('globalPublishConfig', {
+        ...current,
+        hrm8ServiceRequiresApproval: !isSelfManaged,
+      });
+    }
+  }, [currentServiceType]);
+
   // Check if a step has errors (reactive to form state)
   const stepHasErrors = (stepNumber: number): boolean => {
     const errors = form.formState.errors;
@@ -407,6 +427,8 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         assignmentMode: formData.assignmentMode || (companyAssignmentMode === 'AUTO_RULES_ONLY' ? 'AUTO' : 'MANUAL'),
         regionId: formData.regionId,
         servicePackage: formData.serviceType === 'rpo' ? 'self-managed' : formData.serviceType,
+        distributionScope: formData.distributionScope,
+        globalPublishConfig: formData.globalPublishConfig,
       };
 
       if (currentJobId) {
@@ -636,6 +658,18 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         return;
       }
 
+      const isGlobal = data.distributionScope === 'GLOBAL';
+      const isSelfManagedForGlobal = data.serviceType === 'self-managed' || data.serviceType === 'rpo';
+      if (isGlobal && !isSelfManagedForGlobal && !data.globalPublishConfig?.hrm8ServiceApproved) {
+        toast({
+          title: "Approval Required",
+          description: "Approve the global distribution plan before publishing this HRM8-managed GLOBAL job.",
+          variant: "destructive",
+        });
+        setIsPublishing(false);
+        return;
+      }
+
       console.log('✅ Terms accepted, proceeding with publish...');
 
       // Convert to API format using utility function
@@ -742,8 +776,9 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
           }
 
           // Success flow
-          const publishedJob = publishResponse.data;
-          if (!publishedJob) throw new Error('No data received from publish endpoint');
+          const publishedRaw = (publishResponse.data || {}) as Record<string, unknown>;
+          const publishedBackend = ((publishedRaw.job || publishedRaw) as Record<string, unknown>) || null;
+          if (!publishedBackend) throw new Error('No data received from publish endpoint');
 
           // Ensure the job status is OPEN (in case publishJob didn't update it)
           await jobService.updateJob(finalJobId!, { status: 'OPEN' });
@@ -779,32 +814,32 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
           const requirements = transformRequirements(data.requirements);
           const responsibilities = transformResponsibilities(data.responsibilities);
 
+          const mappedPublished = mapBackendJobToFrontend({
+            ...publishedBackend,
+            id: (publishedBackend.id as string) || finalJobId,
+            companyId: (publishedBackend.companyId as string) || user?.companyId || "",
+            companyName,
+            createdBy: (publishedBackend.createdBy as string) || user?.id || "",
+            createdByName: (publishedBackend.createdByName as string) || user?.name || "User",
+          });
+
           const jobData: Job = {
-            id: publishedJob.id,
-            ...data,
-            requirements,
-            responsibilities,
-            employerId: user?.companyId || "",
-            employerName: companyName,
-            createdBy: user?.id || "",
-            createdByName: user?.name || "User",
-            jobCode: publishedJob.jobCode || generateJobCode(),
-            aiGeneratedDescription: false,
-            serviceType: data.serviceType,
-            applicantsCount: 0,
-            viewsCount: 0,
-            postingDate: publishedJob.postingDate?.toString() || new Date().toISOString(),
-            createdAt: publishedJob.createdAt?.toString() || new Date().toISOString(),
-            updatedAt: publishedJob.updatedAt?.toString() || new Date().toISOString(),
-            hasJobTargetPromotion: false,
-            jobTargetBudget: 0,
-            jobTargetBudgetRemaining: 0,
-            requiresPayment: false,  // Changed to false as it's now paid/free
-            paymentStatus: 'paid',
+            ...mappedPublished,
+            id: mappedPublished.id || finalJobId!,
+            title: mappedPublished.title || data.title,
+            requirements: mappedPublished.requirements?.length ? mappedPublished.requirements : requirements,
+            responsibilities: mappedPublished.responsibilities?.length ? mappedPublished.responsibilities : responsibilities,
+            serviceType: mappedPublished.serviceType || data.serviceType,
+            distributionScope: mappedPublished.distributionScope || data.distributionScope,
+            globalPublishConfig: mappedPublished.globalPublishConfig || data.globalPublishConfig,
+            employerId: mappedPublished.employerId || user?.companyId || "",
+            employerName: mappedPublished.employerName || companyName,
+            createdBy: mappedPublished.createdBy || user?.id || "",
+            createdByName: mappedPublished.createdByName || user?.name || "User",
+            jobCode: mappedPublished.jobCode || generateJobCode(),
             termsAccepted: data.termsAccepted,
             termsAcceptedAt: data.termsAccepted ? new Date() : undefined,
             termsAcceptedBy: data.termsAccepted ? user?.id : undefined,
-            status: 'open',
           };
 
           console.log('✅ Job published successfully!');
@@ -815,8 +850,8 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
           // Store job data for post-launch tools
           setSavedJobData(jobData);
 
-          // Open Job Setup Drawer instead of post-launch tools
-          setShowJobSetupDrawer(true);
+          // Keep the post-publish dialog as the first follow-up flow.
+          setShowPostLaunchTools(true);
           setIsPublishing(false);
           return;
 
@@ -1307,8 +1342,8 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
             open={showPostLaunchTools}
             onOpenChange={(open) => {
               setShowPostLaunchTools(open);
-              if (!open && onSuccess) {
-                onSuccess(savedJobData);
+              if (!open) {
+                setShowJobSetupDrawer(true);
               }
             }}
             onSaveTemplate={async (templateName, templateDescription) => {
@@ -1325,9 +1360,8 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
               }
             }}
             onComplete={() => {
-              if (onSuccess) {
-                onSuccess(savedJobData);
-              }
+              setShowPostLaunchTools(false);
+              setShowJobSetupDrawer(true);
             }}
           />
         )}

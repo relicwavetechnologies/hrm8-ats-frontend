@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
-import { Separator } from '@/shared/components/ui/separator';
-import { JobTargetPromotionOptIn } from './JobTargetPromotionOptIn';
-import { JobBoardBudgetSelector } from './JobBoardBudgetSelector';
-import { Megaphone, ExternalLink, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { ExternalLink, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Job } from '@/shared/types/job';
-import { toast } from '@/shared/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
+import { jobService } from '@/shared/lib/jobService';
 
 interface ExternalPromotionDialogProps {
   open: boolean;
@@ -16,143 +15,83 @@ interface ExternalPromotionDialogProps {
 }
 
 export function ExternalPromotionDialog({ open, onOpenChange, job, onSuccess }: ExternalPromotionDialogProps) {
-  const [promotionEnabled, setPromotionEnabled] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<string>('standard');
-  const [customAmount, setCustomAmount] = useState<number>(0);
+  const [launching, setLaunching] = useState(false);
+  const { toast } = useToast();
 
-  const handlePromotionToggle = (enabled: boolean) => {
-    setPromotionEnabled(enabled);
-    if (enabled) {
-      setSelectedTier('standard');
-    } else {
-      setSelectedTier('none');
+  const sync = job.jobTargetSync;
+  const isGlobal = job.distributionScope === 'GLOBAL';
+
+  const handleLaunch = async () => {
+    if (!isGlobal) {
+      toast({
+        title: 'Global publish required',
+        description: 'Switch this job to GLOBAL publish scope before launching JobTarget Marketplace.',
+        variant: 'destructive',
+      });
+      return;
     }
-  };
 
-  const handleTierChange = (tier: string) => {
-    setSelectedTier(tier);
-  };
+    setLaunching(true);
+    try {
+      const response = await jobService.createJobTargetSession(job.id);
+      if (!response.success || !response.data?.session?.url) {
+        throw new Error(response.error || 'Failed to generate JobTarget marketplace session');
+      }
 
-  const handleCustomAmountChange = (amount: number) => {
-    setCustomAmount(amount);
-  };
-
-  const handleContinueToJobTarget = () => {
-    // Construct JobTarget URL with job details as query parameters
-    const jobTargetUrl = new URL('https://jobtarget.com/post');
-    jobTargetUrl.searchParams.set('jobId', job.id);
-    jobTargetUrl.searchParams.set('title', job.title);
-    jobTargetUrl.searchParams.set('location', job.location);
-    jobTargetUrl.searchParams.set('employmentType', job.employmentType);
-    if (job.salaryMin) jobTargetUrl.searchParams.set('salaryMin', job.salaryMin.toString());
-    if (job.salaryMax) jobTargetUrl.searchParams.set('salaryMax', job.salaryMax.toString());
-    
-    // Open JobTarget in new tab
-    window.open(jobTargetUrl.toString(), '_blank');
-    
-    toast({
-      title: "Redirected to JobTarget",
-      description: "Complete your job board promotion on JobTarget's platform",
-    });
-    
-    onOpenChange(false);
-    if (onSuccess) onSuccess();
-  };
-
-  const handleSkip = () => {
-    toast({
-      title: "Job Posted Successfully",
-      description: "Your job is now live on HRM8. You can promote to external boards anytime from the job detail page.",
-    });
-    
-    onOpenChange(false);
-    if (onSuccess) onSuccess();
+      window.open(response.data.session.url, '_blank', 'noopener,noreferrer');
+      toast({
+        title: 'Marketplace launched',
+        description: 'A fresh JobTarget marketplace session has been opened in a new tab.',
+      });
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      toast({
+        title: 'Launch failed',
+        description: error?.message || 'Unable to open JobTarget Marketplace right now.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLaunching(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <Megaphone className="h-6 w-6 text-primary" />
-            Boost Your Job's Reach with External Promotion
-          </DialogTitle>
+          <DialogTitle>Launch in JobTarget Marketplace</DialogTitle>
           <DialogDescription>
-            Your job is now live on HRM8! Maximize your reach by promoting it to major job boards through JobTarget.
+            HRM8 will ensure company, user, and job sync are current, then generate a fresh SSO URL.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4">
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-            <h4 className="font-semibold mb-2 flex items-center gap-2">
-              <Megaphone className="h-5 w-5 text-primary" />
-              Why Promote to External Job Boards?
-            </h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Reach 50M+ candidates across major job boards like Indeed, LinkedIn, and Glassdoor</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Get 3-5x more qualified applicants on average</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Reduce time-to-hire with broader candidate exposure</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Flexible budget options starting from $500</span>
-              </li>
-            </ul>
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Current Sync Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              {sync?.syncStatus === 'SYNCED' ? (
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              )}
+              <span>Status: {sync?.syncStatus || 'NOT_SYNCED'}</span>
+            </div>
+            {sync?.remoteJobId && <p>Remote Job ID: {sync.remoteJobId}</p>}
+            {sync?.lastError && <p className="text-destructive">Last Error: {sync.lastError}</p>}
+          </CardContent>
+        </Card>
 
-          <Separator />
-
-          <JobTargetPromotionOptIn
-            enabled={promotionEnabled}
-            onToggle={handlePromotionToggle}
-            serviceType={job.serviceType}
-          />
-
-          {promotionEnabled && (
-            <>
-              <Separator />
-              <JobBoardBudgetSelector
-                selectedTier={selectedTier}
-                customAmount={customAmount}
-                onTierChange={handleTierChange}
-                onCustomAmountChange={handleCustomAmountChange}
-                serviceType={job.serviceType}
-              />
-            </>
-          )}
-
-          <Separator />
-
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={handleSkip}
-              className="flex-1"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Skip for Now
-            </Button>
-            <Button
-              onClick={handleContinueToJobTarget}
-              disabled={!promotionEnabled || selectedTier === 'none'}
-              className="flex-1"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Continue to JobTarget
-            </Button>
-          </div>
-
-          <p className="text-xs text-center text-muted-foreground">
-            You can always promote your job to external boards later from the job detail page
-          </p>
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button onClick={handleLaunch} disabled={launching || !isGlobal}>
+            {launching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+            Launch Marketplace
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

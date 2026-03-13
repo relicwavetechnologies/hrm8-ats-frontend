@@ -22,6 +22,7 @@ interface ChatReviewCardProps {
     onTermsAcceptedChange?: (accepted: boolean) => void;
     saveAsTemplate?: boolean;
     onSaveAsTemplateChange?: (checked: boolean) => void;
+    onGlobalPublishApprovalChange?: (approved: boolean) => void;
 }
 
 export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
@@ -33,7 +34,16 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
     onTermsAcceptedChange,
     saveAsTemplate,
     onSaveAsTemplateChange,
+    onGlobalPublishApprovalChange,
 }) => {
+    const isGlobal = jobData.distributionScope === 'GLOBAL';
+    const isSelfManaged = jobData.serviceType === 'self-managed' || jobData.serviceType === 'rpo';
+    const channels = jobData.globalPublishConfig?.channels || [];
+    const budgetTier = jobData.globalPublishConfig?.budgetTier || 'none';
+    const customBudget = jobData.globalPublishConfig?.customBudget;
+    const approvalRequired = isGlobal && !isSelfManaged;
+    const approvalGranted = !!jobData.globalPublishConfig?.hrm8ServiceApproved;
+
     const sections = [
         {
             id: 'basic-details',
@@ -53,6 +63,16 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
             items: [
                 { label: 'Location', value: jobData.location },
                 { label: 'Work Arrangement', value: jobData.workArrangement },
+            ],
+        },
+        {
+            id: 'basic-details',
+            title: 'Distribution',
+            icon: Users,
+            items: [
+                { label: 'Scope', value: isGlobal ? 'GLOBAL (JobTarget)' : 'HRM8_ONLY' },
+                { label: 'Channels', value: channels.length ? channels.join(', ') : 'None selected' },
+                { label: 'Budget', value: budgetTier === 'custom' ? `${customBudget || 0}` : budgetTier },
             ],
         },
         {
@@ -148,6 +168,28 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                 </div>
             </Card>
 
+            {approvalRequired && (
+                <Card className="p-3 border-primary/30 bg-primary/5 rounded-md shadow-none">
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">Global Distribution Approval Required</p>
+                        <p className="text-xs text-muted-foreground">
+                            This GLOBAL + HRM8-managed job requires approval of the distribution plan before publish.
+                        </p>
+                        <div className="flex items-start gap-2.5">
+                            <Checkbox
+                                id="global-approval"
+                                className="mt-0.5"
+                                checked={approvalGranted}
+                                onCheckedChange={(checked) => onGlobalPublishApprovalChange?.(checked === true)}
+                            />
+                            <label htmlFor="global-approval" className="text-xs font-medium cursor-pointer">
+                                I approve the global JobTarget distribution plan
+                            </label>
+                        </div>
+                    </div>
+                </Card>
+            )}
+
             <div className="space-y-4">
                 <div className="flex items-start gap-2.5 px-0.5">
                     <Checkbox
@@ -242,7 +284,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
 
             <Button
                 onClick={onSubmit}
-                disabled={isSubmitting || !termsAccepted}
+                disabled={isSubmitting || !termsAccepted || (approvalRequired && !approvalGranted)}
                 className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
             >
                 {isSubmitting ? 'Publishing...' : 'Publish Job'}

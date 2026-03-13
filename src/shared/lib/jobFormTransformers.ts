@@ -94,6 +94,8 @@ export function transformJobFormDataToCreateRequest(
     tag_ids: data.tag_ids || undefined, // NEW: Job tags array
     videoInterviewingEnabled: data.videoInterviewingEnabled || false,
     publishImmediately: false,
+    distributionScope: data.distributionScope,
+    globalPublishConfig: data.globalPublishConfig,
   };
 
   // Add optional fields
@@ -197,6 +199,14 @@ export function transformJobToFormData(job: any): JobFormData {
 
   return {
     serviceType: hiringModeToServiceType[job.hiringMode || 'SELF_MANAGED'] || 'self-managed',
+    distributionScope: (job.distributionScope || 'HRM8_ONLY') as 'HRM8_ONLY' | 'GLOBAL',
+    globalPublishConfig: job.globalPublishConfig || {
+      channels: job.jobTargetChannels || [],
+      budgetTier: job.jobTargetBudgetTier || 'none',
+      customBudget: job.jobTargetBudget,
+      hrm8ServiceRequiresApproval: false,
+      hrm8ServiceApproved: !!job.jobTargetApproved,
+    },
     title: job.title || '',
     numberOfVacancies: job.numberOfVacancies || 1,
     department: job.department || '',

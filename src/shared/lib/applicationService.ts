@@ -19,6 +19,13 @@ export interface SubmitApplicationRequest {
   }>;
   questionnaireData?: any;
   tags?: string[];
+  jobTargetAttribution?: {
+    applicantGuid?: string;
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    rawQuery?: Record<string, string>;
+  };
 }
 
 export interface Application {
@@ -38,6 +45,22 @@ export interface Application {
   isRead: boolean;
   isNew: boolean;
   tags: string[];
+  source?: string;
+  jobTargetAttribution?: {
+    applicantGuid?: string;
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    rawQuery?: Record<string, string>;
+  };
+  jobTargetNewAppSyncStatus?: string;
+  jobTargetNewAppSyncAttempts?: number;
+  jobTargetNewAppLastError?: string;
+  jobTargetNewAppNextRetryAt?: string;
+  jobTargetStageSyncStatus?: string;
+  jobTargetStageSyncAttempts?: number;
+  jobTargetStageLastError?: string;
+  jobTargetStageNextRetryAt?: string;
   score?: number;
   rank?: number;
   shortlisted: boolean;
