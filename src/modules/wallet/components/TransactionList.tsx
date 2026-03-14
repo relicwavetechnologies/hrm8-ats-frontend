@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { pricingService } from "@/shared/lib/pricingService";
 
 interface Transaction {
     id: string;
@@ -40,6 +41,8 @@ interface TransactionListProps {
     onTransactionClick?: (transaction: Transaction) => void;
     emptyMessage?: string;
     className?: string;
+    /** Currency for formatting amounts (default USD) */
+    currency?: string;
 }
 
 function getTransactionIcon(type: string) {
@@ -80,6 +83,7 @@ export function TransactionList({
     onTransactionClick,
     emptyMessage = "No transactions yet",
     className,
+    currency = "USD",
 }: TransactionListProps) {
     if (isLoading) {
         return (
@@ -182,10 +186,10 @@ export function TransactionList({
                                         "text-sm font-semibold",
                                         isCredit ? "text-green-600" : "text-red-600"
                                     )}>
-                                        {isCredit ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                                        {isCredit ? '+' : '-'}{pricingService.formatPrice(Math.abs(transaction.amount), currency)}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        ${transaction.balance_after.toFixed(2)}
+                                        {pricingService.formatPrice(transaction.balance_after, currency)}
                                     </p>
                                 </div>
 

@@ -98,6 +98,7 @@ export default function Jobs() {
   const [setupDrawerOpen, setSetupDrawerOpen] = useState(false);
   const [setupJobId, setSetupJobId] = useState<string | null>(null);
   const [setupJobTitle, setSetupJobTitle] = useState<string | undefined>(undefined);
+  const [setupPendingConsultant, setSetupPendingConsultant] = useState(false);
   const [setupReturnMode, setSetupReturnMode] = useState<SetupReturnMode>('normal');
   const [managedCheckoutOpen, setManagedCheckoutOpen] = useState(false);
   const [checkoutOrigin, setCheckoutOrigin] = useState<CheckoutOrigin>('fromJobs');
@@ -225,6 +226,7 @@ export default function Jobs() {
       setRefreshKey((k) => k + 1);
       toast({ title: 'Payment successful', description: 'Your job has been published.' });
       setSetupJobId(jobId);
+      setSetupPendingConsultant(false);
       setSetupDrawerOpen(true);
     }
   }, [searchParams, setSearchParams, toast]);
@@ -829,8 +831,25 @@ export default function Jobs() {
       sortable: false,
       width: "120px",
       render: (job) => {
-        const isSetupComplete = job.setupType && job.managementType;
-        const setupLabel = job.setupType === 'advanced' ? 'Advanced' : job.setupType === 'simple' ? 'Simple' : 'Complete';
+        const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
+        const needsConsultant = isManaged && !job.assignedConsultantId;
+        const advanceSetupDone = job.advanceSetupComplete !== false;
+        const isSetupComplete =
+          job.setupType &&
+          job.managementType &&
+          (!needsConsultant || !!job.assignedConsultantId) &&
+          !job.pendingConsultantAssignment &&
+          (!isManaged || !job.assignedConsultantId || advanceSetupDone);
+        const setupLabel =
+          job.pendingConsultantAssignment || needsConsultant
+            ? 'Pending consultant'
+            : isManaged && job.assignedConsultantId && !advanceSetupDone
+              ? 'Complete setup'
+              : job.setupType === 'advanced'
+                ? 'Advanced'
+                : job.setupType === 'simple'
+                  ? 'Simple'
+                  : 'Complete';
         return (
           <div className="flex items-center gap-2">
             {isSetupComplete ? (
@@ -841,7 +860,7 @@ export default function Jobs() {
             ) : (
               <Badge variant="outline" className="h-5 text-[10px] bg-amber-50 text-amber-700 border-amber-200">
                 <Clock className="h-3 w-3 mr-1" />
-                Pending
+                {setupLabel}
               </Badge>
             )}
           </div>
@@ -1110,17 +1129,24 @@ export default function Jobs() {
                   onRowDragStart={handleRowDragStart}
                   onRowContextMenu={handleRowContextMenu}
                   onRowClick={(job) => {
-                    // Check if job setup is complete
-                    const isSetupComplete = job.setupType && job.managementType;
+                    const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
+                    const needsConsultant = isManaged && !job.assignedConsultantId;
+                    const advanceSetupDone = job.advanceSetupComplete !== false;
+                    const isSetupComplete =
+                      job.setupType &&
+                      job.managementType &&
+                      (!needsConsultant || !!job.assignedConsultantId) &&
+                      !job.pendingConsultantAssignment &&
+                      (!isManaged || !job.assignedConsultantId || advanceSetupDone);
 
                     if (!isSetupComplete) {
-                      // Setup not complete, open JobSetupDrawer
+                      // Setup not complete, pending consultant, or advance flow not done → open JobSetupDrawer
                       setSetupReturnMode('normal');
                       setSetupJobId(job.id);
                       setSetupJobTitle(job.title);
+                      setSetupPendingConsultant(!!job.pendingConsultantAssignment);
                       setSetupDrawerOpen(true);
                     } else {
-                      // Setup complete, navigate to job details
                       navigate(`/ats/jobs/${job.id}`);
                     }
                   }}
@@ -1245,6 +1271,7 @@ export default function Jobs() {
                   setSetupReturnMode('normal');
                   setSetupJobId(null);
                   setSetupJobTitle(undefined);
+                  setSetupPendingConsultant(false);
                   // Refresh jobs list after setup is complete
                   setRefreshKey(prev => prev + 1);
                 }
@@ -1252,6 +1279,7 @@ export default function Jobs() {
               jobId={setupJobId}
               jobTitle={setupJobTitle}
               forceChoiceOnOpen={setupReturnMode === 'forceChoice'}
+              initialPendingConsultantAssignment={setupPendingConsultant}
             />
 
             {managedCheckoutJobId && managedCheckoutOpen && (
@@ -1294,6 +1322,7 @@ export default function Jobs() {
                     setSetupReturnMode('normal');
                     setSetupJobId(targetJobId);
                     setSetupJobTitle(targetJob?.title);
+                    setSetupPendingConsultant(!!(targetJob as { pendingConsultantAssignment?: boolean })?.pendingConsultantAssignment);
                     setSetupDrawerOpen(true);
                   }
                 }}

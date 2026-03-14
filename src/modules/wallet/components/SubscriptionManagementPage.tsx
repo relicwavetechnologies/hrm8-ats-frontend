@@ -273,6 +273,7 @@ export function SubscriptionManagementPage() {
                 transactions={transactions}
                 isLoading={transactionsLoading}
                 emptyMessage="No transactions yet. Your billing activity will appear here."
+                currency={walletCurrency}
             />
 
             {/* Upgrade Dialog */}

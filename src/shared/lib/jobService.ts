@@ -24,7 +24,15 @@ export interface ManagedServicePendingPayment {
   servicePackage: string;
 }
 
-export type ManagedServiceUpgradeResponse = ManagedServiceCompleted | ManagedServicePendingPayment;
+export interface ManagedServicePendingConsultantAssignment {
+  status: 'PENDING_CONSULTANT_ASSIGNMENT';
+  job: Job;
+}
+
+export type ManagedServiceUpgradeResponse =
+  | ManagedServiceCompleted
+  | ManagedServicePendingPayment
+  | ManagedServicePendingConsultantAssignment;
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'VISITOR';
 export type JobStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'ON_HOLD' | 'FILLED' | 'CANCELLED' | 'TEMPLATE';

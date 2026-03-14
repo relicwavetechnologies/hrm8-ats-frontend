@@ -7,7 +7,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/AuthContext';
+import { authService } from '@/shared/lib/authService';
 import { companyProfileService } from '@/shared/lib/companyProfileService';
+import { pricingService } from '@/shared/lib/pricingService';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
@@ -15,15 +17,16 @@ import { Label } from '@/shared/components/ui/label';
 import { Loader2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
-const SUPPORTED_CURRENCIES = ['USD', 'GBP', 'EUR', 'AUD', 'INR', 'NZD', 'SGD', 'CAD'] as const;
+const FALLBACK_CURRENCIES = ['USD', 'GBP', 'EUR', 'AUD', 'INR', 'NZD', 'SGD', 'CAD'] as const;
 
 export default function CompanyCurrencySetupPage() {
   const [loading, setLoading] = useState(false);
+  const [currenciesLoading, setCurrenciesLoading] = useState(true);
+  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>(FALLBACK_CURRENCIES as unknown as string[]);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
+  const [suggestedCurrency, setSuggestedCurrency] = useState<string>('USD');
   const { user, isLoading: authLoading, refreshProfileSummary } = useAuth();
   const navigate = useNavigate();
-
-  const suggestedCurrency = 'USD';
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -31,9 +34,32 @@ export default function CompanyCurrencySetupPage() {
     }
   }, [user, authLoading, navigate]);
 
+  useEffect(() => {
+    if (user?.companyId) {
+      authService.getCurrentUser().then((res) => {
+        const currency = res.data?.billingCurrency;
+        if (currency) setSuggestedCurrency(currency);
+      });
+    }
+  }, [user?.companyId]);
+
+  useEffect(() => {
+    pricingService
+      .getAvailableCurrencies()
+      .then((currencies) => {
+        setAvailableCurrencies(currencies.length > 0 ? currencies : (FALLBACK_CURRENCIES as unknown as string[]));
+      })
+      .catch(() => {
+        setAvailableCurrencies(FALLBACK_CURRENCIES as unknown as string[]);
+      })
+      .finally(() => setCurrenciesLoading(false));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const currency = selectedCurrency || suggestedCurrency;
+    const currency =
+      selectedCurrency ||
+      (availableCurrencies.includes(suggestedCurrency) ? suggestedCurrency : availableCurrencies[0] ?? 'USD');
     if (!user?.companyId) {
       toast.error('Session expired. Please log in again.');
       navigate('/login');
@@ -66,8 +92,8 @@ export default function CompanyCurrencySetupPage() {
             <CardTitle className="text-xl">Set Your Billing Currency</CardTitle>
           </div>
           <CardDescription>
-            Choose the currency for all transactions, subscriptions, and job postings. This can only be changed before
-            your first payment.
+            Your default currency based on your country is {suggestedCurrency}. Keep it or choose another. Only
+            currencies with pricing available are shown. This choice will be locked after your first payment.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -75,15 +101,18 @@ export default function CompanyCurrencySetupPage() {
             <div className="space-y-2">
               <Label htmlFor="currency">Billing Currency</Label>
               <Select
-                value={selectedCurrency || suggestedCurrency}
+                value={
+                  selectedCurrency ||
+                  (availableCurrencies.includes(suggestedCurrency) ? suggestedCurrency : availableCurrencies[0] ?? 'USD')
+                }
                 onValueChange={setSelectedCurrency}
-                disabled={loading}
+                disabled={loading || currenciesLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
+                  <SelectValue placeholder={currenciesLoading ? 'Loading currencies…' : 'Select currency'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUPPORTED_CURRENCIES.map((c) => (
+                  {availableCurrencies.map((c) => (
                     <SelectItem key={c} value={c}>
                       {c}
                     </SelectItem>

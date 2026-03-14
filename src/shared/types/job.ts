@@ -106,6 +106,10 @@ export interface Job {
   serviceStatus?: 'pending' | 'in-progress' | 'completed' | 'cancelled';
   assignedConsultantId?: string;
   assignedConsultantName?: string;
+  /** True when job has managed service, no consultant, and a ConsultantAssignmentRequest is PENDING */
+  pendingConsultantAssignment?: boolean;
+  /** For managed jobs with consultant: true when roles and rounds are configured (advance setup done) */
+  advanceSetupComplete?: boolean;
   pipeline?: JobPipelineStatus;
   jobBoardDistribution: string[];
   applicantsCount: number;
