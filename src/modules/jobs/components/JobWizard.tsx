@@ -136,6 +136,12 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
         customBudget: undefined,
         hrm8ServiceRequiresApproval: false,
         hrm8ServiceApproved: false,
+        easyApplyConfig: {
+          enabled: false,
+          type: 'full',
+          hostedApply: false,
+          questionnaireEnabled: false,
+        },
       },
       title: defaultValues?.title || "",
       numberOfVacancies: defaultValues?.numberOfVacancies || 1,

@@ -8,6 +8,12 @@ export interface GlobalPublishConfig {
   customBudget?: number;
   hrm8ServiceRequiresApproval: boolean;
   hrm8ServiceApproved: boolean;
+  easyApplyConfig?: {
+    enabled: boolean;
+    type: 'basic' | 'full';
+    hostedApply: boolean;
+    questionnaireEnabled: boolean;
+  };
 }
 
 export interface JobTargetSyncSummary {
