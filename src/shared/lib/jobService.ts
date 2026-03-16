@@ -100,6 +100,7 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
   servicePackage?: string;
   setupType?: 'simple' | 'advanced';
   managementType?: string;
+  setupComplete?: boolean;
   /** Wizard step (1-based) when saving as draft */
   draftStep?: number;
 }

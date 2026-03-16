@@ -154,6 +154,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   isSimpleFlow,
   optimisticMoves,
   failedMoves,
+  restrictToOfferActions = false,
   pendingApplicationIds,
 }: {
   round: JobRound;
@@ -178,6 +179,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   isSimpleFlow?: boolean;
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
+  restrictToOfferActions?: boolean;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
 }) {
@@ -224,7 +226,8 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
         isSimpleFlow={isSimpleFlow}
         optimisticMoves={optimisticMoves}
         failedMoves={failedMoves}
-        dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
+        restrictToOfferActions={restrictToOfferActions}
+        dragHandleProps={!round.isFixed && !restrictToOfferActions ? { ...attributes, ...listeners } : undefined}
         pendingApplicationIds={pendingApplicationIds}
       />
     </div>
@@ -263,6 +266,7 @@ const StageColumn = React.memo(function StageColumn({
   isSimpleFlow,
   optimisticMoves,
   failedMoves,
+  restrictToOfferActions = false,
   dragHandleProps,
   pendingApplicationIds,
 }: {
@@ -288,6 +292,7 @@ const StageColumn = React.memo(function StageColumn({
   isSimpleFlow?: boolean;
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
+  restrictToOfferActions?: boolean;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
 }) {
@@ -507,6 +512,8 @@ const StageColumn = React.memo(function StageColumn({
                       hasFailed={failedMoves.has(application.id)}
                       isSimpleFlow={isSimpleFlow}
                       isPendingApproval={pendingApplicationIds?.has(application.id)}
+                      dragDisabled={restrictToOfferActions}
+                      restrictToOfferActions={restrictToOfferActions}
                     />
                   </div>
                 ))}
@@ -572,6 +579,7 @@ export function ApplicationPipeline({
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [jobData, setJobData] = useState<PipelineJobData | null>(null);
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
+  const isOfferOnlyCompanyView = !isConsultantView && jobData?.job?.managementType === 'hrm8-managed';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Optimistic update state - for instant UI feedback
@@ -965,6 +973,9 @@ export function ApplicationPipeline({
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (isOfferOnlyCompanyView) {
+      return;
+    }
     const id = event.active.id as string;
     // Check if dragging a round column (starts with "round-")
     if (id.startsWith('round-')) {
@@ -976,6 +987,11 @@ export function ApplicationPipeline({
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (isOfferOnlyCompanyView) {
+      setActiveId(null);
+      setActiveRoundId(null);
+      return;
+    }
     const { active, over } = event;
 
     if (!over) {
@@ -1170,6 +1186,12 @@ export function ApplicationPipeline({
       };
 
       const backendStage = stageMap[newStage] || "NEW_APPLICATION";
+      if (isOfferOnlyCompanyView && !['OFFER_EXTENDED', 'OFFER_ACCEPTED'].includes(backendStage)) {
+        toast.error("Offer actions only", {
+          description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
+        });
+        return;
+      }
       const response = await applicationService.updateStage(applicationId, backendStage);
 
       if (response.success) {
@@ -1203,6 +1225,14 @@ export function ApplicationPipeline({
 
     if (!application || !targetRound) {
       console.error("Application or Target Round not found", { applicationId, roundId });
+      return;
+    }
+
+    if (isOfferOnlyCompanyView && targetRound.fixedKey !== 'OFFER') {
+      toast.error("Offer actions only", {
+        description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
+        duration: 4000,
+      });
       return;
     }
 
@@ -1809,6 +1839,7 @@ export function ApplicationPipeline({
                   isSimpleFlow={isSimpleFlow}
                   optimisticMoves={optimisticMoves}
                   failedMoves={failedMoves}
+                  restrictToOfferActions={isOfferOnlyCompanyView}
                   pendingApplicationIds={pendingApplicationIds}
                 />
               ))}
@@ -1825,6 +1856,8 @@ export function ApplicationPipeline({
                 onMoveToRound={handleMoveToRound}
                 isSimpleFlow={isSimpleFlow}
                 isDragOverlay
+                dragDisabled={isOfferOnlyCompanyView}
+                restrictToOfferActions={isOfferOnlyCompanyView}
               />
             )}
             {activeRoundId && (() => {

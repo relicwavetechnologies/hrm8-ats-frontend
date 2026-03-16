@@ -123,6 +123,7 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     assignedConsultantId: backendJob.assignedConsultantId,
     assignedConsultantName: backendJob.assignedConsultantName,
     pendingConsultantAssignment: !!backendJob.pendingConsultantAssignment,
+    setupComplete: backendJob.setupComplete === true,
     advanceSetupComplete: backendJob.advanceSetupComplete !== false,
     pipeline: backendJob.pipeline
       ? {

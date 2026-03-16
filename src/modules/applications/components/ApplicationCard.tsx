@@ -59,6 +59,8 @@ interface ApplicationCardProps {
   isSimpleFlow?: boolean;
   isDragOverlay?: boolean;
   isPendingApproval?: boolean; // Consultant view: awaiting HR approval for OFFER/REJECT
+  dragDisabled?: boolean;
+  restrictToOfferActions?: boolean;
 }
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -84,6 +86,8 @@ export function ApplicationCard({
   isSimpleFlow = false,
   isDragOverlay = false,
   isPendingApproval = false,
+  dragDisabled = false,
+  restrictToOfferActions = false,
 }: ApplicationCardProps) {
   if (!application || !application.id) {
     return null;
@@ -134,7 +138,7 @@ export function ApplicationCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: application.id, disabled: isDragOverlay });
+  } = useSortable({ id: application.id, disabled: isDragOverlay || dragDisabled });
 
   const style = isDragOverlay
     ? undefined
@@ -220,6 +224,14 @@ export function ApplicationCard({
 
   const handleReject = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (restrictToOfferActions) {
+      toast({
+        title: "Offer actions only",
+        description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (isRejectedState || isHiredState) return;
     
     // Find the Rejected round
@@ -380,6 +392,7 @@ export function ApplicationCard({
                       Offer
                     </Button>
                     {isSimpleFlow ? (
+                      !restrictToOfferActions && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -390,7 +403,9 @@ export function ApplicationCard({
                       >
                         Reject
                       </Button>
+                      )
                     ) : (
+                      !restrictToOfferActions && (
                       <Button
                          variant="ghost"
                          size="sm"
@@ -401,6 +416,7 @@ export function ApplicationCard({
                       >
                          <UserX className="h-3.5 w-3.5" />
                       </Button>
+                      )
                     )}
                   </div>
             </div>
@@ -698,7 +714,7 @@ export function ApplicationCard({
                             <Eye className="h-3 w-3 mr-1" />
                             Review
                           </Button>
-                          {!isShortlistedState && !isRejectedState && !isHiredState && (
+                          {!restrictToOfferActions && !isShortlistedState && !isRejectedState && !isHiredState && (
                             <Button 
                                variant="ghost" 
                                size="sm"

@@ -119,6 +119,39 @@ export default function Jobs() {
       ? managedCheckoutServiceParam
       : undefined;
 
+  const getJobSetupState = useCallback((job: Job) => {
+    const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
+    const needsConsultant = isManaged && !job.assignedConsultantId;
+    const advanceSetupDone = job.advanceSetupComplete !== false;
+
+    const legacySetupComplete =
+      !!job.setupType &&
+      !!job.managementType &&
+      (!needsConsultant || !!job.assignedConsultantId) &&
+      !job.pendingConsultantAssignment &&
+      (!isManaged || !job.assignedConsultantId || advanceSetupDone);
+
+    const isSetupComplete = isManaged
+      ? job.setupComplete === true && !job.pendingConsultantAssignment && !needsConsultant
+      : job.setupComplete === true || legacySetupComplete;
+
+    const setupLabel =
+      job.pendingConsultantAssignment || needsConsultant
+        ? 'Pending consultant'
+        : !isSetupComplete
+          ? 'Complete setup'
+          : job.setupType === 'simple' || isManaged
+            ? 'Simple setup'
+            : 'Complete';
+
+    return {
+      isManaged,
+      needsConsultant,
+      isSetupComplete,
+      setupLabel,
+    };
+  }, []);
+
   /** Right-click AI context menu state */
   const [contextMenuRef, setContextMenuRef] = useState<EntityReference | null>(null);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -831,25 +864,7 @@ export default function Jobs() {
       sortable: false,
       width: "120px",
       render: (job) => {
-        const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
-        const needsConsultant = isManaged && !job.assignedConsultantId;
-        const advanceSetupDone = job.advanceSetupComplete !== false;
-        const isSetupComplete =
-          job.setupType &&
-          job.managementType &&
-          (!needsConsultant || !!job.assignedConsultantId) &&
-          !job.pendingConsultantAssignment &&
-          (!isManaged || !job.assignedConsultantId || advanceSetupDone);
-        const setupLabel =
-          job.pendingConsultantAssignment || needsConsultant
-            ? 'Pending consultant'
-            : isManaged && job.assignedConsultantId && !advanceSetupDone
-              ? 'Complete setup'
-              : job.setupType === 'advanced'
-                ? 'Advanced'
-                : job.setupType === 'simple'
-                  ? 'Simple'
-                  : 'Complete';
+        const { isSetupComplete, setupLabel } = getJobSetupState(job);
         return (
           <div className="flex items-center gap-2">
             {isSetupComplete ? (
@@ -1129,15 +1144,7 @@ export default function Jobs() {
                   onRowDragStart={handleRowDragStart}
                   onRowContextMenu={handleRowContextMenu}
                   onRowClick={(job) => {
-                    const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
-                    const needsConsultant = isManaged && !job.assignedConsultantId;
-                    const advanceSetupDone = job.advanceSetupComplete !== false;
-                    const isSetupComplete =
-                      job.setupType &&
-                      job.managementType &&
-                      (!needsConsultant || !!job.assignedConsultantId) &&
-                      !job.pendingConsultantAssignment &&
-                      (!isManaged || !job.assignedConsultantId || advanceSetupDone);
+                    const { isSetupComplete } = getJobSetupState(job);
 
                     if (!isSetupComplete) {
                       // Setup not complete, pending consultant, or advance flow not done → open JobSetupDrawer
