@@ -106,7 +106,10 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     tags: backendJob.promotionalTags || backendJob.tags || [],
     workArrangement: normalizeWorkArrangement(backendJob.workArrangement || 'ON_SITE'),
     aiGeneratedDescription: backendJob.aiGeneratedDescription || false,
-    serviceType: mapHiringModeToServiceType(backendJob.hiringMode || backendJob.serviceType || 'SELF_MANAGED'),
+    // Prefer servicePackage (source of truth from payment/service config); fall back to hiringMode
+    serviceType: (backendJob.servicePackage && ['shortlisting', 'full-service', 'executive-search', 'rpo'].includes(backendJob.servicePackage))
+      ? backendJob.servicePackage
+      : mapHiringModeToServiceType(backendJob.hiringMode || backendJob.serviceType || 'SELF_MANAGED'),
     distributionScope: backendJob.distributionScope || 'HRM8_ONLY',
     globalPublishConfig: backendJob.globalPublishConfig || {
       channels: backendJob.jobTargetChannels || [],
@@ -119,6 +122,8 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     serviceStatus: backendJob.serviceStatus,
     assignedConsultantId: backendJob.assignedConsultantId,
     assignedConsultantName: backendJob.assignedConsultantName,
+    pendingConsultantAssignment: !!backendJob.pendingConsultantAssignment,
+    advanceSetupComplete: backendJob.advanceSetupComplete !== false,
     pipeline: backendJob.pipeline
       ? {
         stage: backendJob.pipeline.stage,

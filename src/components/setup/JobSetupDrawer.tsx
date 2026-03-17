@@ -38,6 +38,8 @@ interface JobSetupDrawerProps {
   jobId: string | null;
   jobTitle?: string;
   forceChoiceOnOpen?: boolean;
+  /** When opening right after checkout with PENDING_CONSULTANT, pass true to block advance immediately without waiting for API. */
+  initialPendingConsultantAssignment?: boolean;
 }
 
 const SETUP_STEPS = [
@@ -55,10 +57,13 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   jobId,
   jobTitle,
   forceChoiceOnOpen = false,
+  initialPendingConsultantAssignment = false,
 }) => {
   const navigate = useNavigate();
   const { canUseAi, isLoading: canUseAiLoading } = useCanUseAiFeatures(open);
   const isSetupRestrictedToSimple = !canUseAi;
+  const [pendingConsultantAssignment, setPendingConsultantAssignment] = useState(initialPendingConsultantAssignment);
+  const [jobSetupLoaded, setJobSetupLoaded] = useState(false);
   const {
     currentStep,
     managementType,
@@ -81,8 +86,17 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
   useEffect(() => {
     setIsOpen(open, jobId ?? undefined);
-    if (!open) reset();
-  }, [open, jobId, setIsOpen, reset]);
+    if (!open) {
+      reset();
+      setPendingConsultantAssignment(false);
+      setJobSetupLoaded(false);
+    } else if (initialPendingConsultantAssignment) {
+      setPendingConsultantAssignment(true);
+      setManagementType('hrm8-managed');
+      setSetupType('advanced');
+      setJobSetupLoaded(true); // Skip loading; we know we're blocked
+    }
+  }, [open, jobId, initialPendingConsultantAssignment, setIsOpen, reset, setManagementType, setSetupType]);
 
   useEffect(() => {
     if (!open || !forceChoiceOnOpen) return;
@@ -111,12 +125,17 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
   useEffect(() => {
     if (!open || !jobId || forceChoiceOnOpen) return;
+    setJobSetupLoaded(false);
     const loadJobSetup = async () => {
       try {
         const res = await jobService.getJobById(jobId);
         const job = res.success ? res.data?.job : null;
-        if (!job) return;
+        if (!job) {
+          setJobSetupLoaded(true);
+          return;
+        }
 
+        setPendingConsultantAssignment(!!job.pendingConsultantAssignment);
         const isManaged = job.managementType === 'hrm8-managed' || (job.serviceType && job.serviceType !== 'self-managed');
         if (isManaged) {
           setManagementType('hrm8-managed');
@@ -126,6 +145,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           } else {
             setCurrentStep(1);
           }
+          setJobSetupLoaded(true);
           return;
         }
 
@@ -140,8 +160,10 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         if (job.setupType) {
           setCurrentStep(1);
         }
+        setJobSetupLoaded(true);
       } catch (e) {
         console.warn('Could not load job setup metadata:', e);
+        setJobSetupLoaded(true);
       }
     };
     loadJobSetup();
@@ -227,6 +249,33 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   };
 
   const renderStep = () => {
+    // Show loading until job setup is loaded (avoids briefly showing steps before we know about pending consultant)
+    if (jobId && !forceChoiceOnOpen && !jobSetupLoaded) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 gap-4">
+          <div className="animate-pulse flex flex-col gap-3 w-full max-w-md">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-1/2" />
+            <div className="h-24 bg-muted rounded mt-4" />
+          </div>
+          <p className="text-sm text-muted-foreground">Loading setup…</p>
+        </div>
+      );
+    }
+
+    // Block advance flow when waiting for consultant assignment
+    if (pendingConsultantAssignment && managementType === 'hrm8-managed') {
+      return (
+        <div className="space-y-4 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Waiting for consultant assignment</p>
+          <p className="text-sm text-muted-foreground">
+            A regional admin will assign a consultant shortly. You&apos;ll be notified when ready. Setup will continue automatically once your consultant is assigned.
+          </p>
+          <Button variant="outline" onClick={handleClose}>Close</Button>
+        </div>
+      );
+    }
+
     // Step 1: Setup Flow Type (Simple vs Advanced)
     // PAYG: Skip choice — show loading until effect advances to step 2
     if (currentStep === 1) {
