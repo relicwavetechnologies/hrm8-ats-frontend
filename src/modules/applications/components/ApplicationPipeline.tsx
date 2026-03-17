@@ -31,6 +31,8 @@ import { MoveStageDialog } from "./MoveStageDialog";
 interface ApplicationPipelineProps {
   jobId?: string;
   jobTitle?: string;
+  jobServiceType?: string;
+  jobManagementType?: string;
   applications?: Application[];
   isCompareMode?: boolean;
   selectedForComparison?: string[];
@@ -155,6 +157,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   optimisticMoves,
   failedMoves,
   restrictToOfferActions = false,
+  getLockReason,
   pendingApplicationIds,
 }: {
   round: JobRound;
@@ -180,6 +183,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
   restrictToOfferActions?: boolean;
+  getLockReason?: (application: Application) => string | null;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
 }) {
@@ -227,6 +231,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
         optimisticMoves={optimisticMoves}
         failedMoves={failedMoves}
         restrictToOfferActions={restrictToOfferActions}
+        getLockReason={getLockReason}
         dragHandleProps={!round.isFixed && !restrictToOfferActions ? { ...attributes, ...listeners } : undefined}
         pendingApplicationIds={pendingApplicationIds}
       />
@@ -267,6 +272,7 @@ const StageColumn = React.memo(function StageColumn({
   optimisticMoves,
   failedMoves,
   restrictToOfferActions = false,
+  getLockReason,
   dragHandleProps,
   pendingApplicationIds,
 }: {
@@ -293,6 +299,7 @@ const StageColumn = React.memo(function StageColumn({
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
   restrictToOfferActions?: boolean;
+  getLockReason?: (application: Application) => string | null;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
 }) {
@@ -512,8 +519,9 @@ const StageColumn = React.memo(function StageColumn({
                       hasFailed={failedMoves.has(application.id)}
                       isSimpleFlow={isSimpleFlow}
                       isPendingApproval={pendingApplicationIds?.has(application.id)}
-                      dragDisabled={restrictToOfferActions}
+                      dragDisabled={restrictToOfferActions || Boolean(getLockReason?.(application))}
                       restrictToOfferActions={restrictToOfferActions}
+                      lockReason={getLockReason?.(application) || undefined}
                     />
                   </div>
                 ))}
@@ -542,6 +550,8 @@ const StageColumn = React.memo(function StageColumn({
 export function ApplicationPipeline({
   jobId,
   jobTitle = "Position",
+  jobServiceType,
+  jobManagementType,
   applications: providedApplications,
   isCompareMode = false,
   selectedForComparison = [],
@@ -578,8 +588,15 @@ export function ApplicationPipeline({
   const [applications, setApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [jobData, setJobData] = useState<PipelineJobData | null>(null);
+  const normalizeServicePackage = (value?: string) =>
+    String(value || '').trim().toLowerCase().replace(/_/g, '-');
+  const resolvedManagementType = jobManagementType || jobData?.job?.managementType;
+  const resolvedServicePackage = normalizeServicePackage(
+    jobServiceType || jobData?.job?.servicePackage || jobData?.job?.serviceType
+  );
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
-  const isOfferOnlyCompanyView = !isConsultantView && jobData?.job?.managementType === 'hrm8-managed';
+  const isShortlistingManaged = resolvedManagementType === 'hrm8-managed' && resolvedServicePackage === 'shortlisting';
+  const isOfferOnlyCompanyView = !isConsultantView && resolvedManagementType === 'hrm8-managed' && !isShortlistingManaged;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Optimistic update state - for instant UI feedback
@@ -888,6 +905,10 @@ export function ApplicationPipeline({
             createdAt: app.createdAt ? new Date(app.createdAt) : (app.created_at ? new Date(app.created_at) : new Date()),
             updatedAt: app.updatedAt ? new Date(app.updatedAt) : (app.updated_at ? new Date(app.updated_at) : new Date()),
             shortlisted: app.shortlisted || false,
+            consultantActionType: (app as any).consultantActionType || (app as any).consultant_action_type,
+            consultantActionedAt: (app as any).consultantActionedAt || (app as any).consultant_actioned_at,
+            consultantActionedBy: (app as any).consultantActionedBy || (app as any).consultant_actioned_by,
+            consultantActionRoundId: (app as any).consultantActionRoundId || (app as any).consultant_action_round_id,
             manuallyAdded: app.manuallyAdded || app.manually_added || false,
             // Include AI scoring fields for ApplicationCard display
             score: app.score,
@@ -1186,6 +1207,12 @@ export function ApplicationPipeline({
       };
 
       const backendStage = stageMap[newStage] || "NEW_APPLICATION";
+      const application = applications.find(app => app?.id === applicationId);
+      const lockReason = application ? getLockReason(application) : null;
+      if (lockReason) {
+        toast.error("Action locked", { description: lockReason });
+        return;
+      }
       if (isOfferOnlyCompanyView && !['OFFER_EXTENDED', 'OFFER_ACCEPTED'].includes(backendStage)) {
         toast.error("Offer actions only", {
           description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
@@ -1228,6 +1255,12 @@ export function ApplicationPipeline({
       return;
     }
 
+    const lockReason = getLockReason(application);
+    if (lockReason) {
+      toast.error("Action locked", { description: lockReason, duration: 4000 });
+      return;
+    }
+
     if (isOfferOnlyCompanyView && targetRound.fixedKey !== 'OFFER') {
       toast.error("Offer actions only", {
         description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
@@ -1255,8 +1288,8 @@ export function ApplicationPipeline({
       return;
     }
 
-    // 3. Validation Logic - SKIP FOR SIMPLE FLOW (no restrictions)
-    if (!isSimpleFlow) {
+    // 3. Validation Logic - SKIP FOR SIMPLE FLOW or shortlisting managed (no restrictions)
+    if (!isSimpleFlow && !isShortlistingManaged) {
       let isAllowed = false;
 
       // Rule: Can always move to Rejected
@@ -1337,6 +1370,10 @@ export function ApplicationPipeline({
           createdAt: apiApp.createdAt ? new Date(apiApp.createdAt) : (apiApp.created_at ? new Date(apiApp.created_at) : new Date()),
           updatedAt: apiApp.updatedAt ? new Date(apiApp.updatedAt) : (apiApp.updated_at ? new Date(apiApp.updated_at) : new Date()),
           shortlisted: apiApp.shortlisted || false,
+          consultantActionType: (apiApp as any).consultantActionType || (apiApp as any).consultant_action_type,
+          consultantActionedAt: (apiApp as any).consultantActionedAt || (apiApp as any).consultant_actioned_at,
+          consultantActionedBy: (apiApp as any).consultantActionedBy || (apiApp as any).consultant_actioned_by,
+          consultantActionRoundId: (apiApp as any).consultantActionRoundId || (apiApp as any).consultant_action_round_id,
           manuallyAdded: apiApp.manuallyAdded || apiApp.manually_added || false,
           score: apiApp.score,
           aiMatchScore: apiApp.aiMatchScore || apiApp.aiScore || apiApp.score,
@@ -1552,6 +1589,20 @@ export function ApplicationPipeline({
     }
   };
 
+  const getLockReason = (application: Application): string | null => {
+    if (!isShortlistingManaged) return null;
+    if (isConsultantView) {
+      return application.consultantActionedAt ? "Shortlisting action already taken." : null;
+    }
+    if (!application.consultantActionedAt) {
+      return "Awaiting consultant shortlisting.";
+    }
+    if (application.consultantActionType === 'REJECTED') {
+      return "Consultant rejected this candidate.";
+    }
+    return null;
+  };
+
   const handleConfigureOffer = useCallback((roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
@@ -1572,15 +1623,27 @@ export function ApplicationPipeline({
   };
 
   const handleOfferCandidate = useCallback((applicationId: string) => {
+    const application = applications.find(app => app?.id === applicationId);
+    const lockReason = application ? getLockReason(application) : null;
+    if (lockReason) {
+      toast.error("Action locked", { description: lockReason });
+      return;
+    }
     const offerRound = rounds.find((r) => r.fixedKey === "OFFER" || String(r.name).toLowerCase() === "offer");
     if (!offerRound) {
       toast.error("Offer stage not found");
       return;
     }
     handleMoveToRound(applicationId, offerRound.id);
-  }, [rounds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rounds, applications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRejectCandidate = useCallback((applicationId: string) => {
+    const application = applications.find(app => app?.id === applicationId);
+    const lockReason = application ? getLockReason(application) : null;
+    if (lockReason) {
+      toast.error("Action locked", { description: lockReason });
+      return;
+    }
     const rejectedRound = rounds.find(
       (r) =>
         r.fixedKey === "REJECTED" ||
@@ -1592,7 +1655,7 @@ export function ApplicationPipeline({
       return;
     }
     handleMoveToRound(applicationId, rejectedRound.id);
-  }, [rounds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rounds, applications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = () => {
     if (!selectedApplication) return;
@@ -1840,6 +1903,7 @@ export function ApplicationPipeline({
                   optimisticMoves={optimisticMoves}
                   failedMoves={failedMoves}
                   restrictToOfferActions={isOfferOnlyCompanyView}
+                  getLockReason={getLockReason}
                   pendingApplicationIds={pendingApplicationIds}
                 />
               ))}

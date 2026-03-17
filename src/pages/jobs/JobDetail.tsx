@@ -34,6 +34,7 @@ import {
   Users,
   CheckSquare,
   CheckCircle2,
+  MessageCircle,
 } from "lucide-react";
 import { Switch } from "@/shared/components/ui/switch";
 import { getJobById } from "@/shared/lib/mockJobStorage";
@@ -787,9 +788,8 @@ export default function JobDetail() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setActiveRoundTab('overview')}
-                    className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${
-                      activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
+                    className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${activeRoundTab === 'overview' ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
                   >
                     Overview
                   </Button>
@@ -799,9 +799,8 @@ export default function JobDetail() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setActiveRoundTab(round.id)}
-                      className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${
-                        activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
+                      className={`w-full justify-start pl-9 pr-3 py-1.5 text-xs rounded-md transition-colors ${activeRoundTab === round.id ? "bg-primary/5 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
                     >
                       <span className="truncate">{round.name}</span>
                       <span className="ml-auto text-[10px] opacity-70">
@@ -867,6 +866,15 @@ export default function JobDetail() {
                 <MessageSquarePlus className="h-3.5 w-3.5" />
                 Messages
               </TabsTrigger>
+              {job.assignedConsultantId && (
+                <TabsTrigger
+                  value="consultant-chat"
+                  className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Consultant Chat
+                </TabsTrigger>
+              )}
               <TabsTrigger
                 value="settings"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
@@ -1029,10 +1037,10 @@ export default function JobDetail() {
                 <div className="lg:col-span-2 space-y-3">
                   {/* Job Details */}
                   <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-xs font-semibold">Job Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 pt-0 px-3 pb-3">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-xs font-semibold">Job Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 pt-0 px-3 pb-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                         <div className="flex items-center gap-2 text-xs">
                           <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1115,10 +1123,10 @@ export default function JobDetail() {
 
                   {/* Description */}
                   <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-sm font-semibold">Description</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3 pb-3">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Description</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 px-3 pb-3">
                       <div
                         className="prose prose-sm max-w-none text-xs leading-6"
                         dangerouslySetInnerHTML={{ __html: job.description }}
@@ -1128,10 +1136,10 @@ export default function JobDetail() {
 
                   {/* Requirements */}
                   <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-sm font-semibold">Requirements</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3 pb-3">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Requirements</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 px-3 pb-3">
                       <ul className="space-y-1.5">
                         {job.requirements.map((req, index) => (
                           <li key={index} className="flex items-start gap-2 text-xs">
@@ -1145,10 +1153,10 @@ export default function JobDetail() {
 
                   {/* Responsibilities */}
                   <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-sm font-semibold">Responsibilities</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3 pb-3">
+                    <CardHeader className="px-3 pt-3 pb-2">
+                      <CardTitle className="text-sm font-semibold">Responsibilities</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 px-3 pb-3">
                       <ul className="space-y-1.5">
                         {job.responsibilities.map((resp, index) => (
                           <li key={index} className="flex items-start gap-2 text-xs">
@@ -1334,10 +1342,10 @@ export default function JobDetail() {
                           prev.map((app) =>
                             app.id === appId
                               ? {
-                                  ...app,
-                                  roundId: nextRound.id,
-                                  stage: app.stage,
-                                }
+                                ...app,
+                                roundId: nextRound.id,
+                                stage: app.stage,
+                              }
                               : app
                           )
                         );
@@ -1444,9 +1452,23 @@ export default function JobDetail() {
                     <p className="text-muted-foreground">Manage communications with candidates</p>
                   </div>
                 </div>
-                {job.id && <JobMessagesTab jobId={job.id} />}
+                {job.id && <JobMessagesTab jobId={job.id} channelType="CANDIDATE_EMPLOYER" />}
               </div>
             </TabsContent>
+
+            {job.assignedConsultantId && (
+              <TabsContent value="consultant-chat" className="h-full overflow-hidden p-6 pt-0">
+                <div className="h-full flex flex-col gap-4">
+                  <div className="flex justify-between items-center shrink-0">
+                    <div>
+                      <h2 className="text-2xl font-bold tracking-tight">Consultant Chat</h2>
+                      <p className="text-muted-foreground">Private discussion with your assigned consultant{job.assignedConsultantName ? ` — ${job.assignedConsultantName}` : ''}</p>
+                    </div>
+                  </div>
+                  {job.id && <JobMessagesTab jobId={job.id} channelType="COMPANY_CONSULTANT" />}
+                </div>
+              </TabsContent>
+            )}
 
             {/* Team Tab */}
             <TabsContent value="team" className="mt-6 space-y-6">

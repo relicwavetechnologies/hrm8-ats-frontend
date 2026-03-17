@@ -28,6 +28,10 @@ export interface Application {
   shortlisted: boolean;
   shortlistedAt?: string | Date;
   shortlistedBy?: string;
+  consultantActionType?: 'ADVANCED' | 'REJECTED';
+  consultantActionedAt?: string | Date;
+  consultantActionedBy?: string;
+  consultantActionRoundId?: string;
   manuallyAdded: boolean;
   addedBy?: string;
   addedAt?: string | Date;
