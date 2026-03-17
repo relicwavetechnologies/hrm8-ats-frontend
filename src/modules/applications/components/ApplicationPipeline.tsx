@@ -1491,6 +1491,9 @@ export function ApplicationPipeline({
               newMap.delete(applicationId);
               return newMap;
             });
+            if (isShortlistingManaged) {
+              refreshSingleApplication(applicationId);
+            }
           } else {
             rollbackMove(applicationId, response.error || 'Please try again');
           }
@@ -1560,7 +1563,11 @@ export function ApplicationPipeline({
         }
 
         // 3. Refresh data
-        if (providedApplications !== undefined) {
+        if (isShortlistingManaged) {
+          await refreshSingleApplication(applicationId);
+          toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
+          onApplicationMoved?.();
+        } else if (providedApplications !== undefined) {
           toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
           onApplicationMoved?.();
         } else {
@@ -1595,6 +1602,9 @@ export function ApplicationPipeline({
       return application.consultantActionedAt ? "Shortlisting action already taken." : null;
     }
     if (!application.consultantActionedAt) {
+      if (application.shortlisted) {
+        return null;
+      }
       return "Awaiting consultant shortlisting.";
     }
     if (application.consultantActionType === 'REJECTED') {
