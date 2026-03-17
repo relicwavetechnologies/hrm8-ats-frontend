@@ -24,7 +24,15 @@ export interface ManagedServicePendingPayment {
   servicePackage: string;
 }
 
-export type ManagedServiceUpgradeResponse = ManagedServiceCompleted | ManagedServicePendingPayment;
+export interface ManagedServicePendingConsultantAssignment {
+  status: 'PENDING_CONSULTANT_ASSIGNMENT';
+  job: Job;
+}
+
+export type ManagedServiceUpgradeResponse =
+  | ManagedServiceCompleted
+  | ManagedServicePendingPayment
+  | ManagedServicePendingConsultantAssignment;
 
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER' | 'VISITOR';
 export type JobStatus = 'DRAFT' | 'OPEN' | 'CLOSED' | 'ON_HOLD' | 'FILLED' | 'CANCELLED' | 'TEMPLATE';
@@ -193,6 +201,20 @@ class JobService {
    */
   async publishJob(id: string) {
     return apiClient.post<Job>(`/api/jobs/${id}/publish`);
+  }
+
+  /**
+   * Initiate PAYG job checkout — when quota/free job exhausted, creates invoice checkout.
+   * Redirect user to returned checkoutUrl to pay; job publishes on payment success.
+   */
+  async initiatePaygJobCheckout(id: string) {
+    return apiClient.post<{
+      checkoutUrl: string;
+      paymentAttemptId: string;
+      amount: number;
+      currency: string;
+      billId: string;
+    }>(`/api/jobs/${id}/payg-checkout`);
   }
 
   /**

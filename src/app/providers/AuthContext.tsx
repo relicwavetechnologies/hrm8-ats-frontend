@@ -78,6 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.success && response.data) {
         setUser(response.data.user);
         setProfileSummary(response.data.profile);
+        // Redirect to currency setup if required (and not already there)
+        if (
+          response.data.requiresCurrencySetup &&
+          !location.pathname.startsWith('/company-currency-setup')
+        ) {
+          navigate('/company-currency-setup', { replace: true });
+        }
       } else {
         setUser(null);
         setProfileSummary(null);
@@ -104,17 +111,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const handleOnboardingPrompt = (profile?: CompanyProfileSummary | null) => {
+  const handlePostLoginRedirect = (
+    profile?: CompanyProfileSummary | null,
+    requiresCurrencySetup?: boolean
+  ) => {
+    // Currency setup takes priority for first-time setup
+    if (requiresCurrencySetup) {
+      navigate('/company-currency-setup', { replace: true });
+      return;
+    }
     if (!profile || profile.status === 'COMPLETED') {
       navigate('/home');
       return;
     }
-
     toast({
       title: "Let's finish your company profile",
       description: 'Complete your company profile to start posting jobs and invite your team.',
     });
-
     if (shouldRedirectToOnboarding() || location.pathname === '/company-profile') {
       navigate('/company-profile');
     } else {
@@ -149,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           title: 'Welcome back!',
           description: `Logged in as ${response.data.user.email}`,
         });
-        handleOnboardingPrompt(response.data.profile);
+        handlePostLoginRedirect(response.data.profile, response.data.requiresCurrencySetup);
         return { success: true };
       } else {
         const errorMessage =

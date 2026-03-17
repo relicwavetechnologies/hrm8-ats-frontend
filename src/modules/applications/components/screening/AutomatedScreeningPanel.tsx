@@ -16,7 +16,9 @@ import { Application } from "@/shared/types/application";
 import { bulkScoreCandidates, BulkScoringProgress, ScoringCriteria } from "@/shared/lib/bulkAIScoring";
 import { applicationService } from "@/shared/lib/applicationService";
 import { useToast } from "@/shared/hooks/use-toast";
-import { Loader2, Sparkles, RotateCcw, UserRound, Brain } from "lucide-react";
+import { useCanUseAiFeatures } from "@/shared/hooks/useCanUseAiFeatures";
+import { UpgradePlanDialog } from "@/shared/components/UpgradePlanDialog";
+import { Loader2, Sparkles, RotateCcw, UserRound, Brain, Lock } from "lucide-react";
 import { CandidateAssessmentView } from "@/modules/jobs/components/candidate-assessment/CandidateAssessmentView";
 import { AIScreeningAnalysisDrawer } from "./AIScreeningAnalysisDrawer";
 
@@ -84,6 +86,8 @@ const scoreBadgeClass = (score: number) => {
 
 export function AutomatedScreeningPanel({ job, applications, onRefresh }: AutomatedScreeningPanelProps) {
   const { toast } = useToast();
+  const { canUseAi } = useCanUseAiFeatures();
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
   const [scoringProgress, setScoringProgress] = useState<BulkScoringProgress | null>(null);
   const [analysisResults, setAnalysisResults] = useState<Map<string, any>>(new Map());
@@ -136,6 +140,10 @@ export function AutomatedScreeningPanel({ job, applications, onRefresh }: Automa
   };
 
   const handleBulkScore = async (targetIds?: string[]) => {
+    if (!canUseAi) {
+      setShowUpgradeDialog(true);
+      return;
+    }
     const candidates = targetIds?.length
       ? rankedApplications.filter((app) => targetIds.includes(app.id))
       : rankedApplications;
@@ -181,12 +189,17 @@ export function AutomatedScreeningPanel({ job, applications, onRefresh }: Automa
       });
 
       onRefresh();
-    } catch (error) {
-      toast({
-        title: "Re-analysis failed",
-        description: error instanceof Error ? error.message : "Failed to run AI re-analysis.",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      const err = error as { details?: { code?: string }; error?: string };
+      if (err?.details?.code === "AI_SCREENING_REQUIRES_UPGRADE" || err?.error?.includes("Upgrade")) {
+        setShowUpgradeDialog(true);
+      } else {
+        toast({
+          title: "Re-analysis failed",
+          description: error instanceof Error ? error.message : "Failed to run AI re-analysis.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsScoring(false);
       setScoringProgress(null);
@@ -225,18 +238,18 @@ export function AutomatedScreeningPanel({ job, applications, onRefresh }: Automa
                 variant="outline"
                 className="h-8 text-xs"
                 disabled={isScoring || selectedIds.size === 0}
-                onClick={() => handleBulkScore(Array.from(selectedIds))}
+                onClick={() => (!canUseAi ? setShowUpgradeDialog(true) : handleBulkScore(Array.from(selectedIds)))}
               >
-                {isScoring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
+                {!canUseAi ? <Lock className="mr-1.5 h-3.5 w-3.5" /> : isScoring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="mr-1.5 h-3.5 w-3.5" />}
                 Re-analyze Selected
               </Button>
               <Button
                 size="sm"
                 className="h-8 text-xs"
                 disabled={isScoring || rankedApplications.length === 0}
-                onClick={() => handleBulkScore()}
+                onClick={() => (!canUseAi ? setShowUpgradeDialog(true) : handleBulkScore())}
               >
-                {isScoring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
+                {!canUseAi ? <Lock className="mr-1.5 h-3.5 w-3.5" /> : isScoring ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
                 Re-analyze All
               </Button>
             </div>
@@ -303,12 +316,16 @@ export function AutomatedScreeningPanel({ job, applications, onRefresh }: Automa
                       variant="ghost"
                       className="h-6 px-1.5 mt-1 text-[10px] text-primary"
                       onClick={() => {
+                        if (!canUseAi) {
+                          setShowUpgradeDialog(true);
+                          return;
+                        }
                         setAnalysisDrawerCandidate(application);
                         setAnalysisDrawerData(analysis);
                         setAnalysisDrawerOpen(true);
                       }}
                     >
-                      <Brain className="mr-1 h-3 w-3" />
+                      {canUseAi ? <Brain className="mr-1 h-3 w-3" /> : <Lock className="mr-1 h-3 w-3" />}
                       AI Analysis
                     </Button>
                   </TableCell>
@@ -369,6 +386,13 @@ export function AutomatedScreeningPanel({ job, applications, onRefresh }: Automa
         onOpenChange={setAnalysisDrawerOpen}
         application={analysisDrawerCandidate}
         analysis={analysisDrawerData}
+      />
+
+      <UpgradePlanDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        title="Upgrade to unlock AI Screening"
+        description="AI Screening and Candidate Analysis require a paid plan (Small or higher). Upgrade to unlock these features."
       />
     </div>
   );

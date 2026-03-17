@@ -58,6 +58,7 @@ interface ApplicationCardProps {
   hasFailed?: boolean; // Visual state for failed moves
   isSimpleFlow?: boolean;
   isDragOverlay?: boolean;
+  isPendingApproval?: boolean; // Consultant view: awaiting HR approval for OFFER/REJECT
 }
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -82,6 +83,7 @@ export function ApplicationCard({
   hasFailed = false,
   isSimpleFlow = false,
   isDragOverlay = false,
+  isPendingApproval = false,
 }: ApplicationCardProps) {
   if (!application || !application.id) {
     return null;
@@ -413,9 +415,26 @@ export function ApplicationCard({
               </Avatar>
 
               <div className="flex-1 min-w-0">
-                <h4 className={`text-sm font-semibold truncate ${!application.isRead ? 'font-bold' : ''}`}>
-                  {application.candidateName}
-                </h4>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h4 className={`text-sm font-semibold truncate ${!application.isRead ? 'font-bold' : ''}`}>
+                    {application.candidateName}
+                  </h4>
+                  {isPendingApproval && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 gap-0.5 border-amber-500 text-amber-700 dark:text-amber-400">
+                            <Clock className="h-2.5 w-2.5" />
+                            Pending
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Awaiting HR approval for OFFER/REJECT</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground truncate leading-tight">
                   {application.jobTitle}
                 </p>

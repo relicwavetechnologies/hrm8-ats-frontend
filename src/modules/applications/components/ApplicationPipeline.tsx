@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -153,6 +154,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   isSimpleFlow,
   optimisticMoves,
   failedMoves,
+  pendingApplicationIds,
 }: {
   round: JobRound;
   applications: Application[];
@@ -177,6 +179,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
   dragHandleProps?: DragHandleProps;
+  pendingApplicationIds?: Set<string>;
 }) {
   const {
     attributes,
@@ -222,6 +225,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
         optimisticMoves={optimisticMoves}
         failedMoves={failedMoves}
         dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
+        pendingApplicationIds={pendingApplicationIds}
       />
     </div>
   );
@@ -260,6 +264,7 @@ const StageColumn = React.memo(function StageColumn({
   optimisticMoves,
   failedMoves,
   dragHandleProps,
+  pendingApplicationIds,
 }: {
   round: JobRound;
   applications: Application[];
@@ -284,6 +289,7 @@ const StageColumn = React.memo(function StageColumn({
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
   dragHandleProps?: DragHandleProps;
+  pendingApplicationIds?: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: round.id,
@@ -500,6 +506,7 @@ const StageColumn = React.memo(function StageColumn({
                       isOptimisticMove={optimisticMoves.has(application.id)}
                       hasFailed={failedMoves.has(application.id)}
                       isSimpleFlow={isSimpleFlow}
+                      isPendingApproval={pendingApplicationIds?.has(application.id)}
                     />
                   </div>
                 ))}
@@ -540,6 +547,25 @@ export function ApplicationPipeline({
 }: ApplicationPipelineProps) {
   // Service layer - switches between employer and consultant APIs
   const appService = isConsultantView ? ConsultantCandidateService : applicationService;
+  const queryClient = useQueryClient();
+
+  // Consultant view: fetch pending decision requests for "Awaiting approval" badge
+  const { data: decisionRequestsData } = useQuery({
+    queryKey: ['consultant-decision-requests', 'PENDING'],
+    queryFn: async () => {
+      const res = await ConsultantCandidateService.listDecisionRequests('PENDING');
+      if (!res.success || !res.data) return [];
+      return res.data.requests || [];
+    },
+    enabled: isConsultantView && !!jobId,
+  });
+  const pendingApplicationIds = useMemo(() => {
+    if (!isConsultantView || !jobId || !decisionRequestsData) return undefined;
+    const ids = (decisionRequestsData as any[])
+      .filter((r: any) => r.job_id === jobId || r.jobId === jobId)
+      .map((r: any) => r.application_id || r.applicationId);
+    return new Set(ids);
+  }, [isConsultantView, jobId, decisionRequestsData]);
 
   // Core state
   const [applications, setApplications] = useState<Application[]>([]);
@@ -1379,16 +1405,25 @@ export function ApplicationPipeline({
       // 3. Background API sync (non-blocking)
       appService.moveToRound(applicationId, actualRoundId)
         .then(response => {
-          if (response.success) {
+          if (response.success && response.data?.requiresApproval) {
+            // HRM8-managed: consultant requested approval, no move yet - rollback optimistic
+            rollbackMove(applicationId, '');
+            setOptimisticMoves(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(applicationId);
+              return newMap;
+            });
+            queryClient.invalidateQueries({ queryKey: ['consultant-decision-requests'] });
+            toast.success(response.data?.message || 'Approval requested from HR. You will be notified when it is reviewed.', {
+              duration: 5000,
+            });
+          } else if (response.success) {
             // Clear optimistic state on success - local state is already correct
             setOptimisticMoves(prev => {
               const newMap = new Map(prev);
               newMap.delete(applicationId);
               return newMap;
             });
-
-            // DON'T trigger parent refresh - local state is already updated
-            // The optimistic update is the source of truth
           } else {
             rollbackMove(applicationId, response.error || 'Please try again');
           }
@@ -1417,6 +1452,19 @@ export function ApplicationPipeline({
 
       // 1. Execute Move
       const response = await appService.moveToRound(applicationId, actualRoundId);
+
+      if (response.success && response.data?.requiresApproval) {
+        // HRM8-managed: consultant requested approval - no move executed
+        setIsMoveStageDialogOpen(false);
+        setPendingMoveApplication(null);
+        setPendingTargetRound(null);
+        setPendingIsMoving(false);
+        queryClient.invalidateQueries({ queryKey: ['consultant-decision-requests'] });
+        toast.success(response.data?.message || 'Approval requested from HR. You will be notified when it is reviewed.', {
+          duration: 5000,
+        });
+        return;
+      }
 
       if (response.success) {
         // 2. Save Comment (if provided)
@@ -1761,6 +1809,7 @@ export function ApplicationPipeline({
                   isSimpleFlow={isSimpleFlow}
                   optimisticMoves={optimisticMoves}
                   failedMoves={failedMoves}
+                  pendingApplicationIds={pendingApplicationIds}
                 />
               ))}
             </SortableContext>

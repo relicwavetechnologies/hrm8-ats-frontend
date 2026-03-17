@@ -101,6 +101,20 @@ class PricingService {
   }
 
   /**
+   * Get currencies that have active price books mapped in the system.
+   * Use on first-login currency setup so users only see currencies with pricing.
+   */
+  async getAvailableCurrencies(): Promise<string[]> {
+    const res = await apiClient.get<{ currencies: string[] }>(
+      "/api/pricing/available-currencies"
+    );
+    if (!res.success || !res.data) {
+      throw new Error(res.error || "Failed to fetch available currencies");
+    }
+    return res.data.currencies;
+  }
+
+  /**
    * Get company's pricing peg and billing currency
    */
   async getCompanyCurrency() {
@@ -123,6 +137,9 @@ class PricingService {
       GBP: "£",
       EUR: "€",
       INR: "₹",
+      NZD: "NZ$",
+      SGD: "S$",
+      CAD: "C$",
     };
 
     const symbol = symbols[currency] || currency;

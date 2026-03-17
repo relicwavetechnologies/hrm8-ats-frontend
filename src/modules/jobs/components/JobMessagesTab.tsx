@@ -134,11 +134,21 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
         }
     };
 
-    const filteredConversations = conversations.filter(c => {
+    const getOtherParticipant = (c: ConversationData) => {
         const candidate = c.participants?.find((p: any) => p.participant_type === 'CANDIDATE' || p.type === 'CANDIDATE');
-        const name = candidate?.display_name || candidate?.displayName || '';
-        const email = candidate?.participant_email || candidate?.email || '';
+        if (candidate) return { ...candidate, label: 'Candidate' };
+        const consultant = c.participants?.find((p: any) => p.participant_type === 'CONSULTANT' || p.type === 'CONSULTANT');
+        if (consultant) return { ...consultant, label: 'Consultant' };
+        return null;
+    };
+
+    const filteredConversations = conversations.filter(c => {
+        const other = getOtherParticipant(c);
+        if (!other) return true;
+        const name = other.display_name || other.displayName || '';
+        const email = other.participant_email || other.email || '';
         const query = searchQuery.toLowerCase();
+        if (!query) return true;
         return name.toLowerCase().includes(query) || email.toLowerCase().includes(query);
     });
 
@@ -218,11 +228,12 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
                     ) : (
                         <div className="flex flex-col">
                             {filteredConversations.map(conversation => {
-                                const candidate = conversation.participants?.find((p: any) => p.participant_type === 'CANDIDATE' || p.type === 'CANDIDATE');
-                                const name = candidate?.display_name || candidate?.displayName || 'Unknown Candidate';
-                                const email = candidate?.participant_email || candidate?.email || '';
-                                const initials = name !== 'Unknown Candidate' ? name.slice(0, 2).toUpperCase() : 'UC';
-                                const lastMsg = conversation.lastMessage?.content || 'No messages yet';
+                                const other = getOtherParticipant(conversation);
+                                const name = other?.display_name || other?.displayName || 'Conversation';
+                                const email = other?.participant_email || other?.email || '';
+                                const label = other?.label ? ` (${other.label})` : '';
+                                const initials = name !== 'Conversation' ? name.slice(0, 2).toUpperCase() : '??';
+                                const lastMsg = conversation.lastMessage?.content || (conversation as any).messages?.[0]?.content || 'No messages yet';
                                 const time = conversation.updatedAt ? formatRelativeDate(conversation.updatedAt) : '';
                                 const isSelected = selectedConversationId === conversation.id;
 
@@ -239,7 +250,7 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
                                         <div className="flex-1 min-w-0 overflow-hidden">
                                             <div className="flex justify-between items-baseline mb-0.5">
                                                 <span className={`text-sm font-medium truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                                                    {name}
+                                                    {name}{label}
                                                 </span>
                                                 {time && <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{time}</span>}
                                             </div>
@@ -265,7 +276,7 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
                 {selectedConversationId ? (
                     <MessagingPanel
                         conversationId={selectedConversationId}
-                        title={selectedConversation ? (selectedConversation.participants?.find((p: any) => p.type === 'CANDIDATE')?.displayName || 'Conversation') : ''}
+                        title={selectedConversation ? (getOtherParticipant(selectedConversation)?.display_name || getOtherParticipant(selectedConversation)?.displayName || 'Conversation') : ''}
                         className="flex-1 h-full border-none"
                     />
                 ) : (

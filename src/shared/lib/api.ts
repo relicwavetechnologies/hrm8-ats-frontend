@@ -11,6 +11,8 @@ interface ApiResponse<T = unknown> {
   error?: string;
   details?: Record<string, unknown>;
   status?: number;
+  /** Error code from backend (e.g. PAYG_INVOICE_REQUIRED) */
+  code?: string | number;
 }
 
 class ApiClient {
@@ -56,6 +58,7 @@ class ApiClient {
         details: data?.details,
         status: response.status,
         data: data?.data,
+        code: data?.code,
       } as ApiResponse<T>;
     }
 

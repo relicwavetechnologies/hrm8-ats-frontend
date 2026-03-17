@@ -5,7 +5,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus, Loader2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, FileText, Users, Calendar, ClipboardCheck, MessageSquare, Activity, Vote, GitCompare, Highlighter, Mail, Phone, Hash, CheckSquare, Plus, Loader2, Sparkles, Lock } from "lucide-react";
 import { Application } from "@/shared/types/application";
 import { ActivityTimelineTab } from "./tabs/ActivityTimelineTab";
 import { ExperienceSkillsTab } from "./tabs/ExperienceSkillsTab";
@@ -27,6 +27,7 @@ import { CandidateNotesPanelEnhanced } from "./CandidateNotesPanelEnhanced";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/shared/components/ui/resizable";
 import { useToast } from "@/shared/hooks/use-toast";
 import { AiAssistantSidebar } from "@/shared/components/common/AiAssistantSidebar";
+import { useCanUseAiFeatures } from "@/shared/hooks/useCanUseAiFeatures";
 
 interface CandidateAssessmentViewProps {
   application: Application;
@@ -62,6 +63,7 @@ export function CandidateAssessmentView({
   onRejectCandidate,
 }: CandidateAssessmentViewProps) {
   const { toast } = useToast();
+  const { canUseAi } = useCanUseAiFeatures(true);
   const [activeTab, setActiveTab] = useState("activity");
   const [topActiveTab, setTopActiveTab] = useState("notes");
   const [fullApplication, setFullApplication] = useState<Application>(application);
@@ -241,7 +243,11 @@ export function CandidateAssessmentView({
                   onClick={() => setIsAiAssistantOpen(true)}
                   className="h-7 px-2 text-[11px] gap-1.5 border-muted-foreground/20"
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
+                  {canUseAi ? (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5 text-amber-600" />
+                  )}
                   Ask AI
                 </Button>
                 <NotificationCenter userId="current-user" />

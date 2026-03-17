@@ -8,12 +8,14 @@ import { FormEvent, useMemo, useState, useEffect, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { Loader2, ArrowUp, Mic, X, Plus, Paperclip, MessageSquarePlus, Tag, Briefcase, User, Building2, FileText, Users, BotMessageSquare, RefreshCw } from "lucide-react";
+import { Loader2, ArrowUp, Mic, X, Plus, Paperclip, MessageSquarePlus, Tag, Briefcase, User, Building2, FileText, Users, BotMessageSquare, RefreshCw, Lock } from "lucide-react";
 import TextShimmer from "@/shared/components/common/TextShimmer";
 import { MarkdownRenderer } from "@/shared/components/common/MarkdownRenderer";
 import { useAiReferences } from "@/shared/hooks/useAiReferences";
+import { useCanUseAiFeatures } from "@/shared/hooks/useCanUseAiFeatures";
 import { EntityReference } from "@/shared/types/ai-references";
 import { ConfirmationCard } from "@/shared/components/common/ConfirmationCard";
+import { UpgradePlanDialog } from "@/shared/components/UpgradePlanDialog";
 
 // Use empty string to leverage Vite's proxy configuration for /api requests
 const API_BASE_URL = "";
@@ -288,6 +290,10 @@ export function AiAssistantSidebar({
   ],
 }: AiAssistantSidebarProps) {
   const chatId = `ai-chat-${streamEndpoint.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const isCompanyCopilot = !streamEndpoint.includes('consultant') && !streamEndpoint.includes('hrm8');
+  const { canUseAi } = useCanUseAiFeatures(isCompanyCopilot);
+  const inputLocked = isCompanyCopilot && !canUseAi;
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // AI reference context store — shared with any producer component
   const { references, removeReference, clearReferences, addReference } = useAiReferences();
@@ -481,6 +487,10 @@ export function AiAssistantSidebar({
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (inputLocked) {
+      setShowUpgradeDialog(true);
+      return;
+    }
     if (!input.trim() || isStreaming) return;
 
     // Snapshot attachments BEFORE touching the store
@@ -860,6 +870,31 @@ export function AiAssistantSidebar({
 
         {/* Input */}
         <div className="p-4 pt-1 pb-3 bg-background">
+          {inputLocked && (
+            <div
+              className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200/60 bg-amber-50/80 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-950/30"
+              role="alert"
+            >
+              <Lock className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-500" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  AI Copilot locked
+                </p>
+                <p className="text-xs text-amber-700/90 dark:text-amber-300/90 mt-0.5">
+                  AI features require a paid plan (Small or higher). Upgrade to unlock AI-powered assistance.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 h-7 text-xs border-amber-300 dark:border-amber-700"
+                  onClick={() => setShowUpgradeDialog(true)}
+                >
+                  Upgrade to unlock
+                </Button>
+              </div>
+            </div>
+          )}
           <form ref={formRef} onSubmit={onSubmit}>
             <div
               className={[
@@ -959,13 +994,18 @@ export function AiAssistantSidebar({
 
               {/* Textarea */}
               <div className="relative">
+                {inputLocked && (
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
+                )}
                 <textarea
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Message AI assistant..."
-                  disabled={isStreaming}
-                  className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm font-light outline-none placeholder:text-muted-foreground/60 disabled:opacity-50"
+                  onFocus={inputLocked ? () => setShowUpgradeDialog(true) : undefined}
+                  placeholder={inputLocked ? "Upgrade to unlock AI Copilot" : "Message AI assistant..."}
+                  disabled={isStreaming || inputLocked}
+                  readOnly={inputLocked}
+                  className={`w-full resize-none bg-transparent pt-4 pb-2 text-sm font-light outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 ${inputLocked ? "pl-10 pr-4" : "px-4"}`}
                   rows={2}
                 />
               </div>
@@ -979,7 +1019,7 @@ export function AiAssistantSidebar({
                     size="icon"
                     onClick={toggleRecording}
                     className={`h-8 w-8 ${isRecording ? "animate-pulse" : ""}`}
-                    disabled={isStreaming}
+                    disabled={isStreaming || inputLocked}
                     title="Voice input"
                   >
                     <Mic className={`h-4 w-4 ${isRecording ? "text-primary-foreground" : "text-muted-foreground"}`} />
@@ -1001,7 +1041,7 @@ export function AiAssistantSidebar({
                     size="icon"
                     onClick={() => fileInputRef.current?.click()}
                     className="h-8 w-8"
-                    disabled={isStreaming}
+                    disabled={isStreaming || inputLocked}
                     title="Attach file"
                   >
                     <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -1026,7 +1066,7 @@ export function AiAssistantSidebar({
                     <Button
                       type="submit"
                       size="icon"
-                      disabled={!input.trim()}
+                      disabled={!input.trim() || inputLocked}
                       className="h-8 w-8 rounded-full shadow-none transition-all disabled:opacity-40"
                     >
                       <ArrowUp className="h-4 w-4" />
@@ -1038,6 +1078,12 @@ export function AiAssistantSidebar({
           </form>
         </div>
       </div >
+      <UpgradePlanDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        title="Upgrade to unlock AI Copilot"
+        description="AI Copilot requires a paid plan (Small or higher). Upgrade to unlock AI-powered assistance."
+      />
     </aside >
   );
 }

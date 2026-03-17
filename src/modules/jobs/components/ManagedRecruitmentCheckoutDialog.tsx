@@ -307,10 +307,22 @@ export function ManagedRecruitmentCheckoutDialog({
         return;
       }
 
-      toast({
-        title: 'Managed service activated',
-        description: 'Invoice payment completed. Continuing to advanced setup.',
-      });
+      const isPendingConsultant =
+        payload &&
+        typeof payload === 'object' &&
+        (payload as Record<string, unknown>).status === 'PENDING_CONSULTANT_ASSIGNMENT';
+
+      if (isPendingConsultant) {
+        toast({
+          title: 'Consultant assignment pending',
+          description: "A regional admin will assign a consultant shortly. You'll be notified when ready.",
+        });
+      } else {
+        toast({
+          title: 'Managed service activated',
+          description: 'Invoice payment completed. Continuing to advanced setup.',
+        });
+      }
 
       const completedJob = (payload as { job?: Job })?.job;
       onSuccess?.(completedJob);
@@ -336,6 +348,13 @@ export function ManagedRecruitmentCheckoutDialog({
         toast({
           title: 'Consultant unavailable',
           description: assignmentMessage,
+          variant: 'destructive',
+        });
+      } else if (status === 400 && (message?.toLowerCase().includes('currency') || message?.toLowerCase().includes('price book'))) {
+        setError(message);
+        toast({
+          title: 'Pricing not available',
+          description: message,
           variant: 'destructive',
         });
       } else {

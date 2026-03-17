@@ -637,12 +637,11 @@ export default function JobDetail() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 mr-4">
               <JobStatusBadge status={job.status} />
-              {job.assignedConsultantName ? (
+              <ServiceTypeBadge type={job.serviceType || 'self-managed'} />
+              {job.assignedConsultantName && (
                 <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
                   Consultant: {job.assignedConsultantName}
                 </Badge>
-              ) : (
-                <ServiceTypeBadge type="self-managed" />
               )}
               {job.pipeline?.stage && (
                 <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
@@ -858,6 +857,16 @@ export default function JobDetail() {
                         {!job.serviceType || job.serviceType === 'self-managed' ? (
                           <span className="text-muted-foreground">Self-Managed</span>
                         ) : null}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs col-span-2">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">Assigned Consultant:</span>
+                        <span className={job.assignedConsultantName ? 'font-medium' : 'text-muted-foreground'}>
+                          {job.assignedConsultantName ||
+                            (['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '')
+                              ? 'Not yet assigned'
+                              : '—')}
+                        </span>
                       </div>
                     </div>
                     <Separator />

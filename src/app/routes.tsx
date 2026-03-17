@@ -23,6 +23,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import VerifyCompanyPage from '@/pages/auth/VerifyCompanyPage';
 import SignupPage from '@/pages/auth/SignupPage';
+import CompanyCurrencySetupPage from '@/pages/auth/CompanyCurrencySetupPage';
 
 // Dev Pages
 
@@ -105,6 +106,7 @@ export function AppRoutes() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/verify-company" element={<VerifyCompanyPage />} />
+            <Route path="/company-currency-setup" element={<CompanyCurrencySetupPage />} />
 
             {/* Dev/Mock Routes */}
 
