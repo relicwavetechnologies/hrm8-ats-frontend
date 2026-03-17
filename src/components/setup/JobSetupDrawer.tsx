@@ -19,7 +19,7 @@ import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { X, Settings2 } from 'lucide-react';
 import { useJobSetupStore } from '@/modules/jobs/store/useJobSetupStore';
-import { jobService } from '@/shared/lib/jobService';
+import { jobService, UpdateJobRequest } from '@/shared/lib/jobService';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useCanUseAiFeatures } from '@/shared/hooks/useCanUseAiFeatures';
 import { SetupFlowTypeCard } from './steps/SetupFlowTypeCard';
@@ -28,6 +28,7 @@ import { SetupTeamCard } from './steps/SetupTeamCard';
 import { SetupRoleDistributionCard } from './steps/SetupRoleDistributionCard';
 import { SetupRoundsCard } from './steps/SetupRoundsCard';
 import { SetupReviewCard } from './steps/SetupReviewCard';
+import { DistributionScope, GlobalPublishConfig } from '@/shared/types/job';
 
 interface JobSetupDrawerProps {
   open: boolean;
@@ -50,6 +51,35 @@ const SETUP_STEPS = [
   { id: 5, title: 'Configure rounds' },
   { id: 6, title: 'Review' },
 ];
+
+const buildDefaultGlobalPublishConfig = (isManaged: boolean): GlobalPublishConfig => ({
+  channels: [],
+  budgetTier: 'none',
+  customBudget: undefined,
+  hrm8ServiceRequiresApproval: isManaged,
+  hrm8ServiceApproved: false,
+  easyApplyConfig: {
+    enabled: false,
+    type: 'full',
+    hostedApply: false,
+    questionnaireEnabled: false,
+  },
+});
+
+const normalizeGlobalPublishConfig = (
+  input: GlobalPublishConfig | undefined,
+  isManaged: boolean
+): GlobalPublishConfig => {
+  const base = buildDefaultGlobalPublishConfig(isManaged);
+  return {
+    ...base,
+    ...(input || {}),
+    easyApplyConfig: {
+      ...base.easyApplyConfig,
+      ...(input?.easyApplyConfig || {}),
+    },
+  };
+};
 
 export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   open,
@@ -83,6 +113,12 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     reset,
     jobId: storeJobId,
   } = useJobSetupStore();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [distributionScope, setDistributionScope] = useState<DistributionScope>('HRM8_ONLY');
+  const [globalPublishConfig, setGlobalPublishConfig] = useState<GlobalPublishConfig>(
+    buildDefaultGlobalPublishConfig(false)
+  );
 
   useEffect(() => {
     setIsOpen(open, jobId ?? undefined);
@@ -137,6 +173,10 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
         setPendingConsultantAssignment(!!job.pendingConsultantAssignment);
         const isManaged = job.managementType === 'hrm8-managed' || (job.serviceType && job.serviceType !== 'self-managed');
+        setDistributionScope(((job.distributionScope as DistributionScope) || 'HRM8_ONLY'));
+        setGlobalPublishConfig(
+          normalizeGlobalPublishConfig(job.globalPublishConfig as GlobalPublishConfig | undefined, isManaged)
+        );
         if (isManaged) {
           setManagementType('hrm8-managed');
           setSetupType('advanced');
@@ -175,6 +215,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     }
   }, [managementType, setupType, setSetupType]);
 
+
   // PAYG (no subscription): Force simple flow only — skip step 1, no simple vs advanced choice
   useEffect(() => {
     if (!open || !jobId || canUseAi) return;
@@ -211,10 +252,16 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     if (id && (setupType || managementType)) {
       setSaving(true);
       try {
-        const res = await jobService.updateJob(id, {
+        const payload: UpdateJobRequest = {
           setupType: setupType ?? undefined,
           managementType: managementType ?? undefined,
-        });
+          distributionScope,
+        };
+        if (distributionScope === 'GLOBAL') {
+          payload.globalPublishConfig = globalPublishConfig;
+        }
+
+        const res = await jobService.updateJob(id, payload);
         if (!res.success) throw new Error(res.error);
         toast({ title: 'Setup saved', description: 'Your setup has been saved.' });
       } catch (e) {
@@ -405,6 +452,9 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           roles={roles}
           team={team}
           rounds={rounds}
+          distributionScope={distributionScope}
+          globalPublishConfig={globalPublishConfig}
+          onGlobalPublishConfigChange={setGlobalPublishConfig}
           onDone={handleReviewDone}
           onBack={prevStep}
           saving={saving}

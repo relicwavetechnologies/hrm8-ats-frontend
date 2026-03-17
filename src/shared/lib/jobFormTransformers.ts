@@ -206,6 +206,12 @@ export function transformJobToFormData(job: any): JobFormData {
       customBudget: job.jobTargetBudget,
       hrm8ServiceRequiresApproval: false,
       hrm8ServiceApproved: !!job.jobTargetApproved,
+      easyApplyConfig: {
+        enabled: false,
+        type: 'full',
+        hostedApply: false,
+        questionnaireEnabled: false,
+      },
     },
     title: job.title || '',
     numberOfVacancies: job.numberOfVacancies || 1,

@@ -35,6 +35,12 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
 
   const isSelfManaged = formData.serviceType === 'self-managed' || formData.serviceType === 'rpo';
   const isGlobalScope = formData.distributionScope === 'GLOBAL';
+  const easyApplyConfig = globalPublishConfig?.easyApplyConfig || {
+    enabled: false,
+    type: 'full' as const,
+    hostedApply: false,
+    questionnaireEnabled: false,
+  };
 
   const updateGlobalConfig = (patch: Partial<NonNullable<typeof globalPublishConfig>>) => {
     const current = globalPublishConfig || {
@@ -43,6 +49,7 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
       customBudget: undefined,
       hrm8ServiceRequiresApproval: !isSelfManaged,
       hrm8ServiceApproved: false,
+      easyApplyConfig,
     };
     form.setValue('globalPublishConfig', { ...current, ...patch }, { shouldValidate: true, shouldDirty: true });
   };
@@ -55,6 +62,7 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
         customBudget: undefined,
         hrm8ServiceRequiresApproval: !isSelfManaged,
         hrm8ServiceApproved: false,
+        easyApplyConfig,
       });
       return;
     }
@@ -216,6 +224,72 @@ export function JobWizardStep6({ form }: JobWizardStep6Props) {
                 )}
               />
             )}
+
+            <div className="space-y-3 rounded-md border p-3">
+              <div className="space-y-1">
+                <FormLabel>Easy Apply (JobTarget)</FormLabel>
+                <p className="text-xs text-muted-foreground">
+                  Keep candidate apply flows on supported job boards and receive completed applications in HRM8 via webhook.
+                </p>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={!!easyApplyConfig.enabled}
+                  onCheckedChange={(next) => updateGlobalConfig({
+                    easyApplyConfig: {
+                      ...easyApplyConfig,
+                      enabled: !!next,
+                      hostedApply: !!next ? easyApplyConfig.hostedApply : false,
+                      questionnaireEnabled: !!next ? easyApplyConfig.questionnaireEnabled : false,
+                    },
+                  })}
+                />
+                Enable Easy Apply
+              </label>
+
+              {easyApplyConfig.enabled && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <FormLabel>Easy Apply Type</FormLabel>
+                    <Select
+                      value={easyApplyConfig.type}
+                      onValueChange={(value: 'basic' | 'full') => updateGlobalConfig({
+                        easyApplyConfig: { ...easyApplyConfig, type: value },
+                      })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic</SelectItem>
+                        <SelectItem value="full">Full</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm md:mt-8">
+                    <Checkbox
+                      checked={!!easyApplyConfig.hostedApply}
+                      onCheckedChange={(next) => updateGlobalConfig({
+                        easyApplyConfig: { ...easyApplyConfig, hostedApply: !!next },
+                      })}
+                    />
+                    Hosted Apply
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm md:mt-8">
+                    <Checkbox
+                      checked={!!easyApplyConfig.questionnaireEnabled}
+                      onCheckedChange={(next) => updateGlobalConfig({
+                        easyApplyConfig: { ...easyApplyConfig, questionnaireEnabled: !!next },
+                      })}
+                    />
+                    Use HRM8 questions
+                  </label>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

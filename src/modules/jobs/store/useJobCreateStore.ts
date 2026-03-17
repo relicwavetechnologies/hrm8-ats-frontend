@@ -60,6 +60,12 @@ const INITIAL_JOB_DATA: Partial<JobFormData> = {
     customBudget: undefined,
     hrm8ServiceRequiresApproval: false,
     hrm8ServiceApproved: false,
+    easyApplyConfig: {
+      enabled: false,
+      type: 'full',
+      hostedApply: false,
+      questionnaireEnabled: false,
+    },
   },
   status: 'draft',
   employmentType: 'full-time',
