@@ -10,12 +10,29 @@ const baseJobBasicDetailsSchema = z.object({
     customBudget: z.number().optional(),
     hrm8ServiceRequiresApproval: z.boolean().default(false),
     hrm8ServiceApproved: z.boolean().default(false),
+    easyApplyConfig: z.object({
+      enabled: z.boolean().default(false),
+      type: z.enum(['basic', 'full']).default('full'),
+      hostedApply: z.boolean().default(false),
+      questionnaireEnabled: z.boolean().default(false),
+    }).default({
+      enabled: false,
+      type: 'full',
+      hostedApply: false,
+      questionnaireEnabled: false,
+    }),
   }).default({
     channels: [],
     budgetTier: 'none',
     customBudget: undefined,
     hrm8ServiceRequiresApproval: false,
     hrm8ServiceApproved: false,
+    easyApplyConfig: {
+      enabled: false,
+      type: 'full',
+      hostedApply: false,
+      questionnaireEnabled: false,
+    },
   }),
   title: z.string().min(5, "Job title must be at least 5 characters"),
   numberOfVacancies: z.number()
