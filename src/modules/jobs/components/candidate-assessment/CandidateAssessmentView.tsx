@@ -44,6 +44,9 @@ interface CandidateAssessmentViewProps {
   jobId?: string;
   onOfferCandidate?: (applicationId: string) => void;
   onRejectCandidate?: (applicationId: string) => void;
+  statusUpdateDisabled?: boolean;
+  statusUpdateDisabledReason?: string | null;
+  offerActionsDisabledReason?: string | null;
 }
 
 export function CandidateAssessmentView({
@@ -61,6 +64,9 @@ export function CandidateAssessmentView({
   jobId,
   onOfferCandidate,
   onRejectCandidate,
+  statusUpdateDisabled = false,
+  statusUpdateDisabledReason,
+  offerActionsDisabledReason,
 }: CandidateAssessmentViewProps) {
   const { toast } = useToast();
   const { canUseAi } = useCanUseAiFeatures(true);
@@ -158,6 +164,14 @@ export function CandidateAssessmentView({
   };
 
   const handleStatusChange = async (nextStatus: string) => {
+    if (statusUpdateDisabled) {
+      toast({
+        title: "Status locked",
+        description: statusUpdateDisabledReason || "Use the kanban for candidate movement in this flow.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!fullApplication.id || !nextStatus || nextStatus === fullApplication.status) return;
     const currentStatus = String(fullApplication.status || "").toLowerCase();
     if (currentStatus === "hired") {
@@ -220,7 +234,11 @@ export function CandidateAssessmentView({
                 <Select
                   value={String(fullApplication.status || "applied")}
                   onValueChange={handleStatusChange}
-                  disabled={isUpdatingStatus || String(fullApplication.status || "").toLowerCase() === "hired"}
+                  disabled={
+                    statusUpdateDisabled ||
+                    isUpdatingStatus ||
+                    String(fullApplication.status || "").toLowerCase() === "hired"
+                  }
                 >
                   <SelectTrigger className="h-7 w-[160px] text-[11px] bg-background">
                     <SelectValue />
@@ -273,12 +291,13 @@ export function CandidateAssessmentView({
                 maxSize={40}
                 className="overflow-hidden"
               >
-                <CandidateInfoPanel
-                  application={fullApplication}
-                  jobTitle={jobTitle}
-                  onOfferCandidate={onOfferCandidate}
-                  onRejectCandidate={onRejectCandidate}
-                />
+            <CandidateInfoPanel
+              application={fullApplication}
+              jobTitle={jobTitle}
+              onOfferCandidate={onOfferCandidate}
+              onRejectCandidate={onRejectCandidate}
+              offerActionsDisabledReason={offerActionsDisabledReason}
+            />
               </ResizablePanel>
 
               {/* Resize Handle */}

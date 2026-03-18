@@ -27,6 +27,11 @@ import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/jobRoundSe
 import { jobService } from "@/shared/lib/jobService";
 import type { Job } from "@/shared/types/job";
 import { MoveStageDialog } from "./MoveStageDialog";
+import {
+  deriveManagedPipelineOwner,
+  getManagedServiceLockReason,
+  resolveManagedServicePolicy,
+} from "@/shared/lib/managedServicePolicy";
 
 interface ApplicationPipelineProps {
   jobId?: string;
@@ -97,6 +102,14 @@ type PipelineApiApplication = {
   updatedAt?: string | Date;
   updated_at?: string | Date;
   shortlisted?: boolean;
+  managedPipelineOwner?: 'CONSULTANT' | 'COMPANY' | null;
+  managed_pipeline_owner?: 'CONSULTANT' | 'COMPANY' | null;
+  offerHandoffAt?: string | Date;
+  offer_handoff_at?: string | Date;
+  offerHandoffBy?: string;
+  offer_handoff_by?: string;
+  offerHandoffNote?: string;
+  offer_handoff_note?: string;
   manuallyAdded?: boolean;
   manually_added?: boolean;
   score?: number;
@@ -594,9 +607,24 @@ export function ApplicationPipeline({
   const resolvedServicePackage = normalizeServicePackage(
     jobServiceType || jobData?.job?.servicePackage || jobData?.job?.serviceType
   );
+  const managedJobContext = useMemo(
+    () => ({
+      managementType: resolvedManagementType,
+      servicePackage: resolvedServicePackage,
+    }),
+    [resolvedManagementType, resolvedServicePackage]
+  );
+  const managedServicePolicy = useMemo(
+    () => resolveManagedServicePolicy(managedJobContext),
+    [managedJobContext]
+  );
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
-  const isShortlistingManaged = resolvedManagementType === 'hrm8-managed' && resolvedServicePackage === 'shortlisting';
-  const isOfferOnlyCompanyView = !isConsultantView && resolvedManagementType === 'hrm8-managed' && !isShortlistingManaged;
+  const isShortlistingManaged = managedServicePolicy === 'HRM8_SHORTLISTING';
+  const isFullServiceHandoff = managedServicePolicy === 'HRM8_FULL_SERVICE_HANDOFF';
+  const isLegacyOfferOnlyCompanyView =
+    !isConsultantView &&
+    resolvedManagementType === 'hrm8-managed' &&
+    managedServicePolicy === 'DEFAULT';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Optimistic update state - for instant UI feedback
@@ -909,6 +937,10 @@ export function ApplicationPipeline({
             consultantActionedAt: (app as any).consultantActionedAt || (app as any).consultant_actioned_at,
             consultantActionedBy: (app as any).consultantActionedBy || (app as any).consultant_actioned_by,
             consultantActionRoundId: (app as any).consultantActionRoundId || (app as any).consultant_action_round_id,
+            managedPipelineOwner: (app as any).managedPipelineOwner || (app as any).managed_pipeline_owner || null,
+            offerHandoffAt: (app as any).offerHandoffAt || (app as any).offer_handoff_at,
+            offerHandoffBy: (app as any).offerHandoffBy || (app as any).offer_handoff_by,
+            offerHandoffNote: (app as any).offerHandoffNote || (app as any).offer_handoff_note,
             manuallyAdded: app.manuallyAdded || app.manually_added || false,
             // Include AI scoring fields for ApplicationCard display
             score: app.score,
@@ -993,8 +1025,24 @@ export function ApplicationPipeline({
     return stageMap[stage] || 'New Application';
   };
 
+  const getPipelineOwner = useCallback(
+    (application: Application) => deriveManagedPipelineOwner(application, managedJobContext),
+    [managedJobContext]
+  );
+
+  const getLockReason = useCallback(
+    (application: Application): string | null =>
+      getManagedServiceLockReason({
+        policy: managedServicePolicy,
+        isConsultantView,
+        application,
+        job: managedJobContext,
+      }),
+    [managedServicePolicy, isConsultantView, managedJobContext]
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
-    if (isOfferOnlyCompanyView) {
+    if (isLegacyOfferOnlyCompanyView) {
       return;
     }
     const id = event.active.id as string;
@@ -1008,7 +1056,7 @@ export function ApplicationPipeline({
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    if (isOfferOnlyCompanyView) {
+    if (isLegacyOfferOnlyCompanyView) {
       setActiveId(null);
       setActiveRoundId(null);
       return;
@@ -1209,15 +1257,36 @@ export function ApplicationPipeline({
       const backendStage = stageMap[newStage] || "NEW_APPLICATION";
       const application = applications.find(app => app?.id === applicationId);
       const lockReason = application ? getLockReason(application) : null;
+      const pipelineOwner = application ? getPipelineOwner(application) : null;
       if (lockReason) {
         toast.error("Action locked", { description: lockReason });
         return;
       }
-      if (isOfferOnlyCompanyView && !['OFFER_EXTENDED', 'OFFER_ACCEPTED'].includes(backendStage)) {
+      if (isConsultantView) {
+        toast.error("Use the kanban", {
+          description: "Use the kanban to manage candidates in this flow.",
+        });
+        return;
+      }
+      if (isLegacyOfferOnlyCompanyView && !['OFFER_EXTENDED', 'OFFER_ACCEPTED'].includes(backendStage)) {
         toast.error("Offer actions only", {
           description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
         });
         return;
+      }
+      if (isFullServiceHandoff) {
+        if (pipelineOwner !== 'COMPANY') {
+          toast.error("Action locked", {
+            description: "HRM8 consultant is managing this candidate until offer stage.",
+          });
+          return;
+        }
+        if (!['OFFER_EXTENDED', 'OFFER_ACCEPTED', 'REJECTED'].includes(backendStage)) {
+          toast.error("Offer actions only", {
+            description: "Use the Offer round and Offer tab to manage candidates in this flow.",
+          });
+          return;
+        }
       }
       const response = await applicationService.updateStage(applicationId, backendStage);
 
@@ -1261,12 +1330,31 @@ export function ApplicationPipeline({
       return;
     }
 
-    if (isOfferOnlyCompanyView && targetRound.fixedKey !== 'OFFER') {
+    const pipelineOwner = getPipelineOwner(application);
+
+    if (isLegacyOfferOnlyCompanyView && targetRound.fixedKey !== 'OFFER') {
       toast.error("Offer actions only", {
         description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
         duration: 4000,
       });
       return;
+    }
+
+    if (!isConsultantView && isFullServiceHandoff) {
+      if (pipelineOwner !== 'COMPANY') {
+        toast.error("Action locked", {
+          description: "HRM8 consultant is managing this candidate until offer stage.",
+          duration: 4000,
+        });
+        return;
+      }
+      if (!['OFFER', 'REJECTED'].includes(String(targetRound.fixedKey || ''))) {
+        toast.error("Offer actions only", {
+          description: "Use the Offer round and Offer tab to manage candidates in this flow.",
+          duration: 4000,
+        });
+        return;
+      }
     }
 
     // 2. Identify Current Round
@@ -1289,7 +1377,7 @@ export function ApplicationPipeline({
     }
 
     // 3. Validation Logic - SKIP FOR SIMPLE FLOW or shortlisting managed (no restrictions)
-    if (!isSimpleFlow && !isShortlistingManaged) {
+    if (!isSimpleFlow && !isShortlistingManaged && !isFullServiceHandoff) {
       let isAllowed = false;
 
       // Rule: Can always move to Rejected
@@ -1374,6 +1462,10 @@ export function ApplicationPipeline({
           consultantActionedAt: (apiApp as any).consultantActionedAt || (apiApp as any).consultant_actioned_at,
           consultantActionedBy: (apiApp as any).consultantActionedBy || (apiApp as any).consultant_actioned_by,
           consultantActionRoundId: (apiApp as any).consultantActionRoundId || (apiApp as any).consultant_action_round_id,
+          managedPipelineOwner: (apiApp as any).managedPipelineOwner || (apiApp as any).managed_pipeline_owner || null,
+          offerHandoffAt: (apiApp as any).offerHandoffAt || (apiApp as any).offer_handoff_at,
+          offerHandoffBy: (apiApp as any).offerHandoffBy || (apiApp as any).offer_handoff_by,
+          offerHandoffNote: (apiApp as any).offerHandoffNote || (apiApp as any).offer_handoff_note,
           manuallyAdded: apiApp.manuallyAdded || apiApp.manually_added || false,
           score: apiApp.score,
           aiMatchScore: apiApp.aiMatchScore || apiApp.aiScore || apiApp.score,
@@ -1438,7 +1530,7 @@ export function ApplicationPipeline({
     }
 
     // Simple Mode Fast Path - Optimistic Updates
-    if (isSimpleFlow) {
+    if (isSimpleFlow || isFullServiceHandoff) {
       const optimisticStatus =
         targetRound.fixedKey === 'REJECTED'
           ? 'rejected'
@@ -1453,16 +1545,34 @@ export function ApplicationPipeline({
             : targetRound.fixedKey === 'NEW'
               ? 'New Application'
               : application.stage;
+      const optimisticOwner =
+        isFullServiceHandoff && targetRound.fixedKey === 'OFFER'
+          ? 'COMPANY'
+          : isFullServiceHandoff
+            ? (getPipelineOwner(application) || 'CONSULTANT')
+            : application.managedPipelineOwner;
       // 1. Optimistic update (instant UI response)
       setOptimisticMoves(prev => new Map(prev).set(applicationId, actualRoundId));
       setApplications(prev => prev.map(app =>
         app?.id === applicationId
-          ? { ...app, roundId: actualRoundId, stage: optimisticStage, status: optimisticStatus }
+          ? {
+              ...app,
+              roundId: actualRoundId,
+              stage: optimisticStage,
+              status: optimisticStatus,
+              managedPipelineOwner: optimisticOwner,
+            }
           : app
       ));
       setSelectedApplication(prev =>
         prev?.id === applicationId
-          ? { ...prev, roundId: actualRoundId, stage: optimisticStage, status: optimisticStatus }
+          ? {
+              ...prev,
+              roundId: actualRoundId,
+              stage: optimisticStage,
+              status: optimisticStatus,
+              managedPipelineOwner: optimisticOwner,
+            }
           : prev
       );
 
@@ -1491,7 +1601,7 @@ export function ApplicationPipeline({
               newMap.delete(applicationId);
               return newMap;
             });
-            if (isShortlistingManaged) {
+            if (isShortlistingManaged || isFullServiceHandoff) {
               refreshSingleApplication(applicationId);
             }
           } else {
@@ -1563,7 +1673,7 @@ export function ApplicationPipeline({
         }
 
         // 3. Refresh data
-        if (isShortlistingManaged) {
+        if (isShortlistingManaged || isFullServiceHandoff) {
           await refreshSingleApplication(applicationId);
           toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
           onApplicationMoved?.();
@@ -1596,23 +1706,6 @@ export function ApplicationPipeline({
     }
   };
 
-  const getLockReason = (application: Application): string | null => {
-    if (!isShortlistingManaged) return null;
-    if (isConsultantView) {
-      return application.consultantActionedAt ? "Shortlisting action already taken." : null;
-    }
-    if (!application.consultantActionedAt) {
-      if (application.shortlisted) {
-        return null;
-      }
-      return "Awaiting consultant shortlisting.";
-    }
-    if (application.consultantActionType === 'REJECTED') {
-      return "Consultant rejected this candidate.";
-    }
-    return null;
-  };
-
   const handleConfigureOffer = useCallback((roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
     if (round) {
@@ -1631,6 +1724,15 @@ export function ApplicationPipeline({
     setSelectedApplication(application);
     setDetailPanelOpen(true);
   };
+
+  const selectedApplicationLockReason = selectedApplication ? getLockReason(selectedApplication) : null;
+  const selectedApplicationStatusReason = isConsultantView
+    ? "Use the kanban to manage candidates in this flow."
+    : isFullServiceHandoff
+      ? selectedApplicationLockReason || "Use the Offer round and Offer tab to manage candidates in this flow."
+      : isLegacyOfferOnlyCompanyView
+        ? "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round."
+        : null;
 
   const handleOfferCandidate = useCallback((applicationId: string) => {
     const application = applications.find(app => app?.id === applicationId);
@@ -1905,14 +2007,14 @@ export function ApplicationPipeline({
                   onViewInterviews={handleViewInterviews}
                   onViewRoundInterviews={handleViewRoundInterviews}
                   onOpenScreening={isSimpleFlow ? undefined : handleOpenScreening}
-                  onConfigureOffer={isSimpleFlow ? undefined : handleConfigureOffer}
-                  onExecuteOffer={handleExecuteOffer}
+                  onConfigureOffer={isSimpleFlow || isConsultantView ? undefined : handleConfigureOffer}
+                  onExecuteOffer={isConsultantView ? undefined : handleExecuteOffer}
                   onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
                   onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
                   isSimpleFlow={isSimpleFlow}
                   optimisticMoves={optimisticMoves}
                   failedMoves={failedMoves}
-                  restrictToOfferActions={isOfferOnlyCompanyView}
+                  restrictToOfferActions={isLegacyOfferOnlyCompanyView}
                   getLockReason={getLockReason}
                   pendingApplicationIds={pendingApplicationIds}
                 />
@@ -1930,8 +2032,8 @@ export function ApplicationPipeline({
                 onMoveToRound={handleMoveToRound}
                 isSimpleFlow={isSimpleFlow}
                 isDragOverlay
-                dragDisabled={isOfferOnlyCompanyView}
-                restrictToOfferActions={isOfferOnlyCompanyView}
+                dragDisabled={isLegacyOfferOnlyCompanyView}
+                restrictToOfferActions={isLegacyOfferOnlyCompanyView}
               />
             )}
             {activeRoundId && (() => {
@@ -1977,6 +2079,9 @@ export function ApplicationPipeline({
           isSimpleFlow={isSimpleFlow}
           onOfferCandidate={handleOfferCandidate}
           onRejectCandidate={handleRejectCandidate}
+          statusUpdateDisabled={Boolean(selectedApplicationStatusReason)}
+          statusUpdateDisabledReason={selectedApplicationStatusReason}
+          offerActionsDisabledReason={selectedApplicationLockReason}
 
           // Next Stage Logic
           nextStageName={(() => {
