@@ -35,6 +35,8 @@ interface RoundDetailViewProps {
   onRefresh?: () => void;
   onConfigureEmail?: (roundId: string) => void;
   isSimpleFlow?: boolean;
+  readOnly?: boolean;
+  readOnlyReason?: string | null;
 }
 
 interface RoundAssessment {
@@ -91,7 +93,9 @@ export function RoundDetailView({
   onReject,
   onRefresh,
   onConfigureEmail,
-  isSimpleFlow = false
+  isSimpleFlow = false,
+  readOnly = false,
+  readOnlyReason = null,
 }: RoundDetailViewProps) {
 
   // Candidates currently in this round
@@ -480,7 +484,7 @@ export function RoundDetailView({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!isSimpleFlow && round.type === 'INTERVIEW' && !round.isFixed && onConfigureInterview && (
+          {!readOnly && !isSimpleFlow && round.type === 'INTERVIEW' && !round.isFixed && onConfigureInterview && (
             <Button
               variant="outline"
               size="sm"
@@ -491,7 +495,7 @@ export function RoundDetailView({
               Configure
             </Button>
           )}
-          {!isSimpleFlow && onConfigureEmail && (
+          {!readOnly && !isSimpleFlow && onConfigureEmail && (
             <Button
               variant="outline"
               size="sm"
@@ -502,7 +506,7 @@ export function RoundDetailView({
               Configure
             </Button>
           )}
-          {!isSimpleFlow && round.type === 'ASSESSMENT' && !round.isFixed && onConfigureAssessment && (
+          {!readOnly && !isSimpleFlow && round.type === 'ASSESSMENT' && !round.isFixed && onConfigureAssessment && (
             <Button
               variant="outline"
               size="sm"
@@ -517,11 +521,18 @@ export function RoundDetailView({
       </div>
 
       <div className="space-y-3">
+        {readOnly && readOnlyReason && (
+          <div className="flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>{readOnlyReason}</span>
+          </div>
+        )}
         {roundApplications.length > 0 && (
           <div className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={roundApplications.length > 0 && selectedCandidateIds.size === roundApplications.length}
+                disabled={readOnly}
                 onCheckedChange={(checked) => {
                   if (checked) {
                     setSelectedCandidateIds(new Set(roundApplications.map((a) => a.id)));
@@ -535,7 +546,7 @@ export function RoundDetailView({
                 Select All ({roundApplications.length})
               </Label>
             </div>
-            {selectedCandidateIds.size > 0 && (
+            {!readOnly && selectedCandidateIds.size > 0 && (
               <div className="flex items-center gap-2">
                 {round.type === "ASSESSMENT" && !isSimpleFlow && (
                   <Button
@@ -624,6 +635,7 @@ export function RoundDetailView({
                         <td className="px-3 py-2">
                           <Checkbox
                             checked={selectedCandidateIds.has(app.id)}
+                            disabled={readOnly}
                             onCheckedChange={(checked) => {
                               const next = new Set(selectedCandidateIds);
                               if (checked) next.add(app.id);
@@ -668,7 +680,7 @@ export function RoundDetailView({
                               View Profile
                             </Button>
 
-                            {round.type === "ASSESSMENT" && !isSimpleFlow && displayState === "NOT_INVITED" && (
+                            {!readOnly && round.type === "ASSESSMENT" && !isSimpleFlow && displayState === "NOT_INVITED" && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -681,7 +693,7 @@ export function RoundDetailView({
                               </Button>
                             )}
 
-                            {round.type === "ASSESSMENT" && !isSimpleFlow && (displayState === "INVITED" || displayState === "IN_PROGRESS") && assessment && (
+                            {!readOnly && round.type === "ASSESSMENT" && !isSimpleFlow && (displayState === "INVITED" || displayState === "IN_PROGRESS") && assessment && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -694,7 +706,7 @@ export function RoundDetailView({
                               </Button>
                             )}
 
-                            {round.type === "ASSESSMENT" && !isSimpleFlow && displayState === "COMPLETED" && assessment && (
+                            {!readOnly && round.type === "ASSESSMENT" && !isSimpleFlow && displayState === "COMPLETED" && assessment && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -705,19 +717,21 @@ export function RoundDetailView({
                               </Button>
                             )}
 
-                            <Button
-                              size="sm"
-                              className="h-7 text-[11px]"
-                              onClick={() => handleMoveToNext(app.id)}
-                              disabled={!canMoveToNext || !onMoveToNextRound || movingNextIds.has(app.id)}
-                            >
-                              {movingNextIds.has(app.id) ? (
-                                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                              ) : (
-                                <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                              )}
-                              {movingNextIds.has(app.id) ? "Moving..." : "Move to Next Stage"}
-                            </Button>
+                            {!readOnly && (
+                              <Button
+                                size="sm"
+                                className="h-7 text-[11px]"
+                                onClick={() => handleMoveToNext(app.id)}
+                                disabled={!canMoveToNext || !onMoveToNextRound || movingNextIds.has(app.id)}
+                              >
+                                {movingNextIds.has(app.id) ? (
+                                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                ) : (
+                                  <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                                )}
+                                {movingNextIds.has(app.id) ? "Moving..." : "Move to Next Stage"}
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -749,6 +763,9 @@ export function RoundDetailView({
           onOpenChange={setDetailPanelOpen}
           jobTitle={round.name}
           jobId={jobId}
+          statusUpdateDisabled={readOnly}
+          statusUpdateDisabledReason={readOnlyReason}
+          offerActionsDisabledReason={readOnlyReason}
         />
       )}
 

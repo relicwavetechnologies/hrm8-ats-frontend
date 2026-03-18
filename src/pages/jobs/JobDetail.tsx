@@ -91,6 +91,7 @@ import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { MessageSquarePlus } from "lucide-react";
 import { JobInboxTab } from "@/modules/jobs/components/JobInboxTab";
 import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
+import { resolveManagedServicePolicy } from "@/shared/lib/managedServicePolicy";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -350,6 +351,18 @@ export default function JobDetail() {
 
     return filtered;
   }, [allApplications, applicationsFilters]);
+
+  const managedServicePolicy = useMemo(
+    () =>
+      resolveManagedServicePolicy({
+        managementType: job?.managementType,
+        servicePackage: job?.servicePackage,
+      }),
+    [job?.managementType, job?.servicePackage]
+  );
+  const isCompanyFullServiceView = managedServicePolicy === "HRM8_FULL_SERVICE_HANDOFF";
+  const isFullServiceOutcomeRound = (round: JobRound | undefined | null) =>
+    ["OFFER", "HIRED", "REJECTED"].includes(String(round?.fixedKey || "").toUpperCase());
 
   // Fetch job from API to get latest data
   useEffect(() => {
@@ -1300,6 +1313,14 @@ export default function JobDetail() {
                       round={round}
                       applications={allApplications}
                       onRefresh={handleJobUpdate}
+                      readOnly={isCompanyFullServiceView}
+                      readOnlyReason={
+                        isCompanyFullServiceView
+                          ? isFullServiceOutcomeRound(round)
+                            ? "Use the Offer round controls and the Offers tab to manage candidates in this flow."
+                            : "HRM8 consultant is managing this candidate until offer stage."
+                          : null
+                      }
                       onApplicationClick={(app) => {
                         // We can open the drawer or some detailed view
                       }}

@@ -170,6 +170,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   optimisticMoves,
   failedMoves,
   restrictToOfferActions = false,
+  disableRoundReordering = false,
   getLockReason,
   pendingApplicationIds,
 }: {
@@ -196,6 +197,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
   restrictToOfferActions?: boolean;
+  disableRoundReordering?: boolean;
   getLockReason?: (application: Application) => string | null;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
@@ -209,7 +211,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
     isDragging: isColumnDragging,
   } = useSortable({
     id: `round-${round.id}`,
-    disabled: round.isFixed, // Fixed rounds cannot be reordered
+    disabled: round.isFixed || disableRoundReordering, // Fixed/read-only rounds cannot be reordered
   });
 
   const style = {
@@ -244,8 +246,9 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
         optimisticMoves={optimisticMoves}
         failedMoves={failedMoves}
         restrictToOfferActions={restrictToOfferActions}
+        disableRoundReordering={disableRoundReordering}
         getLockReason={getLockReason}
-        dragHandleProps={!round.isFixed && !restrictToOfferActions ? { ...attributes, ...listeners } : undefined}
+        dragHandleProps={!round.isFixed && !restrictToOfferActions && !disableRoundReordering ? { ...attributes, ...listeners } : undefined}
         pendingApplicationIds={pendingApplicationIds}
       />
     </div>
@@ -255,6 +258,8 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
     prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
     prevProps.isSimpleFlow === nextProps.isSimpleFlow &&
+    prevProps.restrictToOfferActions === nextProps.restrictToOfferActions &&
+    prevProps.disableRoundReordering === nextProps.disableRoundReordering &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
     prevProps.failedMoves === nextProps.failedMoves
   );
@@ -285,6 +290,7 @@ const StageColumn = React.memo(function StageColumn({
   optimisticMoves,
   failedMoves,
   restrictToOfferActions = false,
+  disableRoundReordering = false,
   getLockReason,
   dragHandleProps,
   pendingApplicationIds,
@@ -312,6 +318,7 @@ const StageColumn = React.memo(function StageColumn({
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
   restrictToOfferActions?: boolean;
+  disableRoundReordering?: boolean;
   getLockReason?: (application: Application) => string | null;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
@@ -465,9 +472,9 @@ const StageColumn = React.memo(function StageColumn({
                   )}
                 </>
               )}
-              {round.isFixed && round.fixedKey === 'OFFER' && !isSimpleFlow && (
+              {round.isFixed && round.fixedKey === 'OFFER' && (
                 <>
-                  {onConfigureOffer && !isSimpleFlow && (
+                  {onConfigureOffer && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -481,7 +488,7 @@ const StageColumn = React.memo(function StageColumn({
                       <Settings className="h-3 w-3" />
                     </Button>
                   )}
-                  {onExecuteOffer && applications.length > 0 && !isSimpleFlow && (
+                  {onExecuteOffer && applications.length > 0 && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -497,7 +504,7 @@ const StageColumn = React.memo(function StageColumn({
                   )}
                 </>
               )}
-              {!round.isFixed && onDeleteRound && (
+              {!round.isFixed && onDeleteRound && !disableRoundReordering && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -555,6 +562,8 @@ const StageColumn = React.memo(function StageColumn({
   return (
     prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
+    prevProps.restrictToOfferActions === nextProps.restrictToOfferActions &&
+    prevProps.disableRoundReordering === nextProps.disableRoundReordering &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
     prevProps.failedMoves === nextProps.failedMoves
   );
@@ -621,6 +630,7 @@ export function ApplicationPipeline({
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
   const isShortlistingManaged = managedServicePolicy === 'HRM8_SHORTLISTING';
   const isFullServiceHandoff = managedServicePolicy === 'HRM8_FULL_SERVICE_HANDOFF';
+  const isCompanyFullServiceView = !isConsultantView && isFullServiceHandoff;
   const isLegacyOfferOnlyCompanyView =
     !isConsultantView &&
     resolvedManagementType === 'hrm8-managed' &&
@@ -1966,7 +1976,7 @@ export function ApplicationPipeline({
         ) : <div />}
 
         {/* Create Round Button */}
-        {jobId && (
+        {jobId && !isCompanyFullServiceView && (
           <div>
             <Button
               onClick={() => setCreateRoundDialogOpen(true)}
@@ -2001,20 +2011,21 @@ export function ApplicationPipeline({
                   onToggleSelect={onToggleSelect}
                   onStageChange={handleStageChange}
                   onMoveToRound={handleMoveToRound}
-                  onDeleteRound={handleDeleteRound}
-                  onConfigureAssessment={isSimpleFlow ? undefined : handleConfigureAssessment}
-                  onConfigureInterview={handleConfigureInterview}
+                  onDeleteRound={isCompanyFullServiceView ? undefined : handleDeleteRound}
+                  onConfigureAssessment={isSimpleFlow || isCompanyFullServiceView ? undefined : handleConfigureAssessment}
+                  onConfigureInterview={isCompanyFullServiceView ? undefined : handleConfigureInterview}
                   onViewInterviews={handleViewInterviews}
-                  onViewRoundInterviews={handleViewRoundInterviews}
-                  onOpenScreening={isSimpleFlow ? undefined : handleOpenScreening}
-                  onConfigureOffer={isSimpleFlow || isConsultantView ? undefined : handleConfigureOffer}
+                  onViewRoundInterviews={isCompanyFullServiceView ? undefined : handleViewRoundInterviews}
+                  onOpenScreening={isSimpleFlow || isCompanyFullServiceView ? undefined : handleOpenScreening}
+                  onConfigureOffer={isConsultantView ? undefined : handleConfigureOffer}
                   onExecuteOffer={isConsultantView ? undefined : handleExecuteOffer}
-                  onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
-                  onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
+                  onOpenAssessmentDrawer={isSimpleFlow || isCompanyFullServiceView ? undefined : handleOpenAssessmentReview}
+                  onConfigureEmail={isSimpleFlow || isCompanyFullServiceView ? undefined : handleConfigureEmail}
                   isSimpleFlow={isSimpleFlow}
                   optimisticMoves={optimisticMoves}
                   failedMoves={failedMoves}
                   restrictToOfferActions={isLegacyOfferOnlyCompanyView}
+                  disableRoundReordering={isCompanyFullServiceView}
                   getLockReason={getLockReason}
                   pendingApplicationIds={pendingApplicationIds}
                 />
