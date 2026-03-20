@@ -29,6 +29,7 @@ import {
   ArrowUpCircle,
   UserPlus,
   Users,
+  Search,
   CheckSquare,
   CheckCircle2,
 } from "lucide-react";
@@ -83,6 +84,7 @@ import { useAuth } from "@/app/AuthContext";
 import { HiringTeamDrawer, HiringTeamData } from "@/modules/jobs/components/HiringTeamDrawer";
 import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
 import { HiringTeamTab } from "@/modules/jobs/components/team/HiringTeamTab";
+import { ExecutiveSearchTab } from "@/modules/jobs/components/ExecutiveSearchTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -708,6 +710,15 @@ export default function JobDetail() {
                   <Badge variant="outline" className="h-5 px-1.5 text-xs rounded-full ml-1">{job.applicantsCount}</Badge>
                 )}
               </TabsTrigger>
+              {job.serviceType === 'executive-search' && (
+                <TabsTrigger
+                  value="executive-search"
+                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                >
+                  <Search className="h-3.5 w-3.5 flex-shrink-0" />
+                  Executive Search
+                </TabsTrigger>
+              )}
               <TabsTrigger
                 value="screening"
                 className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -1094,6 +1105,13 @@ export default function JobDetail() {
               />
             )}
           </TabsContent>
+
+          {/* Executive Search Tab - employer read-only summary */}
+          {job.serviceType === 'executive-search' && (
+            <TabsContent value="executive-search" className="mt-6">
+              <ExecutiveSearchTab job={job} />
+            </TabsContent>
+          )}
 
           {/* AI Screening Tab */}
           <TabsContent value="screening" className="mt-6">
