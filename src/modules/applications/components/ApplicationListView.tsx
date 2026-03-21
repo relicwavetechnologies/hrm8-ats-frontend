@@ -92,7 +92,18 @@ export function ApplicationListView({
             <span className={`font-medium ${!app.isRead ? 'font-semibold' : ''}`}>
               {app.candidateName}
             </span>
-            <span className="text-xs text-muted-foreground">{app.candidateEmail}</span>
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-xs text-muted-foreground">{app.candidateEmail}</span>
+              {app.jobTargetAttribution?.medium ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  {app.jobTargetAttribution.medium}
+                </Badge>
+              ) : app.jobTargetAttribution?.applicantGuid ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  JobTarget
+                </Badge>
+              ) : null}
+            </div>
           </div>
         </div>
       ),

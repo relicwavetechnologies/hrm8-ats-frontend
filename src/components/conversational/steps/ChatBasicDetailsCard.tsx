@@ -16,6 +16,7 @@ interface ChatBasicDetailsCardProps {
     onDepartmentChange: (department: string) => void;
     onDistributionScopeChange: (scope: 'HRM8_ONLY' | 'GLOBAL') => void;
     onContinue: () => void;
+    showContinue?: boolean;
     isParsedTitle?: boolean;
     isParsedDept?: boolean;
 }
@@ -29,6 +30,7 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
     onDepartmentChange,
     onDistributionScopeChange,
     onContinue,
+    showContinue = true,
     isParsedTitle,
     isParsedDept
 }) => {
@@ -112,27 +114,29 @@ export const ChatBasicDetailsCard: React.FC<ChatBasicDetailsCardProps> = ({
                         <RadioGroupItem value="GLOBAL" className="mt-0.5" />
                         <div>
                             <p className="text-sm font-medium">Publish globally through JobTarget</p>
-                            <p className="text-xs text-muted-foreground">Review channels and budget in HRM8, then launch marketplace with SSO.</p>
+                            <p className="text-xs text-muted-foreground">Publish first, then configure channels, budget, and launch JobTarget in the post-publish flow.</p>
                         </div>
                     </label>
                 </RadioGroup>
                 {distributionScope === 'GLOBAL' && (
                     <p className="text-xs text-muted-foreground">
                         {isSelfManaged
-                            ? 'GLOBAL + self-managed: customer manages hiring and external promotion plan.'
-                            : 'GLOBAL + HRM8 service: HRM8 manages hiring and user approval is required for distribution plan.'}
+                            ? 'GLOBAL + self-managed: customer manages hiring and finishes external promotion after publish.'
+                            : 'GLOBAL + HRM8 service: HRM8 manages hiring and user approval is required before the post-publish distribution handoff.'}
                     </p>
                 )}
             </div>
 
-            <Button
-                onClick={onContinue}
-                disabled={!canContinue}
-                className="w-full h-11 font-semibold rounded-lg"
-            >
-                Continue
-                <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    disabled={!canContinue}
+                    className="w-full h-11 font-semibold rounded-lg"
+                >
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

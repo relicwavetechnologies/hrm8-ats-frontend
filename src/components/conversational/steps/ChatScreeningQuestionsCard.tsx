@@ -40,6 +40,7 @@ interface ChatScreeningQuestionsCardProps {
   questions: ApplicationQuestion[];
   onChange: (questions: ApplicationQuestion[]) => void;
   onContinue: () => void;
+  showContinue?: boolean;
   jobData?: Record<string, unknown>;
   companyContext?: string;
   onGenerateQuestions?: (existing: ApplicationQuestion[]) => Promise<ApplicationQuestion[]>;
@@ -49,6 +50,7 @@ export const ChatScreeningQuestionsCard: React.FC<ChatScreeningQuestionsCardProp
   questions,
   onChange,
   onContinue,
+  showContinue = true,
   jobData: _jobData,
   companyContext: _companyContext,
   onGenerateQuestions,
@@ -328,14 +330,16 @@ export const ChatScreeningQuestionsCard: React.FC<ChatScreeningQuestionsCardProp
         </div>
       </Card>
 
-      <div className="flex gap-3">
-        <Button variant="ghost" onClick={onContinue} className="flex-1">
-          Skip
-        </Button>
-        <Button onClick={onContinue} className="flex-1 gap-2" size="lg">
-          Continue <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {showContinue && (
+        <div className="flex gap-3">
+          <Button variant="ghost" onClick={onContinue} className="flex-1">
+            Skip
+          </Button>
+          <Button onClick={onContinue} className="flex-1 gap-2" size="lg">
+            Continue <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Save template dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>

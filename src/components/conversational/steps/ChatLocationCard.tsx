@@ -12,6 +12,7 @@ interface ChatLocationCardProps {
     onLocationChange: (location: string) => void;
     onWorkArrangementChange: (value: 'on-site' | 'remote' | 'hybrid') => void;
     onContinue: () => void;
+    showContinue?: boolean;
     isParsed?: boolean;
 }
 
@@ -42,6 +43,7 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
     onLocationChange,
     onWorkArrangementChange,
     onContinue,
+    showContinue = true,
     isParsed
 }) => {
     const isLocationValid = workArrangement === 'remote' ? true : location.trim().length >= 2;
@@ -111,14 +113,16 @@ export const ChatLocationCard: React.FC<ChatLocationCardProps> = ({
                 )}
             </div>
 
-            <Button
-                onClick={onContinue}
-                disabled={!canContinue}
-                className="w-full h-11 font-semibold rounded-lg"
-            >
-                Continue
-                <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    disabled={!canContinue}
+                    className="w-full h-11 font-semibold rounded-lg"
+                >
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

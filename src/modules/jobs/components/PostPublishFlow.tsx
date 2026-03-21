@@ -23,13 +23,9 @@ import {
   ExternalLink,
   BookOpen,
   CheckCircle2,
-  Link2,
   Users,
-  Megaphone,
-  X,
   ChevronRight,
   Eye,
-  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 import { jobService } from "@/shared/lib/jobService";
@@ -48,7 +44,7 @@ interface PostPublishFlowProps {
   onComplete?: () => void;
 }
 
-type FlowStep = "tools" | "jobtarget" | "view";
+type FlowStep = "tools" | "view";
 
 export function PostPublishFlow({
   job,
@@ -79,6 +75,7 @@ export function PostPublishFlow({
   const shareLink = job.shareLink || `${window.location.origin}/jobs/${job.id}`;
   const referralLink = job.referralLink || `${shareLink}?ref=${job.id.substring(0, 8)}`;
   const canUpgradeToManaged = job.serviceType === "self-managed" || job.serviceType === "rpo";
+  const isGlobal = job.distributionScope === "GLOBAL";
   const syncJob = latestJob || job;
 
   const handleCopyLink = (link: string, label: string) => {
@@ -170,20 +167,12 @@ export function PostPublishFlow({
 
   const handleNextStep = () => {
     if (currentStep === "tools") {
-      setCurrentStep("jobtarget");
+      if (isGlobal) {
+        setShowJobTargetDialog(true);
+        return;
+      }
+      setCurrentStep("view");
     }
-  };
-
-  const handleLaunchMarketplace = () => {
-    setShowJobTargetDialog(true);
-  };
-
-  const handleSkipJobTarget = () => {
-    setCurrentStep("view");
-    toast({
-      title: "Skipped",
-      description: "You can launch JobTarget Marketplace any time from the job detail page.",
-    });
   };
 
   const handleComplete = () => {
@@ -460,49 +449,6 @@ export function PostPublishFlow({
     </div>
   );
 
-  const renderJobTargetStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <Megaphone className="h-12 w-12 text-primary mx-auto mb-3" />
-        <h3 className="text-xl font-semibold mb-2">Launch in JobTarget Marketplace</h3>
-        <p className="text-sm text-muted-foreground">
-          Review sync health and open a fresh JobTarget marketplace SSO session
-        </p>
-      </div>
-
-      <Card className="border-primary/30 bg-primary/5">
-        <CardHeader>
-          <CardTitle className="text-base">JobTarget Sync Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            {syncJob.jobTargetSync?.syncStatus === 'SYNCED' ? (
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-            )}
-            <span>Status: {syncJob.jobTargetSync?.syncStatus || 'NOT_SYNCED'}</span>
-          </div>
-          {syncJob.jobTargetSync?.remoteJobId && (
-            <p className="text-sm text-muted-foreground">Remote Job ID: {syncJob.jobTargetSync.remoteJobId}</p>
-          )}
-          {syncJob.jobTargetSync?.lastError && (
-            <p className="text-sm text-destructive">Last Error: {syncJob.jobTargetSync.lastError}</p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Marketplace launch generates a new backend SSO URL and keeps users inside HRM8 before external posting.
-          </p>
-        </CardContent>
-      </Card>
-
-      <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-        <p>
-          You can relaunch JobTarget Marketplace later from the job detail page.
-        </p>
-      </div>
-    </div>
-  );
-
   const renderViewStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -551,11 +497,9 @@ export function PostPublishFlow({
   const getStepTitle = () => {
     switch (currentStep) {
       case "tools":
-        return "Step 1 of 3: Configure Tools";
-      case "jobtarget":
-        return "Step 2 of 3: Launch Marketplace";
+        return isGlobal ? "Step 1 of 3: Configure Tools" : "Step 1 of 2: Configure Tools";
       case "view":
-        return "Step 3 of 3: View Your Job";
+        return isGlobal ? "Step 3 of 3: View Your Job" : "Step 2 of 2: View Your Job";
       default:
         return "";
     }
@@ -573,17 +517,16 @@ export function PostPublishFlow({
   }, [job]);
 
   useEffect(() => {
-    if (!open) return;
-    if (currentStep !== "jobtarget") return;
+    if (!open || !showJobTargetDialog) return;
     refreshLatestJob().catch(() => {
       // Keep existing display values when refresh fails.
     });
-  }, [open, currentStep, job.id]);
+  }, [open, showJobTargetDialog, job.id]);
 
   return (
     <>
       <Dialog
-        open={open}
+        open={open && !showJobTargetDialog}
         onOpenChange={(nextOpen) => {
           onOpenChange(nextOpen, nextOpen ? undefined : { reason: "dismiss" });
         }}
@@ -595,15 +538,17 @@ export function PostPublishFlow({
               {getStepTitle()}
             </DialogTitle>
             <DialogDescription>
-              {currentStep === "tools" && "Configure alerts, share your job, and save it as a template"}
-              {currentStep === "jobtarget" && "Launch a fresh JobTarget marketplace session from HRM8"}
+              {currentStep === "tools" && (
+                isGlobal
+                  ? "Configure alerts, share your job, and then launch JobTarget promotion."
+                  : "Configure alerts, share your job, and save it as a template."
+              )}
               {currentStep === "view" && "See how your job appears to candidates"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-4">
             {currentStep === "tools" && renderToolsStep()}
-            {currentStep === "jobtarget" && renderJobTargetStep()}
             {currentStep === "view" && renderViewStep()}
           </div>
 
@@ -612,32 +557,14 @@ export function PostPublishFlow({
               {currentStep === "tools" && (
                 <Badge variant="outline">Step 1</Badge>
               )}
-              {currentStep === "jobtarget" && (
-                <Badge variant="outline">Step 2</Badge>
-              )}
               {currentStep === "view" && (
-                <Badge variant="outline">Step 3</Badge>
+                <Badge variant="outline">{isGlobal ? "Step 3" : "Step 2"}</Badge>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {currentStep === "jobtarget" && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={handleSkipJobTarget}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Skip for Now
-                  </Button>
-                  <Button onClick={handleLaunchMarketplace}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Launch Marketplace
-                  </Button>
-                </>
-              )}
               {currentStep === "tools" && (
                 <Button onClick={handleNextStep}>
-                  Continue
+                  {isGlobal ? "Continue to JobTarget" : "Continue"}
                   <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
               )}
@@ -652,7 +579,7 @@ export function PostPublishFlow({
       </Dialog>
 
       <ExternalPromotionDialog
-        open={showJobTargetDialog}
+        open={isGlobal && showJobTargetDialog}
         onOpenChange={(open) => {
           setShowJobTargetDialog(open);
           if (!open) {

@@ -10,6 +10,7 @@ interface ChatRoleDetailsCardProps {
     onEmploymentTypeChange: (value: 'full-time' | 'part-time' | 'contract' | 'casual') => void;
     onExperienceLevelChange: (value: 'entry' | 'mid' | 'senior' | 'executive') => void;
     onContinue: () => void;
+    showContinue?: boolean;
 }
 
 const employmentTypes: { value: 'full-time' | 'part-time' | 'contract' | 'casual'; label: string; description: string }[] = [
@@ -32,6 +33,7 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
     onEmploymentTypeChange,
     onExperienceLevelChange,
     onContinue,
+    showContinue = true,
 }) => {
     return (
         <div className="space-y-7 animate-in fade-in slide-in-from-bottom-2 duration-400">
@@ -109,13 +111,15 @@ export const ChatRoleDetailsCard: React.FC<ChatRoleDetailsCardProps> = ({
                 </div>
             </div>
 
-            <Button
-                onClick={onContinue}
-                className="w-full h-11 font-semibold rounded-lg"
-            >
-                Continue
-                <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    className="w-full h-11 font-semibold rounded-lg"
+                >
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

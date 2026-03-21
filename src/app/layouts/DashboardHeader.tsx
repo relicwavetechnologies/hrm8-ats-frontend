@@ -1,6 +1,6 @@
 import { SidebarTrigger, useSidebar } from "@/shared/components/ui/sidebar";
 import { Separator } from "@/shared/components/ui/separator";
-import { Search, Command, MessageSquare, MoreVertical, UserPlus, Calendar, DollarSign, Moon, Sun, Bell } from "lucide-react";
+import { Search, Command, MessageSquare, MoreVertical, UserPlus, Calendar, DollarSign, Moon, Sun, Bell, Loader2 } from "lucide-react";
 import { UserNav } from "./UserNav";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { Breadcrumbs } from "@/shared/components/common/Breadcrumbs";
@@ -25,6 +25,7 @@ export function DashboardHeader() {
   const { selectedCurrency, setSelectedCurrency } = useCurrencyFormat();
   const { open: sidebarOpen } = useSidebar();
   const navigate = useNavigate();
+  const [isPostingJob, setIsPostingJob] = useState(false);
 
   const handleSearchClick = () => {
     const event = new CustomEvent('open-command-palette');
@@ -57,6 +58,17 @@ export function DashboardHeader() {
     window.addEventListener('toggle-ai-panel', handleToggle);
     return () => window.removeEventListener('toggle-ai-panel', handleToggle);
   }, []);
+
+  useEffect(() => {
+    const handleReady = () => setIsPostingJob(false);
+    window.addEventListener('job-create-flow-ready', handleReady);
+    return () => window.removeEventListener('job-create-flow-ready', handleReady);
+  }, []);
+
+  const handlePostJob = () => {
+    setIsPostingJob(true);
+    navigate('/ats/jobs?action=create');
+  };
 
   return (
     <TooltipProvider>
@@ -102,11 +114,12 @@ export function DashboardHeader() {
             {/* Post Job Button */}
             <Button
               variant="default"
-              onClick={() => navigate('/ats/jobs?action=create')}
+              onClick={handlePostJob}
+              disabled={isPostingJob}
               className="h-9 px-3.5 gap-2 rounded-lg shadow-sm hover:shadow-md transition-all hidden md:flex"
             >
-              <span className="text-[24px] leading-none">+</span>
-              <span className="font-medium">Post Job</span>
+              {isPostingJob ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-[24px] leading-none">+</span>}
+              <span className="font-medium">{isPostingJob ? 'Loading...' : 'Post Job'}</span>
             </Button>
 
             {/* More Actions Dropdown */}

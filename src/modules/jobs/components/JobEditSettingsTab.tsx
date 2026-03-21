@@ -4,7 +4,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescripti
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { CalendarIcon, Settings, Eye, EyeOff, Video } from "lucide-react";
+import { CalendarIcon, Settings, Eye, EyeOff, Video, RadioTower } from "lucide-react";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
@@ -22,6 +22,40 @@ export function JobEditSettingsTab({ form, job }: JobEditSettingsTabProps) {
   const visibility = form.watch("visibility");
   const stealth = form.watch("stealth");
   const videoInterviewingEnabled = form.watch("videoInterviewingEnabled");
+  const distributionScope = form.watch("distributionScope");
+  const globalPublishConfig = form.watch("globalPublishConfig");
+  const easyApplyConfig = globalPublishConfig?.easyApplyConfig || {
+    enabled: false,
+    type: 'full' as const,
+    hostedApply: false,
+    questionnaireEnabled: false,
+  };
+  const isGlobalJob = distributionScope === "GLOBAL";
+
+  const updateEasyApplyConfig = (
+    patch: Partial<NonNullable<typeof globalPublishConfig>["easyApplyConfig"]>
+  ) => {
+    const current = globalPublishConfig || {
+      channels: [],
+      budgetTier: 'none' as const,
+      customBudget: undefined,
+      hrm8ServiceRequiresApproval: false,
+      hrm8ServiceApproved: false,
+      easyApplyConfig,
+    };
+
+    form.setValue(
+      "globalPublishConfig",
+      {
+        ...current,
+        easyApplyConfig: {
+          ...easyApplyConfig,
+          ...patch,
+        },
+      },
+      { shouldDirty: true, shouldValidate: true }
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -232,7 +266,108 @@ export function JobEditSettingsTab({ form, job }: JobEditSettingsTabProps) {
           />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RadioTower className="h-4 w-4" />
+            JobTarget Settings
+          </CardTitle>
+          <CardDescription>
+            Manage Easy Apply for external JobTarget distribution after publish.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isGlobalJob ? (
+            <>
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Enable Easy Apply</FormLabel>
+                  <FormDescription>
+                    Send JobTarget Easy Apply settings on the next job sync so supported boards can keep candidates on-platform.
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={!!easyApplyConfig.enabled}
+                    onCheckedChange={(next) =>
+                      updateEasyApplyConfig({
+                        enabled: !!next,
+                        hostedApply: !!next ? easyApplyConfig.hostedApply : false,
+                        questionnaireEnabled: !!next ? easyApplyConfig.questionnaireEnabled : false,
+                      })
+                    }
+                  />
+                </FormControl>
+              </FormItem>
+
+              {easyApplyConfig.enabled ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <FormItem>
+                    <FormLabel>Easy Apply Type</FormLabel>
+                    <Select
+                      value={easyApplyConfig.type}
+                      onValueChange={(value: "basic" | "full") =>
+                        updateEasyApplyConfig({ type: value })
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic</SelectItem>
+                        <SelectItem value="full">Full</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Hosted Apply</FormLabel>
+                      <FormDescription>
+                        Let supported boards use hosted apply behavior.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={!!easyApplyConfig.hostedApply}
+                        onCheckedChange={(next) => updateEasyApplyConfig({ hostedApply: !!next })}
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Use HRM8 Questions</FormLabel>
+                      <FormDescription>
+                        Send questionnaire webhook support with Easy Apply.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={!!easyApplyConfig.questionnaireEnabled}
+                        onCheckedChange={(next) =>
+                          updateEasyApplyConfig({ questionnaireEnabled: !!next })
+                        }
+                      />
+                    </FormControl>
+                  </FormItem>
+                </div>
+              ) : null}
+
+              <p className="text-xs text-muted-foreground">
+                Save the job, then launch or refresh JobTarget distribution so the updated Easy Apply settings are pushed to JobTarget.
+              </p>
+            </>
+          ) : (
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Easy Apply is available only for GLOBAL jobs. Switch this job to global distribution before using JobTarget Easy Apply.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
-

@@ -9,7 +9,7 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Sparkles, X, ChevronRight, Loader2 } from 'lucide-react';
-import { useJobCreateStore, WizardStepId, WIZARD_STEPS } from '@/modules/jobs/store/useJobCreateStore';
+import { useJobCreateStore, WIZARD_STEPS, getWizardStepIdFromDraftStep } from '@/modules/jobs/store/useJobCreateStore';
 import { Job, JobFormData } from '@/shared/types/job';
 import { JobPreviewPanel } from '@/components/conversational/JobPreviewPanel';
 import { JobSetupDrawer } from '@/components/setup/JobSetupDrawer';
@@ -44,7 +44,6 @@ import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { cn } from '@/shared/lib/utils';
 import {
-    ChatServiceTypeCard,
     ChatBasicDetailsCard,
     ChatLocationCard,
     ChatCompensationCard,
@@ -58,8 +57,6 @@ import {
     ChatScreeningQuestionsCard,
     ChatLogisticsCard,
     ChatReviewCard,
-    ChatPlaceholderCard,
-    stepTitles,
 } from './steps';
 
 interface JobCreateDrawerProps {
@@ -70,6 +67,22 @@ interface JobCreateDrawerProps {
     /** When opening a draft, wizard starts at this step (1-based) */
     initialDraftStep?: number;
 }
+
+const DEFAULT_APPLICATION_FORM: NonNullable<Partial<JobFormData>['applicationForm']> = {
+    id: 'default-app-form',
+    name: 'Default Application Form',
+    questions: [],
+    includeStandardFields: {
+        resume: { included: true, required: true },
+        coverLetter: { included: true, required: false },
+        portfolio: { included: false, required: false },
+        linkedIn: { included: false, required: false },
+        website: { included: false, required: false },
+    },
+};
+
+const isSelfManagedService = (serviceType?: string) =>
+    (serviceType || 'self-managed') === 'self-managed' || (serviceType || 'self-managed') === 'rpo';
 
 export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenChange, jobId, initialData, initialDraftStep }) => {
     const { currentStepId, jobData, nextStep, prevStep, jumpToStep, loadJobData, reset, setJobData, parsedFields } = useJobCreateStore();
@@ -96,8 +109,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         if (open && initialData) {
             loadJobData(initialData);
             if (initialDraftStep != null && initialDraftStep >= 1) {
-                const step = Math.min(initialDraftStep, WIZARD_STEPS.length);
-                jumpToStep(WIZARD_STEPS[step - 1]);
+                jumpToStep(getWizardStepIdFromDraftStep(initialDraftStep));
             }
         } else if (open && !jobId) {
             reset();
@@ -127,6 +139,36 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
     }, [open, user?.companyId, user?.companyName, user?.companyWebsite]);
 
     const draftStepIndex = WIZARD_STEPS.indexOf(currentStepId) + 1;
+
+    const getGlobalPublishConfig = (scope: 'HRM8_ONLY' | 'GLOBAL' = (jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY') => (
+        scope === 'GLOBAL'
+            ? {
+                channels: jobData.globalPublishConfig?.channels || [],
+                budgetTier: jobData.globalPublishConfig?.budgetTier || 'none',
+                customBudget: jobData.globalPublishConfig?.customBudget,
+                hrm8ServiceRequiresApproval: !isSelfManagedService(jobData.serviceType),
+                hrm8ServiceApproved: jobData.globalPublishConfig?.hrm8ServiceApproved || false,
+                easyApplyConfig: jobData.globalPublishConfig?.easyApplyConfig || {
+                    enabled: false,
+                    type: 'full',
+                    hostedApply: false,
+                    questionnaireEnabled: false,
+                },
+            }
+            : {
+                channels: [],
+                budgetTier: 'none' as const,
+                customBudget: undefined,
+                hrm8ServiceRequiresApproval: false,
+                hrm8ServiceApproved: false,
+                easyApplyConfig: {
+                    enabled: false,
+                    type: 'full' as const,
+                    hostedApply: false,
+                    questionnaireEnabled: false,
+                },
+            }
+    );
 
     const mapServiceTypeToHiringMode = (serviceType?: string): 'SELF_MANAGED' | 'SHORTLISTING' | 'FULL_SERVICE' | 'EXECUTIVE_SEARCH' => {
         switch (serviceType) {
@@ -170,24 +212,53 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         salaryCurrency: jobData.salaryCurrency || 'USD',
         salaryPeriod: jobData.salaryPeriod || 'annual',
         salaryDescription: jobData.salaryDescription,
-        hideSalary: jobData.hideSalary ?? false,
         requirements: jobData.requirements?.map((r: any) => (typeof r === 'string' ? r : r.text)) ?? [],
         responsibilities: jobData.responsibilities?.map((r: any) => (typeof r === 'string' ? r : r.text)) ?? [],
         tags: jobData.tags ?? [],
-        applicationForm: jobData.applicationForm,
+        applicationForm: jobData.applicationForm || DEFAULT_APPLICATION_FORM,
         visibility: jobData.visibility || 'public',
         stealth: jobData.stealth ?? false,
         closeDate: jobData.closeDate,
+        termsAccepted: jobData.termsAccepted ?? false,
         draftStep: draftStepIndex,
         distributionScope: (jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY',
-        globalPublishConfig: jobData.globalPublishConfig || {
-            channels: [],
-            budgetTier: 'none',
-            customBudget: undefined,
-            hrm8ServiceRequiresApproval: false,
-            hrm8ServiceApproved: false,
-        },
+        globalPublishConfig: getGlobalPublishConfig(),
     });
+
+    const buildPublishPayload = () => {
+        const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
+        const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
+
+        return {
+            title: jobData.title || 'Untitled Job',
+            description: jobData.description || '',
+            department: jobData.department,
+            location: jobData.location || 'Remote',
+            employmentType: jobData.employmentType || 'full-time',
+            workArrangement: jobData.workArrangement || 'on-site',
+            experienceLevel: jobData.experienceLevel,
+            numberOfVacancies: jobData.numberOfVacancies,
+            salaryMin: jobData.salaryMin,
+            salaryMax: jobData.salaryMax,
+            salaryCurrency: jobData.salaryCurrency || 'USD',
+            salaryPeriod: jobData.salaryPeriod || 'annual',
+            salaryDescription: jobData.salaryDescription,
+            requirements: jobData.requirements?.map(r => typeof r === 'string' ? r : r.text) || [],
+            responsibilities: jobData.responsibilities?.map(r => typeof r === 'string' ? r : r.text) || [],
+            tags: jobData.tags || [],
+            applicationForm: jobData.applicationForm || DEFAULT_APPLICATION_FORM,
+            hiringMode,
+            servicePackage,
+            visibility: jobData.visibility || 'public',
+            stealth: jobData.stealth ?? false,
+            closeDate: jobData.closeDate,
+            termsAccepted: jobData.termsAccepted,
+            termsAcceptedAt: jobData.termsAccepted ? new Date() : undefined,
+            status: 'DRAFT' as const,
+            distributionScope: (jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY',
+            globalPublishConfig: getGlobalPublishConfig(),
+        };
+    };
 
     const handleSaveDraftAndClose = async () => {
         setIsSavingDraft(true);
@@ -203,36 +274,15 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                     toast({ title: 'Error', description: res.error || 'Failed to save draft', variant: 'destructive' });
                 }
             } else {
-                const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
-                const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
                 const createRes = await jobService.createJob({
-                    title: payload.title,
-                    description: payload.description,
-                    department: payload.department ?? '',
-                    location: payload.location,
-                    hiringMode,
-                    workArrangement: (payload.workArrangement ?? 'on-site').toUpperCase().replace('-', '_') as any,
-                    employmentType: (payload.employmentType ?? 'full-time').toUpperCase().replace('-', '_') as any,
-                    numberOfVacancies: payload.numberOfVacancies,
-                    salaryMin: payload.salaryMin,
-                    salaryMax: payload.salaryMax,
-                    salaryCurrency: payload.salaryCurrency,
-                    requirements: payload.requirements,
-                    responsibilities: payload.responsibilities,
-                    applicationForm: payload.applicationForm,
-                    visibility: payload.visibility,
-                    stealth: payload.stealth,
-                    closeDate: payload.closeDate,
-                    servicePackage,
+                    ...buildPublishPayload(),
                     publishImmediately: false,
-                    distributionScope: payload.distributionScope,
-                    globalPublishConfig: payload.globalPublishConfig,
-                });
+                } as any);
                 if (createRes.success && createRes.data) {
                     const data = createRes.data as { job?: { id: string }; id?: string };
                     const newId = data.job?.id ?? data.id;
                     if (newId) {
-                        await jobService.saveDraft(newId, { ...payload, draftStep: payload.draftStep } as any);
+                        await jobService.saveDraft(newId, payload as any);
                         toast({ title: 'Draft saved', description: 'You can continue from the Drafts tab.' });
                     }
                     setShowSaveDraftDialog(false);
@@ -269,198 +319,165 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         setIsSubmitting(true);
         try {
             const isGlobal = jobData.distributionScope === 'GLOBAL';
-            const isSelfManaged = (jobData.serviceType || 'self-managed') === 'self-managed' || (jobData.serviceType || 'self-managed') === 'rpo';
+            const isSelfManaged = isSelfManagedService(jobData.serviceType);
             if (isGlobal && !isSelfManaged && !jobData.globalPublishConfig?.hrm8ServiceApproved) {
                 toast({
                     title: 'Approval Required',
-                    description: 'Approve the global distribution plan before publishing this HRM8-managed GLOBAL job.',
+                    description: 'Approve the GLOBAL distribution handoff before publishing this HRM8-managed job.',
                     variant: 'destructive',
                 });
                 return;
             }
 
-            const hiringMode = mapServiceTypeToHiringMode(jobData.serviceType);
-            const servicePackage = mapServiceTypeToServicePackage(jobData.serviceType);
+            const payload = buildPublishPayload();
 
-            // Transform JobFormData to CreateJobRequest
-            const payload: any = {
-                title: jobData.title || 'Untitled Job',
-                description: jobData.description || '',
-                department: jobData.department,
-                location: jobData.location || 'Remote',
-                employmentType: jobData.employmentType || 'full-time',
-                workArrangement: jobData.workArrangement || 'on-site',
-                experienceLevel: jobData.experienceLevel,
-                numberOfVacancies: jobData.numberOfVacancies,
+            let publishJobId = jobId ?? null;
+            let publishResponse;
 
-                // Salary
-                salaryMin: jobData.salaryMin,
-                salaryMax: jobData.salaryMax,
-                salaryCurrency: jobData.salaryCurrency,
-                salaryPeriod: jobData.salaryPeriod,
-                salaryDescription: jobData.salaryDescription,
-                hideSalary: jobData.hideSalary,
+            if (jobId) {
+                const updateResponse = await jobService.updateJob(jobId, payload as any);
+                if (!updateResponse.success) {
+                    throw new Error(updateResponse.error || 'Failed to update draft before publishing');
+                }
+                publishResponse = await jobService.publishJob(jobId);
+            } else {
+                const createResponse = await jobService.createJob(payload as any);
+                if (!createResponse.success || !createResponse.data) {
+                    throw new Error(createResponse.error || 'Failed to create job');
+                }
 
-                // Content
-                requirements: jobData.requirements?.map(r => typeof r === 'string' ? r : r.text) || [],
-                responsibilities: jobData.responsibilities?.map(r => typeof r === 'string' ? r : r.text) || [],
-                tags: jobData.tags || [],
+                const createdJob = (createResponse.data as { job?: { id: string }; id?: string }).job ?? createResponse.data;
+                publishJobId = (createdJob as { id?: string }).id ?? (createResponse.data as { id?: string }).id ?? null;
 
-                // Config
-                applicationForm: jobData.applicationForm,
-                hiringMode,
-                servicePackage,
-                visibility: jobData.visibility,
-                stealth: jobData.stealth,
-                closeDate: jobData.closeDate,
-                termsAccepted: jobData.termsAccepted,
-                termsAcceptedAt: jobData.termsAccepted ? new Date() : undefined,
-                status: 'DRAFT', // Explicitly set as DRAFT initially
-                distributionScope: (jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY',
-                globalPublishConfig: jobData.globalPublishConfig || {
-                    channels: [],
-                    budgetTier: 'none',
-                    customBudget: undefined,
-                    hrm8ServiceRequiresApproval: (jobData.serviceType || 'self-managed') !== 'self-managed' && (jobData.serviceType || 'self-managed') !== 'rpo',
-                    hrm8ServiceApproved: false,
-                },
-            };
-
-            // Create the job first
-            const createResponse = await import('@/shared/lib/jobService').then(m => m.jobService.createJob(payload));
-
-            if (createResponse.success && createResponse.data) {
-                const job = (createResponse.data as { job?: { id: string }; id?: string }).job ?? createResponse.data;
-                const newJobId = (job as { id?: string }).id ?? (createResponse.data as { id?: string }).id;
-
-                if (!newJobId) {
+                if (!publishJobId) {
                     throw new Error('Failed to get job ID');
                 }
 
-                // Now publish the job (this will change status from DRAFT to OPEN)
-                const publishResponse = await import('@/shared/lib/jobService').then(m => m.jobService.publishJob(newJobId));
-
-                if (!publishResponse.success) {
-                    const status = publishResponse.status;
-                    const errorMsg = (publishResponse as any).error || 'Failed to publish job';
-                    const errorCode = (publishResponse as { code?: string }).code;
-
-                    if (status === 402) {
-                        const isPaygInvoiceRequired =
-                            errorCode === 'PAYG_INVOICE_REQUIRED' ||
-                            errorMsg.includes('Complete checkout to continue');
-
-                        if (isPaygInvoiceRequired) {
-                            try {
-                                const checkoutRes = await jobService.initiatePaygJobCheckout(newJobId);
-                                if (checkoutRes.success && checkoutRes.data?.checkoutUrl) {
-                                    window.location.href = checkoutRes.data.checkoutUrl;
-                                    return;
-                                }
-                            } catch (checkoutErr) {
-                                console.error('PAYG checkout failed:', checkoutErr);
-                                toast({
-                                    title: 'Checkout Error',
-                                    description: 'Could not start payment. Please try again.',
-                                    variant: 'destructive',
-                                });
-                            }
-                            return;
-                        }
-
-                        if (errorMsg.toLowerCase().includes('subscription required')) {
-                            toast({
-                                title: 'Subscription Required',
-                                description: 'You need an active subscription to publish jobs.',
-                                variant: 'destructive',
-                            });
-                            return;
-                        }
-                        if (errorMsg.toLowerCase().includes('quota exhausted')) {
-                            toast({
-                                title: 'Job Quota Exhausted',
-                                description: 'Your subscription quota is full. Please upgrade your plan.',
-                                variant: 'destructive',
-                            });
-                            return;
-                        }
-                        toast({
-                            title: 'Payment Required',
-                            description: 'Complete checkout to publish this job.',
-                            variant: 'destructive',
-                        });
-                        return;
-                    }
-
-                    if (status === 503) {
-                        toast({
-                            title: 'No Consultant Available',
-                            description: 'No consultant is currently available for this service. Please try again later.',
-                            variant: 'destructive',
-                        });
-                        return;
-                    }
-
-                    throw new Error(errorMsg);
-                }
-
-                // Ensure the job status is OPEN (in case publishJob didn't update it)
-                await jobService.updateJob(newJobId, { status: 'OPEN' });
-
-                // If user wants to save as template, create it now
-                if (saveAsTemplate && templateNameInput) {
-                    try {
-                        const category = jobData.department || undefined;
-                        await jobTemplateService.createFromJob(
-                            newJobId,
-                            templateNameInput.trim(),
-                            undefined,
-                            category
-                        );
-                        toast({
-                            title: 'Template Saved',
-                            description: `"${templateNameInput}" has been saved as a template.`,
-                        });
-                    } catch (error) {
-                        console.error('Failed to save template:', error);
-                        toast({
-                            title: 'Template Save Failed',
-                            description: 'Job was published but template could not be saved.',
-                            variant: 'destructive',
-                        });
-                    }
-                }
-
-                const publishedRaw = (publishResponse.data || {}) as Record<string, unknown>;
-                const publishedBackend = ((publishedRaw.job || publishedRaw) as Record<string, unknown>) || {};
-                const mappedPublished = mapBackendJobToFrontend({
-                    ...publishedBackend,
-                    id: (publishedBackend.id as string) || newJobId,
-                    companyId: (publishedBackend.companyId as string) || user?.companyId || '',
-                    companyName: user?.companyName || '',
-                    createdBy: (publishedBackend.createdBy as string) || user?.id || '',
-                    createdByName: (publishedBackend.createdByName as string) || user?.name || 'User',
-                });
-                const published: Job = {
-                    ...mappedPublished,
-                    id: mappedPublished.id || newJobId,
-                    title: mappedPublished.title || jobData.title || 'Untitled Job',
-                    distributionScope: mappedPublished.distributionScope || jobData.distributionScope,
-                    globalPublishConfig: mappedPublished.globalPublishConfig || jobData.globalPublishConfig,
-                };
-
-                // Success! Open post-publish flow first.
-                setCreatedJobId(newJobId);
-                setCreatedJobTitle(jobData.title || undefined);
-                setPublishedJob(published);
-                setPostPublishOpen(true);
-                reset();
-                setSaveAsTemplate(false);
-                setTemplateNameInput('');
-                onOpenChange(false);
-            } else {
-                throw new Error(createResponse.error || 'Failed to create job');
+                publishResponse = await jobService.publishJob(publishJobId);
             }
+
+            if (!publishJobId) {
+                throw new Error('Failed to publish job');
+            }
+
+            if (!publishResponse.success) {
+                const status = publishResponse.status;
+                const errorMsg = (publishResponse as any).error || 'Failed to publish job';
+                const errorCode = (publishResponse as { code?: string }).code;
+
+                if (status === 402) {
+                    const isPaygInvoiceRequired =
+                        errorCode === 'PAYG_INVOICE_REQUIRED' ||
+                        errorMsg.includes('Complete checkout to continue');
+
+                    if (isPaygInvoiceRequired) {
+                        try {
+                            const checkoutRes = await jobService.initiatePaygJobCheckout(publishJobId);
+                            if (checkoutRes.success && checkoutRes.data?.checkoutUrl) {
+                                window.location.href = checkoutRes.data.checkoutUrl;
+                                return;
+                            }
+                        } catch (checkoutErr) {
+                            console.error('PAYG checkout failed:', checkoutErr);
+                            toast({
+                                title: 'Checkout Error',
+                                description: 'Could not start payment. Please try again.',
+                                variant: 'destructive',
+                            });
+                        }
+                        return;
+                    }
+
+                    if (errorMsg.toLowerCase().includes('subscription required')) {
+                        toast({
+                            title: 'Subscription Required',
+                            description: 'You need an active subscription to publish jobs.',
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+                    if (errorMsg.toLowerCase().includes('quota exhausted')) {
+                        toast({
+                            title: 'Job Quota Exhausted',
+                            description: 'Your subscription quota is full. Please upgrade your plan.',
+                            variant: 'destructive',
+                        });
+                        return;
+                    }
+                    toast({
+                        title: 'Payment Required',
+                        description: 'Complete checkout to publish this job.',
+                        variant: 'destructive',
+                    });
+                    return;
+                }
+
+                if (status === 503) {
+                    toast({
+                        title: 'No Consultant Available',
+                        description: 'No consultant is currently available for this service. Please try again later.',
+                        variant: 'destructive',
+                    });
+                    return;
+                }
+
+                throw new Error(errorMsg);
+            }
+
+            // Ensure the job status is OPEN (in case publishJob didn't update it)
+            await jobService.updateJob(publishJobId, { status: 'OPEN' });
+
+            // If user wants to save as template, create it now
+            if (saveAsTemplate && templateNameInput) {
+                try {
+                    const category = jobData.department || undefined;
+                    await jobTemplateService.createFromJob(
+                        publishJobId,
+                        templateNameInput.trim(),
+                        undefined,
+                        category
+                    );
+                    toast({
+                        title: 'Template Saved',
+                        description: `"${templateNameInput}" has been saved as a template.`,
+                    });
+                } catch (error) {
+                    console.error('Failed to save template:', error);
+                    toast({
+                        title: 'Template Save Failed',
+                        description: 'Job was published but template could not be saved.',
+                        variant: 'destructive',
+                    });
+                }
+            }
+
+            const publishedRaw = (publishResponse.data || {}) as Record<string, unknown>;
+            const publishedBackend = ((publishedRaw.job || publishedRaw) as Record<string, unknown>) || {};
+            const mappedPublished = mapBackendJobToFrontend({
+                ...publishedBackend,
+                id: (publishedBackend.id as string) || publishJobId,
+                companyId: (publishedBackend.companyId as string) || user?.companyId || '',
+                companyName: user?.companyName || '',
+                createdBy: (publishedBackend.createdBy as string) || user?.id || '',
+                createdByName: (publishedBackend.createdByName as string) || user?.name || 'User',
+            });
+            const published: Job = {
+                ...mappedPublished,
+                id: mappedPublished.id || publishJobId,
+                title: mappedPublished.title || jobData.title || 'Untitled Job',
+                distributionScope: mappedPublished.distributionScope || jobData.distributionScope,
+                globalPublishConfig: mappedPublished.globalPublishConfig || jobData.globalPublishConfig,
+            };
+
+            // Success! Open post-publish flow first.
+            setCreatedJobId(publishJobId);
+            setCreatedJobTitle(jobData.title || undefined);
+            setPublishedJob(published);
+            setPostPublishOpen(true);
+            reset();
+            setSaveAsTemplate(false);
+            setTemplateNameInput('');
+            onOpenChange(false);
         } catch (error) {
             console.error('Job creation failed:', error);
             toast({
@@ -488,255 +505,322 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
         await handleSubmitJob();
     };
 
+    const requirementsItems = (jobData.requirements || []).map((item) => typeof item === 'string' ? item : item.text);
+    const responsibilitiesItems = (jobData.responsibilities || []).map((item) => typeof item === 'string' ? item : item.text);
+    const applicationForm = jobData.applicationForm || DEFAULT_APPLICATION_FORM;
+    const canContinueFromCurrentStep = (() => {
+        switch (currentStepId) {
+            case 'core-details':
+                return (jobData.title || '').trim().length >= 3
+                    && ((jobData.workArrangement || 'on-site') === 'remote' || (jobData.location || '').trim().length >= 2);
+            case 'job-content':
+                return (jobData.description || '').trim().length >= 50
+                    && requirementsItems.length >= 1
+                    && responsibilitiesItems.length >= 1;
+            default:
+                return true;
+        }
+    })();
+
+    const renderStepAdvanceButton = (label = currentStepId === 'posting-settings' ? 'Continue to review' : 'Continue') => (
+        <div className="flex justify-end pt-2">
+            <Button
+                onClick={nextStep}
+                disabled={!canContinueFromCurrentStep}
+                className="min-w-[180px] h-11 font-semibold rounded-lg"
+            >
+                {label}
+                <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+        </div>
+    );
+
     const renderStepCard = () => {
         const isParsed = (field: string) => parsedFields.includes(field);
-
         switch (currentStepId) {
-            case 'document-upload':
+            case 'core-details':
                 return (
-                    <ChatDocumentUploadCard
-                        onFileUpload={async (file) => {
-                            setIsUploadingDoc(true);
-                            setUploadComplete(false);
-                            try {
-                                await handleFileUpload(file);
-                                setUploadComplete(true);
-                                // After parsing, move to next step
-                                setTimeout(() => {
-                                    nextStep();
-                                    setIsUploadingDoc(false);
+                    <div className="space-y-8">
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Quick start</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Upload a job description to prefill the role, or continue with manual entry below.
+                                </p>
+                            </div>
+                            <ChatDocumentUploadCard
+                                onFileUpload={async (file) => {
+                                    setIsUploadingDoc(true);
                                     setUploadComplete(false);
-                                }, 1500);
-                            } catch (err) {
-                                setIsUploadingDoc(false);
-                            }
-                        }}
-                        onSkip={nextStep}
-                        isUploading={isUploadingDoc}
-                        uploadComplete={uploadComplete}
-                    />
+                                    try {
+                                        await handleFileUpload(file);
+                                        setUploadComplete(true);
+                                    } finally {
+                                        setIsUploadingDoc(false);
+                                    }
+                                }}
+                                onSkip={() => undefined}
+                                isUploading={isUploadingDoc}
+                                uploadComplete={uploadComplete}
+                                showSkip={false}
+                            />
+                        </section>
+
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Role basics</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Capture the core details candidates and distribution tools need first.
+                                </p>
+                            </div>
+                            <ChatBasicDetailsCard
+                                title={jobData.title || ''}
+                                department={jobData.department || ''}
+                                distributionScope={(jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY'}
+                                serviceType={jobData.serviceType as any}
+                                onTitleChange={(v) => setJobData({ title: v })}
+                                onDepartmentChange={(v) => setJobData({ department: v })}
+                                onDistributionScopeChange={(v) => setJobData({
+                                    distributionScope: v,
+                                    globalPublishConfig: getGlobalPublishConfig(v),
+                                })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                isParsedTitle={isParsed('title')}
+                                isParsedDept={isParsed('department')}
+                            />
+                            <ChatLocationCard
+                                location={jobData.location || ''}
+                                workArrangement={jobData.workArrangement || 'on-site'}
+                                onLocationChange={(v) => setJobData({ location: v })}
+                                onWorkArrangementChange={(v) => setJobData({ workArrangement: v })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                isParsed={isParsed('location')}
+                            />
+                            <ChatRoleDetailsCard
+                                employmentType={jobData.employmentType || 'full-time'}
+                                experienceLevel={jobData.experienceLevel || 'mid'}
+                                onEmploymentTypeChange={(v) => setJobData({ employmentType: v })}
+                                onExperienceLevelChange={(v) => setJobData({ experienceLevel: v })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                            />
+                            <ChatVacanciesCard
+                                value={jobData.numberOfVacancies || 1}
+                                onChange={(v) => setJobData({ numberOfVacancies: v })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                            />
+                        </section>
+                        {renderStepAdvanceButton()}
+                    </div>
                 );
-            case 'basic-details':
+            case 'job-content':
                 return (
-                    <ChatBasicDetailsCard
-                        title={jobData.title || ''}
-                        department={jobData.department || ''}
-                        distributionScope={(jobData.distributionScope as 'HRM8_ONLY' | 'GLOBAL') || 'HRM8_ONLY'}
-                        serviceType={jobData.serviceType as any}
-                        onTitleChange={(v) => setJobData({ title: v })}
-                        onDepartmentChange={(v) => setJobData({ department: v })}
-                        onDistributionScopeChange={(v) => setJobData({
-                            distributionScope: v,
-                            globalPublishConfig: v === 'GLOBAL'
-                                ? {
-                                    channels: jobData.globalPublishConfig?.channels || [],
-                                    budgetTier: jobData.globalPublishConfig?.budgetTier || 'none',
-                                    customBudget: jobData.globalPublishConfig?.customBudget,
-                                    hrm8ServiceRequiresApproval: (jobData.serviceType || 'self-managed') !== 'self-managed' && (jobData.serviceType || 'self-managed') !== 'rpo',
-                                    hrm8ServiceApproved: jobData.globalPublishConfig?.hrm8ServiceApproved || false,
-                                }
-                                : {
-                                    channels: [],
-                                    budgetTier: 'none',
-                                    customBudget: undefined,
-                                    hrm8ServiceRequiresApproval: false,
-                                    hrm8ServiceApproved: false,
-                                },
-                        })}
-                        onContinue={nextStep}
-                        isParsedTitle={isParsed('title')}
-                        isParsedDept={isParsed('department')}
-                    />
+                    <div className="space-y-8">
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Overview</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Write the core story of the role first, then add clear qualification and duty lists.
+                                </p>
+                            </div>
+                            <ChatDescriptionCard
+                                description={jobData.description || ''}
+                                onChange={(v) => setJobData({ description: v })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                isParsed={isParsed('description')}
+                                jobData={jobData}
+                                companyContext={companyContext}
+                                onGenerateDescription={async (currentDescription) => {
+                                    const additionalContext = [
+                                        companyContext ? `Company context:\n${companyContext}` : '',
+                                        currentDescription.trim() ? `User's current description (expand or improve this):\n${currentDescription}` : '',
+                                    ].filter(Boolean).join('\n\n');
+                                    const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
+                                    return result.description;
+                                }}
+                            />
+                        </section>
+
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Requirements</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    List the must-have experience, skills, and certifications for the role.
+                                </p>
+                            </div>
+                            <ChatListBuilderCard
+                                title="Requirements"
+                                subtitle="List what candidates need to qualify for this role."
+                                items={requirementsItems}
+                                onChange={(items) => setJobData({ requirements: items.map((text, i) => ({ id: `req-${i}`, text, order: i })) })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                isParsed={isParsed('requirements')}
+                                placeholder="e.g. 3+ years of experience in..."
+                                minItems={1}
+                                onGenerateList={async (currentItems) => {
+                                    const additionalContext = [
+                                        companyContext ? `Company context:\n${companyContext}` : '',
+                                        'Generate only requirements/qualifications for this role. Return them as the requirements array.',
+                                        currentItems.length > 0 ? `User's current requirements (expand or improve):\n${currentItems.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
+                                    ].filter(Boolean).join('\n\n');
+                                    const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
+                                    return result.requirements ?? [];
+                                }}
+                            />
+                        </section>
+
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Responsibilities</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Make the day-to-day scope concrete so candidates understand the expectations.
+                                </p>
+                            </div>
+                            <ChatListBuilderCard
+                                title="Responsibilities"
+                                subtitle="Describe the key duties for this position."
+                                items={responsibilitiesItems}
+                                onChange={(items) => setJobData({ responsibilities: items.map((text, i) => ({ id: `resp-${i}`, text, order: i })) })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                isParsed={isParsed('responsibilities')}
+                                placeholder="e.g. Lead a team of 5 engineers..."
+                                minItems={1}
+                                onGenerateList={async (currentItems) => {
+                                    const additionalContext = [
+                                        companyContext ? `Company context:\n${companyContext}` : '',
+                                        'Generate only responsibilities/duties for this role. Return them as the responsibilities array.',
+                                        currentItems.length > 0 ? `User's current responsibilities (expand or improve):\n${currentItems.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
+                                    ].filter(Boolean).join('\n\n');
+                                    const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
+                                    return result.responsibilities ?? [];
+                                }}
+                            />
+                        </section>
+
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Tags</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Optional tags help search, filtering, and internal organization.
+                                </p>
+                            </div>
+                            <ChatTagsCard
+                                tags={jobData.tags || []}
+                                onChange={(tags) => setJobData({ tags })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                            />
+                        </section>
+                        {renderStepAdvanceButton()}
+                    </div>
                 );
-            case 'location':
+            case 'application':
                 return (
-                    <ChatLocationCard
-                        location={jobData.location || ''}
-                        workArrangement={jobData.workArrangement || 'on-site'}
-                        onLocationChange={(v) => setJobData({ location: v })}
-                        onWorkArrangementChange={(v) => setJobData({ workArrangement: v })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('location')}
-                    />
+                    <div className="space-y-8">
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Application form</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Decide what every candidate should submit before they can apply.
+                                </p>
+                            </div>
+                            <ChatApplicationConfigCard
+                                config={applicationForm}
+                                onChange={(config) => setJobData({ applicationForm: config })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                            />
+                        </section>
+
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Screening questions</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Add targeted questions only when they help you filter applicants earlier.
+                                </p>
+                            </div>
+                            <ChatScreeningQuestionsCard
+                                questions={applicationForm.questions || []}
+                                onChange={(questions) => setJobData({
+                                    applicationForm: {
+                                        ...applicationForm,
+                                        questions: questions.map((q, index) => ({ ...q, order: index })),
+                                    }
+                                })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                jobData={jobData}
+                                companyContext={companyContext}
+                                onGenerateQuestions={async (existing) => {
+                                    const generated = await screeningQuestionService.generateScreeningQuestions({
+                                        jobTitle: (jobData.title as string) || 'Role',
+                                        jobDescription: (jobData.description as string) || '',
+                                        companyContext: companyContext || undefined,
+                                        department: (jobData.department as string) || undefined,
+                                        experienceLevel: (jobData.experienceLevel as string) || undefined,
+                                        existingQuestions: existing.map((q) => ({ label: q.label, type: q.type })),
+                                        count: 8,
+                                    });
+                                    return generated;
+                                }}
+                            />
+                        </section>
+                        {renderStepAdvanceButton()}
+                    </div>
                 );
-            case 'role-details':
+            case 'posting-settings':
                 return (
-                    <ChatRoleDetailsCard
-                        employmentType={jobData.employmentType || 'full-time'}
-                        experienceLevel={jobData.experienceLevel || 'mid'}
-                        onEmploymentTypeChange={(v) => setJobData({ employmentType: v })}
-                        onExperienceLevelChange={(v) => setJobData({ experienceLevel: v })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'vacancies':
-                return (
-                    <ChatVacanciesCard
-                        value={jobData.numberOfVacancies || 1}
-                        onChange={(v) => setJobData({ numberOfVacancies: v })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'compensation':
-                return (
-                    <ChatCompensationCard
-                        salaryMin={jobData.salaryMin}
-                        salaryMax={jobData.salaryMax}
-                        salaryCurrency={jobData.salaryCurrency || 'AUD'}
-                        salaryPeriod={jobData.salaryPeriod || 'annual'}
-                        hideSalary={jobData.hideSalary || false}
-                        onSalaryMinChange={(v) => setJobData({ salaryMin: v })}
-                        onSalaryMaxChange={(v) => setJobData({ salaryMax: v })}
-                        onCurrencyChange={(v) => setJobData({ salaryCurrency: v })}
-                        onPeriodChange={(v) => setJobData({ salaryPeriod: v })}
-                        onHideSalaryChange={(v) => setJobData({ hideSalary: v })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('salaryMin') || isParsed('salaryMax')}
-                    />
-                );
-            case 'description':
-                return (
-                    <ChatDescriptionCard
-                        description={jobData.description || ''}
-                        onChange={(v) => setJobData({ description: v })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('description')}
-                        jobData={jobData}
-                        companyContext={companyContext}
-                        onGenerateDescription={async (currentDescription) => {
-                            const additionalContext = [
-                                companyContext ? `Company context:\n${companyContext}` : '',
-                                currentDescription.trim() ? `User's current description (expand or improve this):\n${currentDescription}` : '',
-                            ].filter(Boolean).join('\n\n');
-                            const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
-                            return result.description;
-                        }}
-                    />
-                );
-            case 'requirements': {
-                const reqItems = (jobData.requirements || []).map(r => typeof r === 'string' ? r : r.text);
-                return (
-                    <ChatListBuilderCard
-                        title="Requirements"
-                        subtitle="List what candidates need to qualify for this role."
-                        items={reqItems}
-                        onChange={(items) => setJobData({ requirements: items.map((text, i) => ({ id: `req-${i}`, text, order: i })) })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('requirements')}
-                        placeholder="e.g. 3+ years of experience in..."
-                        minItems={1}
-                        onGenerateList={async (currentItems) => {
-                            const additionalContext = [
-                                companyContext ? `Company context:\n${companyContext}` : '',
-                                'Generate only requirements/qualifications for this role. Return them as the requirements array.',
-                                currentItems.length > 0 ? `User's current requirements (expand or improve):\n${currentItems.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
-                            ].filter(Boolean).join('\n\n');
-                            const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
-                            return result.requirements ?? [];
-                        }}
-                    />
-                );
-            }
-            case 'responsibilities': {
-                const respItems = (jobData.responsibilities || []).map(r => typeof r === 'string' ? r : r.text);
-                return (
-                    <ChatListBuilderCard
-                        title="Responsibilities"
-                        subtitle="Describe the key duties for this position."
-                        items={respItems}
-                        onChange={(items) => setJobData({ responsibilities: items.map((text, i) => ({ id: `resp-${i}`, text, order: i })) })}
-                        onContinue={nextStep}
-                        isParsed={isParsed('responsibilities')}
-                        placeholder="e.g. Lead a team of 5 engineers..."
-                        minItems={1}
-                        onGenerateList={async (currentItems) => {
-                            const additionalContext = [
-                                companyContext ? `Company context:\n${companyContext}` : '',
-                                'Generate only responsibilities/duties for this role. Return them as the responsibilities array.',
-                                currentItems.length > 0 ? `User's current responsibilities (expand or improve):\n${currentItems.map((r, i) => `${i + 1}. ${r}`).join('\n')}` : '',
-                            ].filter(Boolean).join('\n\n');
-                            const result = await jobDescriptionService.generateDescription(jobData as Partial<JobFormData>, additionalContext);
-                            return result.responsibilities ?? [];
-                        }}
-                    />
-                );
-            }
-            case 'tags':
-                return (
-                    <ChatTagsCard
-                        tags={jobData.tags || []}
-                        onChange={(tags) => setJobData({ tags })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'application-config':
-                return (
-                    <ChatApplicationConfigCard
-                        config={jobData.applicationForm || {
-                            id: 'temp-id',
-                            name: 'Default Form',
-                            questions: [],
-                            includeStandardFields: {
-                                resume: { included: true, required: true },
-                                coverLetter: { included: true, required: false },
-                                portfolio: { included: false, required: false },
-                                linkedIn: { included: false, required: false },
-                                website: { included: false, required: false },
-                            }
-                        }}
-                        onChange={(config) => setJobData({ applicationForm: config })}
-                        onContinue={nextStep}
-                    />
-                );
-            case 'screening-questions': {
-                const formQuestions = jobData.applicationForm?.questions || [];
-                return (
-                    <ChatScreeningQuestionsCard
-                        questions={formQuestions}
-                        onChange={(questions) => setJobData({
-                            applicationForm: {
-                                ...jobData.applicationForm,
-                                id: jobData.applicationForm?.id || 'temp-id',
-                                name: jobData.applicationForm?.name || 'Default Form',
-                                includeStandardFields: jobData.applicationForm?.includeStandardFields || {
-                                    resume: { included: true, required: true },
-                                    coverLetter: { included: true, required: false },
-                                    portfolio: { included: false, required: false },
-                                    linkedIn: { included: false, required: false },
-                                    website: { included: false, required: false },
-                                },
-                                questions: questions.map((q, index) => ({ ...q, order: index })),
-                            }
-                        })}
-                        onContinue={nextStep}
-                        jobData={jobData}
-                        companyContext={companyContext}
-                        onGenerateQuestions={async (existing) => {
-                            const generated = await screeningQuestionService.generateScreeningQuestions({
-                                jobTitle: (jobData.title as string) || 'Role',
-                                jobDescription: (jobData.description as string) || '',
-                                companyContext: companyContext || undefined,
-                                department: (jobData.department as string) || undefined,
-                                experienceLevel: (jobData.experienceLevel as string) || undefined,
-                                existingQuestions: existing.map((q) => ({ label: q.label, type: q.type })),
-                                count: 8,
-                            });
-                            return generated;
-                        }}
-                    />
-                );
-            }
-            case 'logistics':
-                return (
-                    <ChatLogisticsCard
-                        closeDate={jobData.closeDate}
-                        visibility={jobData.visibility || 'public'}
-                        stealth={jobData.stealth || false}
-                        onCloseDateChange={(v) => setJobData({ closeDate: v })}
-                        onVisibilityChange={(v) => setJobData({ visibility: v })}
-                        onStealthChange={(v) => setJobData({ stealth: v })}
-                        onContinue={nextStep}
-                    />
+                    <div className="space-y-8">
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Compensation</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Salary details are optional, but the range and pay period now persist end to end.
+                                </p>
+                            </div>
+                            <ChatCompensationCard
+                                salaryMin={jobData.salaryMin}
+                                salaryMax={jobData.salaryMax}
+                                salaryCurrency={jobData.salaryCurrency || 'AUD'}
+                                salaryPeriod={jobData.salaryPeriod || 'annual'}
+                                salaryDescription={jobData.salaryDescription}
+                                onSalaryMinChange={(v) => setJobData({ salaryMin: v || undefined })}
+                                onSalaryMaxChange={(v) => setJobData({ salaryMax: v || undefined })}
+                                onCurrencyChange={(v) => setJobData({ salaryCurrency: v })}
+                                onPeriodChange={(v) => setJobData({ salaryPeriod: v })}
+                                onSalaryDescriptionChange={(v) => setJobData({ salaryDescription: v })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                                isParsed={isParsed('salaryMin') || isParsed('salaryMax')}
+                            />
+                        </section>
+
+                        <section className="space-y-3">
+                            <div>
+                                <h3 className="text-sm font-semibold tracking-tight">Visibility and timing</h3>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Control when the role closes and whether company identity stays hidden on the post.
+                                </p>
+                            </div>
+                            <ChatLogisticsCard
+                                closeDate={jobData.closeDate}
+                                visibility={jobData.visibility || 'public'}
+                                stealth={jobData.stealth || false}
+                                onCloseDateChange={(v) => setJobData({ closeDate: v })}
+                                onVisibilityChange={(v) => setJobData({ visibility: v })}
+                                onStealthChange={(v) => setJobData({ stealth: v })}
+                                onContinue={nextStep}
+                                showContinue={false}
+                            />
+                        </section>
+                        {renderStepAdvanceButton()}
+                    </div>
                 );
             case 'review':
                 return (
@@ -751,43 +835,23 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         onSaveAsTemplateChange={setSaveAsTemplate}
                         onGlobalPublishApprovalChange={(approved) => setJobData({
                             globalPublishConfig: {
-                                channels: jobData.globalPublishConfig?.channels || [],
-                                budgetTier: jobData.globalPublishConfig?.budgetTier || 'none',
-                                customBudget: jobData.globalPublishConfig?.customBudget,
-                                hrm8ServiceRequiresApproval: (jobData.serviceType || 'self-managed') !== 'self-managed' && (jobData.serviceType || 'self-managed') !== 'rpo',
+                                ...getGlobalPublishConfig(),
                                 hrm8ServiceApproved: approved,
                             },
                         })}
                     />
                 );
             default:
-                // Use placeholder card for any remaining unimplemented steps
-                return (
-                    <ChatPlaceholderCard
-                        stepId={currentStepId}
-                        stepTitle={stepTitles[currentStepId] || currentStepId}
-                        onContinue={nextStep}
-                    />
-                );
+                return null;
         }
     };
 
     const stepMeta: Record<string, { label: string; heading: string; description: string }> = {
-        'document-upload':      { label: 'Upload JD',     heading: 'Start with a Job Description',  description: 'Upload an existing JD to auto-fill the form, or skip to start from scratch.' },
-        'basic-details':        { label: 'Basics',        heading: 'Job Title & Department',         description: 'The first thing candidates see — make it clear and specific.' },
-        'location':             { label: 'Location',      heading: 'Where is this role?',            description: 'Set the work location and arrangement for this position.' },
-        'role-details':         { label: 'Role Type',     heading: 'Role Type & Experience',         description: 'Define the employment arrangement and required seniority level.' },
-        'vacancies':            { label: 'Vacancies',     heading: 'Open Positions',                 description: 'How many people are you looking to hire for this role?' },
-        'compensation':         { label: 'Pay',           heading: 'Compensation Package',           description: 'Transparent salaries attract 30% more applicants.' },
-        'description':          { label: 'Description',   heading: 'Write the Job Description',      description: 'A compelling overview of the role, team, and opportunity.' },
-        'requirements':         { label: 'Requirements',  heading: 'Requirements',                   description: 'What must candidates have to be considered for this role?' },
-        'responsibilities':     { label: 'Duties',        heading: 'Key Responsibilities',           description: 'What will this person be doing on a day-to-day basis?' },
-        'tags':                 { label: 'Tags',          heading: 'Skills & Tags',                  description: 'Add keywords to help candidates discover your listing.' },
-        'application-config':   { label: 'Application',  heading: 'Application Form',               description: 'Choose what information to collect from applicants.' },
-        'screening-questions':  { label: 'Screening',    heading: 'Screening Questions',             description: 'Pre-screen applicants automatically with targeted questions.' },
-        'logistics':            { label: 'Logistics',     heading: 'Closing Date & Visibility',      description: 'Control when the role closes and who can see it.' },
-        'review':               { label: 'Review',        heading: 'Final Review',                   description: 'Double-check everything before publishing.' },
-        'payment':              { label: 'Payment',       heading: 'Complete Payment',               description: 'Activate your service to reach the right candidates.' },
+        'core-details':     { label: 'Core details',      heading: 'Define the role basics',          description: 'Start with the JD if you have one, then confirm the fields needed to create the job.' },
+        'job-content':      { label: 'Job content',       heading: 'Shape the candidate-facing copy', description: 'Group the job description, requirements, responsibilities, and tags into one focused step.' },
+        'application':      { label: 'Application',       heading: 'Decide how candidates apply',     description: 'Configure the application form and screening questions together so this part is easier to reason about.' },
+        'posting-settings': { label: 'Posting settings',  heading: 'Set pay, visibility, and timing', description: 'Keep salary details, close date, visibility, and stealth controls in one place.' },
+        'review':           { label: 'Review & publish',  heading: 'Review before publishing',        description: 'Check the grouped summary, accept terms, and publish. JobTarget setup continues after publish.' },
     };
     const currentMeta = stepMeta[currentStepId] || { label: currentStepId, heading: currentStepId, description: '' };
     const currentStepIndex = WIZARD_STEPS.indexOf(currentStepId);
@@ -842,7 +906,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                         <div className="w-52 border-r bg-muted/10 hidden xl:flex flex-col shrink-0 overflow-y-auto py-4">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-5 mb-3">Steps</p>
                             <nav className="flex flex-col gap-px px-3">
-                                {WIZARD_STEPS.filter(s => s !== 'payment').map((stepId, index) => {
+                                {WIZARD_STEPS.map((stepId, index) => {
                                     const meta = stepMeta[stepId];
                                     const stepIndex = WIZARD_STEPS.indexOf(stepId);
                                     const isDone = stepIndex < currentStepIndex;
@@ -900,7 +964,7 @@ export const JobCreateDrawer: React.FC<JobCreateDrawerProps> = ({ open, onOpenCh
                             </ScrollArea>
 
                             {/* Bottom nav bar */}
-                            {currentStepId !== 'document-upload' && currentStepId !== 'review' && (
+                            {currentStepId !== 'review' && (
                                 <div className="shrink-0 border-t bg-background px-8 py-3.5 flex justify-between items-center">
                                     <Button variant="ghost" onClick={prevStep} size="sm" className="gap-1.5">
                                         <ChevronRight className="h-4 w-4 rotate-180" />

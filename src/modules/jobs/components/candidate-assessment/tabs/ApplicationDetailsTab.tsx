@@ -26,6 +26,19 @@ interface ApplicationDetailsTabProps {
 }
 
 export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProps) {
+  const sourceLabel =
+    application.jobTargetAttribution?.source?.trim() ||
+    application.source?.trim() ||
+    null;
+  const sourceMedium = application.jobTargetAttribution?.medium?.trim() || null;
+  const sourceCampaign = application.jobTargetAttribution?.campaign?.trim() || null;
+  const applicantGuid = application.jobTargetAttribution?.applicantGuid?.trim() || null;
+  const hasJobTargetDetails = Boolean(applicantGuid || sourceMedium || sourceCampaign);
+  const newAppSyncStatus = application.jobTargetNewAppSyncStatus?.trim() || null;
+  const stageSyncStatus = application.jobTargetStageSyncStatus?.trim() || null;
+  const syncError = application.jobTargetStageLastError?.trim() || application.jobTargetNewAppLastError?.trim() || null;
+  const hasQuestionnaireResponses = Array.isArray(application.questionnaireData?.answers) && application.questionnaireData.answers.length > 0;
+
   return (
     <div className="max-w-5xl space-y-6">
 
@@ -52,7 +65,11 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Application Source</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary">LinkedIn</Badge>
+                  {sourceLabel ? (
+                    <Badge variant="secondary">{sourceLabel}</Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Not captured</p>
+                  )}
                 </div>
               </div>
 
@@ -73,19 +90,70 @@ export function ApplicationDetailsTab({ application }: ApplicationDetailsTabProp
                 </div>
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Referral</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm">Direct application</p>
+              {sourceMedium && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">JobTarget Medium</Label>
+                  <p className="text-sm mt-1">{sourceMedium}</p>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Device Used</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Desktop - Chrome (San Francisco, CA)
-                </p>
-              </div>
+              {sourceCampaign && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">JobTarget Campaign</Label>
+                  <p className="text-sm mt-1 break-words">{sourceCampaign}</p>
+                </div>
+              )}
+
+              {applicantGuid && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">JobTarget Applicant GUID</Label>
+                  <p className="text-sm text-muted-foreground mt-1 font-mono break-all">
+                    {applicantGuid}
+                  </p>
+                </div>
+              )}
+
+              {(newAppSyncStatus || stageSyncStatus) && (
+                <div className="space-y-3">
+                  {newAppSyncStatus && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">New Application Sync</Label>
+                      <p className="text-sm mt-1">{newAppSyncStatus}</p>
+                    </div>
+                  )}
+                  {stageSyncStatus && (
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Stage Sync</Label>
+                      <p className="text-sm mt-1">{stageSyncStatus}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {syncError && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Last JobTarget Sync Error</Label>
+                  <p className="text-sm mt-1 text-destructive break-words">{syncError}</p>
+                </div>
+              )}
+
+              {application.jobTargetAttribution && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Questionnaire Responses</Label>
+                  <p className="text-sm mt-1">
+                    {hasQuestionnaireResponses ? 'Available' : 'Not captured'}
+                  </p>
+                </div>
+              )}
+
+              {!hasJobTargetDetails && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Tracking</Label>
+                  <p className="text-sm text-muted-foreground mt-1 italic">
+                    No additional attribution details were captured for this application.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

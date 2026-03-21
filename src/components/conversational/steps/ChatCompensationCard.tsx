@@ -2,10 +2,9 @@ import React from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Switch } from '@/shared/components/ui/switch';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { cn } from '@/shared/lib/utils';
-import { ChevronRight, DollarSign, EyeOff } from 'lucide-react';
+import { ChevronRight, DollarSign } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -20,14 +19,13 @@ interface ChatCompensationCardProps {
     salaryCurrency: string;
     salaryPeriod: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'annual';
     salaryDescription?: string;
-    hideSalary: boolean;
     onSalaryMinChange: (value: number) => void;
     onSalaryMaxChange: (value: number) => void;
     onCurrencyChange: (value: string) => void;
     onPeriodChange: (value: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'annual') => void;
     onSalaryDescriptionChange?: (value: string) => void;
-    onHideSalaryChange: (value: boolean) => void;
     onContinue: () => void;
+    showContinue?: boolean;
     isParsed?: boolean;
 }
 
@@ -52,14 +50,13 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
     salaryCurrency,
     salaryPeriod,
     salaryDescription,
-    hideSalary,
     onSalaryMinChange,
     onSalaryMaxChange,
     onCurrencyChange,
     onPeriodChange,
     onSalaryDescriptionChange,
-    onHideSalaryChange,
     onContinue,
+    showContinue = true,
     isParsed
 }) => {
     return (
@@ -157,24 +154,16 @@ export const ChatCompensationCard: React.FC<ChatCompensationCardProps> = ({
                     />
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-md bg-muted/40 border">
-                    <div className="flex items-center gap-3">
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                            <span className="font-medium text-xs">Hide Salary on Job Post?</span>
-                            <p className="text-xs text-muted-foreground">Salary won't be visible to candidates</p>
-                        </div>
-                    </div>
-                    <Switch checked={hideSalary} onCheckedChange={onHideSalaryChange} />
-                </div>
             </div>
 
-            <Button
-                onClick={onContinue}
-                className="w-full h-10 text-sm rounded-md font-medium transition-all gap-1.5"
-            >
-                Continue <ChevronRight className="h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    className="w-full h-10 text-sm rounded-md font-medium transition-all gap-1.5"
+                >
+                    Continue <ChevronRight className="h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

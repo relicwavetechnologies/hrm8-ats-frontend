@@ -2,26 +2,33 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { JobFormData } from '@/shared/types/job';
 
-// Define the steps in order
+// Define the conversational wizard steps in grouped order.
 export const WIZARD_STEPS = [
-  'document-upload', // First step - upload JD for smart parsing
-  'basic-details',   // Title + Department
-  'location',       // Location + Work Arrangement
-  'role-details',   // Employment Type + Experience
-  'vacancies',
-  'compensation',
-  'description',
-  'requirements',
-  'responsibilities',
-  'tags',
-  'application-config',
-  'screening-questions',
-  'logistics',      // Close Date + Visibility
+  'core-details',
+  'job-content',
+  'application',
+  'posting-settings',
   'review',
-  'payment'
 ] as const;
 
 export type WizardStepId = typeof WIZARD_STEPS[number];
+
+export function normalizeDraftStepIndex(step: number | null | undefined): number {
+  const safeStep = Number.isFinite(step) ? Math.max(1, Math.floor(Number(step))) : 1;
+
+  // Legacy 14/15-step drafts map into the new grouped flow.
+  if (safeStep <= 5) return 1;
+  if (safeStep <= 10) return 2;
+  if (safeStep <= 12) return 3;
+  if (safeStep === 13) return 4;
+  if (safeStep >= 14) return 5;
+
+  return safeStep > WIZARD_STEPS.length ? WIZARD_STEPS.length : safeStep;
+}
+
+export function getWizardStepIdFromDraftStep(step: number | null | undefined): WizardStepId {
+  return WIZARD_STEPS[normalizeDraftStepIndex(step) - 1];
+}
 
 interface StepsState {
   currentStepId: WizardStepId;
@@ -90,10 +97,10 @@ const INITIAL_JOB_DATA: Partial<JobFormData> = {
 
 const storeImpl = (set: any, get: any) => ({
         // Initial State
-        currentStepId: 'document-upload',
+        currentStepId: 'core-details',
         stepOrder: [...WIZARD_STEPS],
         history: [],
-        highestStepReached: 'document-upload',
+        highestStepReached: 'core-details',
         jobData: INITIAL_JOB_DATA,
         parsedFields: [],
         isLoading: false,
@@ -172,10 +179,10 @@ const storeImpl = (set: any, get: any) => ({
         },
 
         reset: () => set({
-          currentStepId: 'document-upload',
+          currentStepId: 'core-details',
           stepOrder: [...WIZARD_STEPS],
           history: [],
-          highestStepReached: 'document-upload',
+          highestStepReached: 'core-details',
           jobData: INITIAL_JOB_DATA,
           parsedFields: [],
           error: null

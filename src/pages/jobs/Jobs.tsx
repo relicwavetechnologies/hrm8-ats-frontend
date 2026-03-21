@@ -7,7 +7,12 @@ import { Plus, MoreVertical, Pencil, Copy, Trash2, Briefcase, FileText, Clock, C
 import { EnhancedStatCard } from "@/modules/dashboard/components/EnhancedStatCard";
 import { DataTable, Column } from "@/shared/components/tables/DataTable";
 import { jobService } from "@/shared/lib/jobService";
-import { Job } from "@/shared/types/job";
+import {
+  Job,
+  JobTargetDistributionDetail,
+  JobTargetDistributionOverview as JobTargetDistributionOverviewData,
+  JobTargetDistributionRow,
+} from "@/shared/types/job";
 import { useJobPostingPermission } from "@/shared/hooks/useJobPostingPermission";
 import { mapBackendJobToFormData } from "@/shared/lib/jobDataMapper";
 import { useAuth } from "@/app/providers/AuthContext";
@@ -18,6 +23,7 @@ import { JobEditDrawer } from "@/modules/jobs/components/JobEditDrawer";
 import { JobCreateDrawer } from "@/components/conversational/JobCreateDrawer";
 import { JobSetupDrawer } from "@/components/setup/JobSetupDrawer";
 import { ManagedRecruitmentCheckoutDialog } from "@/modules/jobs/components/ManagedRecruitmentCheckoutDialog";
+import { PublishedJobsList } from "@/modules/jobs/components/PublishedJobsList";
 import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
 import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
 import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
@@ -33,10 +39,11 @@ import {
 import { useToast } from "@/shared/hooks/use-toast";
 import { WarningConfirmationDialog } from "@/shared/components/ui/warning-confirmation-dialog";
 import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirmation-dialog";
-import { JobsFilterBar } from "@/modules/jobs/components/JobsFilterBar";
 import { getCountryFromLocation, getRegionForCountry } from "@/shared/lib/countryRegions";
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
 import { useJobsList } from "@/shared/hooks/useJobsList";
+import { markJobSetupPending } from "@/shared/lib/jobSetupState";
+import { normalizeDraftStepIndex } from "@/modules/jobs/store/useJobCreateStore";
 
 import { BulkActionsToolbar } from "@/modules/jobs/components/bulk/BulkActionsToolbar";
 import { FilterCriteria } from "@/shared/lib/savedFiltersService";
@@ -58,6 +65,90 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 type CheckoutOrigin = 'fromSetup' | 'fromJobs';
 type CheckoutOutcome = 'none' | 'cancelled' | 'paid';
 type SetupReturnMode = 'normal' | 'forceChoice';
+type JobsViewMode = 'published' | 'drafts';
+
+function summarizeDistributionRows(rows: JobTargetDistributionRow[]): JobTargetDistributionOverviewData['summary'] {
+  return {
+    totalGlobalJobs: rows.length,
+    jobsLiveOnBoards: rows.filter((row) => row.activePostingCount > 0).length,
+    jobsNeedingAttention: rows.filter((row) => row.attentionState === 'NEEDS_ATTENTION' || row.attentionState === 'STALE').length,
+    totalClicks: rows.reduce((sum, row) => sum + row.totalClicks, 0),
+    totalApplies: rows.reduce((sum, row) => sum + row.totalApplies, 0),
+    totalCareerViews: rows.reduce((sum, row) => sum + row.careerMetrics.views, 0),
+    totalCareerApplyClicks: rows.reduce((sum, row) => sum + row.careerMetrics.applyClicks, 0),
+    totalCareerApplies: rows.reduce((sum, row) => sum + row.careerMetrics.applies, 0),
+    feedPendingCount: rows.filter((row) => row.feedState === 'NOT_ENABLED_BY_JOBTARGET' || row.feedState === 'SYNCING').length,
+    trackingIssueCount: rows.filter((row) => row.trackingHealth.status !== 'HEALTHY').length,
+    liveBoardCount: rows.reduce((sum, row) => sum + row.activePostingCount, 0),
+    launchReadyCount: rows.filter((row) => !!row.remoteJobId && row.attentionState !== 'NEEDS_ATTENTION').length,
+  };
+}
+
+function buildDistributionAttentionState(distribution: JobTargetDistributionDetail): JobTargetDistributionRow['attentionState'] {
+  const activePostingCount = distribution.postings.filter((posting) => posting.isActiveSnapshot).length;
+  const syncStatus = String(distribution.sync.syncStatus || 'NOT_SYNCED');
+  const hasSyncIssue =
+    syncStatus === 'FAILED'
+    || !!distribution.sync.postingsLastError
+    || !!distribution.sync.lastError
+    || distribution.syncIssues.failedNewApplicationSyncs > 0
+    || distribution.syncIssues.failedStageSyncs > 0;
+
+  if (!distribution.job.remoteJobId) return 'NOT_LAUNCHED';
+  if (hasSyncIssue) return 'NEEDS_ATTENTION';
+  if (distribution.sync.isStale) return 'STALE';
+  if (activePostingCount > 0) return 'LIVE';
+  return 'SYNCED';
+}
+
+function buildDistributionPrimaryCta(
+  attentionState: JobTargetDistributionRow['attentionState'],
+  activePostingCount: number,
+  remoteJobId?: string | null
+): JobTargetDistributionRow['primaryCta'] {
+  if (!remoteJobId && activePostingCount === 0) return 'Launch';
+  if (attentionState === 'STALE' || attentionState === 'NEEDS_ATTENTION') return 'Refresh';
+  if (activePostingCount > 0) return 'View distribution';
+  return 'Refresh';
+}
+
+function buildOverviewRowFromDistribution(distribution: JobTargetDistributionDetail): JobTargetDistributionRow {
+  const activePostings = distribution.postings.filter((posting) => posting.isActiveSnapshot);
+  const activePostingCount = activePostings.length;
+  const totalClicks = distribution.postings.reduce((sum, posting) => sum + Number(posting.analytics.clicks || 0), 0);
+  const totalApplies = distribution.postings.reduce((sum, posting) => sum + Number(posting.analytics.apps || 0), 0);
+  const activeSites = Array.from(
+    new Set(
+      activePostings
+        .map((posting) => String(posting.siteName || '').trim())
+        .filter(Boolean)
+    )
+  ).sort((left, right) => left.localeCompare(right));
+  const attentionState = buildDistributionAttentionState(distribution);
+
+  return {
+    jobId: distribution.job.id,
+    title: distribution.job.title,
+    localStatus: distribution.job.localStatus,
+    syncStatus: String(distribution.sync.syncStatus || 'NOT_SYNCED'),
+    remoteJobId: distribution.job.remoteJobId || undefined,
+    activePostingCount,
+    totalClicks,
+    totalApplies,
+    activeSites,
+    lastPostingsRefreshAt: distribution.sync.postingsLastRefreshedAt,
+    easyApplyEnabled: distribution.easyApply.enabled,
+    questionnaireEnabled: distribution.easyApply.questionnaireEnabled,
+    attentionState,
+    primaryCta: buildDistributionPrimaryCta(attentionState, activePostingCount, distribution.job.remoteJobId),
+    lastError: distribution.sync.postingsLastError || distribution.sync.lastError || null,
+    feedState: distribution.feedState,
+    integrationHealth: distribution.integrationHealth,
+    trackingHealth: distribution.trackingHealth,
+    careerMetrics: distribution.careerMetrics,
+    totals: distribution.totals,
+  };
+}
 
 export default function Jobs() {
   const { toast } = useToast();
@@ -89,8 +180,13 @@ export default function Jobs() {
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<Job | null>(null);
   const [pendingFromTemplate, setPendingFromTemplate] = useState(false);
-  /** Toggle between Jobs list and Drafts list */
-  const [viewMode, setViewMode] = useState<'jobs' | 'drafts'>('jobs');
+  const focusMode = searchParams.get('focus') === 'distribution' ? 'distribution' : 'all';
+  const [viewMode, setViewMode] = useState<JobsViewMode>(() => (
+    searchParams.get('tab') === 'drafts' ? 'drafts' : 'published'
+  ));
+  const [distributionOverview, setDistributionOverview] = useState<JobTargetDistributionOverviewData | null>(null);
+  const [distributionLoading, setDistributionLoading] = useState(false);
+  const [distributionRefreshingJobId, setDistributionRefreshingJobId] = useState<string | null>(null);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string>("");
   /** When opening wizard from a draft, pass step so wizard opens at correct step */
   const [editingDraftStep, setEditingDraftStep] = useState<number>(1);
@@ -166,6 +262,63 @@ export default function Jobs() {
   } = useJobsList(selectedStatus, jobsPage, refreshKey, !managedCheckoutJobId);
   const jobs = useMemo(() => (Array.isArray(jobsResponse) ? jobsResponse : []), [jobsResponse]);
 
+  const loadDistributionOverview = useCallback(async () => {
+    setDistributionLoading(true);
+    try {
+      const response = await jobService.getDistributionOverview();
+      if (response.success && response.data?.overview) {
+        setDistributionOverview(response.data.overview);
+      } else {
+        throw new Error(response.error || 'Failed to load JobTarget distribution');
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Distribution unavailable',
+        description: error?.message || 'Unable to load JobTarget distribution right now.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDistributionLoading(false);
+    }
+  }, [toast]);
+
+  const handleRefreshDistributionJob = useCallback(async (jobId: string) => {
+    setDistributionRefreshingJobId(jobId);
+    try {
+      const response = await jobService.refreshJobDistribution(jobId);
+      if (!response.success || !response.data?.distribution) {
+        throw new Error(response.error || 'Failed to refresh job distribution');
+      }
+
+      const refreshedRow = buildOverviewRowFromDistribution(response.data.distribution);
+      setDistributionOverview((current) => {
+        const currentRows = current?.rows || [];
+        const rowExists = currentRows.some((row) => row.jobId === jobId);
+        const rows = rowExists
+          ? currentRows.map((row) => (row.jobId === jobId ? refreshedRow : row))
+          : [refreshedRow, ...currentRows];
+
+        return {
+          summary: summarizeDistributionRows(rows),
+          rows,
+        };
+      });
+
+      toast({
+        title: 'Distribution refreshed',
+        description: 'Latest JobTarget posting data has been pulled into HRM8.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Refresh failed',
+        description: error?.message || 'Unable to refresh JobTarget distribution right now.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDistributionRefreshingJobId(null);
+    }
+  }, [toast]);
+
   useEffect(() => {
     if (jobsError) {
       toast({
@@ -175,6 +328,11 @@ export default function Jobs() {
       });
     }
   }, [jobsError, toast]);
+
+  useEffect(() => {
+    if (viewMode !== 'published') return;
+    void loadDistributionOverview();
+  }, [viewMode, loadDistributionOverview, refreshKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,6 +359,10 @@ export default function Jobs() {
       cancelled = true;
     };
   }, [user?.companyId]);
+
+  useEffect(() => {
+    setSelectedJobs([]);
+  }, [viewMode]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -238,6 +400,18 @@ export default function Jobs() {
     };
   }, [jobs, totalJobs, backendStats]);
 
+  const focusSummary = distributionOverview?.summary;
+
+  useEffect(() => {
+    const nextViewMode = searchParams.get('tab') === 'drafts' ? 'drafts' : 'published';
+    setViewMode((current) => (current === nextViewMode ? current : nextViewMode));
+  }, [searchParams]);
+
+  const pageTitle = 'Jobs';
+  const pageSubtitle = focusMode === 'distribution'
+    ? 'Track published jobs, setup progress, and external distribution in one place'
+    : 'Create and manage job postings';
+
   // Auto-open job wizard when navigating with action=create
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
@@ -257,10 +431,8 @@ export default function Jobs() {
     if (paygSuccess && jobId) {
       setSearchParams({}, { replace: true });
       setRefreshKey((k) => k + 1);
-      toast({ title: 'Payment successful', description: 'Your job has been published.' });
-      setSetupJobId(jobId);
-      setSetupPendingConsultant(false);
-      setSetupDrawerOpen(true);
+      toast({ title: 'Payment successful', description: 'Your job has been published and marked as pending setup.' });
+      markJobSetupPending(jobId);
     }
   }, [searchParams, setSearchParams, toast]);
 
@@ -461,38 +633,42 @@ export default function Jobs() {
   const { refetch: refetchDraft } = useDraftJob();
 
   const handleCreateJob = async (fromTemplate = false) => {
-    // Refetch to get the latest draft and use the returned value
-    const latestDraft = await refetchDraft();
+    try {
+      // Refetch to get the latest draft and use the returned value
+      const latestDraft = await refetchDraft();
 
-    // If coming from template, load the draft directly (template data already applied)
-    if (latestDraft && fromTemplate) {
-      setEditingJobId(latestDraft.id);
+      // If coming from template, load the draft directly (template data already applied)
+      if (latestDraft && fromTemplate) {
+        setEditingJobId(latestDraft.id);
+        setDrawerOpen(true);
+        toast({
+          title: "Template applied",
+          description: `Template data has been filled into your draft job.`,
+          duration: 4000,
+        });
+        return;
+      }
+
+      // If draft exists and NOT from template, show dialog to let user choose
+      if (latestDraft && !fromTemplate) {
+        setPendingDraft(latestDraft);
+        setPendingFromTemplate(false);
+        setShowDraftDialog(true);
+        return;
+      }
+
+      // No draft found, start fresh
+      setEditingJobId(null);
       setDrawerOpen(true);
-      toast({
-        title: "Template applied",
-        description: `Template data has been filled into your draft job.`,
-        duration: 4000,
-      });
-      return;
+    } finally {
+      window.dispatchEvent(new Event('job-create-flow-ready'));
     }
-
-    // If draft exists and NOT from template, show dialog to let user choose
-    if (latestDraft && !fromTemplate) {
-      setPendingDraft(latestDraft);
-      setPendingFromTemplate(false);
-      setShowDraftDialog(true);
-      return;
-    }
-
-    // No draft found, start fresh
-    setEditingJobId(null);
-    setDrawerOpen(true);
   };
 
   const handleContinueWithDraft = () => {
     if (pendingDraft) {
       setEditingJobId(pendingDraft.id);
-      setEditingDraftStep(Math.max(1, pendingDraft.draftStep ?? 1));
+      setEditingDraftStep(normalizeDraftStepIndex(pendingDraft.draftStep ?? 1));
       setDrawerOpen(true);
       toast({
         title: "Draft loaded",
@@ -532,12 +708,13 @@ export default function Jobs() {
   };
 
   const handleContinueDraft = (draft: Job) => {
+    const normalizedStep = normalizeDraftStepIndex(draft.draftStep ?? 1);
     setEditingJobId(draft.id);
-    setEditingDraftStep(Math.max(1, draft.draftStep ?? 1));
+    setEditingDraftStep(normalizedStep);
     setDrawerOpen(true);
     toast({
       title: "Draft opened",
-      description: `Continuing at step ${Math.max(1, draft.draftStep ?? 1)}.`,
+      description: `Continuing at step ${normalizedStep}.`,
       duration: 3000,
     });
   };
@@ -691,7 +868,7 @@ export default function Jobs() {
             const formData = mapBackendJobToFormData(jobPayload);
             setEditingJobData(formData);
             const rawStep = jobPayload?.draftStep ?? jobPayload?.draft_step;
-            const step = rawStep != null ? Math.max(1, Number(rawStep) || 1) : 1;
+            const step = normalizeDraftStepIndex(rawStep != null ? Number(rawStep) || 1 : 1);
             setEditingDraftStep(step);
           }
         } catch (error) {
@@ -950,7 +1127,7 @@ export default function Jobs() {
       label: 'Step',
       render: (job) => {
         const raw = job.draftStep ?? (job as any).draft_step;
-        const step = Math.max(1, Number(raw) || 1);
+        const step = normalizeDraftStepIndex(raw);
         return (
           <span className="text-xs text-muted-foreground">
             Step {step}
@@ -1033,92 +1210,124 @@ export default function Jobs() {
         ) : (
           <>
             <AtsPageHeader
-              title="Jobs"
-              subtitle="Create and manage job postings"
+              title={pageTitle}
+              subtitle={pageSubtitle}
             />
 
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-              <EnhancedStatCard
-                title="Total Jobs"
-                value={stats.total}
-                change="+8%"
-                trend="up"
-                icon={<Briefcase className="h-5 w-5" />}
-                variant="neutral"
-                showMenu={false}
-                menuItems={[
-                  { label: "View all jobs", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
-                  { label: "View templates", icon: <FileText className="h-4 w-4" />, onClick: () => { } },
-                  { label: "Export data", icon: <Download className="h-4 w-4" />, onClick: () => { } },
-                ]}
-              />
-              <EnhancedStatCard
-                title="Active Postings"
-                value={stats.active}
-                change="+12%"
-                trend="up"
-                icon={<Clock className="h-5 w-5" />}
-                variant="success"
-                showMenu={false}
-                menuItems={[
-                  { label: "View active jobs", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
-                  {
-                    label: "Post new job", icon: <Plus className="h-4 w-4" />, onClick: () => {
-                      setSearchParams({}, { replace: true });
-                      handleCreateJob(false);
-                    }
-                  },
-                ]}
-              />
-              <EnhancedStatCard
-                title="Total Applicants"
-                value={stats.applicants}
-                change="+15%"
-                trend="up"
-                icon={<FileText className="h-5 w-5" />}
-                variant="primary"
-                showMenu={false}
-                menuItems={[
-                  { label: "View applicants", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
-                  { label: "Export data", icon: <Download className="h-4 w-4" />, onClick: () => { } },
-                ]}
-              />
-              <EnhancedStatCard
-                title="Filled Positions"
-                value={stats.filled}
-                change="+5%"
-                trend="up"
-                icon={<CheckCircle className="h-5 w-5" />}
-                variant="warning"
-                showMenu={false}
-                menuItems={[
-                  { label: "View filled", icon: <CheckCircle className="h-4 w-4" />, onClick: () => { } },
-                  { label: "View analytics", icon: <BarChart3 className="h-4 w-4" />, onClick: () => { } },
-                ]}
-              />
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+              {focusMode === 'distribution' ? (
+                <>
+                  <EnhancedStatCard
+                    title="Career Views"
+                    value={focusSummary?.totalCareerViews ?? 0}
+                    change="Lifetime"
+                    icon={<Eye className="h-5 w-5" />}
+                    variant="neutral"
+                    showMenu={false}
+                    menuItems={[]}
+                  />
+                  <EnhancedStatCard
+                    title="Apply Clicks"
+                    value={focusSummary?.totalCareerApplyClicks ?? 0}
+                    change="Lifetime"
+                    icon={<ArrowUpCircle className="h-5 w-5" />}
+                    variant="success"
+                    showMenu={false}
+                    menuItems={[]}
+                  />
+                  <EnhancedStatCard
+                    title="Career Applies"
+                    value={focusSummary?.totalCareerApplies ?? 0}
+                    change="Lifetime"
+                    icon={<FileText className="h-5 w-5" />}
+                    variant="primary"
+                    showMenu={false}
+                    menuItems={[]}
+                  />
+                  <EnhancedStatCard
+                    title="JobTarget Clicks"
+                    value={focusSummary?.totalClicks ?? 0}
+                    change="Lifetime"
+                    icon={<Globe2 className="h-5 w-5" />}
+                    variant="warning"
+                    showMenu={false}
+                    menuItems={[]}
+                  />
+                  <EnhancedStatCard
+                    title="JobTarget Applies"
+                    value={focusSummary?.totalApplies ?? 0}
+                    change="Lifetime"
+                    icon={<CheckCircle className="h-5 w-5" />}
+                    variant="success"
+                    showMenu={false}
+                    menuItems={[]}
+                  />
+                </>
+              ) : (
+                <>
+                  <EnhancedStatCard
+                    title="Total Jobs"
+                    value={stats.total}
+                    change="+8%"
+                    trend="up"
+                    icon={<Briefcase className="h-5 w-5" />}
+                    variant="neutral"
+                    showMenu={false}
+                    menuItems={[
+                      { label: "View all jobs", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
+                      { label: "View templates", icon: <FileText className="h-4 w-4" />, onClick: () => { } },
+                      { label: "Export data", icon: <Download className="h-4 w-4" />, onClick: () => { } },
+                    ]}
+                  />
+                  <EnhancedStatCard
+                    title="Active Postings"
+                    value={stats.active}
+                    change="+12%"
+                    trend="up"
+                    icon={<Clock className="h-5 w-5" />}
+                    variant="success"
+                    showMenu={false}
+                    menuItems={[
+                      { label: "View active jobs", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
+                      {
+                        label: "Post new job", icon: <Plus className="h-4 w-4" />, onClick: () => {
+                          setSearchParams({}, { replace: true });
+                          handleCreateJob(false);
+                        }
+                      },
+                    ]}
+                  />
+                  <EnhancedStatCard
+                    title="Total Applicants"
+                    value={stats.applicants}
+                    change="+15%"
+                    trend="up"
+                    icon={<FileText className="h-5 w-5" />}
+                    variant="primary"
+                    showMenu={false}
+                    menuItems={[
+                      { label: "View applicants", icon: <Eye className="h-4 w-4" />, onClick: () => { } },
+                      { label: "Export data", icon: <Download className="h-4 w-4" />, onClick: () => { } },
+                    ]}
+                  />
+                  <EnhancedStatCard
+                    title="Filled Positions"
+                    value={stats.filled}
+                    change="+5%"
+                    trend="up"
+                    icon={<CheckCircle className="h-5 w-5" />}
+                    variant="warning"
+                    showMenu={false}
+                    menuItems={[
+                      { label: "View filled", icon: <CheckCircle className="h-4 w-4" />, onClick: () => { } },
+                      { label: "View analytics", icon: <BarChart3 className="h-4 w-4" />, onClick: () => { } },
+                    ]}
+                  />
+                </>
+              )}
             </div>
 
-            <div className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <JobsFilterBar
-                  searchValue={searchValue}
-                  onSearchChange={setSearchValue}
-                  selectedConsultants={selectedConsultant === 'all' ? [] : [selectedConsultant]}
-                  onConsultantsChange={(consultants) => setSelectedConsultant(consultants[0] || 'all')}
-                  selectedLocations={selectedLocation === 'all' ? [] : [selectedLocation]}
-                  onLocationsChange={(locations) => setSelectedLocation(locations[0] || 'all')}
-                  selectedService={selectedService}
-                  onServiceChange={setSelectedService}
-                  selectedStatus={selectedStatus}
-                  onStatusChange={setSelectedStatus}
-                  consultantOptions={uniqueConsultants}
-                  locationOptions={locationOptions}
-                  currentUserId="admin-1"
-                />
-              </div>
-            </div>
-
-            {viewMode === 'jobs' && selectedJobs.length > 0 && (
+            {viewMode === 'published' && selectedJobs.length > 0 && (
               <BulkActionsToolbar
                 selectedCount={selectedJobs.length}
                 onClearSelection={() => setSelectedJobs([])}
@@ -1126,39 +1335,44 @@ export default function Jobs() {
               />
             )}
 
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'jobs' | 'drafts')} className="w-full">
-              <TabsList className="grid w-full max-w-[220px] grid-cols-2 mb-3 h-8">
-                <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
+            <Tabs
+              value={viewMode}
+              onValueChange={(nextView) => {
+                const nextMode = nextView as JobsViewMode;
+                setViewMode(nextMode);
+                const nextParams = new URLSearchParams(searchParams);
+                nextParams.set('tab', nextMode);
+                setSearchParams(nextParams, { replace: true });
+              }}
+              className="w-full"
+            >
+              <TabsList className="grid w-full max-w-[240px] grid-cols-2 mb-3 h-8">
+                <TabsTrigger value="published" className="text-xs">Published</TabsTrigger>
                 <TabsTrigger value="drafts" className="text-xs">Drafts</TabsTrigger>
               </TabsList>
 
-              {viewMode === 'jobs' && (
-                <DataTable
-                  data={filteredJobs}
-                  columns={columns}
-                  compact
-                  searchable={false}
-                  selectable
-                  onSelectedRowsChange={setSelectedJobs}
-                  rowDraggable
-                  onRowDragStart={handleRowDragStart}
-                  onRowContextMenu={handleRowContextMenu}
-                  onRowClick={(job) => {
-                    const { isSetupComplete } = getJobSetupState(job);
-
-                    if (!isSetupComplete) {
-                      // Setup not complete, pending consultant, or advance flow not done → open JobSetupDrawer
-                      setSetupReturnMode('normal');
-                      setSetupJobId(job.id);
-                      setSetupJobTitle(job.title);
-                      setSetupPendingConsultant(!!job.pendingConsultantAssignment);
-                      setSetupDrawerOpen(true);
-                    } else {
-                      navigate(`/ats/jobs/${job.id}`);
-                    }
+              {viewMode === 'published' && (
+                <PublishedJobsList
+                  jobs={filteredJobs}
+                  overview={distributionOverview}
+                  isDistributionLoading={distributionLoading}
+                  refreshingJobId={distributionRefreshingJobId}
+                  focusMode={focusMode}
+                  selectedJobIds={selectedJobs}
+                  onSelectedJobIdsChange={setSelectedJobs}
+                  onRefreshJob={handleRefreshDistributionJob}
+                  onOpenSetup={(job) => {
+                    setSetupReturnMode('normal');
+                    setSetupJobId(job.id);
+                    setSetupJobTitle(job.title);
+                    setSetupPendingConsultant(!!job.pendingConsultantAssignment);
+                    setSetupDrawerOpen(true);
                   }}
-                  emptyMessage="No jobs found"
-                  tableId="jobs"
+                  onNavigateToJob={(job) => {
+                    navigate(`/ats/jobs/${job.id}`);
+                  }}
+                  onRowContextMenu={handleRowContextMenu}
+                  onRowDragStart={handleRowDragStart}
                 />
               )}
 

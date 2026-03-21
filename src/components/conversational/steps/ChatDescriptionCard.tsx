@@ -10,6 +10,7 @@ interface ChatDescriptionCardProps {
     description: string;
     onChange: (value: string) => void;
     onContinue: () => void;
+    showContinue?: boolean;
     isParsed?: boolean;
     /** All job fields filled so far (for AI context) */
     jobData?: Record<string, unknown>;
@@ -23,6 +24,7 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
     description,
     onChange,
     onContinue,
+    showContinue = true,
     isParsed,
     jobData: _jobData,
     companyContext: _companyContext,
@@ -160,13 +162,15 @@ export const ChatDescriptionCard: React.FC<ChatDescriptionCardProps> = ({
                 </div>
             </Card>
 
-            <Button
-                onClick={onContinue}
-                disabled={!canContinue}
-                className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
-            >
-                Continue <ArrowRight className="h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    disabled={!canContinue}
+                    className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
+                >
+                    Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

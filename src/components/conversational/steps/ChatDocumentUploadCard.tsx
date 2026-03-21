@@ -9,13 +9,15 @@ interface ChatDocumentUploadCardProps {
     onSkip: () => void;
     isUploading?: boolean;
     uploadComplete?: boolean;
+    showSkip?: boolean;
 }
 
 export const ChatDocumentUploadCard: React.FC<ChatDocumentUploadCardProps> = ({
     onFileUpload,
     onSkip,
     isUploading,
-    uploadComplete
+    uploadComplete,
+    showSkip = true,
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [dragActive, setDragActive] = useState(false);
@@ -123,16 +125,18 @@ export const ChatDocumentUploadCard: React.FC<ChatDocumentUploadCardProps> = ({
             </div>
 
             {/* Skip Option */}
-            <div className="text-center pt-2">
-                <Button
-                    variant="ghost"
-                    onClick={onSkip}
-                    disabled={isUploading}
-                    className="text-xs text-muted-foreground hover:text-foreground h-8"
-                >
-                    Skip and enter details manually <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-            </div>
+            {showSkip && (
+                <div className="text-center pt-2">
+                    <Button
+                        variant="ghost"
+                        onClick={onSkip}
+                        disabled={isUploading}
+                        className="text-xs text-muted-foreground hover:text-foreground h-8"
+                    >
+                        Skip and enter details manually <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

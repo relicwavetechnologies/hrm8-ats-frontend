@@ -39,6 +39,20 @@ export function JobEditDrawer({ open, onOpenChange, jobId, onSuccess }: JobEditD
     mode: "onChange",
     defaultValues: {
       serviceType: 'self-managed',
+      distributionScope: 'HRM8_ONLY',
+      globalPublishConfig: {
+        channels: [],
+        budgetTier: 'none',
+        customBudget: undefined,
+        hrm8ServiceRequiresApproval: false,
+        hrm8ServiceApproved: false,
+        easyApplyConfig: {
+          enabled: false,
+          type: 'full',
+          hostedApply: false,
+          questionnaireEnabled: false,
+        },
+      },
       title: "",
       numberOfVacancies: 1,
       department: "",
@@ -271,4 +285,3 @@ export function JobEditDrawer({ open, onOpenChange, jobId, onSuccess }: JobEditD
     </FormDrawer>
   );
 }
-

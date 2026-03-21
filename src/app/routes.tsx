@@ -146,6 +146,7 @@ export function AppRoutes() {
                         <JobsPage />
                     </Suspense>
                 } />
+                <Route path="/ats/distribution" element={<Navigate to="/ats/jobs?tab=published&focus=distribution" replace />} />
                 <Route path="/ats/jobs/:jobId/managed-recruitment-checkout" element={
                     <Suspense fallback={<PageLoader />}>
                         <JobsPage />

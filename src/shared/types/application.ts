@@ -1,4 +1,12 @@
 
+export interface JobTargetAttribution {
+  applicantGuid?: string;
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  rawQuery?: Record<string, string>;
+}
+
 export interface Application {
   id: string;
   candidateId: string;
@@ -19,6 +27,16 @@ export interface Application {
   phone?: string;
   customAnswers?: any;
   questionnaireData?: any;
+  source?: string;
+  jobTargetAttribution?: JobTargetAttribution;
+  jobTargetNewAppSyncStatus?: string;
+  jobTargetNewAppSyncAttempts?: number;
+  jobTargetNewAppLastError?: string;
+  jobTargetNewAppNextRetryAt?: string | Date;
+  jobTargetStageSyncStatus?: string;
+  jobTargetStageSyncAttempts?: number;
+  jobTargetStageLastError?: string;
+  jobTargetStageNextRetryAt?: string | Date;
   isRead: boolean;
   isNew: boolean;
   tags: string[];

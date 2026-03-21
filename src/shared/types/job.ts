@@ -21,11 +21,428 @@ export interface JobTargetSyncSummary {
   syncStatus: 'NOT_SYNCED' | 'SYNCING' | 'SYNCED' | 'FAILED' | 'CLOSED';
   lastSyncedAt?: string | Date;
   lastError?: string;
+  postingsLastRefreshedAt?: string | Date;
+  postingsLastError?: string;
   approved: boolean;
   selectedChannels: string[];
   budget?: number;
   budgetSpent?: number;
   promotionStatus?: string;
+}
+
+export interface JobTargetPostingSnapshot {
+  id: string;
+  postingId: string;
+  siteId?: string;
+  productId?: string;
+  siteName?: string;
+  status?: string;
+  createdAt?: string | null;
+  expiredAt?: string | null;
+  orderId?: string;
+  retailCost?: number | null;
+  postingCost?: number | null;
+  savings?: number | null;
+  taxesAndFees?: number | null;
+  totalCost?: number | null;
+  viewUrl?: string;
+  click2ApplyUrl?: string;
+  easyApply: boolean;
+  location?: Record<string, unknown> | null;
+  analytics: {
+    clicks: number;
+    apps: number;
+  };
+  user: {
+    createdByName?: string;
+    createdByEmail?: string;
+    createdDtm?: string | null;
+    stoppedByName?: string;
+    stoppedByEmail?: string;
+    stoppedDtm?: string | null;
+  };
+  isActiveSnapshot: boolean;
+  lastRefreshedAt?: string | null;
+}
+
+export interface JobTargetDistributionRow {
+  jobId: string;
+  title: string;
+  localStatus: string;
+  syncStatus: string;
+  remoteJobId?: string;
+  activePostingCount: number;
+  totalClicks: number;
+  totalApplies: number;
+  activeSites: string[];
+  lastPostingsRefreshAt?: string | null;
+  easyApplyEnabled: boolean;
+  questionnaireEnabled: boolean;
+  attentionState: 'LIVE' | 'NOT_LAUNCHED' | 'STALE' | 'NEEDS_ATTENTION' | 'SYNCED';
+  primaryCta: 'Launch' | 'Refresh' | 'View distribution';
+  lastError?: string | null;
+  feedState: 'READY' | 'NOT_ENABLED_BY_JOBTARGET' | 'SYNCING' | 'ERROR';
+  integrationHealth: JobTargetIntegrationHealth;
+  trackingHealth: JobTargetTrackingHealth;
+  careerMetrics: JobCareerMetrics;
+  totals: JobApplyTotals;
+}
+
+export interface JobTargetIntegrationHealth {
+  company: 'HEALTHY' | 'ATTENTION';
+  user: 'HEALTHY' | 'ATTENTION';
+  job: 'HEALTHY' | 'ATTENTION';
+  feed: 'READY' | 'NOT_ENABLED_BY_JOBTARGET' | 'SYNCING' | 'ERROR';
+  applicantTracking: 'HEALTHY' | 'PENDING' | 'ERROR';
+}
+
+export interface JobTargetTrackingHealth {
+  status: 'HEALTHY' | 'PENDING' | 'ERROR';
+  lastSuccessfulSyncAt?: string | null;
+  pendingNewApplicationSyncs: number;
+  pendingStageSyncs: number;
+  failedNewApplicationSyncs: number;
+  failedStageSyncs: number;
+  latestError?: string | null;
+}
+
+export interface JobTargetOrderSummary {
+  totalSpend: number;
+  orderCount: number;
+  latestOrderAt?: string | null;
+  receiptUrl?: string | null;
+  recentOrders: Array<{
+    orderId: string;
+    createdAt?: string | null;
+    cost?: number | null;
+    receiptUrl?: string | null;
+    siteName?: string | null;
+  }>;
+}
+
+export interface JobTargetLaunchSession {
+  launchUrl: string;
+  destination: 'MARKETPLACE';
+  remoteCompanyId: string;
+  remoteUserId: string;
+  remoteJobId: string;
+  feedState: 'READY' | 'PENDING_ENABLEMENT' | 'ERROR';
+  warnings: string[];
+  syncSummary: {
+    company: 'CREATED' | 'UPDATED' | 'UNCHANGED';
+    user: 'CREATED' | 'UPDATED' | 'UNCHANGED';
+    job: 'CREATED' | 'UPDATED' | 'UNCHANGED';
+  };
+}
+
+export interface JobCareerMetrics {
+  views: number;
+  applyClicks: number;
+  applies: number;
+  applyCoverage: 'EXACT' | 'PARTIAL_LEGACY';
+  lastActivityAt?: string | null;
+  trend: {
+    labels: string[];
+    views: number[];
+    applies: number[];
+  };
+}
+
+export interface JobApplyTotals {
+  totalAtsApplies: number;
+  careerApplies: number;
+  jobTargetAttributedApplies: number;
+  otherAtsApplies: number;
+}
+
+export interface JobOverviewHeader {
+  jobId: string;
+  title: string;
+  status: string;
+  serviceType: string;
+  distributionScope: string;
+  visibility: string;
+  postedAt?: string | null;
+  updatedAt?: string | null;
+  assignedConsultantName?: string | null;
+  consultantState: 'ASSIGNED' | 'PENDING' | 'NOT_REQUIRED';
+  paymentStatus?: string | null;
+  jobTargetSyncStatus?: string | null;
+  jobTargetNeedsAttention: boolean;
+}
+
+export interface JobOverviewKpis {
+  applicants: number;
+  views: number;
+  applies: number;
+  boardsLive: number;
+}
+
+export interface JobOverviewFunnelRound {
+  roundId: string;
+  label: string;
+  count: number;
+  fixedKey?: string;
+}
+
+export interface JobOverviewFunnelStage {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface JobOverviewFunnel {
+  totalApplicants: number;
+  shortlisted: number;
+  rounds: JobOverviewFunnelRound[];
+  stages: JobOverviewFunnelStage[];
+}
+
+export interface JobOverviewSourceBreakdownEntry {
+  source: string;
+  label: string;
+  count: number;
+  percent: number;
+}
+
+export interface JobOverviewDistributionBoard {
+  siteName: string;
+  status?: string;
+  clicks: number;
+  applies: number;
+  spend: number;
+  easyApply: boolean;
+  viewUrl?: string;
+}
+
+export interface JobOverviewDistributionSummary {
+  enabled: boolean;
+  syncStatus?: string;
+  attentionState?: string;
+  feedState?: 'READY' | 'NOT_ENABLED_BY_JOBTARGET' | 'SYNCING' | 'ERROR';
+  boardsLive: number;
+  totalClicks: number;
+  totalApplies: number;
+  totalSpend: number;
+  lastRefreshAt?: string | null;
+  topBoards: JobOverviewDistributionBoard[];
+  easyApplyState: 'disabled' | 'configured' | 'enabled' | 'mixed';
+}
+
+export interface JobOverviewOperations {
+  screening: {
+    pending: number;
+    analyzed: number;
+    averageScore: number | null;
+  };
+  tasks: {
+    total: number;
+    pending: number;
+    overdue: number;
+    urgent: number;
+    lastActivityAt?: string | null;
+  };
+  messages: {
+    conversations: number;
+    waitingOnCandidate: number;
+    waitingOnHiringTeam: number;
+    lastMessageAt?: string | null;
+  };
+  email: {
+    sent: number;
+    lastSentAt?: string | null;
+  };
+  interviews: {
+    upcoming: number;
+    upcoming7d: number;
+    completed: number;
+    noShowOrCancelled: number;
+    lastActivityAt?: string | null;
+  };
+  offers: {
+    draft: number;
+    sent: number;
+    accepted: number;
+    expired: number;
+    docsPending: number;
+    lastActivityAt?: string | null;
+  };
+}
+
+export interface JobOverviewTeam {
+  totalMembers: number;
+  activeMembers: number;
+  pendingInvites: number;
+  roleCount: number;
+  roundsWithAssignedRoles: number;
+  totalRounds: number;
+  assignedConsultantName?: string | null;
+  consultantState: 'ASSIGNED' | 'PENDING' | 'NOT_REQUIRED';
+}
+
+export interface JobOverviewRoleSnapshot {
+  summary?: string | null;
+  requirementsPreview: string[];
+  responsibilitiesPreview: string[];
+  totalRequirements: number;
+  totalResponsibilities: number;
+}
+
+export interface JobOverviewMilestone {
+  id: string;
+  type: string;
+  title: string;
+  description?: string;
+  occurredAt: string;
+  hrefTab?: string;
+}
+
+export interface JobOverviewResponse {
+  header: JobOverviewHeader;
+  kpis: JobOverviewKpis;
+  funnel: JobOverviewFunnel;
+  career: JobCareerMetrics;
+  sourceMix: {
+    totalAtsApplies: number;
+    breakdown: JobOverviewSourceBreakdownEntry[];
+  };
+  distribution: JobOverviewDistributionSummary;
+  operations: JobOverviewOperations;
+  team: JobOverviewTeam;
+  roleSnapshot: JobOverviewRoleSnapshot;
+  milestones: JobOverviewMilestone[];
+}
+
+export type PublishedJobSetupState =
+  | 'PENDING_CONSULTANT'
+  | 'PENDING_SETUP'
+  | 'ADVANCED'
+  | 'SIMPLE'
+  | 'UNKNOWN';
+
+export type PublishedJobDistributionState =
+  | 'HRM8_ONLY'
+  | 'LAUNCH_PENDING'
+  | 'SYNC_NEEDED'
+  | 'LIVE'
+  | 'CLOSED';
+
+export interface PublishedJobListRow {
+  job: Job;
+  distribution?: JobTargetDistributionRow;
+  setupState: PublishedJobSetupState;
+  distributionState: PublishedJobDistributionState;
+  primaryAction?: 'complete_setup' | 'launch_marketplace' | 'sync' | 'view_distribution';
+  careerMetrics: JobCareerMetrics;
+  totals: JobApplyTotals;
+  careerViewSeries: number[];
+  atsApplySeries: number[];
+}
+
+export interface JobTargetDistributionOverview {
+  summary: {
+    totalGlobalJobs: number;
+    jobsLiveOnBoards: number;
+    jobsNeedingAttention: number;
+    totalClicks: number;
+    totalApplies: number;
+    totalCareerViews: number;
+    totalCareerApplyClicks: number;
+    totalCareerApplies: number;
+    feedPendingCount: number;
+    trackingIssueCount: number;
+    liveBoardCount: number;
+    launchReadyCount: number;
+  };
+  rows: JobTargetDistributionRow[];
+}
+
+export interface JobTargetDistributionDetail {
+  job: {
+    id: string;
+    title: string;
+    localStatus: string;
+    distributionScope: string;
+    remoteJobId?: string | null;
+  };
+  company: {
+    remoteCompanyId?: string;
+    feedUrl?: string;
+    lastSyncedAt?: string;
+    feedLastSyncedAt?: string;
+    feedLastAttemptAt?: string;
+    feedLastError?: string;
+    feedLastStatus?: number;
+    feedRegistrationState?: 'NEVER_REGISTERED' | 'REGISTERED' | 'INVALID';
+    lastError?: string;
+  };
+  sync: {
+    syncStatus: string;
+    lastSyncedAt?: string | null;
+    lastError?: string | null;
+    postingsLastRefreshedAt?: string | null;
+    postingsLastError?: string | null;
+    isStale: boolean;
+  };
+  feedState: 'READY' | 'NOT_ENABLED_BY_JOBTARGET' | 'SYNCING' | 'ERROR';
+  integrationHealth: JobTargetIntegrationHealth;
+  easyApply: {
+    enabled: boolean;
+    type: 'basic' | 'full';
+    hostedApply: boolean;
+    questionnaireEnabled: boolean;
+    deliveredApplications: number;
+    questionnaireResponseCount: number;
+  };
+  easyApplyState: 'ALL_ON' | 'MIXED' | 'OFF';
+  rollups: {
+    activePostingCount: number;
+    totalClicks: number;
+    totalApplies: number;
+    activeSites: string[];
+    totalSpend: number;
+  };
+  topBoards: Array<{
+    siteId?: string;
+    siteName?: string;
+    status?: string;
+    clicks: number;
+    applies: number;
+    totalCost: number;
+    viewUrl?: string;
+    hostedApplyUrl?: string | null;
+  }>;
+  orderSummary: JobTargetOrderSummary;
+  postings: JobTargetPostingSnapshot[];
+  attribution: {
+    totalJobTargetAttributedApplications: number;
+    sourceBreakdown: Array<{ source: string; count: number }>;
+    mediumBreakdown: Array<{ medium: string; count: number }>;
+    topCampaigns: Array<{ campaign: string; count: number }>;
+  };
+  syncIssues: {
+    totalJobTargetAttributedApplications: number;
+    failedNewApplicationSyncs: number;
+    failedStageSyncs: number;
+    lastFailedSyncAt?: string | null;
+    errorSnippets: string[];
+  };
+  trackingHealth: JobTargetTrackingHealth;
+  careerMetrics: JobCareerMetrics;
+  totals: JobApplyTotals;
+  sourceBreakdownAll: Array<{ source: string; count: number }>;
+}
+
+export interface JobTargetEasyApplyReadiness {
+  enabled: boolean;
+  type: 'basic' | 'full';
+  hostedApply: boolean;
+  questionnaireEnabled: boolean;
+  questionnaireReady: boolean;
+  deliveryReady: boolean;
+  questionnaireWebhookUrl?: string;
+  applicationDeliveryWebhookUrl?: string;
+  issues: string[];
 }
 
 /** Per-job role (e.g. Technical Interviewer, Hiring Manager). Production-grade: each job has its own roles. */
@@ -124,6 +541,7 @@ export interface Job {
   unreadApplicants?: number;
   viewsCount: number;
   clicksCount?: number;
+  careerMetrics?: JobCareerMetrics;
   createdAt: string;
   updatedAt: string;
   archived?: boolean;

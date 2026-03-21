@@ -15,6 +15,7 @@ interface ChatLogisticsCardProps {
     onVisibilityChange: (value: 'public' | 'private') => void;
     onStealthChange: (value: boolean) => void;
     onContinue: () => void;
+    showContinue?: boolean;
 }
 
 export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
@@ -25,6 +26,7 @@ export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
     onVisibilityChange,
     onStealthChange,
     onContinue,
+    showContinue = true,
 }) => {
     // Validate date is reasonable (e.g. not year 0069)
     const isValidDate = (dateStr?: string) => {
@@ -129,9 +131,11 @@ export const ChatLogisticsCard: React.FC<ChatLogisticsCardProps> = ({
                 </div>
             </Card>
 
-            <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
-                Continue <ArrowRight className="h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
+                    Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };
