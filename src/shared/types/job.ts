@@ -531,6 +531,8 @@ export interface Job {
   assignedConsultantName?: string;
   /** True when job has managed service, no consultant, and a ConsultantAssignmentRequest is PENDING */
   pendingConsultantAssignment?: boolean;
+  /** True only after the company finishes the post-job setup flow. */
+  setupComplete?: boolean;
   /** For managed jobs with consultant: true when roles and rounds are configured (advance setup done) */
   advanceSetupComplete?: boolean;
   pipeline?: JobPipelineStatus;

@@ -59,6 +59,9 @@ interface ApplicationCardProps {
   isSimpleFlow?: boolean;
   isDragOverlay?: boolean;
   isPendingApproval?: boolean; // Consultant view: awaiting HR approval for OFFER/REJECT
+  dragDisabled?: boolean;
+  restrictToOfferActions?: boolean;
+  lockReason?: string;
 }
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -84,6 +87,9 @@ export function ApplicationCard({
   isSimpleFlow = false,
   isDragOverlay = false,
   isPendingApproval = false,
+  dragDisabled = false,
+  restrictToOfferActions = false,
+  lockReason,
 }: ApplicationCardProps) {
   if (!application || !application.id) {
     return null;
@@ -134,7 +140,7 @@ export function ApplicationCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: application.id, disabled: isDragOverlay });
+  } = useSortable({ id: application.id, disabled: isDragOverlay || dragDisabled });
 
   const style = isDragOverlay
     ? undefined
@@ -164,15 +170,20 @@ export function ApplicationCard({
   const offerRound = findRound("OFFER");
   const hiredRound = findRound("HIRED");
   const rejectedRound = findRound("REJECTED");
+  const managedPipelineOwner = application.managedPipelineOwner ?? null;
   const isInHiredRound = !!(application.roundId && hiredRound && application.roundId === hiredRound.id);
   const isInOfferRound = !!(application.roundId && offerRound && application.roundId === offerRound.id);
   const isInRejectedRound = !!(application.roundId && rejectedRound && application.roundId === rejectedRound.id);
+  const isOfferState = isInOfferRound || normalizedStage.includes("offer") || normalizedStatus === "offer";
   const isHiredState = isInHiredRound || normalizedStage.includes("hired") || normalizedStatus === "hired";
   const isRejectedState = isInRejectedRound || normalizedStage.includes("reject") || normalizedStatus === "rejected";
+  const isFullServiceHandoffState =
+    managedPipelineOwner === "COMPANY" || Boolean(application.offerHandoffAt);
   const isShortlistedState =
+    !isFullServiceHandoffState &&
     !isRejectedState &&
     !isHiredState &&
-    (isInOfferRound || normalizedStage.includes("offer") || normalizedStatus === "offer" || Boolean(application.shortlisted));
+    (isOfferState || Boolean(application.shortlisted));
 
   const displayCandidateName = application.candidateName?.trim() || "Unknown Candidate";
 
@@ -185,9 +196,19 @@ export function ApplicationCard({
       .slice(0, 2);
   };
 
+  const isActionLocked = Boolean(lockReason);
+
   const handleShortlist = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isShortlistedState || isHiredState) {
+    if (isActionLocked) {
+      toast({
+        title: "Action locked",
+        description: lockReason,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isOfferState || isRejectedState || isHiredState) {
       return;
     }
 
@@ -220,6 +241,22 @@ export function ApplicationCard({
 
   const handleReject = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isActionLocked) {
+      toast({
+        title: "Action locked",
+        description: lockReason,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (restrictToOfferActions) {
+      toast({
+        title: "Offer actions only",
+        description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (isRejectedState || isHiredState) return;
     
     // Find the Rejected round
@@ -319,10 +356,22 @@ export function ApplicationCard({
               </div>
 
               <div className="flex items-center justify-center gap-1 flex-wrap">
-                {isShortlistedState && (
+                {!isFullServiceHandoffState && isShortlistedState && (
                   <Badge variant="default" className="h-5 px-2 text-[10px] bg-green-600 hover:bg-green-600">
                     Shortlisted
                   </Badge>
+                )}
+                {lockReason && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="h-5 px-2 text-[10px] border-amber-300 text-amber-700">
+                          Locked
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>{lockReason}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 {isHiredState && (
                   <Badge className="h-5 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-600">
@@ -334,7 +383,7 @@ export function ApplicationCard({
                     Rejected
                   </Badge>
                 )}
-                {!isSimpleFlow && !isShortlistedState && !isRejectedState && !isHiredState && application.stage && (
+                {!isSimpleFlow && !isOfferState && !isRejectedState && !isHiredState && application.stage && (
                   <Badge variant="outline" className="h-5 px-2 text-[10px]">
                     {application.stage}
                   </Badge>
@@ -369,38 +418,44 @@ export function ApplicationCard({
                         View
                       </Button>
                     )}
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className={`${isSimpleFlow ? "h-7 min-w-[84px] px-3 text-[11px]" : "h-7 px-2 text-[10px]"}`}
-                      onClick={handleShortlist}
-                      disabled={isShortlisting || isShortlistedState || isHiredState}
-                      title="Move to Offer"
-                    >
-                      Offer
-                    </Button>
+                    {!isOfferState && !isRejectedState && !isHiredState && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className={`${isSimpleFlow ? "h-7 min-w-[84px] px-3 text-[11px]" : "h-7 px-2 text-[10px]"}`}
+                        onClick={handleShortlist}
+                        disabled={isActionLocked || isShortlisting}
+                        title="Move to Offer"
+                      >
+                        Offer
+                      </Button>
+                    )}
                     {isSimpleFlow ? (
+                      !restrictToOfferActions && (
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-7 min-w-[84px] px-3 text-[11px] border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
                         onClick={handleReject}
-                        disabled={isRejectedState || isHiredState}
+                        disabled={isActionLocked || isRejectedState || isHiredState}
                         title="Reject Candidate"
                       >
                         Reject
                       </Button>
+                      )
                     ) : (
+                      !restrictToOfferActions && (
                       <Button
                          variant="ghost"
                          size="sm"
                          className="h-7 w-7 px-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
                          onClick={handleReject}
-                         disabled={isRejectedState || isHiredState}
+                         disabled={isActionLocked || isRejectedState || isHiredState}
                          title="Reject Candidate"
                       >
                          <UserX className="h-3.5 w-3.5" />
                       </Button>
+                      )
                     )}
                   </div>
             </div>
@@ -698,7 +753,7 @@ export function ApplicationCard({
                             <Eye className="h-3 w-3 mr-1" />
                             Review
                           </Button>
-                          {!isShortlistedState && !isRejectedState && !isHiredState && (
+                          {!restrictToOfferActions && !isRejectedState && !isHiredState && (
                             <Button 
                                variant="ghost" 
                                size="sm"
@@ -710,19 +765,19 @@ export function ApplicationCard({
                             </Button>
                           )}
                         </div>
-                        {!isShortlistedState && !isRejectedState && !isHiredState && (
+                        {!isOfferState && !isRejectedState && !isHiredState && (
                           <Button
                             variant="default"
                             size="sm"
                             className="w-full text-xs h-7"
                             onClick={handleShortlist}
-                            disabled={isShortlisting}
+                            disabled={isActionLocked || isShortlisting}
                           >
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             Offer
                           </Button>
                         )}
-                        {isShortlistedState && (
+                        {!isFullServiceHandoffState && isShortlistedState && (
                           <Badge variant="default" className="bg-green-500 text-xs w-full justify-center h-7">
                             Shortlisted
                           </Badge>

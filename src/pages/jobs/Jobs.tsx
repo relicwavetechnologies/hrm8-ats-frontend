@@ -42,7 +42,7 @@ import { DeleteConfirmationDialog } from "@/shared/components/ui/delete-confirma
 import { getCountryFromLocation, getRegionForCountry } from "@/shared/lib/countryRegions";
 import { useDraftJob } from "@/shared/hooks/useDraftJob";
 import { useJobsList } from "@/shared/hooks/useJobsList";
-import { isJobSetupComplete, isJobSetupPending, markJobSetupPending } from "@/shared/lib/jobSetupState";
+import { markJobSetupPending } from "@/shared/lib/jobSetupState";
 import { normalizeDraftStepIndex } from "@/modules/jobs/store/useJobCreateStore";
 
 import { BulkActionsToolbar } from "@/modules/jobs/components/bulk/BulkActionsToolbar";
@@ -214,6 +214,39 @@ export default function Jobs() {
       managedCheckoutServiceParam === 'rpo'
       ? managedCheckoutServiceParam
       : undefined;
+
+  const getJobSetupState = useCallback((job: Job) => {
+    const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
+    const needsConsultant = isManaged && !job.assignedConsultantId;
+    const advanceSetupDone = job.advanceSetupComplete !== false;
+
+    const legacySetupComplete =
+      !!job.setupType &&
+      !!job.managementType &&
+      (!needsConsultant || !!job.assignedConsultantId) &&
+      !job.pendingConsultantAssignment &&
+      (!isManaged || !job.assignedConsultantId || advanceSetupDone);
+
+    const isSetupComplete = isManaged
+      ? job.setupComplete === true && !job.pendingConsultantAssignment && !needsConsultant
+      : job.setupComplete === true || legacySetupComplete;
+
+    const setupLabel =
+      job.pendingConsultantAssignment || needsConsultant
+        ? 'Pending consultant'
+        : !isSetupComplete
+          ? 'Complete setup'
+          : job.setupType === 'simple' || isManaged
+            ? 'Simple setup'
+            : 'Complete';
+
+    return {
+      isManaged,
+      needsConsultant,
+      isSetupComplete,
+      setupLabel,
+    };
+  }, []);
 
   /** Right-click AI context menu state */
   const [contextMenuRef, setContextMenuRef] = useState<EntityReference | null>(null);
@@ -1008,21 +1041,7 @@ export default function Jobs() {
       sortable: false,
       width: "120px",
       render: (job) => {
-        const hasPendingSetup = isJobSetupPending(job.id);
-        const isManaged = ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '');
-        const isSetupComplete = isJobSetupComplete(job);
-        const setupLabel =
-          hasPendingSetup
-            ? 'Pending setup'
-            : job.pendingConsultantAssignment || (isManaged && !job.assignedConsultantId)
-            ? 'Pending consultant'
-            : isManaged && job.assignedConsultantId && !job.advanceSetupComplete
-              ? 'Complete setup'
-              : job.setupType === 'advanced'
-                ? 'Advanced'
-                : job.setupType === 'simple'
-                  ? 'Simple'
-                  : 'Complete';
+        const { isSetupComplete, setupLabel } = getJobSetupState(job);
         return (
           <div className="flex items-center gap-2">
             {isSetupComplete ? (

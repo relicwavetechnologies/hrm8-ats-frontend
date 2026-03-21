@@ -21,9 +21,11 @@ import { Application } from "@/shared/types/application";
 
 interface JobMessagesTabProps {
     jobId: string;
+    channelType?: string;
+    emptyMessage?: string;
 }
 
-export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
+export function JobMessagesTab({ jobId, channelType, emptyMessage }: JobMessagesTabProps) {
     const [searchParams] = useSearchParams();
     const urlConversationId = searchParams.get('conversationId');
 
@@ -38,7 +40,7 @@ export function JobMessagesTab({ jobId }: JobMessagesTabProps) {
     const loadConversations = async () => {
         setLoading(true);
         try {
-            const response = await messagingService.getJobConversations(jobId);
+            const response = await messagingService.getJobConversations(jobId, channelType);
             if (response.success && response.data) {
                 setConversations(response.data);
 

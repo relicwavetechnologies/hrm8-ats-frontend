@@ -118,6 +118,7 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
   servicePackage?: string;
   setupType?: 'simple' | 'advanced';
   managementType?: string;
+  setupComplete?: boolean;
   /** Wizard step (1-based) when saving as draft */
   draftStep?: number;
 }
@@ -396,6 +397,16 @@ class JobService {
 
   async resendInvite(jobId: string, memberId: string) {
     return apiClient.post<{ message: string }>(`/api/jobs/${jobId}/team/${memberId}/resend-invite`);
+  }
+
+  /** Executive Search: read-only employer summary (prospects, invited, converted, response rate). */
+  async getExecutiveSearchSummary(jobId: string) {
+    return apiClient.get<{
+      prospectCount: number;
+      invitedCount: number;
+      convertedCount: number;
+      responseRate: number;
+    }>(`/api/jobs/${jobId}/executive-search/summary`);
   }
 }
 
