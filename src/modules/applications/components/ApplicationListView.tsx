@@ -16,7 +16,7 @@ import {
 import { MoreVertical, Eye, Mail, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { FileText } from "lucide-react";
-import type { Application, ApplicationStatus, ApplicationStage } from "@/shared/types/application";
+import type { Application, ApplicationStatus } from "@/shared/types/application";
 
 interface ApplicationListViewProps {
   applications: Application[];
@@ -49,6 +49,21 @@ const stageColors: Record<string, string> = {
   'Withdrawn': 'bg-gray-500',
 };
 
+function getStatusConfig(status: unknown) {
+  const normalizedStatus = typeof status === "string" ? status.toLowerCase().trim() : "";
+  return statusConfig[normalizedStatus as ApplicationStatus] || statusConfig.applied;
+}
+
+function getCandidateInitials(name: string | undefined) {
+  const safeName = (name || "Candidate").trim();
+  return safeName
+    .split(/\s+/)
+    .map((part) => part[0] || "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function ApplicationListView({ 
   applications, 
   onApplicationClick,
@@ -66,7 +81,7 @@ export function ApplicationListView({
             <Avatar className="h-8 w-8">
               <AvatarImage src={app.candidatePhoto} />
               <AvatarFallback>
-                {app.candidateName.split(' ').map(n => n[0]).join('')}
+                {getCandidateInitials(app.candidateName)}
               </AvatarFallback>
             </Avatar>
             {(app.isNew || !app.isRead) && (
@@ -108,7 +123,7 @@ export function ApplicationListView({
       label: "Status",
       sortable: true,
       render: (app) => {
-        const config = statusConfig[app.status];
+        const config = getStatusConfig(app.status);
         return <Badge variant={config.variant}>{config.label}</Badge>;
       },
     },

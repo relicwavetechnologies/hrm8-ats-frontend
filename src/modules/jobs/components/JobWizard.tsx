@@ -1389,9 +1389,12 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
           <PostPublishFlow
             job={savedJobData}
             open={showPostLaunchTools}
-            onOpenChange={(open) => {
+            onOpenChange={(open, meta) => {
               setShowPostLaunchTools(open);
               if (!open) {
+                if (meta?.reason === 'managed-checkout') {
+                  return;
+                }
                 setShowJobSetupDrawer(true);
               }
             }}
@@ -1407,10 +1410,6 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
               } catch (error) {
                 console.error('Failed to save template:', error);
               }
-            }}
-            onComplete={() => {
-              setShowPostLaunchTools(false);
-              setShowJobSetupDrawer(true);
             }}
           />
         )}

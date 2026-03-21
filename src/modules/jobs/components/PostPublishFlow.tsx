@@ -40,7 +40,10 @@ import { UpgradeServiceDialog } from "./UpgradeServiceDialog";
 interface PostPublishFlowProps {
   job: Job;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (
+    open: boolean,
+    meta?: { reason: 'dismiss' | 'open-setup' | 'managed-checkout' }
+  ) => void;
   onSaveTemplate?: (templateName: string, templateDescription?: string) => void;
   onComplete?: () => void;
 }
@@ -184,14 +187,14 @@ export function PostPublishFlow({
   };
 
   const handleComplete = () => {
-    onOpenChange(false);
+    onOpenChange(false, { reason: "open-setup" });
     if (onComplete) {
       onComplete();
     }
   };
 
   const handleManagedServiceSelect = (serviceType: 'shortlisting' | 'full-service' | 'executive-search' | 'rpo') => {
-    onOpenChange(false);
+    onOpenChange(false, { reason: "managed-checkout" });
     setShowUpgradeDialog(false);
     navigate(`/ats/jobs/${job.id}/managed-recruitment-checkout?serviceType=${serviceType}`);
   };
@@ -579,7 +582,12 @@ export function PostPublishFlow({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          onOpenChange(nextOpen, nextOpen ? undefined : { reason: "dismiss" });
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

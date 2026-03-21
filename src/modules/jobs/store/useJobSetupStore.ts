@@ -14,8 +14,8 @@ interface JobSetupState {
 
     // Actions
     setIsOpen: (isOpen: boolean, jobId?: string | null) => void;
-    setManagementType: (type: 'self-managed' | 'hrm8-managed') => void;
-    setSetupType: (type: 'simple' | 'advanced') => void;
+    setManagementType: (type: 'self-managed' | 'hrm8-managed' | null) => void;
+    setSetupType: (type: 'simple' | 'advanced' | null) => void;
     setRoles: (roles: JobRole[]) => void;
     addRole: (role: JobRole) => void;
     setTeam: (team: HiringTeamMember[]) => void;

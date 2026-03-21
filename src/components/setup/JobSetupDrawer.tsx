@@ -3,8 +3,9 @@
  * Lets users choose Self-Managed vs HRM8-Managed, Simple vs Advanced setup,
  * define hiring roles/team per job, and configure rounds with optional role-based interviewer assignment.
  *
- * PAYG (no subscription): Simple flow only — skip simple vs advanced choice, hide HRM8-Managed.
- * Paid plans (incl. over-quota): Full flow with simple/advanced and HRM8-Managed options.
+ * PAYG (no subscription): Still show the management choice, but self-managed is limited to the simple flow.
+ * HRM8-managed: Simple flow only after admin confirms the consultant assignment.
+ * Paid self-managed plans can still use the broader setup flow.
  */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -129,7 +130,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     } else if (initialPendingConsultantAssignment) {
       setPendingConsultantAssignment(true);
       setManagementType('hrm8-managed');
-      setSetupType('advanced');
+      setSetupType('simple');
       setJobSetupLoaded(true); // Skip loading; we know we're blocked
     }
   }, [open, jobId, initialPendingConsultantAssignment, setIsOpen, reset, setManagementType, setSetupType]);
@@ -179,7 +180,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         );
         if (isManaged) {
           setManagementType('hrm8-managed');
-          setSetupType('advanced');
+          setSetupType('simple');
           if (String(job.paymentStatus || '').toUpperCase() === 'PAID') {
             setCurrentStep(2);
           } else {
@@ -195,8 +196,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         if (job.setupType === 'simple' || job.setupType === 'advanced') {
           setSetupType(job.setupType);
         }
-        // Don't set currentStep(1) for fresh self-managed jobs — PAYG effect will advance to step 2.
-        // Only set step 1 when restoring a job that already had setupType chosen.
+        // Only restore the inner self-managed step when the job already has a chosen setup type.
         if (job.setupType) {
           setCurrentStep(1);
         }
@@ -210,37 +210,20 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
   }, [open, jobId, forceChoiceOnOpen, setManagementType, setSetupType, setCurrentStep]);
 
   useEffect(() => {
-    if (managementType === 'hrm8-managed' && setupType !== 'advanced') {
-      setSetupType('advanced');
+    if (managementType === 'hrm8-managed' && setupType !== 'simple') {
+      setSetupType('simple');
     }
   }, [managementType, setupType, setSetupType]);
 
-
-  // PAYG (no subscription): Force simple flow only — skip step 1, no simple vs advanced choice
+  // No-AI companies can still choose self-managed vs HRM8-managed.
+  // If they choose self-managed, keep them on the simple setup path.
   useEffect(() => {
-    if (!open || !jobId || canUseAi) return;
-    if (currentStep !== 1) return;
-    if (managementType === 'hrm8-managed') return;
-    // For self-managed, we need simple. If already have advanced, don't overwrite.
-    if (managementType === 'self-managed' && setupType === 'advanced') return;
-
-    if (canUseAiLoading) {
-      // Fallback: if API still loading after 2.5s, assume PAYG and advance (avoids stuck "Preparing...")
-      const t = setTimeout(() => {
-        setManagementType('self-managed');
-        setSetupType('simple');
-        setCurrentStep(2);
-      }, 2500);
-      return () => clearTimeout(t);
+    if (!open || canUseAiLoading || canUseAi) return;
+    if (managementType !== 'self-managed') return;
+    if (setupType !== 'simple') {
+      setSetupType('simple');
     }
-
-    setManagementType('self-managed');
-    setSetupType('simple');
-    setCurrentStep(2);
-  }, [open, jobId, canUseAiLoading, canUseAi, currentStep, managementType, setupType, setManagementType, setSetupType, setCurrentStep]);
-
-  const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
+  }, [open, canUseAiLoading, canUseAi, managementType, setupType, setSetupType]);
 
   const handleClose = () => {
     onOpenChange(false, { reason: 'close' });
@@ -255,6 +238,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
         const payload: UpdateJobRequest = {
           setupType: setupType ?? undefined,
           managementType: managementType ?? undefined,
+          setupComplete: true,
           distributionScope,
         };
         if (distributionScope === 'GLOBAL') {
@@ -279,6 +263,14 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     setManagementType(type);
 
     if (type === 'self-managed') {
+      if (canUseAiLoading) {
+        return;
+      }
+
+      if (isSetupRestrictedToSimple) {
+        setSetupType('simple');
+        nextStep();
+      }
       return;
     }
 
@@ -323,31 +315,35 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
       );
     }
 
-    // Step 1: Setup Flow Type (Simple vs Advanced)
-    // PAYG: Skip choice — show loading until effect advances to step 2
+    // Step 1: Management choice, then self-managed setup-flow choice.
     if (currentStep === 1) {
-      if (isSetupRestrictedToSimple) {
-        return (
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <div className="animate-pulse flex flex-col gap-3 w-full max-w-md">
-              <div className="h-4 bg-muted rounded w-3/4" />
-              <div className="h-4 bg-muted rounded w-1/2" />
-              <div className="h-24 bg-muted rounded mt-4" />
-            </div>
-            <p className="text-sm text-muted-foreground">Preparing simple setup…</p>
-          </div>
-        );
-      }
       return (
         <SetupFlowTypeCard
           managementType={managementType}
           setupType={setupType}
+          selfManagedMode={
+            managementType === 'self-managed'
+              ? canUseAiLoading
+                ? 'loading'
+                : isSetupRestrictedToSimple
+                  ? 'simple-only'
+                  : 'full'
+              : 'full'
+          }
           onManagementTypeSelect={handleManagementTypeSelect}
           onSetupTypeSelect={(t) => {
             setSetupType(t);
             if (!managementType) setManagementType('self-managed');
             nextStep();
           }}
+          onBack={
+            managementType === 'self-managed'
+              ? () => {
+                  setSetupType(null);
+                  setManagementType(null);
+                }
+              : undefined
+          }
         />
       );
     }
@@ -502,7 +498,7 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           <span className="text-sm text-muted-foreground">
             Step {currentStep} of {SETUP_STEPS.length}
           </span>
-          {currentStep > 1 && currentStep < 6 && !(isSetupRestrictedToSimple && currentStep === 2) && (
+          {currentStep > 1 && currentStep < 6 && (!(isSetupRestrictedToSimple && currentStep === 2) || managementType === 'self-managed') && (
             <Button variant="ghost" onClick={prevStep}>Back</Button>
           )}
         </div>

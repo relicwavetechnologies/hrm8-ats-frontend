@@ -27,10 +27,17 @@ import { JobRound, JobRoundType, jobRoundService } from "@/shared/lib/jobRoundSe
 import { jobService } from "@/shared/lib/jobService";
 import type { Job } from "@/shared/types/job";
 import { MoveStageDialog } from "./MoveStageDialog";
+import {
+  deriveManagedPipelineOwner,
+  getManagedServiceLockReason,
+  resolveManagedServicePolicy,
+} from "@/shared/lib/managedServicePolicy";
 
 interface ApplicationPipelineProps {
   jobId?: string;
   jobTitle?: string;
+  jobServiceType?: string;
+  jobManagementType?: string;
   applications?: Application[];
   isCompareMode?: boolean;
   selectedForComparison?: string[];
@@ -95,6 +102,14 @@ type PipelineApiApplication = {
   updatedAt?: string | Date;
   updated_at?: string | Date;
   shortlisted?: boolean;
+  managedPipelineOwner?: 'CONSULTANT' | 'COMPANY' | null;
+  managed_pipeline_owner?: 'CONSULTANT' | 'COMPANY' | null;
+  offerHandoffAt?: string | Date;
+  offer_handoff_at?: string | Date;
+  offerHandoffBy?: string;
+  offer_handoff_by?: string;
+  offerHandoffNote?: string;
+  offer_handoff_note?: string;
   manuallyAdded?: boolean;
   manually_added?: boolean;
   score?: number;
@@ -154,6 +169,9 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   isSimpleFlow,
   optimisticMoves,
   failedMoves,
+  restrictToOfferActions = false,
+  disableRoundReordering = false,
+  getLockReason,
   pendingApplicationIds,
 }: {
   round: JobRound;
@@ -178,6 +196,9 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
   isSimpleFlow?: boolean;
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
+  restrictToOfferActions?: boolean;
+  disableRoundReordering?: boolean;
+  getLockReason?: (application: Application) => string | null;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
 }) {
@@ -190,7 +211,7 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
     isDragging: isColumnDragging,
   } = useSortable({
     id: `round-${round.id}`,
-    disabled: round.isFixed, // Fixed rounds cannot be reordered
+    disabled: round.isFixed || disableRoundReordering, // Fixed/read-only rounds cannot be reordered
   });
 
   const style = {
@@ -224,7 +245,10 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
         isSimpleFlow={isSimpleFlow}
         optimisticMoves={optimisticMoves}
         failedMoves={failedMoves}
-        dragHandleProps={!round.isFixed ? { ...attributes, ...listeners } : undefined}
+        restrictToOfferActions={restrictToOfferActions}
+        disableRoundReordering={disableRoundReordering}
+        getLockReason={getLockReason}
+        dragHandleProps={!round.isFixed && !restrictToOfferActions && !disableRoundReordering ? { ...attributes, ...listeners } : undefined}
         pendingApplicationIds={pendingApplicationIds}
       />
     </div>
@@ -234,6 +258,8 @@ const SortableRoundColumn = React.memo(function SortableRoundColumn({
     prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
     prevProps.isSimpleFlow === nextProps.isSimpleFlow &&
+    prevProps.restrictToOfferActions === nextProps.restrictToOfferActions &&
+    prevProps.disableRoundReordering === nextProps.disableRoundReordering &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
     prevProps.failedMoves === nextProps.failedMoves
   );
@@ -263,6 +289,9 @@ const StageColumn = React.memo(function StageColumn({
   isSimpleFlow,
   optimisticMoves,
   failedMoves,
+  restrictToOfferActions = false,
+  disableRoundReordering = false,
+  getLockReason,
   dragHandleProps,
   pendingApplicationIds,
 }: {
@@ -288,6 +317,9 @@ const StageColumn = React.memo(function StageColumn({
   isSimpleFlow?: boolean;
   optimisticMoves: Map<string, string>;
   failedMoves: Set<string>;
+  restrictToOfferActions?: boolean;
+  disableRoundReordering?: boolean;
+  getLockReason?: (application: Application) => string | null;
   dragHandleProps?: DragHandleProps;
   pendingApplicationIds?: Set<string>;
 }) {
@@ -440,9 +472,9 @@ const StageColumn = React.memo(function StageColumn({
                   )}
                 </>
               )}
-              {round.isFixed && round.fixedKey === 'OFFER' && !isSimpleFlow && (
+              {round.isFixed && round.fixedKey === 'OFFER' && (
                 <>
-                  {onConfigureOffer && !isSimpleFlow && (
+                  {onConfigureOffer && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -456,7 +488,7 @@ const StageColumn = React.memo(function StageColumn({
                       <Settings className="h-3 w-3" />
                     </Button>
                   )}
-                  {onExecuteOffer && applications.length > 0 && !isSimpleFlow && (
+                  {onExecuteOffer && applications.length > 0 && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -472,7 +504,7 @@ const StageColumn = React.memo(function StageColumn({
                   )}
                 </>
               )}
-              {!round.isFixed && onDeleteRound && (
+              {!round.isFixed && onDeleteRound && !disableRoundReordering && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -507,6 +539,9 @@ const StageColumn = React.memo(function StageColumn({
                       hasFailed={failedMoves.has(application.id)}
                       isSimpleFlow={isSimpleFlow}
                       isPendingApproval={pendingApplicationIds?.has(application.id)}
+                      dragDisabled={restrictToOfferActions || Boolean(getLockReason?.(application))}
+                      restrictToOfferActions={restrictToOfferActions}
+                      lockReason={getLockReason?.(application) || undefined}
                     />
                   </div>
                 ))}
@@ -527,6 +562,8 @@ const StageColumn = React.memo(function StageColumn({
   return (
     prevProps.round?.id === nextProps.round?.id &&
     prevProps.applications === nextProps.applications &&
+    prevProps.restrictToOfferActions === nextProps.restrictToOfferActions &&
+    prevProps.disableRoundReordering === nextProps.disableRoundReordering &&
     prevProps.optimisticMoves === nextProps.optimisticMoves &&
     prevProps.failedMoves === nextProps.failedMoves
   );
@@ -535,6 +572,8 @@ const StageColumn = React.memo(function StageColumn({
 export function ApplicationPipeline({
   jobId,
   jobTitle = "Position",
+  jobServiceType,
+  jobManagementType,
   applications: providedApplications,
   isCompareMode = false,
   selectedForComparison = [],
@@ -571,7 +610,31 @@ export function ApplicationPipeline({
   const [applications, setApplications] = useState<Application[]>([]);
   const [rounds, setRounds] = useState<JobRound[]>([]);
   const [jobData, setJobData] = useState<PipelineJobData | null>(null);
+  const normalizeServicePackage = (value?: string) =>
+    String(value || '').trim().toLowerCase().replace(/_/g, '-');
+  const resolvedManagementType = jobManagementType || jobData?.job?.managementType;
+  const resolvedServicePackage = normalizeServicePackage(
+    jobServiceType || jobData?.job?.servicePackage || jobData?.job?.serviceType
+  );
+  const managedJobContext = useMemo(
+    () => ({
+      managementType: resolvedManagementType,
+      servicePackage: resolvedServicePackage,
+    }),
+    [resolvedManagementType, resolvedServicePackage]
+  );
+  const managedServicePolicy = useMemo(
+    () => resolveManagedServicePolicy(managedJobContext),
+    [managedJobContext]
+  );
   const isSimpleFlow = jobData?.job?.setupType === 'simple';
+  const isShortlistingManaged = managedServicePolicy === 'HRM8_SHORTLISTING';
+  const isFullServiceHandoff = managedServicePolicy === 'HRM8_FULL_SERVICE_HANDOFF';
+  const isCompanyFullServiceView = !isConsultantView && isFullServiceHandoff;
+  const isLegacyOfferOnlyCompanyView =
+    !isConsultantView &&
+    resolvedManagementType === 'hrm8-managed' &&
+    managedServicePolicy === 'DEFAULT';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   // Optimistic update state - for instant UI feedback
@@ -880,6 +943,14 @@ export function ApplicationPipeline({
             createdAt: app.createdAt ? new Date(app.createdAt) : (app.created_at ? new Date(app.created_at) : new Date()),
             updatedAt: app.updatedAt ? new Date(app.updatedAt) : (app.updated_at ? new Date(app.updated_at) : new Date()),
             shortlisted: app.shortlisted || false,
+            consultantActionType: (app as any).consultantActionType || (app as any).consultant_action_type,
+            consultantActionedAt: (app as any).consultantActionedAt || (app as any).consultant_actioned_at,
+            consultantActionedBy: (app as any).consultantActionedBy || (app as any).consultant_actioned_by,
+            consultantActionRoundId: (app as any).consultantActionRoundId || (app as any).consultant_action_round_id,
+            managedPipelineOwner: (app as any).managedPipelineOwner || (app as any).managed_pipeline_owner || null,
+            offerHandoffAt: (app as any).offerHandoffAt || (app as any).offer_handoff_at,
+            offerHandoffBy: (app as any).offerHandoffBy || (app as any).offer_handoff_by,
+            offerHandoffNote: (app as any).offerHandoffNote || (app as any).offer_handoff_note,
             manuallyAdded: app.manuallyAdded || app.manually_added || false,
             // Include AI scoring fields for ApplicationCard display
             score: app.score,
@@ -964,7 +1035,26 @@ export function ApplicationPipeline({
     return stageMap[stage] || 'New Application';
   };
 
+  const getPipelineOwner = useCallback(
+    (application: Application) => deriveManagedPipelineOwner(application, managedJobContext),
+    [managedJobContext]
+  );
+
+  const getLockReason = useCallback(
+    (application: Application): string | null =>
+      getManagedServiceLockReason({
+        policy: managedServicePolicy,
+        isConsultantView,
+        application,
+        job: managedJobContext,
+      }),
+    [managedServicePolicy, isConsultantView, managedJobContext]
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
+    if (isLegacyOfferOnlyCompanyView) {
+      return;
+    }
     const id = event.active.id as string;
     // Check if dragging a round column (starts with "round-")
     if (id.startsWith('round-')) {
@@ -976,6 +1066,11 @@ export function ApplicationPipeline({
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (isLegacyOfferOnlyCompanyView) {
+      setActiveId(null);
+      setActiveRoundId(null);
+      return;
+    }
     const { active, over } = event;
 
     if (!over) {
@@ -1170,6 +1265,39 @@ export function ApplicationPipeline({
       };
 
       const backendStage = stageMap[newStage] || "NEW_APPLICATION";
+      const application = applications.find(app => app?.id === applicationId);
+      const lockReason = application ? getLockReason(application) : null;
+      const pipelineOwner = application ? getPipelineOwner(application) : null;
+      if (lockReason) {
+        toast.error("Action locked", { description: lockReason });
+        return;
+      }
+      if (isConsultantView) {
+        toast.error("Use the kanban", {
+          description: "Use the kanban to manage candidates in this flow.",
+        });
+        return;
+      }
+      if (isLegacyOfferOnlyCompanyView && !['OFFER_EXTENDED', 'OFFER_ACCEPTED'].includes(backendStage)) {
+        toast.error("Offer actions only", {
+          description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
+        });
+        return;
+      }
+      if (isFullServiceHandoff) {
+        if (pipelineOwner !== 'COMPANY') {
+          toast.error("Action locked", {
+            description: "HRM8 consultant is managing this candidate until offer stage.",
+          });
+          return;
+        }
+        if (!['OFFER_EXTENDED', 'OFFER_ACCEPTED', 'REJECTED'].includes(backendStage)) {
+          toast.error("Offer actions only", {
+            description: "Use the Offer round and Offer tab to manage candidates in this flow.",
+          });
+          return;
+        }
+      }
       const response = await applicationService.updateStage(applicationId, backendStage);
 
       if (response.success) {
@@ -1206,6 +1334,39 @@ export function ApplicationPipeline({
       return;
     }
 
+    const lockReason = getLockReason(application);
+    if (lockReason) {
+      toast.error("Action locked", { description: lockReason, duration: 4000 });
+      return;
+    }
+
+    const pipelineOwner = getPipelineOwner(application);
+
+    if (isLegacyOfferOnlyCompanyView && targetRound.fixedKey !== 'OFFER') {
+      toast.error("Offer actions only", {
+        description: "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round.",
+        duration: 4000,
+      });
+      return;
+    }
+
+    if (!isConsultantView && isFullServiceHandoff) {
+      if (pipelineOwner !== 'COMPANY') {
+        toast.error("Action locked", {
+          description: "HRM8 consultant is managing this candidate until offer stage.",
+          duration: 4000,
+        });
+        return;
+      }
+      if (!['OFFER', 'REJECTED'].includes(String(targetRound.fixedKey || ''))) {
+        toast.error("Offer actions only", {
+          description: "Use the Offer round and Offer tab to manage candidates in this flow.",
+          duration: 4000,
+        });
+        return;
+      }
+    }
+
     // 2. Identify Current Round
     const currentRound = findRoundForApplication(application);
 
@@ -1225,8 +1386,8 @@ export function ApplicationPipeline({
       return;
     }
 
-    // 3. Validation Logic - SKIP FOR SIMPLE FLOW (no restrictions)
-    if (!isSimpleFlow) {
+    // 3. Validation Logic - SKIP FOR SIMPLE FLOW or shortlisting managed (no restrictions)
+    if (!isSimpleFlow && !isShortlistingManaged && !isFullServiceHandoff) {
       let isAllowed = false;
 
       // Rule: Can always move to Rejected
@@ -1307,6 +1468,14 @@ export function ApplicationPipeline({
           createdAt: apiApp.createdAt ? new Date(apiApp.createdAt) : (apiApp.created_at ? new Date(apiApp.created_at) : new Date()),
           updatedAt: apiApp.updatedAt ? new Date(apiApp.updatedAt) : (apiApp.updated_at ? new Date(apiApp.updated_at) : new Date()),
           shortlisted: apiApp.shortlisted || false,
+          consultantActionType: (apiApp as any).consultantActionType || (apiApp as any).consultant_action_type,
+          consultantActionedAt: (apiApp as any).consultantActionedAt || (apiApp as any).consultant_actioned_at,
+          consultantActionedBy: (apiApp as any).consultantActionedBy || (apiApp as any).consultant_actioned_by,
+          consultantActionRoundId: (apiApp as any).consultantActionRoundId || (apiApp as any).consultant_action_round_id,
+          managedPipelineOwner: (apiApp as any).managedPipelineOwner || (apiApp as any).managed_pipeline_owner || null,
+          offerHandoffAt: (apiApp as any).offerHandoffAt || (apiApp as any).offer_handoff_at,
+          offerHandoffBy: (apiApp as any).offerHandoffBy || (apiApp as any).offer_handoff_by,
+          offerHandoffNote: (apiApp as any).offerHandoffNote || (apiApp as any).offer_handoff_note,
           manuallyAdded: apiApp.manuallyAdded || apiApp.manually_added || false,
           score: apiApp.score,
           aiMatchScore: apiApp.aiMatchScore || apiApp.aiScore || apiApp.score,
@@ -1371,7 +1540,7 @@ export function ApplicationPipeline({
     }
 
     // Simple Mode Fast Path - Optimistic Updates
-    if (isSimpleFlow) {
+    if (isSimpleFlow || isFullServiceHandoff) {
       const optimisticStatus =
         targetRound.fixedKey === 'REJECTED'
           ? 'rejected'
@@ -1386,16 +1555,34 @@ export function ApplicationPipeline({
             : targetRound.fixedKey === 'NEW'
               ? 'New Application'
               : application.stage;
+      const optimisticOwner =
+        isFullServiceHandoff && targetRound.fixedKey === 'OFFER'
+          ? 'COMPANY'
+          : isFullServiceHandoff
+            ? (getPipelineOwner(application) || 'CONSULTANT')
+            : application.managedPipelineOwner;
       // 1. Optimistic update (instant UI response)
       setOptimisticMoves(prev => new Map(prev).set(applicationId, actualRoundId));
       setApplications(prev => prev.map(app =>
         app?.id === applicationId
-          ? { ...app, roundId: actualRoundId, stage: optimisticStage, status: optimisticStatus }
+          ? {
+              ...app,
+              roundId: actualRoundId,
+              stage: optimisticStage,
+              status: optimisticStatus,
+              managedPipelineOwner: optimisticOwner,
+            }
           : app
       ));
       setSelectedApplication(prev =>
         prev?.id === applicationId
-          ? { ...prev, roundId: actualRoundId, stage: optimisticStage, status: optimisticStatus }
+          ? {
+              ...prev,
+              roundId: actualRoundId,
+              stage: optimisticStage,
+              status: optimisticStatus,
+              managedPipelineOwner: optimisticOwner,
+            }
           : prev
       );
 
@@ -1424,6 +1611,9 @@ export function ApplicationPipeline({
               newMap.delete(applicationId);
               return newMap;
             });
+            if (isShortlistingManaged || isFullServiceHandoff) {
+              refreshSingleApplication(applicationId);
+            }
           } else {
             rollbackMove(applicationId, response.error || 'Please try again');
           }
@@ -1493,7 +1683,11 @@ export function ApplicationPipeline({
         }
 
         // 3. Refresh data
-        if (providedApplications !== undefined) {
+        if (isShortlistingManaged || isFullServiceHandoff) {
+          await refreshSingleApplication(applicationId);
+          toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
+          onApplicationMoved?.();
+        } else if (providedApplications !== undefined) {
           toast.success(`Moved ${application.candidateName} to ${targetRound.name}`);
           onApplicationMoved?.();
         } else {
@@ -1541,16 +1735,37 @@ export function ApplicationPipeline({
     setDetailPanelOpen(true);
   };
 
+  const selectedApplicationLockReason = selectedApplication ? getLockReason(selectedApplication) : null;
+  const selectedApplicationStatusReason = isConsultantView
+    ? "Use the kanban to manage candidates in this flow."
+    : isFullServiceHandoff
+      ? selectedApplicationLockReason || "Use the Offer round and Offer tab to manage candidates in this flow."
+      : isLegacyOfferOnlyCompanyView
+        ? "For HRM8 Managed Recruitment jobs, your company can only take action in the Offer round."
+        : null;
+
   const handleOfferCandidate = useCallback((applicationId: string) => {
+    const application = applications.find(app => app?.id === applicationId);
+    const lockReason = application ? getLockReason(application) : null;
+    if (lockReason) {
+      toast.error("Action locked", { description: lockReason });
+      return;
+    }
     const offerRound = rounds.find((r) => r.fixedKey === "OFFER" || String(r.name).toLowerCase() === "offer");
     if (!offerRound) {
       toast.error("Offer stage not found");
       return;
     }
     handleMoveToRound(applicationId, offerRound.id);
-  }, [rounds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rounds, applications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRejectCandidate = useCallback((applicationId: string) => {
+    const application = applications.find(app => app?.id === applicationId);
+    const lockReason = application ? getLockReason(application) : null;
+    if (lockReason) {
+      toast.error("Action locked", { description: lockReason });
+      return;
+    }
     const rejectedRound = rounds.find(
       (r) =>
         r.fixedKey === "REJECTED" ||
@@ -1562,7 +1777,7 @@ export function ApplicationPipeline({
       return;
     }
     handleMoveToRound(applicationId, rejectedRound.id);
-  }, [rounds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rounds, applications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = () => {
     if (!selectedApplication) return;
@@ -1761,7 +1976,7 @@ export function ApplicationPipeline({
         ) : <div />}
 
         {/* Create Round Button */}
-        {jobId && (
+        {jobId && !isCompanyFullServiceView && (
           <div>
             <Button
               onClick={() => setCreateRoundDialogOpen(true)}
@@ -1796,19 +2011,22 @@ export function ApplicationPipeline({
                   onToggleSelect={onToggleSelect}
                   onStageChange={handleStageChange}
                   onMoveToRound={handleMoveToRound}
-                  onDeleteRound={handleDeleteRound}
-                  onConfigureAssessment={isSimpleFlow ? undefined : handleConfigureAssessment}
-                  onConfigureInterview={handleConfigureInterview}
+                  onDeleteRound={isCompanyFullServiceView ? undefined : handleDeleteRound}
+                  onConfigureAssessment={isSimpleFlow || isCompanyFullServiceView ? undefined : handleConfigureAssessment}
+                  onConfigureInterview={isCompanyFullServiceView ? undefined : handleConfigureInterview}
                   onViewInterviews={handleViewInterviews}
-                  onViewRoundInterviews={handleViewRoundInterviews}
-                  onOpenScreening={isSimpleFlow ? undefined : handleOpenScreening}
-                  onConfigureOffer={isSimpleFlow ? undefined : handleConfigureOffer}
-                  onExecuteOffer={handleExecuteOffer}
-                  onOpenAssessmentDrawer={isSimpleFlow ? undefined : handleOpenAssessmentReview}
-                  onConfigureEmail={isSimpleFlow ? undefined : handleConfigureEmail}
+                  onViewRoundInterviews={isCompanyFullServiceView ? undefined : handleViewRoundInterviews}
+                  onOpenScreening={isSimpleFlow || isCompanyFullServiceView ? undefined : handleOpenScreening}
+                  onConfigureOffer={isConsultantView ? undefined : handleConfigureOffer}
+                  onExecuteOffer={isConsultantView ? undefined : handleExecuteOffer}
+                  onOpenAssessmentDrawer={isSimpleFlow || isCompanyFullServiceView ? undefined : handleOpenAssessmentReview}
+                  onConfigureEmail={isSimpleFlow || isCompanyFullServiceView ? undefined : handleConfigureEmail}
                   isSimpleFlow={isSimpleFlow}
                   optimisticMoves={optimisticMoves}
                   failedMoves={failedMoves}
+                  restrictToOfferActions={isLegacyOfferOnlyCompanyView}
+                  disableRoundReordering={isCompanyFullServiceView}
+                  getLockReason={getLockReason}
                   pendingApplicationIds={pendingApplicationIds}
                 />
               ))}
@@ -1825,6 +2043,8 @@ export function ApplicationPipeline({
                 onMoveToRound={handleMoveToRound}
                 isSimpleFlow={isSimpleFlow}
                 isDragOverlay
+                dragDisabled={isLegacyOfferOnlyCompanyView}
+                restrictToOfferActions={isLegacyOfferOnlyCompanyView}
               />
             )}
             {activeRoundId && (() => {
@@ -1870,6 +2090,9 @@ export function ApplicationPipeline({
           isSimpleFlow={isSimpleFlow}
           onOfferCandidate={handleOfferCandidate}
           onRejectCandidate={handleRejectCandidate}
+          statusUpdateDisabled={Boolean(selectedApplicationStatusReason)}
+          statusUpdateDisabledReason={selectedApplicationStatusReason}
+          offerActionsDisabledReason={selectedApplicationLockReason}
 
           // Next Stage Logic
           nextStageName={(() => {
