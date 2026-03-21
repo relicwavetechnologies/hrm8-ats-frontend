@@ -42,7 +42,7 @@ interface PostPublishFlowProps {
   onComplete?: () => void;
 }
 
-type FlowStep = "tools" | "jobtarget" | "view";
+type FlowStep = "tools" | "view";
 
 export function PostPublishFlow({
   job,
@@ -159,20 +159,8 @@ export function PostPublishFlow({
 
   const handleNextStep = () => {
     if (currentStep === "tools") {
-      setCurrentStep("jobtarget");
+      setShowJobTargetDialog(true);
     }
-  };
-
-  const handlePromoteNow = () => {
-    setShowJobTargetDialog(true);
-  };
-
-  const handleSkipJobTarget = () => {
-    setCurrentStep("view");
-    toast({
-      title: "Skipped",
-      description: "You can promote to external boards anytime from the job detail page.",
-    });
   };
 
   const handleComplete = () => {
@@ -525,7 +513,7 @@ export function PostPublishFlow({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open && !showJobTargetDialog} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -534,14 +522,12 @@ export function PostPublishFlow({
             </DialogTitle>
             <DialogDescription>
               {currentStep === "tools" && "Configure alerts, share your job, and save it as a template"}
-              {currentStep === "jobtarget" && "Maximize your reach by promoting to external job boards"}
               {currentStep === "view" && "See how your job appears to candidates"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-4">
             {currentStep === "tools" && renderToolsStep()}
-            {currentStep === "jobtarget" && renderJobTargetStep()}
             {currentStep === "view" && renderViewStep()}
           </div>
 
@@ -550,32 +536,14 @@ export function PostPublishFlow({
               {currentStep === "tools" && (
                 <Badge variant="outline">Step 1</Badge>
               )}
-              {currentStep === "jobtarget" && (
-                <Badge variant="outline">Step 2</Badge>
-              )}
               {currentStep === "view" && (
-                <Badge variant="outline">Step 3</Badge>
+                <Badge variant="outline">Step 2</Badge>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {currentStep === "jobtarget" && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={handleSkipJobTarget}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Skip for Now
-                  </Button>
-                  <Button onClick={handlePromoteNow}>
-                    <Megaphone className="h-4 w-4 mr-2" />
-                    Promote Now
-                  </Button>
-                </>
-              )}
               {currentStep === "tools" && (
                 <Button onClick={handleNextStep}>
-                  Continue
+                  Continue to Marketplace
                   <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
               )}
@@ -608,4 +576,3 @@ export function PostPublishFlow({
     </>
   );
 }
-

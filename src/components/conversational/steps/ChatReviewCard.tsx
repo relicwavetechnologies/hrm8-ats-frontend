@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Checkbox } from '@/shared/components/ui/checkbox';
-import { CheckCircle2, Edit2, Send, MapPin, Briefcase, DollarSign, Users, FileText, FileCheck } from 'lucide-react';
+import { CheckCircle2, Edit2, Send, Briefcase, DollarSign, Users, FileText, FileCheck } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -38,72 +38,65 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
 }) => {
     const isGlobal = jobData.distributionScope === 'GLOBAL';
     const isSelfManaged = jobData.serviceType === 'self-managed' || jobData.serviceType === 'rpo';
-    const channels = jobData.globalPublishConfig?.channels || [];
-    const budgetTier = jobData.globalPublishConfig?.budgetTier || 'none';
-    const customBudget = jobData.globalPublishConfig?.customBudget;
     const approvalRequired = isGlobal && !isSelfManaged;
     const approvalGranted = !!jobData.globalPublishConfig?.hrm8ServiceApproved;
 
     const sections = [
         {
-            id: 'basic-details',
-            title: 'Basic Information',
+            id: 'core-details',
+            title: 'Core Details',
             icon: Briefcase,
             items: [
                 { label: 'Title', value: jobData.title },
                 { label: 'Department', value: jobData.department },
+                { label: 'Location', value: jobData.location || 'Remote' },
+                { label: 'Work Arrangement', value: jobData.workArrangement },
                 { label: 'Employment Type', value: jobData.employmentType },
                 { label: 'Experience Level', value: jobData.experienceLevel },
+                { label: 'Vacancies', value: jobData.numberOfVacancies?.toString() || '1' },
+                { label: 'Distribution', value: isGlobal ? 'GLOBAL (configure JobTarget after publish)' : 'HRM8_ONLY' },
             ],
         },
         {
-            id: 'location',
-            title: 'Location',
-            icon: MapPin,
+            id: 'job-content',
+            title: 'Job Content',
+            icon: FileText,
             items: [
-                { label: 'Location', value: jobData.location },
-                { label: 'Work Arrangement', value: jobData.workArrangement },
+                { label: 'Description', value: jobData.description ? `${jobData.description.slice(0, 100)}...` : 'Not provided' },
+                { label: 'Requirements', value: `${jobData.requirements?.length || 0} items` },
+                { label: 'Responsibilities', value: `${jobData.responsibilities?.length || 0} items` },
+                { label: 'Tags', value: jobData.tags?.length ? jobData.tags.join(', ') : 'None' },
             ],
         },
         {
-            id: 'basic-details',
-            title: 'Distribution',
+            id: 'application',
+            title: 'Application',
             icon: Users,
             items: [
-                { label: 'Scope', value: isGlobal ? 'GLOBAL (JobTarget)' : 'HRM8_ONLY' },
-                { label: 'Channels', value: channels.length ? channels.join(', ') : 'None selected' },
-                { label: 'Budget', value: budgetTier === 'custom' ? `${customBudget || 0}` : budgetTier },
+                { label: 'Questions', value: `${jobData.applicationForm?.questions?.length || 0} screening questions` },
+                {
+                    label: 'Resume',
+                    value: jobData.applicationForm?.includeStandardFields?.resume?.included
+                        ? (jobData.applicationForm?.includeStandardFields?.resume?.required ? 'Included and required' : 'Included')
+                        : 'Not included',
+                },
             ],
         },
         {
-            id: 'compensation',
-            title: 'Compensation',
+            id: 'posting-settings',
+            title: 'Posting Settings',
             icon: DollarSign,
             items: [
                 {
                     label: 'Salary Range',
                     value: jobData.salaryMin && jobData.salaryMax
                         ? `${jobData.salaryCurrency || '$'} ${jobData.salaryMin?.toLocaleString()} - ${jobData.salaryMax?.toLocaleString()} ${jobData.salaryPeriod || 'annual'}`
-                        : jobData.hideSalary ? 'Hidden from candidates' : 'Not specified',
+                        : 'Not specified',
                 },
-            ],
-        },
-        {
-            id: 'description',
-            title: 'Description',
-            icon: FileText,
-            items: [
-                { label: 'Description', value: jobData.description ? `${jobData.description.slice(0, 100)}...` : 'Not provided' },
-                { label: 'Requirements', value: `${jobData.requirements?.length || 0} items` },
-                { label: 'Responsibilities', value: `${jobData.responsibilities?.length || 0} items` },
-            ],
-        },
-        {
-            id: 'vacancies',
-            title: 'Positions',
-            icon: Users,
-            items: [
-                { label: 'Number of Vacancies', value: jobData.numberOfVacancies?.toString() || '1' },
+                { label: 'Salary Details', value: jobData.salaryDescription || 'None' },
+                { label: 'Visibility', value: jobData.visibility || 'public' },
+                { label: 'Stealth Mode', value: jobData.stealth ? 'Enabled' : 'Disabled' },
+                { label: 'Close Date', value: jobData.closeDate || 'No deadline' },
             ],
         },
     ];
@@ -173,7 +166,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                     <div className="space-y-2">
                         <p className="text-sm font-medium">Global Distribution Approval Required</p>
                         <p className="text-xs text-muted-foreground">
-                            This GLOBAL + HRM8-managed job requires approval of the distribution plan before publish.
+                            This GLOBAL + HRM8-managed job requires approval before publish. Detailed JobTarget setup happens right after publishing.
                         </p>
                         <div className="flex items-start gap-2.5">
                             <Checkbox
@@ -183,7 +176,7 @@ export const ChatReviewCard: React.FC<ChatReviewCardProps> = ({
                                 onCheckedChange={(checked) => onGlobalPublishApprovalChange?.(checked === true)}
                             />
                             <label htmlFor="global-approval" className="text-xs font-medium cursor-pointer">
-                                I approve the global JobTarget distribution plan
+                                I approve proceeding to post-publish JobTarget distribution setup
                             </label>
                         </div>
                     </div>

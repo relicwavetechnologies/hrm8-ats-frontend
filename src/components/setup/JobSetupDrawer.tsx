@@ -29,12 +29,13 @@ import { SetupRoleDistributionCard } from './steps/SetupRoleDistributionCard';
 import { SetupRoundsCard } from './steps/SetupRoundsCard';
 import { SetupReviewCard } from './steps/SetupReviewCard';
 import { DistributionScope, GlobalPublishConfig } from '@/shared/types/job';
+import { clearJobSetupPending, markJobSetupPending } from '@/shared/lib/jobSetupState';
 
 interface JobSetupDrawerProps {
   open: boolean;
   onOpenChange: (
     open: boolean,
-    meta?: { reason: 'open' | 'close' | 'managed-checkout' }
+    meta?: { reason: 'open' | 'close' | 'managed-checkout' | 'completed' }
   ) => void;
   jobId: string | null;
   jobTitle?: string;
@@ -239,10 +240,10 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     setCurrentStep(2);
   }, [open, jobId, canUseAiLoading, canUseAi, currentStep, managementType, setupType, setManagementType, setSetupType, setCurrentStep]);
 
-  const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
-
   const handleClose = () => {
+    if (effectiveJobId && !pendingConsultantAssignment) {
+      markJobSetupPending(effectiveJobId);
+    }
     onOpenChange(false, { reason: 'close' });
     reset();
   };
@@ -263,14 +264,17 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
 
         const res = await jobService.updateJob(id, payload);
         if (!res.success) throw new Error(res.error);
+        clearJobSetupPending(id);
         toast({ title: 'Setup saved', description: 'Your setup has been saved.' });
+        onOpenChange(false, { reason: 'completed' });
+        reset();
+        return;
       } catch (e) {
         toast({ title: 'Error', description: e instanceof Error ? e.message : 'Failed to save setup', variant: 'destructive' });
       } finally {
         setSaving(false);
       }
     }
-    handleClose();
   };
 
   const effectiveJobId = jobId ?? storeJobId ?? null;
@@ -452,9 +456,6 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
           roles={roles}
           team={team}
           rounds={rounds}
-          distributionScope={distributionScope}
-          globalPublishConfig={globalPublishConfig}
-          onGlobalPublishConfigChange={setGlobalPublishConfig}
           onDone={handleReviewDone}
           onBack={prevStep}
           saving={saving}
@@ -470,7 +471,11 @@ export const JobSetupDrawer: React.FC<JobSetupDrawerProps> = ({
     <Drawer
       open={open}
       onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen, { reason: nextOpen ? 'open' : 'close' });
+        if (nextOpen) {
+          onOpenChange(true, { reason: 'open' });
+          return;
+        }
+        handleClose();
       }}
     >
       <DrawerContent className="h-[90vh] rounded-t-[24px] border-none bg-background shadow-2xl flex flex-col overflow-hidden">

@@ -4,7 +4,15 @@
  */
 
 import { apiClient } from './api';
-import { Job, JobFormData } from '@/shared/types/job';
+import {
+  Job,
+  JobFormData,
+  JobOverviewResponse,
+  JobTargetDistributionDetail,
+  JobTargetDistributionOverview,
+  JobTargetEasyApplyReadiness,
+  JobTargetLaunchSession,
+} from '@/shared/types/job';
 export type { Job, JobFormData };
 
 export interface ManagedServiceCompleted {
@@ -53,6 +61,7 @@ export interface CreateJobRequest {
   salaryMin?: number;
   salaryMax?: number;
   salaryCurrency?: string;
+  salaryPeriod?: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'annual';
   salaryDescription?: string;
   hideSalary?: boolean;
   category?: string;
@@ -65,6 +74,9 @@ export interface CreateJobRequest {
   featured?: boolean;
   stealth?: boolean;
   visibility?: string;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: Date;
+  termsAcceptedBy?: string;
   expiryDate?: string;
   videoInterviewingEnabled?: boolean;
   assignmentMode?: 'AUTO' | 'MANUAL';
@@ -111,10 +123,21 @@ export interface UpdateJobRequest extends Partial<CreateJobRequest> {
 }
 
 export interface JobTargetSessionResponse {
-  session: {
-    url: string;
+  session: JobTargetLaunchSession & {
+    url?: string;
     remoteJobId?: string;
     syncStatus?: string;
+    feedWarning?: string;
+    easyApplyReadiness?: JobTargetEasyApplyReadiness;
+    diagnostics?: {
+      remoteCompanyId?: string;
+      feedUrl?: string;
+      feedLastSyncedAt?: string;
+      feedLastAttemptAt?: string;
+      feedLastError?: string;
+      feedLastStatus?: number;
+      feedRegistrationState?: 'NEVER_REGISTERED' | 'REGISTERED' | 'INVALID';
+    };
   };
 }
 
@@ -175,6 +198,10 @@ class JobService {
     return apiClient.get<{ job: Job }>(`/api/jobs/${id}`);
   }
 
+  async getJobOverview(id: string) {
+    return apiClient.get<{ overview: JobOverviewResponse }>(`/api/jobs/${id}/overview`);
+  }
+
   /**
    * Update job
    */
@@ -222,6 +249,19 @@ class JobService {
    */
   async createJobTargetSession(id: string) {
     return apiClient.post<JobTargetSessionResponse>(`/api/jobs/${id}/jobtarget/session`);
+  }
+
+  async getDistributionOverview() {
+    return apiClient.get<{ overview: JobTargetDistributionOverview }>('/api/jobs/distribution/overview');
+  }
+
+  async getJobDistribution(id: string, fresh = false) {
+    const query = fresh ? '?fresh=1' : '';
+    return apiClient.get<{ distribution: JobTargetDistributionDetail }>(`/api/jobs/${id}/distribution${query}`);
+  }
+
+  async refreshJobDistribution(id: string) {
+    return apiClient.post<{ distribution: JobTargetDistributionDetail }>(`/api/jobs/${id}/distribution/refresh`);
   }
 
   /**

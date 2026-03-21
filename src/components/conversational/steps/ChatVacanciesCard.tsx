@@ -8,12 +8,14 @@ interface ChatVacanciesCardProps {
     value: number;
     onChange: (value: number) => void;
     onContinue: () => void;
+    showContinue?: boolean;
 }
 
 export const ChatVacanciesCard: React.FC<ChatVacanciesCardProps> = ({
     value,
     onChange,
     onContinue,
+    showContinue = true,
 }) => {
     const decrease = () => onChange(Math.max(1, value - 1));
     const increase = () => onChange(value + 1);
@@ -81,13 +83,15 @@ export const ChatVacanciesCard: React.FC<ChatVacanciesCardProps> = ({
                 </div>
             </div>
 
-            <Button
-                onClick={onContinue}
-                className="w-full h-11 font-semibold rounded-lg"
-            >
-                Continue
-                <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    className="w-full h-11 font-semibold rounded-lg"
+                >
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

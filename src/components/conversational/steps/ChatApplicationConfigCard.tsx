@@ -10,12 +10,14 @@ interface ChatApplicationConfigCardProps {
     config: ApplicationFormConfig;
     onChange: (config: ApplicationFormConfig) => void;
     onContinue: () => void;
+    showContinue?: boolean;
 }
 
 export const ChatApplicationConfigCard: React.FC<ChatApplicationConfigCardProps> = ({
     config,
     onChange,
     onContinue,
+    showContinue = true,
 }) => {
     const handleToggle = (field: 'resume' | 'coverLetter' | 'portfolio' | 'linkedIn' | 'website', type: 'included' | 'required') => {
         const current = config.includeStandardFields?.[field] || { included: false, required: false };
@@ -99,9 +101,11 @@ export const ChatApplicationConfigCard: React.FC<ChatApplicationConfigCardProps>
                 </div>
             </Card>
 
-            <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
-                Continue <ArrowRight className="h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
+                    Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

@@ -39,6 +39,7 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { JobSetupDrawer } from "@/components/setup/JobSetupDrawer";
+import { markJobSetupPending } from "@/shared/lib/jobSetupState";
 import { JobBoardPublicPreview } from "./JobBoardPublicPreview";
 import { PostPublishFlow } from "./PostPublishFlow";
 import { toast } from "@/shared/hooks/use-toast";
@@ -1392,6 +1393,7 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
             onOpenChange={(open) => {
               setShowPostLaunchTools(open);
               if (!open) {
+                markJobSetupPending(savedJobData.id);
                 setShowJobSetupDrawer(true);
               }
             }}
@@ -1410,6 +1412,7 @@ export function JobWizard({ serviceType, defaultValues, jobId: initialJobId, onS
             }}
             onComplete={() => {
               setShowPostLaunchTools(false);
+              markJobSetupPending(savedJobData.id);
               setShowJobSetupDrawer(true);
             }}
           />

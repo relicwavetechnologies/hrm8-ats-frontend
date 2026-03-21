@@ -1,4 +1,4 @@
-import { Plus, UserPlus, Calendar } from "lucide-react";
+import { Plus, UserPlus, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Tooltip,
@@ -8,9 +8,22 @@ import {
 import { Separator } from "@/shared/components/ui/separator";
 import { cn } from "@/shared/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 export function HeaderQuickActions() {
   const navigate = useNavigate();
+  const [isPostingJob, setIsPostingJob] = useState(false);
+
+  useEffect(() => {
+    const handleReady = () => setIsPostingJob(false);
+    window.addEventListener('job-create-flow-ready', handleReady);
+    return () => window.removeEventListener('job-create-flow-ready', handleReady);
+  }, []);
+
+  const handlePostJob = () => {
+    setIsPostingJob(true);
+    navigate('/ats/jobs?action=create');
+  };
 
   return (
     <>
@@ -22,7 +35,8 @@ export function HeaderQuickActions() {
           <TooltipTrigger asChild>
             <Button
               variant="default"
-              onClick={() => navigate('/ats/jobs?action=create')}
+              onClick={handlePostJob}
+              disabled={isPostingJob}
               className={cn(
                 // Sleeker design with less rounded corners
                 "rounded-lg shadow-sm hover:shadow-md transition-all",
@@ -31,8 +45,8 @@ export function HeaderQuickActions() {
                 "md:h-9 md:w-9 md:p-0 lg:h-9 lg:w-auto"
               )}
             >
-              <Plus className="h-4 w-4" />
-              <span className="hidden lg:inline font-medium">Post Job</span>
+              {isPostingJob ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              <span className="hidden lg:inline font-medium">{isPostingJob ? 'Loading...' : 'Post Job'}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="lg:hidden">

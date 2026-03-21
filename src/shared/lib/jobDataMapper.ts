@@ -129,7 +129,7 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     assignedConsultantId: backendJob.assignedConsultantId,
     assignedConsultantName: backendJob.assignedConsultantName,
     pendingConsultantAssignment: !!backendJob.pendingConsultantAssignment,
-    advanceSetupComplete: backendJob.advanceSetupComplete !== false,
+    advanceSetupComplete: backendJob.advanceSetupComplete === true,
     pipeline: backendJob.pipeline
       ? {
         stage: backendJob.pipeline.stage,
@@ -149,6 +149,7 @@ export function mapBackendJobToFrontend(backendJob: any): Job {
     unreadApplicants: backendJob.unreadApplicants,
     viewsCount: backendJob.viewsCount || 0,
     clicksCount: backendJob.clicksCount || 0,
+    careerMetrics: backendJob.careerMetrics,
     createdAt: backendJob.createdAt
       ? (typeof backendJob.createdAt === 'string' ? backendJob.createdAt : backendJob.createdAt.toISOString())
       : new Date().toISOString(),
@@ -234,11 +235,9 @@ export function mapBackendJobToFormData(backendJob: any): Partial<JobFormData> {
     salaryCurrency: normalizedJob.salaryCurrency,
     salaryPeriod: normalizedJob.salaryPeriod || 'annual',
     salaryDescription: normalizedJob.salaryDescription,
-    hideSalary: false,
     closeDate: normalizedJob.closeDate,
     visibility: normalizedJob.visibility as 'public' | 'private',
     stealth: normalizedJob.stealth,
-    hiringTeam: normalizedJob.hiringTeam || [],
     applicationForm: normalizedJob.applicationForm || {
       id: `form-${Date.now()}`,
       name: "Application Form",
@@ -251,6 +250,9 @@ export function mapBackendJobToFormData(backendJob: any): Partial<JobFormData> {
         website: { included: false, required: false },
       },
     },
+    termsAccepted: normalizedJob.termsAccepted ?? false,
+    termsAcceptedAt: normalizedJob.termsAcceptedAt,
+    termsAcceptedBy: normalizedJob.termsAcceptedBy,
     status: (normalizedJob.status === 'open' ? 'open' : 'draft') as 'draft' | 'open',
     jobBoardDistribution: normalizedJob.jobBoardDistribution || [],
     videoInterviewingEnabled: normalizedJob.videoInterviewingEnabled || false,

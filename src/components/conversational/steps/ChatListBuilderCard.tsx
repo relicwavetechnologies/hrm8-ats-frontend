@@ -11,6 +11,7 @@ interface ChatListBuilderCardProps {
     items: string[];
     onChange: (items: string[]) => void;
     onContinue: () => void;
+    showContinue?: boolean;
     isParsed?: boolean;
     placeholder?: string;
     minItems?: number;
@@ -24,6 +25,7 @@ export const ChatListBuilderCard: React.FC<ChatListBuilderCardProps> = ({
     items,
     onChange,
     onContinue,
+    showContinue = true,
     isParsed,
     placeholder = 'Add an item...',
     minItems = 1,
@@ -201,13 +203,15 @@ export const ChatListBuilderCard: React.FC<ChatListBuilderCardProps> = ({
                 </div>
             </Card>
 
-            <Button
-                onClick={onContinue}
-                disabled={!canContinue}
-                className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
-            >
-                Continue <ArrowRight className="h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button
+                    onClick={onContinue}
+                    disabled={!canContinue}
+                    className="w-full h-10 text-sm rounded-md font-medium gap-1.5"
+                >
+                    Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };

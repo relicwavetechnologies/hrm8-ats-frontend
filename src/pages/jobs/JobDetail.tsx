@@ -3,7 +3,7 @@ import { useParams, Link, Navigate, useNavigate, useSearchParams } from "react-r
 import { DashboardPageLayout } from "@/app/layouts/DashboardPageLayout";
 import { AtsPageHeader } from "@/app/layouts/AtsPageHeader";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Badge } from "@/shared/components/ui/badge";
 import { Separator } from "@/shared/components/ui/separator";
@@ -37,17 +37,14 @@ import {
 } from "lucide-react";
 import { Switch } from "@/shared/components/ui/switch";
 import { getJobById } from "@/shared/lib/mockJobStorage";
-import { mockJobActivities } from "@/data/mockJobsData";
-import { Job } from "@/shared/types/job";
+import { Job, JobOverviewResponse, JobTargetDistributionDetail } from "@/shared/types/job";
 import { JobStatusBadge } from "@/modules/jobs/components/JobStatusBadge";
 import { EmploymentTypeBadge } from "@/modules/jobs/components/EmploymentTypeBadge";
 import { ServiceTypeBadge } from "@/modules/jobs/components/ServiceTypeBadge";
-import { JobQuickStats } from "@/modules/jobs/components/JobQuickStats";
 import { DetailSkeleton } from "@/shared/components/skeletons/DetailSkeleton";
-import { JobActivityFeed } from "@/modules/jobs/components/JobActivityFeed";
 import { JobLifecycleActions } from "@/modules/jobs/components/JobLifecycleActions";
 import { JobPaymentStatus } from "@/modules/jobs/components/JobPaymentStatus";
-import { formatSalaryRange, formatExperienceLevel, formatRelativeDate } from "@/shared/lib/jobUtils";
+import { formatSalaryRange, formatExperienceLevel } from "@/shared/lib/jobUtils";
 import { ApplicationPipeline } from "@/modules/applications/components/ApplicationPipeline";
 import { JobApplicantsList } from "@/modules/applications/components/JobApplicantsList";
 import { AllApplicantsCard } from "@/modules/applications/components/AllApplicantsCard";
@@ -90,6 +87,8 @@ import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { MessageSquarePlus } from "lucide-react";
 import { JobInboxTab } from "@/modules/jobs/components/JobInboxTab";
 import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
+import { JobTargetDistributionTab } from "@/modules/jobs/components/JobTargetDistributionTab";
+import { JobOverviewTab } from "@/modules/jobs/components/overview/JobOverviewTab";
 
 export default function JobDetail() {
   const { jobId } = useParams();
@@ -112,6 +111,11 @@ export default function JobDetail() {
   const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [selectedRoundForConfig, setSelectedRoundForConfig] = useState<JobRound | null>(null);
   const [initialConfigTab, setInitialConfigTab] = useState<RoundConfigTab>("general");
+  const [distribution, setDistribution] = useState<JobTargetDistributionDetail | null>(null);
+  const [distributionLoading, setDistributionLoading] = useState(false);
+  const [distributionRefreshing, setDistributionRefreshing] = useState(false);
+  const [overview, setOverview] = useState<JobOverviewResponse | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
 
   const handleConfigureAssessment = (roundId: string) => {
     const round = rounds.find(r => r.id === roundId);
@@ -355,26 +359,39 @@ export default function JobDetail() {
     const fetchJob = async () => {
       if (!jobId) {
         setLoading(false);
+        setOverviewLoading(false);
         return;
       }
       try {
         setLoading(true);
-        const response = await jobService.getJobById(jobId);
-        if (response.success && response.data) {
-          const mappedJob = mapBackendJobToFrontend(response.data.job);
+        setOverviewLoading(true);
+
+        const [jobResult, overviewResult] = await Promise.allSettled([
+          jobService.getJobById(jobId),
+          jobService.getJobOverview(jobId),
+        ]);
+
+        if (jobResult.status === "fulfilled" && jobResult.value.success && jobResult.value.data) {
+          const mappedJob = mapBackendJobToFrontend(jobResult.value.data.job);
           setJob(mappedJob);
         } else {
-          // If API fails, try to get from mock storage as fallback
           const mockJob = getJobById(jobId);
           if (mockJob) {
             setJob(mockJob);
           } else {
+            const jobError = jobResult.status === "fulfilled" ? jobResult.value.error : "The job you're looking for doesn't exist.";
             toast({
               title: "Job not found",
-              description: response.error || "The job you're looking for doesn't exist.",
+              description: jobError || "The job you're looking for doesn't exist.",
               variant: "destructive",
             });
           }
+        }
+
+        if (overviewResult.status === "fulfilled" && overviewResult.value.success && overviewResult.value.data?.overview) {
+          setOverview(overviewResult.value.data.overview);
+        } else {
+          setOverview(null);
         }
       } catch (error) {
         console.error('Error fetching job:', error);
@@ -389,8 +406,10 @@ export default function JobDetail() {
             variant: "destructive",
           });
         }
+        setOverview(null);
       } finally {
         setLoading(false);
+        setOverviewLoading(false);
       }
     };
 
@@ -625,9 +644,86 @@ export default function JobDetail() {
     loadApplications();
   }, [jobId, refreshKey]);
 
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextTab === 'overview') {
+      nextParams.delete('tab');
+    } else {
+      nextParams.set('tab', nextTab);
+    }
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const allowedTabs = new Set(['overview', 'distribution', 'team', 'applicants', 'screening', 'candidates', 'ai-interviews', 'offers', 'hired', 'tasks', 'inbox', 'messages', 'settings']);
+    if (requestedTab && allowedTabs.has(requestedTab) && requestedTab !== activeTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [activeTab, searchParams]);
+
+  useEffect(() => {
+    if (!job) return;
+    if (searchParams.get('launchJobTarget') !== '1') return;
+
+    setActiveTab('overview');
+    setPromotionDialogOpen(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('launchJobTarget');
+    nextParams.delete('tab');
+    setSearchParams(nextParams, { replace: true });
+  }, [job, searchParams, setSearchParams]);
+
   const handleJobUpdate = async () => {
     setRefreshKey(prev => prev + 1);
   };
+
+  const loadDistribution = async (fresh = false) => {
+    if (!jobId || !job || job.distributionScope !== 'GLOBAL') return;
+
+    if (fresh) {
+      setDistributionRefreshing(true);
+    } else {
+      setDistributionLoading(true);
+    }
+
+    try {
+      const response = fresh
+        ? await jobService.refreshJobDistribution(jobId)
+        : await jobService.getJobDistribution(jobId);
+
+      if (!response.success || !response.data?.distribution) {
+        throw new Error(response.error || 'Failed to load job distribution');
+      }
+
+      setDistribution(response.data.distribution);
+    } catch (error: any) {
+      toast({
+        title: fresh ? 'Refresh failed' : 'Distribution unavailable',
+        description: error?.message || 'Unable to load JobTarget distribution right now.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDistributionLoading(false);
+      setDistributionRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!job || job.distributionScope !== 'GLOBAL') {
+      setDistribution(null);
+      return;
+    }
+    if (activeTab !== 'distribution') return;
+    if (distribution) return;
+    void loadDistribution(false);
+  }, [activeTab, distribution, job, jobId]);
+
+  useEffect(() => {
+    setDistribution(null);
+    setOverview(null);
+  }, [jobId, refreshKey]);
 
   if (!job && !loading) {
     return <Navigate to="/ats/jobs" replace />;
@@ -640,8 +736,6 @@ export default function JobDetail() {
       </DashboardPageLayout>
     );
   }
-
-  const activities = mockJobActivities.filter(a => a.jobId === job.id);
 
   const handleEditJob = () => {
     setEditDrawerOpen(true);
@@ -747,7 +841,7 @@ export default function JobDetail() {
 
   return (
     <DashboardPageLayout fullWidth>
-      <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="flex h-[calc(100vh-65px)] w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} orientation="vertical" className="flex h-[calc(100vh-65px)] w-full">
         {/* Secondary Sidebar - Tabs */}
         <div className="w-56 border-r bg-muted/5 flex-shrink-0 flex flex-col h-full overflow-y-auto">
           <div className="p-4 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10">
@@ -760,6 +854,13 @@ export default function JobDetail() {
               >
                 <List className="h-3.5 w-3.5" />
                 Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="distribution"
+                className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+              >
+                <Megaphone className="h-3.5 w-3.5" />
+                Distribution
               </TabsTrigger>
               <TabsTrigger
                 value="team"
@@ -956,281 +1057,33 @@ export default function JobDetail() {
                     />
                   </div>
                 </AtsPageHeader>
-
-                {/* Quick Stats */}
-                <JobQuickStats
-                  applicantsCount={job.applicantsCount}
-                  viewsCount={job.viewsCount}
-                  postingDate={job.postingDate}
-                />
               </>
             )}
 
             {/* Overview Tab Content */}
             <TabsContent value="overview" className="mt-3 space-y-3">
-              {/* Pending Consultant Assignment Banner */}
-              {job.pendingConsultantAssignment && (
-                <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
-                  <CardContent className="pt-4">
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                      Pending consultant assignment
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      A regional admin will assign a consultant shortly. You&apos;ll be notified when ready.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              <JobOverviewTab
+                job={job}
+                overview={overview}
+                isLoading={overviewLoading}
+                onOpenDistribution={() => handleTabChange('distribution')}
+                onLaunchMarketplace={() => setPromotionDialogOpen(true)}
+                onRefreshOverview={handleJobUpdate}
+                onOpenTab={handleTabChange}
+              />
+            </TabsContent>
 
-              {/* Payment Status - Show for paid packages */}
-              {(job.serviceType !== 'self-managed' && job.serviceType !== 'rpo') && (
-                <JobPaymentStatus job={job} onPaymentComplete={handleJobUpdate} />
-              )}
-
-              {/* Upgrade to Recruitment Service Banner for Self-Managed Jobs */}
-              {job.serviceType === 'self-managed' && (job.status === 'open' || job.status === 'draft') && (
-                <Card className="border-primary/20 bg-primary/5">
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <ArrowUpCircle className="h-3.5 w-3.5 text-primary" />
-                      Upgrade to HRM8 Recruitment Service
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-xs text-muted-foreground">
-                      Need additional support? Upgrade to one of our recruitment services to get expert help with candidate sourcing, screening, and hiring.
-                    </p>
-                    <ul className="space-y-2 text-xs">
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Professional candidate screening and evaluation</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>Dedicated recruitment consultant support</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-0.5">✓</span>
-                        <span>End-to-end recruitment process management</span>
-                      </li>
-                    </ul>
-                    <Button
-                      className="w-full h-8 text-xs"
-                      onClick={() => setUpgradeServiceDialogOpen(true)}
-                    >
-                      <ArrowUpCircle className="h-3.5 w-3.5 mr-2" />
-                      Upgrade to Recruitment Service
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                <div className="lg:col-span-2 space-y-3">
-                  {/* Job Details */}
-                  <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-xs font-semibold">Job Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 pt-0 px-3 pb-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        <div className="flex items-center gap-2 text-xs">
-                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Location:</span>
-                          <span>{job.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Arrangement:</span>
-                          <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full">
-                            {job.workArrangement === 'on-site' ? 'On-site' : job.workArrangement === 'remote' ? 'Remote' : 'Hybrid'}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Type:</span>
-                          <EmploymentTypeBadge type={job.employmentType} />
-                        </div>
-                        {(job.salaryMin || job.salaryMax) && (
-                          <div className="space-y-2 col-span-2">
-                            <div className="flex items-center gap-2 text-xs">
-                              <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="font-medium">Salary:</span>
-                              <span>{formatSalaryRange(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod)}</span>
-                            </div>
-
-                            {job.salaryDescription && (
-                              <div className="ml-6 text-xs bg-primary/10 border border-primary/20 rounded-md px-3 py-2">
-                                <p className="text-foreground italic">
-                                  💰 {job.salaryDescription}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-xs">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Experience:</span>
-                          <span>{formatExperienceLevel(job.experienceLevel)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Visibility:</span>
-                          <Badge variant="outline" className="h-5 px-2 text-[10px] rounded-full capitalize">
-                            {job.visibility}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Service:</span>
-                          <ServiceTypeBadge type={job.serviceType} />
-                          {!job.serviceType || job.serviceType === 'self-managed' ? (
-                            <span className="text-muted-foreground">Self-Managed</span>
-                          ) : null}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs col-span-2">
-                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="font-medium">Assigned Consultant:</span>
-                          <span className={job.assignedConsultantName ? 'font-medium' : 'text-muted-foreground'}>
-                            {job.assignedConsultantName ||
-                              (job.pendingConsultantAssignment
-                                ? 'Pending assignment'
-                                : ['shortlisting', 'full-service', 'executive-search'].includes(job.serviceType || '')
-                                  ? 'Not yet assigned'
-                                  : '—')}
-                          </span>
-                        </div>
-                      </div>
-                      <Separator />
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Job Code</p>
-                        <p className="font-mono text-xs font-medium">{job.jobCode}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                        <p className="text-xs font-medium">{formatRelativeDate(job.postingDate)}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Description */}
-                  <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-sm font-semibold">Description</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3 pb-3">
-                      <div
-                        className="prose prose-sm max-w-none text-xs leading-6"
-                        dangerouslySetInnerHTML={{ __html: job.description }}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Requirements */}
-                  <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-sm font-semibold">Requirements</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3 pb-3">
-                      <ul className="space-y-1.5">
-                        {job.requirements.map((req, index) => (
-                          <li key={index} className="flex items-start gap-2 text-xs">
-                            <span className="text-primary mt-1">•</span>
-                            <span>{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  {/* Responsibilities */}
-                  <Card className="border-muted/60 shadow-none">
-                  <CardHeader className="px-3 pt-3 pb-2">
-                    <CardTitle className="text-sm font-semibold">Responsibilities</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 px-3 pb-3">
-                      <ul className="space-y-1.5">
-                        {job.responsibilities.map((resp, index) => (
-                          <li key={index} className="flex items-start gap-2 text-xs">
-                            <span className="text-primary mt-1">•</span>
-                            <span>{resp}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  {/* Distribution */}
-                  {job.jobBoardDistribution.length > 0 && (
-                    <Card className="border-muted/60 shadow-none">
-                      <CardHeader className="px-3 pt-3 pb-2">
-                        <CardTitle className="text-sm font-semibold">Job Board Distribution</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0 px-3 pb-3">
-                        <div className="flex flex-wrap gap-2">
-                          {job.jobBoardDistribution.map((board) => (
-                            <Badge key={board} variant="outline" className="h-5 px-2 text-[10px] rounded-full">
-                              {board}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {/* Activity Sidebar */}
-                <div className="space-y-3">
-                  <Card className="border-muted/60 shadow-none">
-                    <CardHeader className="px-3 pt-3 pb-2">
-                      <CardTitle className="text-sm font-semibold">Quick Stats</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2.5 pt-0 px-3 pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Eye className="h-3.5 w-3.5" />
-                          <span>Total Views</span>
-                        </div>
-                        <span className="font-semibold">{job.viewsCount?.toLocaleString() || 0}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <ArrowUpCircle className="h-3.5 w-3.5" />
-                          <span>Apply Clicks</span>
-                        </div>
-                        <span className="font-semibold">{job.clicksCount?.toLocaleString() || 0}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Briefcase className="h-3.5 w-3.5" />
-                          <span>Applicants</span>
-                        </div>
-                        <span className="font-semibold">{job.applicantsCount || 0}</span>
-                      </div>
-                      <Separator />
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Posted</p>
-                        <p className="text-xs font-medium">{formatRelativeDate(job.postingDate)}</p>
-                      </div>
-                      {job.closeDate && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Closed</p>
-                          <p className="text-xs font-medium">{formatRelativeDate(job.closeDate)}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-muted/60 shadow-none">
-                    <CardHeader className="px-3 pt-3 pb-2">
-                      <CardTitle className="text-sm font-semibold">Activity</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 px-3 pb-3">
-                      <JobActivityFeed activities={activities} />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+            <TabsContent value="distribution" className="mt-3">
+              <JobTargetDistributionTab
+                job={job}
+                distribution={distribution}
+                isLoading={distributionLoading}
+                isRefreshing={distributionRefreshing}
+                onRefresh={() => void loadDistribution(true)}
+                onLaunch={() => setPromotionDialogOpen(true)}
+                canViewAdvanced={user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'}
+                onJobUpdated={(nextJob) => setJob(nextJob)}
+              />
             </TabsContent>
 
             {/* Applicants Tab */}
@@ -1565,7 +1418,11 @@ export default function JobDetail() {
         open={promotionDialogOpen}
         onOpenChange={setPromotionDialogOpen}
         job={job}
-        onSuccess={() => {
+        onJobUpdated={(nextJob) => setJob(nextJob)}
+        onSuccess={(nextDistribution) => {
+          if (nextDistribution) {
+            setDistribution(nextDistribution);
+          }
           setRefreshKey(prev => prev + 1);
         }}
       />

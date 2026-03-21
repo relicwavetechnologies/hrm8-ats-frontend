@@ -21,12 +21,14 @@ interface ChatTagsCardProps {
     tags: string[];
     onChange: (tags: string[]) => void;
     onContinue: () => void;
+    showContinue?: boolean;
 }
 
 export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
     tags,
     onChange,
     onContinue,
+    showContinue = true,
 }) => {
     const [newTag, setNewTag] = useState('');
 
@@ -121,9 +123,11 @@ export const ChatTagsCard: React.FC<ChatTagsCardProps> = ({
                 </div>
             </Card>
 
-            <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
-                Continue <ArrowRight className="h-4 w-4" />
-            </Button>
+            {showContinue && (
+                <Button onClick={onContinue} className="w-full h-10 text-sm rounded-md font-medium gap-1.5">
+                    Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+            )}
         </div>
     );
 };
