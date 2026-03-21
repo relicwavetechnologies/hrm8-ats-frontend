@@ -35,6 +35,7 @@ import {
   CheckSquare,
   CheckCircle2,
   MessageCircle,
+  Search,
 } from "lucide-react";
 import { Switch } from "@/shared/components/ui/switch";
 import { getJobById } from "@/shared/lib/mockJobStorage";
@@ -91,6 +92,7 @@ import { JobTasksTab } from "@/modules/jobs/components/tasks/JobTasksTab";
 import { MessageSquarePlus } from "lucide-react";
 import { JobInboxTab } from "@/modules/jobs/components/JobInboxTab";
 import { JobOffersTab } from "@/modules/jobs/components/offers/JobOffersTab";
+import { ExecutiveSearchTab } from "@/modules/jobs/components/ExecutiveSearchTab";
 import { resolveManagedServicePolicy } from "@/shared/lib/managedServicePolicy";
 
 export default function JobDetail() {
@@ -831,6 +833,15 @@ export default function JobDetail() {
                   ))}
                 </div>
               )}
+              {job.serviceType === 'executive-search' && (
+                <TabsTrigger
+                  value="executive-search"
+                  className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  Executive Search
+                </TabsTrigger>
+              )}
               <TabsTrigger
                 value="screening"
                 className="w-full justify-start gap-3 h-9 px-3 rounded-md text-xs font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-colors"
@@ -1427,6 +1438,11 @@ export default function JobDetail() {
             </TabsContent>
 
             {/* AI Screening Tab */}
+            {job.serviceType === 'executive-search' && (
+              <TabsContent value="executive-search" className="mt-6">
+                <ExecutiveSearchTab job={job} />
+              </TabsContent>
+            )}
             <TabsContent value="screening" className="mt-6">
               <InitialScreeningTab
                 jobId={job.id}

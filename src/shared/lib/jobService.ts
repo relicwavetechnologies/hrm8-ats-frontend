@@ -368,6 +368,53 @@ class JobService {
       responseRate: number;
     }>(`/api/jobs/${jobId}/executive-search/summary`);
   }
+
+  /** Workflow automation (Executive Search only) */
+  async getJobAutomations(jobId: string) {
+    return apiClient.get<JobAutomation[]>(`/api/jobs/${jobId}/automations`);
+  }
+
+  async createJobAutomation(
+    jobId: string,
+    data: {
+      name: string;
+      triggerType: string;
+      triggerConfig?: { stage?: string };
+      actions: Array<{ type: string; templateId?: string }>;
+      enabled?: boolean;
+    }
+  ) {
+    return apiClient.post<JobAutomation>(`/api/jobs/${jobId}/automations`, data);
+  }
+
+  async updateJobAutomation(
+    jobId: string,
+    automationId: string,
+    data: { name?: string; triggerConfig?: { stage?: string }; actions?: object[]; enabled?: boolean }
+  ) {
+    return apiClient.put<JobAutomation>(
+      `/api/jobs/${jobId}/automations/${automationId}`,
+      data
+    );
+  }
+
+  async deleteJobAutomation(jobId: string, automationId: string) {
+    return apiClient.delete(`/api/jobs/${jobId}/automations/${automationId}`);
+  }
 }
+
+export interface JobAutomation {
+  id: string;
+  jobId: string | null;
+  companyId: string;
+  name: string;
+  triggerType: string;
+  triggerConfig: { stage?: string } | null;
+  actions: Array<{ type: string; templateId?: string }>;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export const jobService = new JobService();

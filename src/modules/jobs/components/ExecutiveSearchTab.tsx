@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Users, Mail, UserCheck, Percent } from "lucide-react";
 import { jobService } from "@/shared/lib/jobService";
+import { JobAutomationSectionEmployer } from "./JobAutomationSectionEmployer";
 import { Job } from "@/shared/types/job";
 
 interface ExecutiveSearchTabProps {
@@ -110,6 +111,7 @@ export function ExecutiveSearchTab({ job }: ExecutiveSearchTabProps) {
           </div>
         </CardContent>
       </Card>
+      <JobAutomationSectionEmployer jobId={job.id} />
     </div>
   );
 }
